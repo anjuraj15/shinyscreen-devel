@@ -1,8 +1,21 @@
-## Wrapper function to process data from mixed compounds.  mzml_files
-## is simply the file list, sett_file_list is the list of settings
-## corresponding to each mzML file and comp_list_noid is the csv table
-## with at least these columns of compound names (Name) and SMILES
-## _filled_.
-rmbmix<-function(mzml_files,sett_file_list,comp_list_noid) {
-    
+
+rmbmix.mk_sett_file<-function(sett_alist,file) {
+    require(yaml)
+    tmp<-tempfile()
+    RmbSettingsTemplate(tmp)
+    sett<-yaml.load_file(tmp)
+    for (nm in names(sett_alist)) {
+        sett[[nm]]<-sett_alist[[nm]]
     }
+    write_yaml(x=sett,file=file)
+}
+
+
+## Perform the compound mixture workflow on the data file called
+## fn_data with settings named list called sett_alist.
+rmbmix.single<-function(fn_data,sett_alist) {
+    
+    require(RMassBank)
+    sfn<-paste(fn_data,".ini",sep='')
+    rmbmix.mk_sett_file(sett_alist,sfn)
+}
