@@ -30,12 +30,17 @@ rmbmix.gen_comp_list<-function(src_fn,dest_fn) {
     ## Names
     nms<-if ("PREFERRED_NAME" %in% names(df)) df$PREFERRED_NAME else df$Name
     if (is.null(nms)) stop("Unable to read compound names from the input compound list.")
+
     ## SMILES
     haha<-df$SMILES
-    if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
     sz<-length(haha)
-    outdf<-data.frame(Name=nms,SMILES=haha,ID=1:sz,RT=rep("",sz),CAS=rep("",sz))
-    write.csv(outdf,file=dest_fn,row.names=F)
+    
+    ## CAS
+    casvals<-rep(NA,sz) #if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
+    if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
+
+    outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz))
+    write.csv(outdf,file=dest_fn,row.names=F,na="")
     length(nms)
 }
     
@@ -71,5 +76,5 @@ rmbmix.single<-function(fn_data,sett_alist,fn_cmpd_list,wd,mode,readMethod="mzR"
     w <-msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
     if (!dir.exists(archdir)) dir.create(archdir)
     fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
-    msmsWorkflow(w, mode=mode, steps=c(2:8),archivename=fn_arch)
+    msmsWorkflow(w, mode=mode, steps=2,archivename=fn_arch)
 }
