@@ -48,17 +48,17 @@ rmbmix.single<-function(fn_data,sett_alist,fn_cmpd_list,wd) {
     
     require(RMassBank)
 
-
+    ## Generate settings file and load.
+    sfn<-file.path(wd,paste(fn_data,".ini",sep=''))
+    rmbmix.mk_sett_file(sett_alist,sfn)
+    loadRmbSettings(sfn)
 
     ## Generate file table.
     df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
     fn_table<-file.path(wd,paste("fn-table.",fn_data,".csv",sep=''))
     write.csv(x=df_table,file=fn_table,row.names=F)
 
-    ## Generate settings file and load.
-    sfn<-file.path(wd,paste(fn_data,".ini",sep=''))
-    rmbmix.mk_sett_file(sett_alist,sfn)
-    loadRmbSettings(sfn)
+ 
 
     ## Make empty workspace.
     
