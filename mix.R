@@ -46,10 +46,9 @@ rmbmix.gen_comp_list<-function(src_fn,dest_fn) {
 ## fn_cmpd_list is the compound list. Argument wd is the scratch dir
 ## to hold generated ini files and the like. Arguments mode and
 ## readMethod are the same as in msmsRead.
-rmbmix.single<-function(fn_data,sett_alist,fn_cmpd_list,wd,mode,readMethod="mzR") {
+rmbmix.single<-function(fn_data,sett_alist,fn_cmpd_list,wd,mode,readMethod="mzR",archdir="archive") {
     
     require(RMassBank)
-
     ## Generate settings file and load.
     sfn<-file.path(wd,paste(fn_data,".ini",sep=''))
     rmbmix.mk_sett_file(sett_alist,sfn)
@@ -67,8 +66,10 @@ rmbmix.single<-function(fn_data,sett_alist,fn_cmpd_list,wd,mode,readMethod="mzR"
 
     ## Make empty workspace.
     w <- newMsmsWorkspace()
-    #w <-msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
     ## Run the workflow.
     message(paste("Reading in file:",fn_data))
     w <-msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
+    if (!dir.exists(archdir)) dir.create(archdir)
+    fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
+    msmsWorkflow(w, mode=mode, steps=c(2:8),archivename=fn_arch)
 }
