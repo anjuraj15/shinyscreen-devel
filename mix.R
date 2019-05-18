@@ -36,7 +36,7 @@ rmbmix.gen_comp_list<-function(src_fn,dest_fn) {
     sz<-length(haha)
     
     ## CAS
-    casvals<-rep(NA,sz) #if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
+    casvals<-if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
     if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
 
     outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz))
@@ -47,16 +47,21 @@ rmbmix.gen_comp_list<-function(src_fn,dest_fn) {
     
     
 ## Perform the compound mixture workflow on the data file called
-## fn_data with settings named list called sett_alist. Argument
-## fn_cmpd_list is the compound list. Argument wd is the scratch dir
-## to hold generated ini files and the like. Arguments mode and
-## readMethod are the same as in msmsRead.
-rmbmix.single<-function(fn_data,sett_alist,fn_cmpd_list,wd,mode,readMethod="mzR",archdir="archive") {
+## fn_data with settings named list called stgs_alist. Alternatively,
+## stg_alist can be a file name which follows the RMassBank settings
+## specification, also in YAML format, containing only parts that
+## differ from the default. Argument fn_cmpd_list is the compound
+## list. Argument wd is the scratch dir to hold generated ini files
+## and the like. Arguments mode and readMethod are the same as in
+## msmsRead.
+rmbmix.single<-function(fn_data,stgs_alist,fn_cmpd_list,wd,mode,readMethod="mzR",archdir="archive") {
     
     require(RMassBank)
+    require(yaml)
     ## Generate settings file and load.
+    stgs_alist<-if (is.character(stgs_alist)) yaml.load_file(stgs_alist) else stgs_alist
     sfn<-file.path(wd,paste(fn_data,".ini",sep=''))
-    rmbmix.mk_sett_file(sett_alist,sfn)
+    rmbmix.mk_sett_file(stgs_alist,sfn)
     loadRmbSettings(sfn)
 
     ## Generate and load the compound list.
@@ -76,5 +81,5 @@ rmbmix.single<-function(fn_data,sett_alist,fn_cmpd_list,wd,mode,readMethod="mzR"
     w <-msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
     if (!dir.exists(archdir)) dir.create(archdir)
     fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
-    msmsWorkflow(w, mode=mode, steps=2,archivename=fn_arch)
+    msmsWorkflow(w, mode=mode, steps=2:8,archivename=fn_arch)
 }
