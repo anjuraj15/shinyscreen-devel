@@ -83,3 +83,5 @@ rmbmix.single<-function(fn_data,stgs_alist,fn_cmpd_list,wd,mode,readMethod="mzR"
     fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
     msmsWorkflow(w, mode=mode, steps=2:8,archivename=fn_arch)
 }
+
+rmbmix<- Vectorize(rmbmix.single,vectorize.args=c("fn_data","stgs_alist"))
