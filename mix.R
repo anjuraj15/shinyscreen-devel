@@ -81,7 +81,24 @@ rmbmix.single<-function(fn_data,stgs_alist,fn_cmpd_list,wd,mode,readMethod="mzR"
     w <-msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
     if (!dir.exists(archdir)) dir.create(archdir)
     fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
-    msmsWorkflow(w, mode=mode, steps=2:8,archivename=fn_arch)
+    w<-msmsWorkflow(w, mode=mode, steps=2:8,archivename=fn_arch)
+    mb<-newMbWorkspace(w)
+    mb<-resetInfolists(mb)
+    ## loadInfolists
+    ## addPeaks
+    bits<-strsplit(fn_data,split="\\.")[[1]]
+    fn_info<-if (length(bits)> 1) paste(head(bits,-1),collapse=".") else fn_data
+    infodir<-fn_info
+    fn_info<-paste(archdir,"/",fn_info,".csv",sep='')
+    mb<-mbWorkflow(mb,infolist_path=fn_info)
+    list(w=w,mb=mb)
 }
 
-rmbmix<- Vectorize(rmbmix.single,vectorize.args=c("fn_data","stgs_alist"))
+
+rmbmix.mb2.single<-function(mb,infodir) {
+    mb <- resetInfolists(mb)
+    mb <- loadInfolists(mb,infodir)
+    mbWorkflow(mb)
+}
+rmbmix.mb2<-Vectorize(rmbmix.mb2.single,vectorize.args=c("mb","infodir"),SIMPLIFY=F)
+rmbmix<- Vectorize(rmbmix.single,vectorize.args=c("fn_data","stgs_alist"),SIMPLIFY=F)
