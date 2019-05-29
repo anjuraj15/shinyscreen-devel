@@ -1,6 +1,6 @@
 ##' Paste with no separator.
 ##'
-##' .. content for \details{} ..
+##' 
 ##' @title Paste With No Separator
 ##' @param ... Strings to paste together.
 ##' @return Pasted string.
@@ -66,7 +66,7 @@ mb.prep<-function(w,rdir=".") {
 ##' objects. FOR THE RECORD: writing documentation is boring. Anyway,
 ##' record results in the info subfolder of each data subdir.
 ##'
-##' .. content for \details{} ..
+##' 
 ##' @title Perform the Mass Bank workflow
 ##' @param mb The list of prepared mbWorkspace objects.
 ##' @param rdir Root data dir.

@@ -177,7 +177,7 @@ stripext<-function(fn) {
 
 ##' Interface to vectorised spectral workflow.
 ##'
-##' .. content for \details{} ..
+##' 
 ##' @title Vectorised Spectral Workflow.
 ##' @param fn_data A sequence of mzML input files.
 ##' @param stgs_alist A list of named list of settings, or a list of
@@ -198,7 +198,7 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
     
 ##' Interface to vectorised Mass Bank workflow.
 ##'
-##' .. content for \details{} ..
+##' 
 ##' @title Vectorised Mass Bank Workflow
 ##' @param mb List of mass bank workflow objects
 ##' @param infodir List of subdirs containing info lists.
