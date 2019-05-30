@@ -34,7 +34,7 @@ attch<-function(...) paste(...,sep='')
 ##' @export
 sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".") {
  
-    mkdir(rdir)
+    no_drama_mkdir(rdir)
     wdirs<-sapply(basename(fn_data),function(nm) file.path(rdir,stripext(nm)))
     sapply(wdirs,mkdir)
     stgs<-sapply(basename(wdirs),function (nm) paste(nm,"yml",sep='.'))
