@@ -191,7 +191,7 @@ stripext<-function(fn) {
 ##'     from data filenames.
 ##' @author Todor Kondić
 v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive") {
-    f<-Vectorize(single,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
+    f<-Vectorize(single.sw,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
     x<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir)
     names(x)<-basename(fn_data)
     x}
