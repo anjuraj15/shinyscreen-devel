@@ -19,9 +19,6 @@ Perform the Mass Bank workflow on the prepared mbWorkspace
 objects. FOR THE RECORD: writing documentation is boring. Anyway,
 record results in the info subfolder of each data subdir.
 }
-\details{
-.. content for \details{} ..
-}
 \author{
 Todor Kondić
 }

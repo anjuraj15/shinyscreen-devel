@@ -30,9 +30,6 @@ from data filenames.
 \description{
 Interface to vectorised spectral workflow.
 }
-\details{
-.. content for \details{} ..
-}
 \author{
 Todor Kondić
 }

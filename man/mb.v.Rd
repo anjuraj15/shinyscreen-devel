@@ -20,9 +20,6 @@ from the input mb sequence.
 \description{
 Interface to vectorised Mass Bank workflow.
 }
-\details{
-.. content for \details{} ..
-}
 \author{
 Todor Kondić
 }

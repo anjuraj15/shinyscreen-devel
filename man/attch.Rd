@@ -15,9 +15,6 @@ Pasted string.
 \description{
 Paste with no separator.
 }
-\details{
-.. content for \details{} ..
-}
 \author{
 Todor Kondić
 }

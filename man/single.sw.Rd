@@ -31,7 +31,7 @@ workflow execution.}
 MsmsWorkspace object.
 }
 \description{
-RMassBank Spectral Workflow on a Single Compound Mixture
+Runs a compound mixture workflow on a single mzML file.
 }
 \author{
 Todor Kondić

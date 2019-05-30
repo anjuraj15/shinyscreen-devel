@@ -67,7 +67,7 @@ gen_comp_list<-function(src_fn,dest_fn) {
     length(nms)
 }
 
-##'
+##' Runs a compound mixture workflow on a single mzML file.
 ##' 
 ##' @title RMassBank Spectral Workflow on a Single Compound Mixture
 ##' @param fn_data A mzML data file.
