@@ -36,7 +36,7 @@ sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".") {
  
     no_drama_mkdir(rdir)
     wdirs<-sapply(basename(fn_data),function(nm) file.path(rdir,stripext(nm)))
-    sapply(wdirs,mkdir)
+    sapply(wdirs,no_drama_mkdir)
     stgs<-sapply(basename(wdirs),function (nm) paste(nm,"yml",sep='.'))
     v(fn_data,stgs,wdirs,fn_cmpd_list,mode)
 }
@@ -55,7 +55,7 @@ sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".") {
 ##' @export
 mb.prep<-function(w,rdir=".") {
     idir<-function(n) file.path(rdir,stripext(n))
-    sapply(names(w),function (n) mkdir(file.path(idir(n),"info")))
+    sapply(names(w),function (n) no_drama_mkdir(file.path(idir(n),"info")))
     fn_info<-sapply(names(w),function (n) file.path(idir(n),"info",attch(n,'.info.csv')))
     fn_stgs<-sapply(names(w),function(n) file.path(idir(n),attch(n,'.ini')))
     mb.prep.v(w,fn_info,fn_stgs)
