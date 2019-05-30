@@ -1,3 +1,7 @@
+stripext<-function(fn) {
+    bits<-strsplit(fn,split="\\.")[[1]]
+    if (length(bits)> 1) paste(head(bits,-1),collapse=".") else fn}
+
 ##' Create directories without drama.
 ##'
 ##' 
@@ -162,16 +166,18 @@ mb.prep.v<-function(w,fn_info,fn_stgs) {
 ##' @author Todor Kondić
 mb.single<-function(mb,infodir,fn_stgs) {
     RMassBank::loadRmbSettings(fn_stgs)
+    
     mb <- RMassBank::resetInfolists(mb)
     mb <- RMassBank::loadInfolists(mb,infodir)
     ## loadInfolists
     ## addPeaks
-    RMassBank::mbWorkflow(mb,step=1:8)
+    prevd<-setwd(infodir)
+    res<-RMassBank::mbWorkflow(mb,step=1:8)
+    setwd(prevd)
+    res
 }
 
-stripext<-function(fn) {
-    bits<-strsplit(fn,split="\\.")[[1]]
-    if (length(bits)> 1) paste(head(bits,-1),collapse=".") else fn}
+
 
 
 
