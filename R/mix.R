@@ -117,7 +117,7 @@ single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",arc
     archdir<-file.path(wd,archdir)
     if (!dir.exists(archdir)) dir.create(archdir)
     fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
-    RMassBank::msmsWorkflow(w, mode=mode, steps=2:8,archivename=fn_arch)
+    RMassBank::msmsWorkflow(w, mode=mode, steps=2:lastStep,archivename=fn_arch)
 }
 
 
