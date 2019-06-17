@@ -86,9 +86,10 @@ gen_comp_list<-function(src_fn,dest_fn) {
 ##'     documentation of `msmsRead` for details.
 ##' @param archdir The directory to store R objects created during
 ##'     workflow execution.
+##' @param lastStep The last step in the workflow. Default is eight.
 ##' @return MsmsWorkspace object.
 ##' @author Todor Kondić
-single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive") {
+single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8) {
     
     require(RMassBank)
     require(yaml)
