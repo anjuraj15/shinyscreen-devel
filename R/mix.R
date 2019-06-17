@@ -202,6 +202,32 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
     x<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir)
     names(x)<-basename(fn_data)
     x}
+
+##' Interface to parallel spectral workflow.
+##'
+##' 
+##' @title Parallel Spectral Workflow.
+##' @param fn_data A sequence of mzML input files.
+##' @param stgs_alist A list of named list of settings, or a list of
+##'     filenames of YAML files containing the settings.
+##' @param wd The list of working directories.
+##' @param fn_cmpd_list The compound list characterising the mixtures.
+##' @param mode Same as in msmsRead.
+##' @param readMethod Same as in msmsRead.
+##' @param archdir Name of the archive.
+##' @param cl Cluster.
+##' @return A named list of spectral workspaces. The names are derived
+##'     from data filenames.
+##' @author Todor Kondić
+p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",cl=NULL) {
+    f<-function(fn,stgs,wd) {
+        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir)
+    }
+        
+    x<-parallel::clusterMap(cl,f,fn_data,stgs_alist,wd)
+    names(x)<-basename(fn_data)
+    x}
+
     
 ##' Interface to vectorised Mass Bank workflow.
 ##'
@@ -218,3 +244,4 @@ mb.v<-function(mb,infodir,fn_stgs) {
     x<-f(mb,infodir,fn_stgs)
     names(x)<-names(mb)
     x}
+
