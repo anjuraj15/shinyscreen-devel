@@ -29,16 +29,18 @@ attch<-function(...) paste(...,sep='')
 ##' @param fn_cmpd_list Compound list.
 ##' @param mode as in msmsRead.
 ##' @param rdir The root data directory.
+##' @param combine If TRUE, use combineMultiplicies to merge
+##'     workspaces corresponding to different collisional energies.
 ##' @return A named list of msmsWorkspace objects.
 ##' @author Todor Kondić
 ##' @export
-sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".") {
+sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".",combine=F) {
  
     no_drama_mkdir(rdir)
     wdirs<-sapply(basename(fn_data),function(nm) file.path(rdir,stripext(nm)))
     sapply(wdirs,no_drama_mkdir)
     stgs<-sapply(basename(wdirs),function (nm) paste(nm,"yml",sep='.'))
-    v(fn_data,stgs,wdirs,fn_cmpd_list,mode)
+    v(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
 }
 
 ##' Creates and prepares mbWorkspace objects before the full workflow

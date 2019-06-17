@@ -5,7 +5,7 @@
 \title{Vectorised Spectral Workflow.}
 \usage{
 v(fn_data, stgs_alist, wd, fn_cmpd_list, mode, readMethod = "mzR",
-  archdir = "archive", lastStep = 8)
+  archdir = "archive", lastStep = 8, combine = F)
 }
 \arguments{
 \item{fn_data}{A sequence of mzML input files.}
@@ -24,6 +24,9 @@ filenames of YAML files containing the settings.}
 \item{archdir}{Name of the archive.}
 
 \item{lastStep}{The last step of the spectral workflow.}
+
+\item{combine}{If TRUE, use combineMultiplicies to merge
+workspaces corresponding to different collisional energies.}
 }
 \value{
 A named list of spectral workspaces. The names are derived

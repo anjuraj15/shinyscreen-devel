@@ -4,7 +4,7 @@
 \alias{sw.do}
 \title{Perform MassBank Workflow on Multiple Compound Mixtures}
 \usage{
-sw.do(fn_data, fn_cmpd_list, mode, rdir = ".")
+sw.do(fn_data, fn_cmpd_list, mode, rdir = ".", combine = F)
 }
 \arguments{
 \item{fn_data}{List of mzML data filenames to be processed.}
@@ -14,6 +14,9 @@ sw.do(fn_data, fn_cmpd_list, mode, rdir = ".")
 \item{mode}{as in msmsRead.}
 
 \item{rdir}{The root data directory.}
+
+\item{combine}{If TRUE, use combineMultiplicies to merge
+workspaces corresponding to different collisional energies.}
 }
 \value{
 A named list of msmsWorkspace objects.

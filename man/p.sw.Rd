@@ -5,7 +5,7 @@
 \title{Parallel Spectral Workflow.}
 \usage{
 p.sw(fn_data, stgs_alist, wd, fn_cmpd_list, mode, readMethod = "mzR",
-  archdir = "archive", lastStep = 8, cl = NULL)
+  archdir = "archive", lastStep = 8, combine = F, cl = NULL)
 }
 \arguments{
 \item{fn_data}{A sequence of mzML input files.}
@@ -24,6 +24,9 @@ filenames of YAML files containing the settings.}
 \item{archdir}{Name of the archive.}
 
 \item{lastStep}{The last step in spectral workflow.}
+
+\item{combine}{If TRUE, use combineMultiplicies to merge
+workspaces corresponding to different collisional energies.}
 
 \item{cl}{Cluster.}
 }

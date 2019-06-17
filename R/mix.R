@@ -117,7 +117,7 @@ single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",arc
     archdir<-file.path(wd,archdir)
     if (!dir.exists(archdir)) dir.create(archdir)
     fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
-    RMassBank::msmsWorkflow(w, mode=mode, steps=2:lastStep,archivename=fn_arch)
+    RMassBank::msmsWorkflow(w, mode=mode, steps=2:7,archivename=fn_arch)
 }
 
 
@@ -194,15 +194,26 @@ mb.single<-function(mb,infodir,fn_stgs) {
 ##' @param mode Same as in msmsRead.
 ##' @param readMethod Same as in msmsRead.
 ##' @param archdir Name of the archive.
-##' @param lastStep The last step of the spectral workflow. 
+##' @param lastStep The last step of the spectral workflow.
+##' @param combine If TRUE, use combineMultiplicies to merge
+##'     workspaces corresponding to different collisional energies.
 ##' @return A named list of spectral workspaces. The names are derived
 ##'     from data filenames.
 ##' @author Todor Kondić
-v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8) {
+v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F) {
     f<-Vectorize(single.sw,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
-    x<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir)
-    names(x)<-basename(fn_data)
-    x}
+    if (combine) {
+        z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=7)
+        names(z)<-basename(fn_data)
+        zz<-RMassBank::combineMultiplicities(z)
+        fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
+        RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
+    } else {
+        z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=lastStep)
+        names(z)<-basename(fn_data)
+        z
+    }
+}
 
 ##' Interface to parallel spectral workflow.
 ##'
@@ -217,18 +228,32 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
 ##' @param readMethod Same as in msmsRead.
 ##' @param archdir Name of the archive.
 ##' @param lastStep The last step in spectral workflow.
+##' @param combine If TRUE, use combineMultiplicies to merge
+##'     workspaces corresponding to different collisional energies.
 ##' @param cl Cluster.
 ##' @return A named list of spectral workspaces. The names are derived
 ##'     from data filenames.
 ##' @author Todor Kondić
-p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,cl=NULL) {
-    f<-function(fn,stgs,wd) {
-        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep)
+p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F,cl=NULL) {
+    fnocomb<-function(fn,stgs,wd) {
+        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep=lastStep)
     }
-        
-    x<-parallel::clusterMap(cl,f,fn_data,stgs_alist,wd)
-    names(x)<-basename(fn_data)
-    x}
+    fcomb<-function(fn,stgs,wd) {
+        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep=7)
+    }
+
+    if (combine) {
+        z<-parallel::clusterMap(cl,fcomb,fn_data,stgs_alist,wd)
+        names(z)<-basename(fn_data)
+        zz<-RMassBank::combineMultiplicities(z)
+        fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
+        RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
+    } else {
+        z<-parallel::clusterMap(cl,fnocomb,fn_data,stgs_alist,wd)
+        names(z)<-basename(fn_data)
+        z
+    }
+}
 
     
 ##' Interface to vectorised Mass Bank workflow.
