@@ -41,8 +41,9 @@ sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".",combine=F,proc=F) {
     wdirs<-sapply(basename(fn_data),function(nm) file.path(rdir,stripext(nm)))
     sapply(wdirs,no_drama_mkdir)
     stgs<-sapply(basename(wdirs),function (nm) paste(nm,"yml",sep='.'))
-    cl<-parallel::makeCluster(proc)
+
     if (proc) {
+        cl<-parallel::makeCluster(proc)
         p.sw(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine,cl=cl)
     } else {
         v(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
@@ -58,6 +59,7 @@ sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".",combine=F,proc=F) {
 ##' @title Prepare mbWorkspace objects
 ##' @param w A list of spectral workspace inputs.
 ##' @param rdir Data root.
+##' @param proc Split work between this amount of processes. If FALSE
 ##' @return Named list of prepared mbWorkspace objects.
 ##' @author Todor Kondić
 ##' @export
@@ -78,12 +80,20 @@ mb.prep<-function(w,rdir=".") {
 ##' @title Perform the Mass Bank workflow
 ##' @param mb The list of prepared mbWorkspace objects.
 ##' @param rdir Root data dir.
+##' @param proc Split work between this amount of processes. If FALSE
+##'     (or, 1), run sequential.
 ##' @return The named list of processed mbWorkspace objects.
 ##' @author Todor Kondić
 ##' @export
-mb.do<-function(mb,rdir=".") {
+mb.do<-function(mb,rdir=".",proc=F) {
     idir<-function(n) file.path(rdir,stripext(n))
     infodir<-sapply(names(mb),function(n) file.path(idir(n),"info"))
     fn_stgs<-sapply(names(mb),function(n) file.path(idir(n),attch(n,'.ini')))
-    mb.v(mb,infodir,fn_stgs)
+
+    if (proc) {
+        cl<-parallel::makeCluster(proc)
+        mb.p(mb,infodir,fn <- stgs,cl=cl)
+    } else {
+        mb.v(mb,infodir,fn_stgs)
+    }
 }

@@ -272,3 +272,19 @@ mb.v<-function(mb,infodir,fn_stgs) {
     names(x)<-names(mb)
     x}
 
+##' Interface to parallelised Mass Bank workflow.
+##'
+##' 
+##' @title Parallel Mass Bank Workflow
+##' @param mb List of mass bank workflow objects
+##' @param infodir List of subdirs containing info lists.
+##' @param fn_stgs List of settings files.
+##' @param cl Cluster.
+##' @return A named list of mbWorkspace objects. The names are derived
+##'     from the input mb sequence.
+##' @author Todor Kondić
+mb.p<-function(mb,infodir,fn_stgs,cl=F) {
+    x<-parallel::clusterMap(cl=cl,mb.single,mb,infodir,fn_stgs)    
+    names(x)<-names(mb)
+    x}
+
