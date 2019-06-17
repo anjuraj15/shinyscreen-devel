@@ -31,16 +31,22 @@ attch<-function(...) paste(...,sep='')
 ##' @param rdir The root data directory.
 ##' @param combine If TRUE, use combineMultiplicies to merge
 ##'     workspaces corresponding to different collisional energies.
+##' @param proc Split work between this amount of processes. If FALSE
+##'     (or, 1), run sequential.
 ##' @return A named list of msmsWorkspace objects.
 ##' @author Todor Kondić
 ##' @export
-sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".",combine=F) {
- 
+sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".",combine=F,proc=F) {
     no_drama_mkdir(rdir)
     wdirs<-sapply(basename(fn_data),function(nm) file.path(rdir,stripext(nm)))
     sapply(wdirs,no_drama_mkdir)
     stgs<-sapply(basename(wdirs),function (nm) paste(nm,"yml",sep='.'))
-    v(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
+    cl<-parallel::makeCluster(proc)
+    if (proc) {
+        p.sw(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine,cl=cl)
+    } else {
+        v(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
+    }
 }
 
 ##' Creates and prepares mbWorkspace objects before the full workflow
