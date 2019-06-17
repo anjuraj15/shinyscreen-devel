@@ -194,10 +194,11 @@ mb.single<-function(mb,infodir,fn_stgs) {
 ##' @param mode Same as in msmsRead.
 ##' @param readMethod Same as in msmsRead.
 ##' @param archdir Name of the archive.
+##' @param lastStep The last step of the spectral workflow. 
 ##' @return A named list of spectral workspaces. The names are derived
 ##'     from data filenames.
 ##' @author Todor Kondić
-v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive") {
+v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8) {
     f<-Vectorize(single.sw,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
     x<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir)
     names(x)<-basename(fn_data)
@@ -215,13 +216,14 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
 ##' @param mode Same as in msmsRead.
 ##' @param readMethod Same as in msmsRead.
 ##' @param archdir Name of the archive.
+##' @param lastStep The last step in spectral workflow.
 ##' @param cl Cluster.
 ##' @return A named list of spectral workspaces. The names are derived
 ##'     from data filenames.
 ##' @author Todor Kondić
-p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",cl=NULL) {
+p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,cl=NULL) {
     f<-function(fn,stgs,wd) {
-        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir)
+        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep)
     }
         
     x<-parallel::clusterMap(cl,f,fn_data,stgs_alist,wd)
