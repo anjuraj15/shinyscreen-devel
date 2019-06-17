@@ -41,8 +41,9 @@ sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".",combine=F,proc=F) {
     wdirs<-sapply(basename(fn_data),function(nm) file.path(rdir,stripext(nm)))
     sapply(wdirs,no_drama_mkdir)
     stgs<-sapply(basename(wdirs),function (nm) paste(nm,"yml",sep='.'))
-    cl<-parallel::makeCluster(proc)
+
     if (proc) {
+        cl<-parallel::makeCluster(proc)
         p.sw(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine,cl=cl)
     } else {
         v(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
