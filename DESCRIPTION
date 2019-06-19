@@ -21,4 +21,5 @@ Collate:
     'run.R'
 Imports: 
     RMassBank,
-    parallel
+    parallel,
+    yaml

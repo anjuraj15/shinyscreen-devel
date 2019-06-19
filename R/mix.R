@@ -26,17 +26,36 @@ no_drama_mkdir<-function(path) {
 ##' @param file The name of the YAML specification that will be merged
 ##'     with the template Rmb settings file.
 ##' @return NULL
-##' @author Todor Kondić
 mk_sett_file<-function(sett_alist,file) {
-    require(yaml)
     tmp<-tempfile()
     RMassBank::RmbSettingsTemplate(tmp)
-    sett<-yaml.load_file(tmp)
+    sett<-yaml::yaml.load_file(tmp)
     for (nm in names(sett_alist)) {
         sett[[nm]]<-sett_alist[[nm]]
     }
-    write_yaml(x=sett,file=file)
+    yaml::write_yaml(x=sett,file=file)
     NULL
+}
+
+##' Combine RMB settings with different collisional energies into one
+##' settings file with multiple collisional energy entries.
+##'
+##' .. content for \details{} ..
+##' @title Combine RMB Settings With Different Collisional Energies
+##' @param sett_fns A list of settings files.
+##' @param fname The name of the combined file.
+##' @return fname
+##' @author Todor Kondić
+mk_combine_file<-function(sett_fns,fname) {
+    all_settings <- lapply(sett_fns,yaml::yaml.load_file)
+    comb_settings <- all_settings[[1]]
+    
+    for (n in 1:length(all_settings)) {
+        comb_settings$spectraList[[n]] <- all_settings[[n]]$spectraList[[1]]
+    }
+
+    yaml::write_yaml(x=comb_settings,fname)
+    fname
 }
 
 ##' Generate the RMassBank compound list from the input compound list
@@ -90,11 +109,8 @@ gen_comp_list<-function(src_fn,dest_fn) {
 ##' @return MsmsWorkspace object.
 ##' @author Todor Kondić
 single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8) {
-    
-    require(RMassBank)
-    require(yaml)
     ## Generate settings file and load.
-    stgs_alist<-if (is.character(stgs_alist)) yaml.load_file(stgs_alist) else stgs_alist
+    stgs_alist<-if (is.character(stgs_alist)) yaml::yaml.load_file(stgs_alist) else stgs_alist
     sfn<-file.path(wd,paste(fn_data,".ini",sep=''))
     mk_sett_file(stgs_alist,sfn)
     RMassBank::loadRmbSettings(sfn)
