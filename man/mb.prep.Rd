@@ -10,6 +10,8 @@ mb.prep(w, rdir = ".")
 \item{w}{A list of spectral workspace inputs.}
 
 \item{rdir}{Data root.}
+
+\item{proc}{Split work between this amount of processes. If FALSE}
 }
 \value{
 Named list of prepared mbWorkspace objects.

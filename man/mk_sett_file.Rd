@@ -20,6 +20,3 @@ Produce the Rmb Settings file
 Produce the Rmb Settings file based on the customisation file in
 YAML format.
 }
-\author{
-Todor Kondić
-}
