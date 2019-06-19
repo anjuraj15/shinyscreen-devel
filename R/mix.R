@@ -131,7 +131,7 @@ single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",arc
     w <- RMassBank::newMsmsWorkspace()
     ## Run the workflow.
     message(paste("Reading in file:",fn_data))
-    w <-msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
+    w <-RMassBank::msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
     archdir<-file.path(wd,archdir)
     if (!dir.exists(archdir)) dir.create(archdir)
     fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
