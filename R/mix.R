@@ -203,6 +203,10 @@ mb.single<-function(mb,infodir,fn_stgs) {
 v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F) {
     f<-Vectorize(single.sw,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
     if (combine) {
+        combdir<-"combined"
+        archdir<-file.path(combdir,archdir)
+        no_drama_mkdir(combdir)
+        no_drama_mkdir(archdir)
         z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=7)
         names(z)<-basename(fn_data)
         zz<-RMassBank::combineMultiplicities(z)
@@ -243,6 +247,10 @@ p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir=
     }
 
     if (combine) {
+        combdir<-"combined"
+        archdir<-file.path(combdir,archdir)
+        no_drama_mkdir(combdir)
+        no_drama_mkdir(archdir)
         z<-parallel::clusterMap(cl,fcomb,fn_data,stgs_alist,wd)
         names(z)<-basename(fn_data)
         zz<-RMassBank::combineMultiplicities(z)
