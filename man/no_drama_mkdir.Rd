@@ -15,6 +15,9 @@ The character string containing the input argument \code{path}.
 \description{
 Create directories without drama.
 }
+\details{
+Create directories without drama.
+}
 \author{
 Todor Kondić
 }

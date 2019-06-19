@@ -4,6 +4,7 @@ stripext<-function(fn) {
 
 ##' Create directories without drama.
 ##'
+##' Create directories without drama.
 ##' 
 ##' @title Create directories without drama
 ##' @param path Name of the directory.
@@ -26,17 +27,37 @@ no_drama_mkdir<-function(path) {
 ##' @param file The name of the YAML specification that will be merged
 ##'     with the template Rmb settings file.
 ##' @return NULL
-##' @author Todor Kondić
 mk_sett_file<-function(sett_alist,file) {
-    require(yaml)
     tmp<-tempfile()
     RMassBank::RmbSettingsTemplate(tmp)
-    sett<-yaml.load_file(tmp)
+    sett<-yaml::yaml.load_file(tmp)
     for (nm in names(sett_alist)) {
         sett[[nm]]<-sett_alist[[nm]]
     }
-    write_yaml(x=sett,file=file)
+    yaml::write_yaml(x=sett,file=file)
     NULL
+}
+
+##' Combine the RMB settings files
+##' 
+##' Combine RMB settings with different collisional energies into one
+##' settings file with multiple collisional energy entries.
+##' 
+##' @title Combine RMB Settings With Different Collisional Energies
+##' @param sett_fns A list of settings files.
+##' @param fname The name of the combined file.
+##' @return fname
+##' @author Todor Kondić
+mk_combine_file<-function(sett_fns,fname) {
+    all_settings <- lapply(sett_fns,yaml::yaml.load_file)
+    comb_settings <- all_settings[[1]]
+    
+    for (n in 1:length(all_settings)) {
+        comb_settings$spectraList[[n]] <- all_settings[[n]]$spectraList[[1]]
+    }
+
+    yaml::write_yaml(x=comb_settings,fname)
+    fname
 }
 
 ##' Generate the RMassBank compound list from the input compound list
@@ -86,14 +107,12 @@ gen_comp_list<-function(src_fn,dest_fn) {
 ##'     documentation of `msmsRead` for details.
 ##' @param archdir The directory to store R objects created during
 ##'     workflow execution.
+##' @param lastStep The last step in the workflow. Default is eight.
 ##' @return MsmsWorkspace object.
 ##' @author Todor Kondić
-single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive") {
-    
-    require(RMassBank)
-    require(yaml)
+single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8) {
     ## Generate settings file and load.
-    stgs_alist<-if (is.character(stgs_alist)) yaml.load_file(stgs_alist) else stgs_alist
+    stgs_alist<-if (is.character(stgs_alist)) yaml::yaml.load_file(stgs_alist) else stgs_alist
     sfn<-file.path(wd,paste(fn_data,".ini",sep=''))
     mk_sett_file(stgs_alist,sfn)
     RMassBank::loadRmbSettings(sfn)
@@ -109,14 +128,14 @@ single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",arc
     write.csv(x=df_table,file=fn_table,row.names=F)
 
     ## Make empty workspace.
-    w <- newMsmsWorkspace()
+    w <- RMassBank::newMsmsWorkspace()
     ## Run the workflow.
     message(paste("Reading in file:",fn_data))
-    w <-msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
+    w <-RMassBank::msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
     archdir<-file.path(wd,archdir)
     if (!dir.exists(archdir)) dir.create(archdir)
     fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
-    RMassBank::msmsWorkflow(w, mode=mode, steps=2:8,archivename=fn_arch)
+    RMassBank::msmsWorkflow(w, mode=mode, steps=2:lastStep,archivename=fn_arch)
 }
 
 
@@ -193,14 +212,95 @@ mb.single<-function(mb,infodir,fn_stgs) {
 ##' @param mode Same as in msmsRead.
 ##' @param readMethod Same as in msmsRead.
 ##' @param archdir Name of the archive.
+##' @param lastStep The last step of the spectral workflow.
+##' @param combine If TRUE, use combineMultiplicies to merge
+##'     workspaces corresponding to different collisional energies.
 ##' @return A named list of spectral workspaces. The names are derived
 ##'     from data filenames.
 ##' @author Todor Kondić
-v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive") {
+v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F) {
+    idir<-function(n) file.path(".",stripext(n))
     f<-Vectorize(single.sw,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
-    x<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir)
-    names(x)<-basename(fn_data)
-    x}
+    rootdir <- getwd()
+    if (combine) {
+        z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=7)
+        names(z)<-basename(fn_data)
+        zz<-RMassBank::combineMultiplicities(z)
+
+        combdir<-"combined"
+        archdir<-file.path(rootdir,combdir,archdir)
+        no_drama_mkdir(combdir)
+        no_drama_mkdir(archdir)
+        fn_arch<-file.path(archdir,"archive")
+        fn_comb_stgs <- file.path(rootdir,combdir,paste(combdir,".mzML.ini",sep=''))
+        ddirs <- sapply(names(z),idir)
+        stgs_fls <- sapply(ddirs,function(x) file.path(x,paste(x,".mzML.ini",sep='')))
+        mk_combine_file(stgs_fls,fn_comb_stgs)
+
+        res<-list(RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch))
+        names(res)<-paste(combdir,".mzML",sep='') #Clearly a hack.
+        res
+    } else {
+        z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=lastStep)
+        names(z)<-basename(fn_data)
+        z
+    }
+}
+
+##' Interface to parallel spectral workflow.
+##'
+##' 
+##' @title Parallel Spectral Workflow.
+##' @param fn_data A sequence of mzML input files.
+##' @param stgs_alist A list of named list of settings, or a list of
+##'     filenames of YAML files containing the settings.
+##' @param wd The list of working directories.
+##' @param fn_cmpd_list The compound list characterising the mixtures.
+##' @param mode Same as in msmsRead.
+##' @param readMethod Same as in msmsRead.
+##' @param archdir Name of the archive.
+##' @param lastStep The last step in spectral workflow.
+##' @param combine If TRUE, use combineMultiplicies to merge
+##'     workspaces corresponding to different collisional energies.
+##' @param cl Cluster.
+##' @return A named list of spectral workspaces. The names are derived
+##'     from data filenames.
+##' @author Todor Kondić
+p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F,cl=NULL) {
+    idir<-function(n) file.path(".",stripext(n))
+    fnocomb<-function(fn,stgs,wd) {
+        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep=lastStep)
+    }
+    fcomb<-function(fn,stgs,wd) {
+        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep=7)
+    }
+
+    if (combine) {
+        rootdir <- getwd()
+        z<-parallel::clusterMap(cl,fcomb,fn_data,stgs_alist,wd)
+        names(z)<-basename(fn_data)
+        zz<-RMassBank::combineMultiplicities(z)
+
+        combdir<-"combined"
+        archdir<-file.path(rootdir,combdir,archdir)
+        no_drama_mkdir(combdir)
+        no_drama_mkdir(archdir)
+        fn_arch<-file.path(archdir,"archive")
+        fn_comb_stgs <- file.path(rootdir,combdir,paste(combdir,".mzML.ini",sep=''))
+        ddirs <- sapply(names(z),idir)
+        stgs_fls <- sapply(ddirs,function(x) file.path(x,paste(x,".mzML.ini",sep='')))
+        mk_combine_file(stgs_fls,fn_comb_stgs)
+        
+        res<-list(RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch))
+        names(res)<-paste(combdir,".yml",sep='') #Clearly a hack.
+        res
+    } else {
+        z<-parallel::clusterMap(cl,fnocomb,fn_data,stgs_alist,wd)
+        names(z)<-basename(fn_data)
+        z
+    }
+}
+
     
 ##' Interface to vectorised Mass Bank workflow.
 ##'
@@ -217,3 +317,20 @@ mb.v<-function(mb,infodir,fn_stgs) {
     x<-f(mb,infodir,fn_stgs)
     names(x)<-names(mb)
     x}
+
+##' Interface to parallelised Mass Bank workflow.
+##'
+##' 
+##' @title Parallel Mass Bank Workflow
+##' @param mb List of mass bank workflow objects
+##' @param infodir List of subdirs containing info lists.
+##' @param fn_stgs List of settings files.
+##' @param cl Cluster.
+##' @return A named list of mbWorkspace objects. The names are derived
+##'     from the input mb sequence.
+##' @author Todor Kondić
+mb.p<-function(mb,infodir,fn_stgs,cl=F) {
+    x<-parallel::clusterMap(cl=cl,mb.single,mb,infodir,fn_stgs)    
+    names(x)<-names(mb)
+    x}
+

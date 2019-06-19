@@ -5,7 +5,7 @@
 \title{RMassBank Spectral Workflow on a Single Compound Mixture}
 \usage{
 single.sw(fn_data, stgs_alist, wd, fn_cmpd_list, mode,
-  readMethod = "mzR", archdir = "archive")
+  readMethod = "mzR", archdir = "archive", lastStep = 8)
 }
 \arguments{
 \item{fn_data}{A mzML data file.}
@@ -26,6 +26,8 @@ documentation of \code{msmsRead} for details.}
 
 \item{archdir}{The directory to store R objects created during
 workflow execution.}
+
+\item{lastStep}{The last step in the workflow. Default is eight.}
 }
 \value{
 MsmsWorkspace object.

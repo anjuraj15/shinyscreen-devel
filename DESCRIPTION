@@ -20,4 +20,6 @@ Collate:
     'mix.R'
     'run.R'
 Imports: 
-    RMassBank
+    RMassBank,
+    parallel,
+    yaml
