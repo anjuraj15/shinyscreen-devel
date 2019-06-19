@@ -15,11 +15,11 @@ mk_combine_file(sett_fns, fname)
 fname
 }
 \description{
-Combine RMB settings with different collisional energies into one
-settings file with multiple collisional energy entries.
+Combine the RMB settings files
 }
 \details{
-.. content for \details{} ..
+Combine RMB settings with different collisional energies into one
+settings file with multiple collisional energy entries.
 }
 \author{
 Todor Kondić
