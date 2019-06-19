@@ -212,7 +212,7 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
         no_drama_mkdir(combdir)
         no_drama_mkdir(archdir)
         fn_arch<-file.path(archdir,"archive")
-        res<-RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
+        res<-list(RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch))
         names(res)<-paste(combdir,".yml",sep='') #Clearly a hack.
         res
     } else {
@@ -260,7 +260,7 @@ p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir=
         no_drama_mkdir(combdir)
         no_drama_mkdir(archdir)
         fn_arch<-file.path(archdir,"archive")
-        res<-RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
+        res<-list(RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch))
         names(res)<-paste(combdir,".yml",sep='') #Clearly a hack.
         res
     } else {
