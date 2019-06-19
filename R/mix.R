@@ -128,7 +128,7 @@ single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",arc
     write.csv(x=df_table,file=fn_table,row.names=F)
 
     ## Make empty workspace.
-    w <- newMsmsWorkspace()
+    w <- RMassBank::newMsmsWorkspace()
     ## Run the workflow.
     message(paste("Reading in file:",fn_data))
     w <-msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
