@@ -4,6 +4,7 @@ stripext<-function(fn) {
 
 ##' Create directories without drama.
 ##'
+##' Create directories without drama.
 ##' 
 ##' @title Create directories without drama
 ##' @param path Name of the directory.
