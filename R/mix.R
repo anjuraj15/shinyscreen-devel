@@ -38,7 +38,7 @@ mk_sett_file<-function(sett_alist,file) {
     NULL
 }
 
-##' Comgine the RMB settings files
+##' Combine the RMB settings files
 ##' 
 ##' Combine RMB settings with different collisional energies into one
 ##' settings file with multiple collisional energy entries.
