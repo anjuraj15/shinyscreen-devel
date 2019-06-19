@@ -219,7 +219,7 @@ mb.single<-function(mb,infodir,fn_stgs) {
 ##'     from data filenames.
 ##' @author Todor Kondić
 v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F) {
-    idir<-function(n) file.path(rdir,stripext(n))
+    idir<-function(n) file.path(".",stripext(n))
     f<-Vectorize(single.sw,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
     rootdir <- getwd()
     if (combine) {
@@ -267,6 +267,7 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
 ##'     from data filenames.
 ##' @author Todor Kondić
 p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F,cl=NULL) {
+    idir<-function(n) file.path(".",stripext(n))
     fnocomb<-function(fn,stgs,wd) {
         single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep=lastStep)
     }
@@ -279,12 +280,17 @@ p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir=
         z<-parallel::clusterMap(cl,fcomb,fn_data,stgs_alist,wd)
         names(z)<-basename(fn_data)
         zz<-RMassBank::combineMultiplicities(z)
-        
+
         combdir<-"combined"
         archdir<-file.path(rootdir,combdir,archdir)
         no_drama_mkdir(combdir)
         no_drama_mkdir(archdir)
         fn_arch<-file.path(archdir,"archive")
+        fn_comb_stgs <- file.path(rootdir,combdir,paste(combdir,".mzML.ini",sep=''))
+        ddirs <- sapply(names(z),idir)
+        stgs_fls <- sapply(ddirs,function(x) file.path(x,paste(x,".mzML.ini",sep='')))
+        mk_combine_file(stgs_fls,fn_comb_stgs)
+        
         res<-list(RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch))
         names(res)<-paste(combdir,".yml",sep='') #Clearly a hack.
         res
