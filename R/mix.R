@@ -212,7 +212,9 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
         no_drama_mkdir(combdir)
         no_drama_mkdir(archdir)
         fn_arch<-file.path(archdir,"archive")
-        RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
+        res<-RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
+        names(res)<-paste(combdir,".yml",sep='') #Clearly a hack.
+        res
     } else {
         z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=lastStep)
         names(z)<-basename(fn_data)
@@ -258,7 +260,9 @@ p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir=
         no_drama_mkdir(combdir)
         no_drama_mkdir(archdir)
         fn_arch<-file.path(archdir,"archive")
-        RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
+        res<-RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
+        names(res)<-paste(combdir,".yml",sep='') #Clearly a hack.
+        res
     } else {
         z<-parallel::clusterMap(cl,fnocomb,fn_data,stgs_alist,wd)
         names(z)<-basename(fn_data)
