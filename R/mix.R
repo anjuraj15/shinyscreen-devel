@@ -202,15 +202,17 @@ mb.single<-function(mb,infodir,fn_stgs) {
 ##' @author Todor Kondić
 v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F) {
     f<-Vectorize(single.sw,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
+    rootdir <- getwd()
     if (combine) {
         z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=7)
         names(z)<-basename(fn_data)
         zz<-RMassBank::combineMultiplicities(z)
         combdir<-"combined"
-        archdir<-file.path(combdir,archdir)
+        archdir<-file.path(rootdir,combdir,archdir)
         no_drama_mkdir(combdir)
         no_drama_mkdir(archdir)
         fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
+        print((paste("Save in archive:",fn_arch)))
         RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
     } else {
         z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=lastStep)
@@ -247,15 +249,17 @@ p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir=
     }
 
     if (combine) {
+        rootdir <- getwd()
         z<-parallel::clusterMap(cl,fcomb,fn_data,stgs_alist,wd)
         names(z)<-basename(fn_data)
         zz<-RMassBank::combineMultiplicities(z)
         
         combdir<-"combined"
-        archdir<-file.path(combdir,archdir)
+        archdir<-file.path(rootdir,combdir,archdir)
         no_drama_mkdir(combdir)
         no_drama_mkdir(archdir)
         fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
+        print((paste("Save in archive:",fn_arch)))
         RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch)
     } else {
         z<-parallel::clusterMap(cl,fnocomb,fn_data,stgs_alist,wd)
