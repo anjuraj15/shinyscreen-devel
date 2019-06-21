@@ -92,6 +92,62 @@ gen_comp_list<-function(src_fn,dest_fn) {
     length(nms)
 }
 
+##' Generates settings file and loads it.
+##'
+##' 
+##' @title Generate and Load the RMassBank Settings File
+##' @param fn_data The mzML filename.
+##' @param stgs_alist Settings named list, or a settings filename.
+##' @param wd Directory under which results are archived.
+##' @return result of RMassBank::loadRmbSettings
+##' @author Todor Kondić
+gen_stgs_and_load <- function(fn_data,stgs,wd) {
+    wd <- normalizePath(wd)
+    fn_data <- normalizePath(fn_data)
+    stgs_alist<-if (is.character(stgs_alist)) yaml::yaml.load_file(stgs_alist) else stgs_alist
+    sfn<-file.path(wd,paste(basename(fn_data),".ini",sep=''))
+    mk_sett_file(stgs_alist,sfn)
+    RMassBank::loadRmbSettings(sfn)
+}
+
+##' Generates the RMassBank compound list and loads it.
+##'
+##' 
+##' @title Generate and Load the RMassBank Compound List
+##' @param fn_data The mzML filename.
+##' @param wd Directory under which results are archived.
+##' @return Named list. The key `fn_cmpdl` is the path of the
+##'     generated compound list and the key `n` the number of
+##'     compounds.
+##' @author Todor Kondić
+gen_cmpdl_and_load <- function(fn_data,wd,fn_cmpdl) {
+    wd <- normalizePath(wd)
+    fn_data <- normalizePath(fn_data)
+    fn_comp<-file.path(wd,paste(basename(fn_data),".comp.csv",sep=''))
+    n_cmpd<-gen_comp_list(fn_cmpd_l,fn_comp)
+    list(fn_cmpdl=fn_comp,n=n_cmpd)
+}
+
+##' Generates file table.
+##'
+##' 
+##' @title Generate and Load the RMassBank Settings File
+##' @param fn_data The mzML filename.
+##' @param n_cmpd Number of compounds.
+##' @param wd Directory under which results are archived.
+##' @return NULL
+##' @author Todor Kondić
+gen_file_table <- function(fn_data,n_cmpd,wd) {
+    wd <- normalizePath(wd)
+    fn_data <- normalizePath(fn_data)
+    df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
+    fn_table<-file.path(wd,paste("fn-table.",basename(fn_data),".csv",sep=''))
+    write.csv(x=df_table,file=fn_table,row.names=F)
+    NULL
+}
+
+
+
 ##' Runs a compound mixture workflow on a single mzML file.
 ##' 
 ##' @title RMassBank Spectral Workflow on a Single Compound Mixture
