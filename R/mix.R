@@ -135,7 +135,7 @@ gen_cmpdl_and_load <- function(fn_data,wd,fn_cmpdl) {
 ##' @param fn_data The mzML filename.
 ##' @param n_cmpd Number of compounds.
 ##' @param wd Directory under which results are archived.
-##' @return NULL
+##' @return File path of the file table.
 ##' @author Todor Kondić
 gen_file_table <- function(fn_data,n_cmpd,wd) {
     wd <- normalizePath(wd)
@@ -143,7 +143,7 @@ gen_file_table <- function(fn_data,n_cmpd,wd) {
     df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
     fn_table<-file.path(wd,paste("fn-table.",basename(fn_data),".csv",sep=''))
     write.csv(x=df_table,file=fn_table,row.names=F)
-    NULL
+    fn_table
 }
 
 
@@ -327,7 +327,7 @@ presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EI
     n_cmpd <- x$n
 
     ## Generate file table.
-    gen_file_table(fn_data,n_cmpd,wd)
+    fn_table <- gen_file_table(fn_data,n_cmpd,wd)
     
     curd <- setwd(wd)
     res <- ReSOLUTION::RMB_EIC_prescreen(archive_name=nm_arch,RMB_mode=mode,
