@@ -97,16 +97,16 @@ gen_comp_list<-function(src_fn,dest_fn) {
 ##' 
 ##' @title Generate and Load the RMassBank Settings File
 ##' @param fn_data The mzML filename.
-##' @param stgs_alist Settings named list, or a settings filename.
+##' @param stgs Settings named list, or a settings filename.
 ##' @param wd Directory under which results are archived.
 ##' @return result of RMassBank::loadRmbSettings
 ##' @author Todor Kondić
 gen_stgs_and_load <- function(fn_data,stgs,wd) {
     wd <- normalizePath(wd)
     fn_data <- normalizePath(fn_data)
-    stgs_alist<-if (is.character(stgs_alist)) yaml::yaml.load_file(stgs_alist) else stgs_alist
+    stgs<-if (is.character(stgs)) yaml::yaml.load_file(stgs) else stgs
     sfn<-file.path(wd,paste(basename(fn_data),".ini",sep=''))
-    mk_sett_file(stgs_alist,sfn)
+    mk_sett_file(stgs,sfn)
     RMassBank::loadRmbSettings(sfn)
 }
 
