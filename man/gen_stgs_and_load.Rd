@@ -9,9 +9,9 @@ gen_stgs_and_load(fn_data, stgs, wd)
 \arguments{
 \item{fn_data}{The mzML filename.}
 
-\item{wd}{Directory under which results are archived.}
+\item{stgs}{Settings named list, or a settings filename.}
 
-\item{stgs_alist}{Settings named list, or a settings filename.}
+\item{wd}{Directory under which results are archived.}
 }
 \value{
 result of RMassBank::loadRmbSettings

@@ -13,6 +13,9 @@ gen_file_table(fn_data, n_cmpd, wd)
 
 \item{wd}{Directory under which results are archived.}
 }
+\value{
+File path of the file table.
+}
 \description{
 Generates file table.
 }
