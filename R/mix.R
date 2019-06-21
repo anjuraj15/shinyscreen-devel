@@ -124,7 +124,7 @@ gen_cmpdl_and_load <- function(fn_data,wd,fn_cmpdl) {
     wd <- normalizePath(wd)
     fn_data <- normalizePath(fn_data)
     fn_comp<-file.path(wd,paste(basename(fn_data),".comp.csv",sep=''))
-    n_cmpd<-gen_comp_list(fn_cmpd_l,fn_comp)
+    n_cmpd<-gen_comp_list(fn_cmpdl,fn_comp)
     list(fn_cmpdl=fn_comp,n=n_cmpd)
 }
 
