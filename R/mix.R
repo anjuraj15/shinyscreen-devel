@@ -328,7 +328,10 @@ presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EI
 
     ## Generate file table.
     fn_table <- gen_file_table(fn_data,n_cmpd,wd)
-    
+
+    print(fn_comp)
+    print(n_cmpd)
+    print(fn_table)
     curd <- setwd(wd)
     res <- ReSOLUTION::RMB_EIC_prescreen(archive_name=nm_arch,RMB_mode=mode,
                                   FileList=fn_table,
