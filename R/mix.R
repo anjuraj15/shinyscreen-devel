@@ -318,22 +318,16 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
 ##' @return result of RMB_EIC_Prescreen
 ##' @author Todor Kondić
 presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001,nm_arch="archive") {
-    ## Generate settings file and load.
-    wd <- normalizePath(wd)
-    fn_data <- normalizePath(fn_data)
-    stgs_alist<-if (is.character(stgs_alist)) yaml::yaml.load_file(stgs_alist) else stgs_alist
-    sfn<-file.path(wd,paste(basename(fn_data),".ini",sep=''))
-    mk_sett_file(stgs_alist,sfn)
-    RMassBank::loadRmbSettings(sfn)
+    gen_stgs_and_load(fn_data,stgs_alist,wd)
     
     ## Generate and load the compound list.
-    fn_comp<-file.path(wd,paste(basename(fn_data),".comp.csv",sep=''))
-    n_cmpd<-gen_comp_list(fn_cmpd_l,fn_comp)
+    x <- gen_cmpdl_and_load(fn_data,wd,fn_cmpd_l)
+    fn_comp <- x$fn_cmpdl
+    n_cmpd <- x$n
 
     ## Generate file table.
-    df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
-    fn_table<-file.path(wd,paste("fn-table.",basename(fn_data),".csv",sep=''))
-    write.csv(x=df_table,file=fn_table,row.names=F)
+    gen_file_table(fn_data,n_cmpd,wd)
+    
     curd <- setwd(wd)
     res <- ReSOLUTION::RMB_EIC_prescreen(archive_name=nm_arch,RMB_mode=mode,
                                   FileList=fn_table,
