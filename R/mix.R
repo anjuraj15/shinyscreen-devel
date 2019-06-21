@@ -247,6 +247,51 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
     }
 }
 
+##' Wrapper for a single prescreening call. Produces output in the
+##' usual mix method places.
+##'
+##' @title Wrapper for RMB_EIC_Prescreen
+##' @param fn_data The mzML filename.
+##' @param stgs_alist Settings named list, or a settings filename.
+##' @param wd Directory under which results are archived.
+##' @param mode RMB mode. 
+##' @param fn_cmpd_l Filename of the compound list.
+##' @param ppm_lim_fine The ppm_limit_fine argument to RMB_EIC_Prescreen
+##' @param EIC_limit Passed down to RMB_EIC_Prescreen.
+##' @param nm_arch Archive prefix.
+##' @return result of RMB_EIC_Prescreen
+##' @author Todor Kondić
+presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001,nm_arch="archive") {
+    ## Generate settings file and load.
+    wd <- normalizePath(wd)
+    fn_data <- normalizePath(fn_data)
+    stgs_alist<-if (is.character(stgs_alist)) yaml::yaml.load_file(stgs_alist) else stgs_alist
+    sfn<-file.path(wd,paste(basename(fn_data),".ini",sep=''))
+    mk_sett_file(stgs_alist,sfn)
+    RMassBank::loadRmbSettings(sfn)
+    
+    ## Generate and load the compound list.
+    fn_comp<-file.path(wd,paste(basename(fn_data),".comp.csv",sep=''))
+    n_cmpd<-gen_comp_list(fn_cmpd_l,fn_comp)
+
+    ## Generate file table.
+    df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
+    fn_table<-file.path(wd,paste("fn-table.",basename(fn_data),".csv",sep=''))
+    write.csv(x=df_table,file=fn_table,row.names=F)
+    curd <- setwd(wd)
+    res <- ReSOLUTION::RMB_EIC_prescreen(archive_name=nm_arch,RMB_mode=mode,
+                                  FileList=fn_table,
+                                  cmpd_list=fn_comp,
+                                  ppm_limit_fine=ppm_lim_fine,
+                                  EIC_limit=EIC_limit)
+    setwd(curd)
+    res
+
+}
+
+
+
+
 ##' Interface to parallel spectral workflow.
 ##'
 ##' 
@@ -333,4 +378,5 @@ mb.p<-function(mb,infodir,fn_stgs,cl=F) {
     x<-parallel::clusterMap(cl=cl,mb.single,mb,infodir,fn_stgs)    
     names(x)<-names(mb)
     x}
+
 
