@@ -317,6 +317,7 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
 ##' @param nm_arch Archive prefix.
 ##' @return result of RMB_EIC_Prescreen
 ##' @author Todor Kondić
+##' @export
 presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001,nm_arch="archive") {
     gen_stgs_and_load(fn_data,stgs_alist,wd)
     
