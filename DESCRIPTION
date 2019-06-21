@@ -22,4 +22,5 @@ Collate:
 Imports: 
     RMassBank,
     parallel,
-    yaml
+    yaml,
+    ReSOLUTION
