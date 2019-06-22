@@ -107,7 +107,8 @@ gen_stgs_and_load <- function(fn_data,stgs,wd) {
     stgs<-if (is.character(stgs)) yaml::yaml.load_file(stgs) else stgs
     sfn<-file.path(wd,paste(basename(fn_data),".ini",sep=''))
     mk_sett_file(stgs,sfn)
-    RMassBank::loadRmbSettings(sfn)
+    ## RMassBank::loadRmbSettings(sfn)
+    sfn
 }
 
 ##' Generates the RMassBank compound list and loads it.
@@ -396,8 +397,8 @@ RMB_EIC_prescreen_intrn <- function (archive_name, RMB_mode, FileList, cmpd_list
 ##' @author Todor Kondić
 ##' @export
 presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001,nm_arch="archive") {
-    gen_stgs_and_load(fn_data,stgs_alist,wd)
-    
+    sfn <- gen_stgs_and_load(fn_data,stgs_alist,wd)
+    RMassBank::loadRmbSettings(sfn)
     ## Generate and load the compound list.
     x <- gen_cmpdl_and_load(fn_data,wd,fn_cmpd_l)
     fn_comp <- x$fn_cmpdl
