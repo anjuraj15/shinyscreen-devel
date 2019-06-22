@@ -303,6 +303,83 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
     }
 }
 
+
+##' Prescreens. Ripped off from ReSOLUTION
+##'
+##' 
+##' @title Prescreen
+##' @param archive_name ...
+##' @param RMB_mode ...
+##' @param FileList ...
+##' @param cmpd_list ...
+##' @param ppm_limit_fine ...
+##' @param EIC_limit ...
+##' @author Emma Schymanski
+RMB_EIC_prescreen_intrn <- function (archive_name, RMB_mode, FileList, cmpd_list,
+                               ppm_limit_fine = 10, EIC_limit = 0.001) {
+    pdf_title <- paste(archive_name, "_EICscan.pdf", sep = "")
+    pdf(pdf_title)
+    n_spec <- 0
+    cmpd_RT_maxI <- ""
+    msms_found <- ""
+    rts <- 0
+    max_I_prec <- ""
+    cmpd_RT_maxI_min <- ""
+    file_list <- read.csv(FileList, stringsAsFactors = FALSE)
+    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE)
+    f <- mzR::openMSfile(file_list$Files[1])
+    for (i in 1:length(file_list$ID)) {
+        cpdID <- file_list$ID[i]
+        n_spec <- n_spec + 1
+        smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
+        if (!is.na(smiles)) {
+            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
+        }
+        else {
+            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
+        }
+        eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
+        msms_found[n_spec] <- FALSE
+        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, ppm(mz, ppm_limit_fine, 
+                                                           p = TRUE))
+        max_I_prec_index <- which.max(eic$intensity)
+        cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
+        max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
+        cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60
+        plot.new()
+        plot.window(range(eic$rt), range(eic$intensity))
+        box()
+        lines(eic$intensity ~ eic$rt)
+        for (specs in msms) {
+            if (specs@found == TRUE) {
+                df <- do.call(rbind, lapply(specs@children, function(sp) c(sp@rt, 
+                                                                           intensity = max(sp@intensity))))
+                lines(intensity ~ retentionTime, data = df, type = "h", 
+                      col = "blue")
+                msms_found[n_spec] <- TRUE
+            }
+        }
+        title(main = cpdID, xlab = "RT (sec)", ylab = "Intensity")
+        text(as.numeric(cmpd_RT_maxI[n_spec]), as.numeric(max_I_prec[n_spec]), 
+             labels = as.numeric(cmpd_RT_maxI_min[n_spec]), pos = 4)
+        axis(1)
+        axis(2)
+        gc()
+        rts[i] <- (cmpd_RT_maxI[n_spec])
+    }
+    dev.off()
+    write.csv(cbind(file_list$ID, cmpd_info$mz, cmpd_info$Name, 
+                    cmpd_RT_maxI, cmpd_RT_maxI_min, max_I_prec, msms_found), 
+              file = paste(archive_name, "_RTs_wI.csv", sep = ""), 
+              row.names = F)
+}
+
+
+
+
+
+
+
 ##' Wrapper for a single prescreening call. Produces output in the
 ##' usual mix method places.
 ##'
@@ -329,11 +406,8 @@ presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EI
     ## Generate file table.
     fn_table <- gen_file_table(fn_data,n_cmpd,wd)
 
-    print(fn_comp)
-    print(n_cmpd)
-    print(fn_table)
     curd <- setwd(wd)
-    res <- ReSOLUTION::RMB_EIC_prescreen(archive_name=nm_arch,RMB_mode=mode,
+    res <-RMB_EIC_prescreen_intrn(archive_name=nm_arch,RMB_mode=mode,
                                   FileList=fn_table,
                                   cmpd_list=fn_comp,
                                   ppm_limit_fine=ppm_lim_fine,

@@ -23,5 +23,4 @@ Imports:
     RMassBank,
     parallel,
     yaml,
-    ReSOLUTION,
     mzR
