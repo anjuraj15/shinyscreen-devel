@@ -5,7 +5,7 @@
 \title{Wrapper for RMB_EIC_Prescreen}
 \usage{
 presc.single(fn_data, stgs_alist, wd, mode, fn_cmpd_l, ppm_lim_fine = 10,
-  EIC_limit = 0.001, nm_arch = "archive")
+  EIC_limit = 0.001)
 }
 \arguments{
 \item{fn_data}{The mzML filename.}
@@ -21,8 +21,6 @@ presc.single(fn_data, stgs_alist, wd, mode, fn_cmpd_l, ppm_lim_fine = 10,
 \item{ppm_lim_fine}{The ppm_limit_fine argument to RMB_EIC_Prescreen}
 
 \item{EIC_limit}{Passed down to RMB_EIC_Prescreen.}
-
-\item{nm_arch}{Archive prefix.}
 }
 \value{
 result of RMB_EIC_Prescreen

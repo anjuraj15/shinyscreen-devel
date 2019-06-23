@@ -3,4 +3,5 @@
 export(mb.do)
 export(mb.prep)
 export(presc.single)
+export(presc.v)
 export(sw.do)

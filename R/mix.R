@@ -146,7 +146,42 @@ gen_file_table <- function(fn_data,n_cmpd,wd) {
     fn_table
 }
 
+##' Wrapper for a single prescreening call. Produces output in the
+##' usual mix method places.
+##'
+##' @title Wrapper for RMB_EIC_Prescreen
+##' @param fn_data The mzML filename.
+##' @param stgs_alist Settings named list, or a settings filename.
+##' @param wd Directory under which results are archived.
+##' @param mode RMB mode. 
+##' @param fn_cmpd_l Filename of the compound list.
+##' @param ppm_lim_fine The ppm_limit_fine argument to RMB_EIC_Prescreen
+##' @param EIC_limit Passed down to RMB_EIC_Prescreen.
+##' @return result of RMB_EIC_Prescreen
+##' @author Todor Kondić
+##' @export
+presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001) {
+    no_drama_mkdir(wd)
+    wd <- normalizePath(wd)
+    gen_stgs_and_load(fn_data,stgs_alist,wd)
+    
+    ## Generate and load the compound list.
+    x <- gen_cmpdl_and_load(fn_data,wd,fn_cmpd_l)
+    fn_comp <- x$fn_cmpdl
+    n_cmpd <- x$n
 
+    ## Generate file table.
+    fn_table <- gen_file_table(fn_data,n_cmpd,wd)
+
+    #curd <- setwd(wd)
+    res <-RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode, FileList=fn_table,
+                               cmpd_list=fn_comp,
+                               ppm_limit_fine=ppm_lim_fine,
+                               EIC_limit=EIC_limit)
+    #setwd(curd)
+    res
+
+}
 
 ##' Runs a compound mixture workflow on a single mzML file.
 ##' 
@@ -252,8 +287,24 @@ mb.single<-function(mb,infodir,fn_stgs) {
     res
 }
 
-
-
+##' Vectorises presc.single.
+##'
+##' @title Vectorises presc.single
+##' @param fn_data Sequence of mzML filenames.
+##' @param fn_cmpd_l Compound list filename.
+##' @param mode RMB mode.
+##' @param ppm_lim_fine Prescreen fine limit (see ReSOLUTION prescreening function).
+##' @param EIC_limit Prescreen EIC limit (see ReSOLUTION prescreening function).
+##' @return Nothing useful.
+##' @author Todor Kondić
+##' @export
+presc.v<-function(fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
+    idir<-function(n) file.path(".",stripext(n))
+    wd <- sapply(fn_data,idir)
+    stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
+    f<-Vectorize(presc.single,vectorize.args=c("fn_data","stgs_alist","wd"),SIMPLIFY=F)
+    f(fn_data,stgs_alist,wd,mode=mode,fn_cmpd_l=fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)
+}
 
 
 ##' Interface to vectorised spectral workflow.
@@ -465,42 +516,7 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
 
 
 
-##' Wrapper for a single prescreening call. Produces output in the
-##' usual mix method places.
-##'
-##' @title Wrapper for RMB_EIC_Prescreen
-##' @param fn_data The mzML filename.
-##' @param stgs_alist Settings named list, or a settings filename.
-##' @param wd Directory under which results are archived.
-##' @param mode RMB mode. 
-##' @param fn_cmpd_l Filename of the compound list.
-##' @param ppm_lim_fine The ppm_limit_fine argument to RMB_EIC_Prescreen
-##' @param EIC_limit Passed down to RMB_EIC_Prescreen.
-##' @param nm_arch Archive prefix.
-##' @return result of RMB_EIC_Prescreen
-##' @author Todor Kondić
-##' @export
-presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001,nm_arch="archive") {
-    wd <- normalizePath(wd)
-    gen_stgs_and_load(fn_data,stgs_alist,wd)
-    
-    ## Generate and load the compound list.
-    x <- gen_cmpdl_and_load(fn_data,wd,fn_cmpd_l)
-    fn_comp <- x$fn_cmpdl
-    n_cmpd <- x$n
 
-    ## Generate file table.
-    fn_table <- gen_file_table(fn_data,n_cmpd,wd)
-
-    #curd <- setwd(wd)
-    res <-RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode, FileList=fn_table,
-                               cmpd_list=fn_comp,
-                               ppm_limit_fine=ppm_lim_fine,
-                               EIC_limit=EIC_limit)
-    #setwd(curd)
-    res
-
-}
 
 
 
