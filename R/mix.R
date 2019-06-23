@@ -512,8 +512,28 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
 
 
 
+##' Parallel version of presc.single.
+##'
+##' @title Parallel version of presc.single
+##' @param fn_data Sequence of mzML files.
+##' @param fn_cmpd_l Filename of the compound list.
+##' @param mode RMB mode.
+##' @param cl Cluster object.
+##' @param ppm_lim_fine See ReSOLUTION.
+##' @param EIC_limit See ReSOLUTION.
+##' @return Nothing useful.
+##' @author Todor Kondić
+##' @export
+presc.p<-function(fn_data,fn_cmpd_l,mode,cl=NULL,ppm_lim_fine=10,EIC_limit=0.001) {
+    idir<-function(n) file.path(".",stripext(n))
+    wd <- sapply(fn_data,idir)
+    stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
 
-
+    f <- function(fn_data,stgs_alist,wd) {
+         presc.single(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)}
+    parallel::clusterMap(cl,f,fn_data,stgs_alist,wd)
+    
+}
 
 
 
