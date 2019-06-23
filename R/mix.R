@@ -86,7 +86,6 @@ gen_comp_list<-function(src_fn,dest_fn) {
     ## CAS
     casvals<-if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
     if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
-
     outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz))
     write.csv(outdf,file=dest_fn,row.names=F,na="")
     length(nms)
@@ -125,6 +124,7 @@ gen_cmpdl_and_load <- function(fn_data,wd,fn_cmpdl) {
     fn_data <- normalizePath(fn_data)
     fn_comp<-file.path(wd,paste(basename(fn_data),".comp.csv",sep=''))
     n_cmpd<-gen_comp_list(fn_cmpdl,fn_comp)
+    RMassBank::loadList(fn_comp)
     list(fn_cmpdl=fn_comp,n=n_cmpd)
 }
 
@@ -340,7 +340,7 @@ RMB_EIC_prescreen_intrn <- function (archive_name, RMB_mode, FileList, cmpd_list
         }
         eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
         msms_found[n_spec] <- FALSE
-        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, ppm(mz, ppm_limit_fine, 
+        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
                                                            p = TRUE))
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
