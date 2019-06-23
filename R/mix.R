@@ -483,18 +483,19 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
         ## box()
         ## lines(eic$intensity ~ eic$rt)
         write.csv(x=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"),row.names=F)
+        cpd_df <- data.frame("rt"=c(),"intensity"=c())
         for (specs in msms) {
             if (specs@found == TRUE) {
                 
                 df <- do.call(rbind, lapply(specs@children, function(sp) c(sp@rt, 
                                                                            intensity = max(sp@intensity))))
-                names(df) <- c("rt","intensity")
-                write.csv(x=df,file=fn_out(cpdID,".kids"),row.names=F)
+                cpd_df <- rbind(cpd_df,df,make.row.names = F)
                 ## lines(intensity ~ retentionTime, data = df, type = "h", 
                 ##       col = "blue")
                 msms_found[n_spec] <- TRUE
             }
         }
+        write.csv(x=cpd_df,file=fn_out(cpdID,".kids"),row.names=F)
         ## title(main = cpdID, xlab = "RT (sec)", ylab = "Intensity")
         ## text(as.numeric(cmpd_RT_maxI[n_spec]), as.numeric(max_I_prec[n_spec]), 
         ##      labels = as.numeric(cmpd_RT_maxI_min[n_spec]), pos = 4)
