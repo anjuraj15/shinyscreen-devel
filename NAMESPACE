@@ -2,6 +2,7 @@
 
 export(mb.do)
 export(mb.prep)
+export(presc.do)
 export(presc.p)
 export(presc.single)
 export(presc.v)

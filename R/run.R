@@ -8,6 +8,31 @@
 attch<-function(...) paste(...,sep='')
 
 
+##' Do the prescreening.
+##'
+##' @title Prescreening on bunch of files.
+##' @param fn_data The mzML files. Basis for the out directory name
+##'     generation.
+##' @param fn_cmpd_list The compound list CSV.
+##' @param mode RMB mode.
+##' @param proc Amount of processors, or FALSE. 
+##' @return Nothing useful.
+##' @author Todor Kondić
+##' @export
+presc.do<-function(fn_data,fn_cmpd_list,mode,proc=F) {
+
+
+    if (proc) {
+        cl<-parallel::makeCluster(proc)
+        presc.p(fn_data,fn_cmpd_l=fn_cmpd_list,mode=mode,cl=cl)
+    } else {
+        presc.v(fn_data,fn_cmpd_l=fn_cmpd_list,mode)
+    }
+}
+
+
+
+
 ##' Performs massbank workflow on multiple mzML files:
 ##'
 ##'
