@@ -537,6 +537,61 @@ presc.p<-function(fn_data,fn_cmpd_l,mode,cl=NULL,ppm_lim_fine=10,EIC_limit=0.001
 }
 
 
+##' Plot the output of prescreen.
+##'
+##' @title Plot the Output of Prescreen
+##' @param wd Sequence of data dirs containing the prescreen subdir.
+##' @param out The name of the output file.
+##' @return Nothing useful.
+##' @author Todor Kondić
+##' @export
+presc.plot <- function(wd,out="prescreen.pdf") {
+    dfdir <- file.path(wd,"prescreen")
+    pdf(out)
+    ## Get the basenames of eic files.
+    eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
+    maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
+    for (i in seq(length(eics))) {
+        eic <- eics[[i]]
+        maybekid <- maybekids[[i]]
+        plot.new()
+        dfs <- lapply(file.path(dfdir,eic),read.csv,stringsAsFactors = F)
+
+
+        ## Find max intensity for the first in the group.
+        imx <- which.max(dfs[[1]]$intensity)
+        int_max <- dfs[[1]]$intensity[[imx]]
+        rt_max <- dfs[[1]]$rt[[imx]]
+        rt_min_max <- as.numeric(rt_max)/60.
+        
+        
+        rt_rng <- range(sapply(dfs,function(x) x$rt))
+        int_rng <- range(sapply(dfs,function(x) x$intensity)) 
+        plot.window(rt_rng,int_rng)
+        box()
+
+        ## Plot eic across the directory set.
+        for (df in dfs) {
+            lines(df$intensity ~ df$rt)
+        }
+
+        ## Find existing children and plot them across the directory
+        ## set.
+        maybes <- file.path(dfdir,maybekid)
+        indkids <- which(file.exists(maybes))
+        kids <- maybes[indkids]
+        dfs <- lapply(kids,read.csv,stringsAsFactors=F)
+        for (df in dfs) {
+            lines(intensity~retentionTime,data=df,type="h",col="blue")
+        }
+        title(main=i,xlab="retention time [s]",ylab="intensity")
+        text(as.numeric(rt_max),as.numeric(int_max),labels=as.numeric(rt_min_max),pos=4)
+        axis(1)
+        axis(2)
+        gc()
+    }
+    dev.off()
+}
 
 
 
