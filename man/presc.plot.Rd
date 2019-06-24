@@ -4,12 +4,14 @@
 \alias{presc.plot}
 \title{Plot the Output of Prescreen}
 \usage{
-presc.plot(wd, out = "prescreen.pdf")
+presc.plot(wd, out = "prescreen.pdf", pal = "Accent")
 }
 \arguments{
 \item{wd}{Sequence of data dirs containing the prescreen subdir.}
 
 \item{out}{The name of the output file.}
+
+\item{pal}{ColorBrewer palette name.}
 }
 \value{
 Nothing useful.

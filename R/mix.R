@@ -542,10 +542,11 @@ presc.p<-function(fn_data,fn_cmpd_l,mode,cl=NULL,ppm_lim_fine=10,EIC_limit=0.001
 ##' @title Plot the Output of Prescreen
 ##' @param wd Sequence of data dirs containing the prescreen subdir.
 ##' @param out The name of the output file.
+##' @param pal ColorBrewer palette name.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-presc.plot <- function(wd,out="prescreen.pdf") {
+presc.plot <- function(wd,out="prescreen.pdf",pal="Accent") {
     dfdir <- file.path(wd,"prescreen")
     pdf(out)
     ## Get the basenames of eic files.
@@ -569,10 +570,12 @@ presc.plot <- function(wd,out="prescreen.pdf") {
         int_rng <- range(sapply(dfs,function(x) x$intensity)) 
         plot.window(rt_rng,int_rng)
         box()
-
+        cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
         ## Plot eic across the directory set.
-        for (df in dfs) {
-            lines(df$intensity ~ df$rt)
+        for (n in seq(length(dfs))) {
+            df <- dfs[[n]]
+            col <- cols[[n]]
+            lines(df$intensity ~ df$rt,col=col)
         }
 
         ## Find existing children and plot them across the directory
