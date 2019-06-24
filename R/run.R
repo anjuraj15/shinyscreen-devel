@@ -24,7 +24,7 @@ presc.do<-function(fn_data,fn_cmpd_list,mode,proc=F) {
 
     if (proc) {
         cl<-parallel::makeCluster(proc)
-        presc.p(fn_data,fn_cmpd_l=fn_cmpd_list,mode=mode,cl=cl)
+        presc.p(cl=cl,fn_data,fn_cmpd_l=fn_cmpd_list,mode=mode)
     } else {
         presc.v(fn_data,fn_cmpd_l=fn_cmpd_list,mode)
     }

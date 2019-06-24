@@ -4,17 +4,17 @@
 \alias{presc.p}
 \title{Parallel version of presc.single}
 \usage{
-presc.p(fn_data, fn_cmpd_l, mode, cl = NULL, ppm_lim_fine = 10,
+presc.p(cl, fn_data, fn_cmpd_l, mode, ppm_lim_fine = 10,
   EIC_limit = 0.001)
 }
 \arguments{
+\item{cl}{Cluster object.}
+
 \item{fn_data}{Sequence of mzML files.}
 
 \item{fn_cmpd_l}{Filename of the compound list.}
 
 \item{mode}{RMB mode.}
-
-\item{cl}{Cluster object.}
 
 \item{ppm_lim_fine}{See ReSOLUTION.}
 

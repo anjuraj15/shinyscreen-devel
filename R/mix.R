@@ -495,7 +495,7 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
                 msms_found[n_spec] <- TRUE
             }
         }
-        write.csv(x=cpd_df,file=fn_out(cpdID,".kids"),row.names=F)
+        if (nrow(cpd_df)>0) write.csv(x=cpd_df,file=fn_out(cpdID,".kids"),row.names=F)
         ## title(main = cpdID, xlab = "RT (sec)", ylab = "Intensity")
         ## text(as.numeric(cmpd_RT_maxI[n_spec]), as.numeric(max_I_prec[n_spec]), 
         ##      labels = as.numeric(cmpd_RT_maxI_min[n_spec]), pos = 4)
@@ -516,23 +516,24 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
 ##' Parallel version of presc.single.
 ##'
 ##' @title Parallel version of presc.single
+##' @param cl Cluster object.
 ##' @param fn_data Sequence of mzML files.
 ##' @param fn_cmpd_l Filename of the compound list.
 ##' @param mode RMB mode.
-##' @param cl Cluster object.
 ##' @param ppm_lim_fine See ReSOLUTION.
 ##' @param EIC_limit See ReSOLUTION.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-presc.p<-function(fn_data,fn_cmpd_l,mode,cl=NULL,ppm_lim_fine=10,EIC_limit=0.001) {
+presc.p<-function(cl,fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
     idir<-function(n) file.path(".",stripext(n))
     wd <- sapply(fn_data,idir)
     stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
 
-    f <- function(fn_data,stgs_alist,wd) {
-         presc.single(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)}
-    parallel::clusterMap(cl,f,fn_data,stgs_alist,wd)
+    f <- function(fn_data,stgs_alist,wd) presc.single(fn_data=fn_data,stgs_alist=stgs_alist,wd=wd,mode=mode,
+                                                      fn_cmpd_l=fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)
+    
+    parallel::clusterMap(cl,fun=f,fn_data,stgs_alist,wd)
     
 }
 
@@ -556,7 +557,11 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Accent") {
         eic <- eics[[i]]
         maybekid <- maybekids[[i]]
         plot.new()
-        dfs <- lapply(file.path(dfdir,eic),read.csv,stringsAsFactors = F)
+        dfs <- lapply(file.path(dfdir,eic),function(fn) {
+            tryCatch(read.csv(fn,stringsAsFactors = F),
+                     error=function(e) {message(paste(e,"; offending file:",fn))})
+        })
+
 
 
         ## Find max intensity for the first in the group.
@@ -583,7 +588,13 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Accent") {
         maybes <- file.path(dfdir,maybekid)
         indkids <- which(file.exists(maybes))
         kids <- maybes[indkids]
-        dfs <- lapply(kids,read.csv,stringsAsFactors=F)
+        dfs <- lapply(kids,function(fn) {
+            tryCatch(read.csv(fn,stringsAsFactors=F),
+                     error=function(e) {message(paste(e,"; offending file:",fn))
+                                        return(NA)},
+                     finally={return(NA)})
+        })
+        dfs <- dfs[!is.na(dfs)]
         for (df in dfs) {
             lines(intensity~retentionTime,data=df,type="h",col="blue")
         }
