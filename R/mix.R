@@ -86,10 +86,101 @@ gen_comp_list<-function(src_fn,dest_fn) {
     ## CAS
     casvals<-if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
     if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
-
     outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz))
     write.csv(outdf,file=dest_fn,row.names=F,na="")
     length(nms)
+}
+
+##' Generates settings file and loads it.
+##'
+##' 
+##' @title Generate and Load the RMassBank Settings File
+##' @param fn_data The mzML filename.
+##' @param stgs Settings named list, or a settings filename.
+##' @param wd Directory under which results are archived.
+##' @return result of RMassBank::loadRmbSettings
+##' @author Todor Kondić
+gen_stgs_and_load <- function(fn_data,stgs,wd) {
+    wd <- normalizePath(wd)
+    fn_data <- normalizePath(fn_data)
+    stgs<-if (is.character(stgs)) yaml::yaml.load_file(stgs) else stgs
+    sfn<-file.path(wd,paste(basename(fn_data),".ini",sep=''))
+    mk_sett_file(stgs,sfn)
+    RMassBank::loadRmbSettings(sfn)
+}
+
+##' Generates the RMassBank compound list and loads it.
+##'
+##' 
+##' @title Generate and Load the RMassBank Compound List
+##' @param fn_data The mzML filename.
+##' @param wd Directory under which results are archived.
+##' @return Named list. The key `fn_cmpdl` is the path of the
+##'     generated compound list and the key `n` the number of
+##'     compounds.
+##' @author Todor Kondić
+gen_cmpdl_and_load <- function(fn_data,wd,fn_cmpdl) {
+    wd <- normalizePath(wd)
+    fn_data <- normalizePath(fn_data)
+    fn_comp<-file.path(wd,paste(basename(fn_data),".comp.csv",sep=''))
+    n_cmpd<-gen_comp_list(fn_cmpdl,fn_comp)
+    RMassBank::loadList(fn_comp)
+    list(fn_cmpdl=fn_comp,n=n_cmpd)
+}
+
+##' Generates file table.
+##'
+##' 
+##' @title Generate and Load the RMassBank Settings File
+##' @param fn_data The mzML filename.
+##' @param n_cmpd Number of compounds.
+##' @param wd Directory under which results are archived.
+##' @return File path of the file table.
+##' @author Todor Kondić
+gen_file_table <- function(fn_data,n_cmpd,wd) {
+    wd <- normalizePath(wd)
+    fn_data <- normalizePath(fn_data)
+    df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
+    fn_table<-file.path(wd,paste("fn-table.",basename(fn_data),".csv",sep=''))
+    write.csv(x=df_table,file=fn_table,row.names=F)
+    fn_table
+}
+
+##' Wrapper for a single prescreening call. Produces output in the
+##' usual mix method places.
+##'
+##' @title Wrapper for RMB_EIC_Prescreen
+##' @param fn_data The mzML filename.
+##' @param stgs_alist Settings named list, or a settings filename.
+##' @param wd Directory under which results are archived.
+##' @param mode RMB mode. 
+##' @param fn_cmpd_l Filename of the compound list.
+##' @param ppm_lim_fine The ppm_limit_fine argument to RMB_EIC_Prescreen
+##' @param EIC_limit Passed down to RMB_EIC_Prescreen.
+##' @return result of RMB_EIC_Prescreen
+##' @author Todor Kondić
+##' @export
+presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001) {
+    no_drama_mkdir(wd)
+    wd <- normalizePath(wd)
+    gen_stgs_and_load(fn_data,stgs_alist,wd)
+    
+    ## Generate and load the compound list.
+    x <- gen_cmpdl_and_load(fn_data,wd,fn_cmpd_l)
+    fn_comp <- x$fn_cmpdl
+    n_cmpd <- x$n
+
+    ## Generate file table.
+    fn_table <- gen_file_table(fn_data,n_cmpd,wd)
+
+    #curd <- setwd(wd)
+    res <-RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode, FileList=fn_table,
+                               cmpd_list=fn_comp,
+                               ppm_limit_fine=ppm_lim_fine,
+                               EIC_limit=EIC_limit)
+    #setwd(curd)
+    res
+
 }
 
 ##' Runs a compound mixture workflow on a single mzML file.
@@ -196,8 +287,24 @@ mb.single<-function(mb,infodir,fn_stgs) {
     res
 }
 
-
-
+##' Vectorises presc.single.
+##'
+##' @title Vectorises presc.single
+##' @param fn_data Sequence of mzML filenames.
+##' @param fn_cmpd_l Compound list filename.
+##' @param mode RMB mode.
+##' @param ppm_lim_fine Prescreen fine limit (see ReSOLUTION prescreening function).
+##' @param EIC_limit Prescreen EIC limit (see ReSOLUTION prescreening function).
+##' @return Nothing useful.
+##' @author Todor Kondić
+##' @export
+presc.v<-function(fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
+    idir<-function(n) file.path(".",stripext(n))
+    wd <- sapply(fn_data,idir)
+    stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
+    f<-Vectorize(presc.single,vectorize.args=c("fn_data","stgs_alist","wd"),SIMPLIFY=F)
+    f(fn_data,stgs_alist,wd,mode=mode,fn_cmpd_l=fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)
+}
 
 
 ##' Interface to vectorised spectral workflow.
@@ -246,6 +353,191 @@ v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="ar
         z
     }
 }
+
+##' Prescreens. Writes data out. Adapted from ReSOLUTION
+##'
+##' 
+##' @title Prescreen
+##' @param wd Absolute path to the directory that will contain the
+##'     resulting data frame.
+##' @param RMB_mode ...
+##' @param FileList ...
+##' @param cmpd_list ...
+##' @param ppm_limit_fine ...
+##' @param EIC_limit ...
+##' @author Emma Schymanski, Todor Kondić
+RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
+                                  ppm_limit_fine = 10, EIC_limit = 0.001) {
+
+
+    n_spec <- 0
+    cmpd_RT_maxI <- ""
+    msms_found <- ""
+    rts <- 0
+    max_I_prec <- ""
+    cmpd_RT_maxI_min <- ""
+    file_list <- read.csv(FileList, stringsAsFactors = FALSE)
+    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE)
+    ncmpd <- nrow(cmpd_info)
+    odir=file.path(wd,"prescreen")
+    no_drama_mkdir(odir)
+    get_width <- function(maxid) {log10(maxid)+1}
+    id_field_width <- get_width(ncmpd)
+
+    fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
+    f <- mzR::openMSfile(file_list$Files[1])
+    for (i in 1:length(file_list$ID)) {
+        cpdID <- file_list$ID[i]
+        n_spec <- n_spec + 1
+        smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
+        if (!is.na(smiles)) {
+            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
+        }
+        else {
+            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
+        }
+        eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
+        msms_found[n_spec] <- FALSE
+        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
+                                                           p = TRUE))
+        max_I_prec_index <- which.max(eic$intensity)
+        cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
+        max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
+        cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60
+        ## plot.new()
+        ## plot.window(range(eic$rt), range(eic$intensity))
+        ## box()
+        ## lines(eic$intensity ~ eic$rt)
+        write.csv(x=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"),row.names=F)
+        cpd_df <- data.frame("rt"=c(),"intensity"=c())
+        for (specs in msms) {
+            if (specs@found == TRUE) {
+                
+                df <- do.call(rbind, lapply(specs@children, function(sp) c(sp@rt, 
+                                                                           intensity = max(sp@intensity))))
+                cpd_df <- rbind(cpd_df,df,make.row.names = F)
+                ## lines(intensity ~ retentionTime, data = df, type = "h", 
+                ##       col = "blue")
+                msms_found[n_spec] <- TRUE
+            }
+        }
+        if (nrow(cpd_df)>0) write.csv(x=cpd_df,file=fn_out(cpdID,".kids"),row.names=F)
+        ## title(main = cpdID, xlab = "RT (sec)", ylab = "Intensity")
+        ## text(as.numeric(cmpd_RT_maxI[n_spec]), as.numeric(max_I_prec[n_spec]), 
+        ##      labels = as.numeric(cmpd_RT_maxI_min[n_spec]), pos = 4)
+        ## axis(1)
+        ## axis(2)
+        ## gc()
+        rts[i] <- (cmpd_RT_maxI[n_spec])
+    }
+    # dev.off()
+    write.csv(cbind(file_list$ID, cmpd_info$mz, cmpd_info$Name, 
+                    cmpd_RT_maxI, cmpd_RT_maxI_min, max_I_prec, msms_found), 
+              file = file.path(odir,"RTs_wI.csv"), 
+              row.names = F)
+}
+
+
+
+##' Parallel version of presc.single.
+##'
+##' @title Parallel version of presc.single
+##' @param cl Cluster object.
+##' @param fn_data Sequence of mzML files.
+##' @param fn_cmpd_l Filename of the compound list.
+##' @param mode RMB mode.
+##' @param ppm_lim_fine See ReSOLUTION.
+##' @param EIC_limit See ReSOLUTION.
+##' @return Nothing useful.
+##' @author Todor Kondić
+##' @export
+presc.p<-function(cl,fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
+    idir<-function(n) file.path(".",stripext(n))
+    wd <- sapply(fn_data,idir)
+    stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
+
+    f <- function(fn_data,stgs_alist,wd) presc.single(fn_data=fn_data,stgs_alist=stgs_alist,wd=wd,mode=mode,
+                                                      fn_cmpd_l=fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)
+    
+    parallel::clusterMap(cl,fun=f,fn_data,stgs_alist,wd)
+    
+}
+
+
+##' Plot the output of prescreen.
+##'
+##' @title Plot the Output of Prescreen
+##' @param wd Sequence of data dirs containing the prescreen subdir.
+##' @param out The name of the output file.
+##' @param pal ColorBrewer palette name.
+##' @return Nothing useful.
+##' @author Todor Kondić
+##' @export
+presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2") {
+    dfdir <- file.path(wd,"prescreen")
+    pdf(out)
+    ## Get the basenames of eic files.
+    eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
+    maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
+    for (i in seq(length(eics))) {
+        eic <- eics[[i]]
+        maybekid <- maybekids[[i]]
+        fn_ini <- lapply(wd,function(x) file.path(x,list.files(path=x,patt="*.ini")[[1]]))
+        
+        lbls <- lapply(fn_ini,function(x) {s <- yaml::yaml.load_file(x);s$spectraList[[1]]$ce})
+        plot.new()
+        dfs <- lapply(file.path(dfdir,eic),function(fn) {
+            tryCatch(read.csv(fn,stringsAsFactors = F),
+                     error=function(e) {message(paste(e,"; offending file:",fn))})
+        })
+        
+        dfs <- lapply(dfs,function(x) data.frame(rt=x$rt/60.,intensity=x$intensity))
+
+
+        ## Find max intensities.
+        w_max <- sapply(dfs,function (x) which.max(x$intensity))
+        rt_max <- Map(function(df,w) df$rt[[w]],dfs,w_max)
+        i_max<- Map(function(df,w) df$intensity[[w]],dfs,w_max)
+
+        
+        
+        rt_rng <- range(sapply(dfs,function(x) x$rt))
+        int_rng <- range(sapply(dfs,function(x) x$intensity)) 
+        plot.window(rt_rng,c(int_rng[[1]],1.1*int_rng[[2]]))
+        box()
+        cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
+        legend("top",horiz=T,legend=lbls,col=cols,fill=cols)
+
+        ## Plot eic across the directory set.
+        for (n in seq(length(dfs))) {
+            df <- dfs[[n]]
+            col <- cols[[n]]
+            lines(df$intensity ~ df$rt,col=col)
+        }
+
+        ## Find existing children and plot them across the directory
+        ## set.
+        
+        maybes <- file.path(dfdir,maybekid)
+        indkids <- which(file.exists(maybes))
+        kids <- maybes[indkids]
+
+        dfs <- lapply(kids,read.csv,stringsAsFactors=F)
+        for (df in dfs) {
+            lines(intensity ~ retentionTime,data=df,type="h",col="black")
+        }
+        title(main=i,xlab="retention time [min]",ylab="intensity")
+        for (i in seq(length(w_max))) text(rt_max[[i]],i_max[[i]],labels=rt_max[[i]],pos=4)
+        axis(1)
+        axis(2)
+        gc()
+    }
+    dev.off()
+}
+
+
+
+
 
 ##' Interface to parallel spectral workflow.
 ##'
@@ -333,4 +625,5 @@ mb.p<-function(mb,infodir,fn_stgs,cl=F) {
     x<-parallel::clusterMap(cl=cl,mb.single,mb,infodir,fn_stgs)    
     names(x)<-names(mb)
     x}
+
 
