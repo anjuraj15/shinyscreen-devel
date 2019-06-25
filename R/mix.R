@@ -470,10 +470,12 @@ presc.p<-function(cl,fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
 ##' @param wd Sequence of data dirs containing the prescreen subdir.
 ##' @param out The name of the output file.
 ##' @param pal ColorBrewer palette name.
+##' @param cex As in legend.
+##' @param digits Number of significant digits for peak ret times. 
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2") {
+presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2",cex=0.75,digits=6) {
     dfdir <- file.path(wd,"prescreen")
     pdf(out)
     ## Get the basenames of eic files.
@@ -493,20 +495,40 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2") {
         
         dfs <- lapply(dfs,function(x) data.frame(rt=x$rt/60.,intensity=x$intensity))
 
+        ## Find existing children.
+        maybes <- file.path(dfdir,maybekid)
+        indkids <- which(file.exists(maybes))
+        kids <- maybes[indkids]
+        dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
+        dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime/60.,intensity= -x$intensity))
+
 
         ## Find max intensities.
         w_max <- sapply(dfs,function (x) which.max(x$intensity))
         rt_max <- Map(function(df,w) df$rt[[w]],dfs,w_max)
         i_max<- Map(function(df,w) df$intensity[[w]],dfs,w_max)
+        symbs <- LETTERS[1:length(w_max)]
+
+        ## Find max intensities in children
+        w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
+        rt_max_kids <- Map(function(df,w) df$rt[[w]],dfs_kids,w_max_kids)
+        i_max_kids <- Map(function(df,w) df$intensity[[w]],dfs_kids,w_max_kids)
+        symbs_kids<- letters[indkids]
 
         
         
         rt_rng <- range(sapply(dfs,function(x) x$rt))
-        int_rng <- range(sapply(dfs,function(x) x$intensity)) 
-        plot.window(rt_rng,c(int_rng[[1]],1.1*int_rng[[2]]))
+        int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
+        plot.window(rt_rng,c(1.2*int_rng[[1]],1.3*int_rng[[2]]))
         box()
         cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
-        legend("top",horiz=T,legend=lbls,col=cols,fill=cols)
+        lgnd <- Map(function(k,v) paste(k,"= ",v,sep=''),symbs,format(rt_max,digits=digits))
+        linfo <- legend("topleft",horiz=T,legend=lbls,col=cols,fill=cols,bty="n",cex=cex)
+        legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty="n",cex=cex)
+
+        cols_kids <- cols[indkids]
+        lgnd_kids <- Map(function(k,v) paste(k,"= ",v,sep=''),symbs_kids,format(rt_max_kids,digits=digits))
+        if (length(lgnd_kids)>0) legend(x="bottomleft",horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
 
         ## Plot eic across the directory set.
         for (n in seq(length(dfs))) {
@@ -515,19 +537,14 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2") {
             lines(df$intensity ~ df$rt,col=col)
         }
 
-        ## Find existing children and plot them across the directory
-        ## set.
-        
-        maybes <- file.path(dfdir,maybekid)
-        indkids <- which(file.exists(maybes))
-        kids <- maybes[indkids]
-
-        dfs <- lapply(kids,read.csv,stringsAsFactors=F)
-        for (df in dfs) {
-            lines(intensity ~ retentionTime,data=df,type="h",col="black")
+        if (length(dfs_kids) >0) {
+            for (k in 1:length(indkids)) {
+                lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
+            }
         }
         title(main=i,xlab="retention time [min]",ylab="intensity")
-        for (i in seq(length(w_max))) text(rt_max[[i]],i_max[[i]],labels=rt_max[[i]],pos=4)
+        for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
+        if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)
         axis(1)
         axis(2)
         gc()
