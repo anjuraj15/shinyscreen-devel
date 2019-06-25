@@ -4,10 +4,13 @@
 \alias{p.sw}
 \title{Parallel Spectral Workflow.}
 \usage{
-p.sw(fn_data, stgs_alist, wd, fn_cmpd_list, mode, readMethod = "mzR",
-  archdir = "archive", lastStep = 8, combine = F, cl = NULL)
+p.sw(cl, fn_data, stgs_alist, wd, fn_cmpd_list, mode, readMethod = "mzR",
+  archdir = "archive", lastStep = 8, combine = F,
+  combdest = "combined")
 }
 \arguments{
+\item{cl}{Cluster.}
+
 \item{fn_data}{A sequence of mzML input files.}
 
 \item{stgs_alist}{A list of named list of settings, or a list of
@@ -28,7 +31,7 @@ filenames of YAML files containing the settings.}
 \item{combine}{If TRUE, use combineMultiplicies to merge
 workspaces corresponding to different collisional energies.}
 
-\item{cl}{Cluster.}
+\item{combdest}{Combine destination directory.}
 }
 \value{
 A named list of spectral workspaces. The names are derived
