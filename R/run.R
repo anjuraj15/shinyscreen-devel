@@ -53,7 +53,7 @@ presc.do<-function(fn_data,fn_cmpd_list,mode,proc=F) {
 ##' @param fn_data List of mzML data filenames to be processed.
 ##' @param fn_cmpd_list Compound list.
 ##' @param mode as in msmsRead.
-##' @param rdir The root data directory.
+##' @param dest The destination data directory.
 ##' @param combine If TRUE, use combineMultiplicies to merge
 ##'     workspaces corresponding to different collisional energies.
 ##' @param proc Split work between this amount of processes. If FALSE
@@ -61,15 +61,17 @@ presc.do<-function(fn_data,fn_cmpd_list,mode,proc=F) {
 ##' @return A named list of msmsWorkspace objects.
 ##' @author Todor Kondić
 ##' @export
-sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".",combine=F,proc=F) {
-    no_drama_mkdir(rdir)
-    wdirs<-sapply(basename(fn_data),function(nm) file.path(rdir,stripext(nm)))
-    sapply(wdirs,no_drama_mkdir)
-    stgs<-sapply(basename(wdirs),function (nm) paste(nm,"yml",sep='.'))
+sw.do<-function(fn_data,fn_cmpd_list,mode,dest=".",combine=F,proc=F) {
+    dest <- normalizePath(dest)
+    no_drama_mkdir(dest)
+    fn_data <- normalizePath(fn_data)
+    wdirs<-sapply(basename(fn_data),function(nm) file.path(dest,stripext(nm)))
+    stgs<-sapply(fn_data,function (nm) file.path(paste(stripext(nm),"ini",sep='.')))
 
     if (proc) {
-        cl<-parallel::makeCluster(proc,type='FORK')
-        p.sw(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine,cl=cl)
+        cl<-parallel::makeCluster(proc)
+        parallel::clusterEvalQ(cl,library("rmbmix"))
+        p.sw(cl,fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
     } else {
         v(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
     }
@@ -116,7 +118,8 @@ mb.do<-function(mb,rdir=".",proc=F) {
     fn_stgs<-sapply(names(mb),function(n) file.path(idir(n),attch(n,'.ini')))
 
     if (proc) {
-        cl<-parallel::makeCluster(proc,type='FORK')
+        cl<-parallel::makeCluster(proc)
+        parallel::clusterEvalQ(cl,library("rmbmix"))
         mb.p(mb,infodir,fn <- stgs,cl=cl)
     } else {
         mb.v(mb,infodir,fn_stgs)
