@@ -68,7 +68,7 @@ sw.do<-function(fn_data,fn_cmpd_list,mode,rdir=".",combine=F,proc=F) {
     stgs<-sapply(basename(wdirs),function (nm) paste(nm,"yml",sep='.'))
 
     if (proc) {
-        cl<-parallel::makeCluster(proc)
+        cl<-parallel::makeCluster(proc,type='FORK')
         p.sw(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine,cl=cl)
     } else {
         v(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
@@ -116,7 +116,7 @@ mb.do<-function(mb,rdir=".",proc=F) {
     fn_stgs<-sapply(names(mb),function(n) file.path(idir(n),attch(n,'.ini')))
 
     if (proc) {
-        cl<-parallel::makeCluster(proc)
+        cl<-parallel::makeCluster(proc,type='FORK')
         mb.p(mb,infodir,fn <- stgs,cl=cl)
     } else {
         mb.v(mb,infodir,fn_stgs)
