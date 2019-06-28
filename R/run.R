@@ -106,6 +106,7 @@ sw.do <- function(fn_data, fn_cmpd_l, mode, dest=".", combine=F,
     }
     w <- fwork(w,wd,steps=(split+1):8)
     names(w) <- wd
+    w
 }
 
 ##' Creates and prepares mbWorkspace objects before the full workflow
@@ -142,22 +143,27 @@ mb.prep<-function(w) {
 ##' 
 ##' @title Perform the Mass Bank workflow
 ##' @param mb The list of prepared mbWorkspace objects.
-##' @param rdir Root data dir.
 ##' @param proc Split work between this amount of processes. If FALSE
 ##'     (or, 1), run sequential.
 ##' @return The named list of processed mbWorkspace objects.
 ##' @author Todor Kondić
 ##' @export
-mb.do<-function(mb,rdir=".",proc=F) {
-    idir<-function(n) file.path(rdir,stripext(n))
-    infodir<-sapply(names(mb),function(n) file.path(idir(n),"info"))
-    fn_stgs<-sapply(names(mb),function(n) file.path(idir(n),attch(n,'.ini')))
-
+mb.do<-function(mb,proc=F) {
+    wd <- names(mb)
+    infodir <- get_info_dir(wd)
+    fwork <- Vectorize(function(mb,id,wd) {
+        reconf(wd)
+        mb <- RMassBank::resetInfolists(mb)
+        mb <- RMassBank::loadInfolists(mb,id)
+        dcur <- setwd(id)
+        mb <- RMassBank::mbWorkflow(mb,step=1:8)
+        setwd(dcur)
+        mb},vectorize.args = c("mb","id","wd"))
     if (proc) {
         cl<-parallel::makeCluster(proc)
         parallel::clusterEvalQ(cl,library("rmbmix"))
-        mb.p(mb,infodir,fn <- stgs,cl=cl)
+        parallel::clusterMap(cl,fwork,mb,infodir,wd)
     } else {
-        mb.v(mb,infodir,fn_stgs)
+        fwork(mb,infodir,wd)
     }
 }

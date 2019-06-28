@@ -265,29 +265,6 @@ presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EI
 
 }
 
-
-##' Performs a single MassBank workflow after preparation.
-##'
-##' @title Single MassBank workflow.
-##' @param mb A mbWorkspace object.
-##' @param infodir Directory containing the infolist.
-##' @param fn_stgs The settings associated with the mbWorkspace
-##'     object.
-##' @return A mbWorkflow object.
-##' @author Todor Kondić
-mb.single<-function(mb,infodir,fn_stgs) {
-    RMassBank::loadRmbSettings(fn_stgs)
-    
-    mb <- RMassBank::resetInfolists(mb)
-    mb <- RMassBank::loadInfolists(mb,infodir)
-    ## loadInfolists
-    ## addPeaks
-    prevd<-setwd(infodir)
-    res<-RMassBank::mbWorkflow(mb,step=1:8)
-    setwd(prevd)
-    res
-}
-
 ##' Vectorises presc.single.
 ##'
 ##' @title Vectorises presc.single
