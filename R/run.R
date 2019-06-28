@@ -51,30 +51,61 @@ presc.do<-function(fn_data,fn_cmpd_list,mode,proc=F) {
 ##' 
 ##' @title Perform MassBank Workflow on Multiple Compound Mixtures
 ##' @param fn_data List of mzML data filenames to be processed.
-##' @param fn_cmpd_list Compound list.
+##' @param fn_cmpd_l Compound list.
 ##' @param mode as in msmsRead.
 ##' @param dest The destination data directory.
 ##' @param combine If TRUE, use combineMultiplicies to merge
 ##'     workspaces corresponding to different collisional energies.
 ##' @param proc Split work between this amount of processes. If FALSE
 ##'     (or, 1), run sequential.
+##' @param split This is the last step before combine
 ##' @return A named list of msmsWorkspace objects.
 ##' @author Todor Kondić
 ##' @export
-sw.do<-function(fn_data,fn_cmpd_list,mode,dest=".",combine=F,proc=F) {
-    dest <- normalizePath(dest)
-    no_drama_mkdir(dest)
-    fn_data <- normalizePath(fn_data)
-    wdirs<-sapply(basename(fn_data),function(nm) file.path(dest,stripext(nm)))
-    stgs<-sapply(fn_data,function (nm) file.path(paste(stripext(nm),"ini",sep='.')))
-
-    if (proc) {
-        cl<-parallel::makeCluster(proc)
-        parallel::clusterEvalQ(cl,library("rmbmix"))
-        p.sw(cl,fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
-    } else {
-        v(fn_data,stgs,wdirs,fn_cmpd_list,mode,combine=combine)
+sw.do <- function(fn_data, fn_cmpd_l, mode, dest=".", combine=F,
+                  proc=F,split=3) {
+    
+    conf(fn_data,fn_cmpd_l,dest)
+    fread <- function(fn_data) {
+        wd <- fn_data2wd(fn_data,dest)
+        reconf(wd)
+        w <- RMassBank::newMsmsWorkspace()
+        RMassBank::msmsRead(w=w,filetable = get_ftable_fn(wd),
+                            mode=mode,readMethod = "mzR")
     }
+    fwork <- Vectorize(function(w,wd,steps) {
+        archdir <- file.path(wd,"archive")
+        no_drama_mkdir(archdir)
+        fn_arch <- file.path(archdir,"archive")
+        reconf(wd)
+        RMassBank::msmsWorkflow(w=w,mode=mode,steps=steps,archivename = fn_arch)
+    }, vectorize.args = c("w","wd"),SIMPLIFY=F)
+    
+    w <- if (proc) {
+             cl=parallel::makeCluster(proc)
+             parallel::clusterEvalQ(cl,library(rmbmix))
+             parallel::clusterMap(cl,fread,fn_data)
+         } else {
+             lapply(fn_data,fread)
+         }
+    wd <- fn_data2wd(fn_data,dest)
+    w <- fwork(w,wd,steps=2:split)
+    if (combine) {
+        ## Combined workflow is not based on a single file, but the
+        ## functions that generate config are. Therefore, lets create
+        ## a fake filename.
+        fakefile <- "combine.mzML"
+        cwd <- fn_data2wd(fakefile,dest)
+        xx <- get_stgs_fn(wd[[1]])
+        file.copy(xx,"combine.ini",overwrite = T)
+        # mk_combine_file(get_stgs_fn(wd),"combine.ini")
+        conf(fakefile,fn_cmpd_l,dest)
+        reconf(cwd)
+        w <- list(RMassBank::combineMultiplicities(w))
+        wd <- list(cwd)
+    }
+    w <- fwork(w,wd,steps=(split+1):8)
+    names(w) <- wd
 }
 
 ##' Creates and prepares mbWorkspace objects before the full workflow
@@ -85,17 +116,22 @@ sw.do<-function(fn_data,fn_cmpd_list,mode,dest=".",combine=F,proc=F) {
 ##' 
 ##' @title Prepare mbWorkspace objects
 ##' @param w A list of spectral workspace inputs.
-##' @param rdir Data root.
-##' @param proc Split work between this amount of processes. If FALSE
 ##' @return Named list of prepared mbWorkspace objects.
 ##' @author Todor Kondić
 ##' @export
-mb.prep<-function(w,rdir=".") {
-    idir<-function(n) file.path(rdir,stripext(n))
-    sapply(names(w),function (n) no_drama_mkdir(file.path(idir(n),"info")))
-    fn_info<-sapply(names(w),function (n) file.path(idir(n),"info",attch(n,'.info.csv')))
-    fn_stgs<-sapply(names(w),function(n) file.path(idir(n),attch(n,'.ini')))
-    mb.prep.v(w,fn_info,fn_stgs)
+mb.prep<-function(w) {
+    wd <- names(w)
+    fwork <- Vectorize(function(w,wd) {
+        reconf(wd)
+        idir <- gen_info_dir(wd)
+        mb <- RMassBank::newMbWorkspace(w)
+        RMassBank::resetInfolists(mb)
+        RMassBank::mbWorkflow(mb,infolist_path = get_info_fn(wd))
+    },vectorize.args = c("w","wd"))
+
+    mb <- fwork(w,wd)
+    names(mb) <- wd
+    mb
 }
 
 
