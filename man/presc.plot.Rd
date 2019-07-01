@@ -6,9 +6,6 @@
 \usage{
 presc.plot(wd, out = "prescreen.pdf", pal = "Dark2", cex = 0.75,
   digits = 6)
-
-presc.plot(wd, out = "prescreen.pdf", pal = "Accent")
-
 }
 \arguments{
 \item{wd}{Sequence of data dirs containing the prescreen subdir.}
@@ -16,7 +13,6 @@ presc.plot(wd, out = "prescreen.pdf", pal = "Accent")
 \item{out}{The name of the output file.}
 
 \item{pal}{ColorBrewer palette name.}
-
 
 \item{cex}{As in legend.}
 

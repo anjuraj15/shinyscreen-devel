@@ -4,17 +4,21 @@
 \alias{presc.do}
 \title{Prescreening on bunch of files.}
 \usage{
-presc.do(fn_data, fn_cmpd_list, mode, proc = F)
+presc.do(fn_data, fn_cmpd_l, mode, dest = ".", proc = F, ...)
 }
 \arguments{
 \item{fn_data}{The mzML files. Basis for the out directory name
 generation.}
 
-\item{fn_cmpd_list}{The compound list CSV.}
+\item{fn_cmpd_l}{The compound list.}
 
 \item{mode}{RMB mode.}
 
+\item{dest}{Destination directory.}
+
 \item{proc}{Amount of processors, or FALSE.}
+
+\item{fn_cmpd_list}{The compound list CSV.}
 }
 \value{
 Nothing useful.

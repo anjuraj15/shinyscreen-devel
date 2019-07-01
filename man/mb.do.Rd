@@ -4,12 +4,10 @@
 \alias{mb.do}
 \title{Perform the Mass Bank workflow}
 \usage{
-mb.do(mb, rdir = ".", proc = F)
+mb.do(mb, proc = F)
 }
 \arguments{
 \item{mb}{The list of prepared mbWorkspace objects.}
-
-\item{rdir}{Root data dir.}
 
 \item{proc}{Split work between this amount of processes. If FALSE
 (or, 1), run sequential.}

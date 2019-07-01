@@ -7,13 +7,14 @@ stripext<-function(fn) {
 ##' Create directories without drama.
 ##' 
 ##' @title Create directories without drama
-##' @param path Name of the directory.
+##' @param path Names of the directories.
 ##' @return The character string containing the input argument `path`.
 ##' @author Todor Kondić
 no_drama_mkdir<-function(path) {
-
-    if (! dir.exists(path)) dir.create(path)
-    path
+    f <- Vectorize(function(path) {
+        if (! dir.exists(path)) dir.create(path)
+        path},vectorize.args="path")
+    f(path)
 }
 
 ##' Produce the Rmb Settings file
@@ -60,6 +61,62 @@ mk_combine_file<-function(sett_fns,fname) {
     fname
 }
 
+
+fn_data2wd <- function(fn_data,dest) {
+    
+    f <- Vectorize(function(fn_data) {
+        noext <- stripext(fn_data)
+        file.path(dest,basename(noext))
+    },vectorize.args="fn_data")
+    f(fn_data)
+}
+
+get_presc_d <- function(wd) { file.path(wd,"prescreen")}
+gen_presc_d <- function(wd) { no_drama_mkdir(get_presc_d(wd))}
+    
+    
+
+get_cmpd_l_fn <- function(wd) {
+    f <- function(wd) file.path(wd,"compounds.csv")
+    fv <- Vectorize(f,vectorize.args=c("wd"))
+    fv(wd)
+}
+
+get_stgs_fn <- function(wd) {
+    f <- function(wd) file.path(wd,"settings.ini")
+    fv <- Vectorize(f,vectorize.args=c("wd"))
+    fv(wd)
+}
+
+get_ftable_fn <- function(wd) {
+    f <- function(wd) file.path(wd,"ftable.csv")
+    fv <- Vectorize(f,vectorize.args=c("wd"))
+    fv(wd)
+}
+
+get_inp_stgs_fn<- function(fn_data) {
+    f <- Vectorize(function(fn_data) {
+        bnm <- stripext(fn_data)
+        fn <- paste(bnm,".ini",sep='')},
+        vectorize.args="fn_data")
+    f(fn_data)}
+
+get_info_dir <- function(wd) {
+    file.path(wd,"info")
+}
+
+get_info_fn <- function(wd) {
+    file.path(get_info_dir(wd),"info.csv")
+}
+
+gen_info_dir <- function(wd) {
+    nm <- get_info_dir(wd)
+    no_drama_mkdir(nm)
+    nm
+}
+
+
+
 ##' Generate the RMassBank compound list from the input compound list
 ##' in CSV file src_fn. The input compound list format is either a
 ##' Chemical Dashboard csv file with, at least, PREFERRED_ SMILES
@@ -67,13 +124,12 @@ mk_combine_file<-function(sett_fns,fname) {
 ##' SMILES and Names filled. Argument dest_fn is the destination
 ##' filename. Returns the number of compounds.
 ##'
-##' 
 ##' @title Generate Compound List File
 ##' @param src_fn The input compound list CSV filename.
 ##' @param dest_fn The resulting compound list CSV filename.
 ##' @return Number of compounds.
 ##' @author Todor Kondić
-gen_comp_list<-function(src_fn,dest_fn) {
+gen_cmpd_l<-function(src_fn,dest_fn) {
     df<-read.csv(src_fn)
     ## Names
     nms<-if ("PREFERRED_NAME" %in% names(df)) df$PREFERRED_NAME else df$Name
@@ -87,43 +143,40 @@ gen_comp_list<-function(src_fn,dest_fn) {
     casvals<-if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
     if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
     outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz))
-    write.csv(outdf,file=dest_fn,row.names=F,na="")
+    f <- Vectorize(function (dest_fn) {
+        write.csv(outdf,file=dest_fn,row.names=F,na="")
+    },vectorize.args="dest_fn",SIMPLIFY=F)
+    
+    f(dest_fn)
     length(nms)
 }
 
 ##' Generates settings file and loads it.
 ##'
-##' 
 ##' @title Generate and Load the RMassBank Settings File
-##' @param fn_data The mzML filename.
 ##' @param stgs Settings named list, or a settings filename.
 ##' @param wd Directory under which results are archived.
 ##' @return result of RMassBank::loadRmbSettings
 ##' @author Todor Kondić
-gen_stgs_and_load <- function(fn_data,stgs,wd) {
-    wd <- normalizePath(wd)
-    fn_data <- normalizePath(fn_data)
+gen_stgs_and_load <- function(stgs,wd) {
     stgs<-if (is.character(stgs)) yaml::yaml.load_file(stgs) else stgs
-    sfn<-file.path(wd,paste(basename(fn_data),".ini",sep=''))
+    sfn<-get_stgs_fn(wd)
     mk_sett_file(stgs,sfn)
     RMassBank::loadRmbSettings(sfn)
 }
 
 ##' Generates the RMassBank compound list and loads it.
 ##'
-##' 
 ##' @title Generate and Load the RMassBank Compound List
-##' @param fn_data The mzML filename.
 ##' @param wd Directory under which results are archived.
+##' @param fn_cmpdl The input compound list filename. 
 ##' @return Named list. The key `fn_cmpdl` is the path of the
 ##'     generated compound list and the key `n` the number of
 ##'     compounds.
 ##' @author Todor Kondić
-gen_cmpdl_and_load <- function(fn_data,wd,fn_cmpdl) {
-    wd <- normalizePath(wd)
-    fn_data <- normalizePath(fn_data)
-    fn_comp<-file.path(wd,paste(basename(fn_data),".comp.csv",sep=''))
-    n_cmpd<-gen_comp_list(fn_cmpdl,fn_comp)
+gen_cmpdl_and_load <- function(wd,fn_cmpdl) {
+    fn_comp<-get_cmpd_l_fn(wd)
+    n_cmpd<-gen_cmpd_l(fn_cmpdl,fn_comp)
     RMassBank::loadList(fn_comp)
     list(fn_cmpdl=fn_comp,n=n_cmpd)
 }
@@ -133,225 +186,50 @@ gen_cmpdl_and_load <- function(fn_data,wd,fn_cmpdl) {
 ##' 
 ##' @title Generate and Load the RMassBank Settings File
 ##' @param fn_data The mzML filename.
-##' @param n_cmpd Number of compounds.
 ##' @param wd Directory under which results are archived.
+##' @param n_cmpd Number of compounds.
 ##' @return File path of the file table.
 ##' @author Todor Kondić
-gen_file_table <- function(fn_data,n_cmpd,wd) {
-    wd <- normalizePath(wd)
-    fn_data <- normalizePath(fn_data)
-    df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
-    fn_table<-file.path(wd,paste("fn-table.",basename(fn_data),".csv",sep=''))
-    write.csv(x=df_table,file=fn_table,row.names=F)
-    fn_table
+gen_ftable <- function(fn_data,wd,n_cmpd) {
+    f <- Vectorize(function(fn_data,wd) {
+        df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
+        fn_table<-get_ftable_fn(wd)
+        write.csv(x=df_table,file=fn_table,row.names=F)
+        fn_table
+    }, vectorize.args=c("fn_data","wd"))
+
+    f(fn_data,wd)
 }
 
-##' Wrapper for a single prescreening call. Produces output in the
-##' usual mix method places.
-##'
-##' @title Wrapper for RMB_EIC_Prescreen
-##' @param fn_data The mzML filename.
-##' @param stgs_alist Settings named list, or a settings filename.
-##' @param wd Directory under which results are archived.
-##' @param mode RMB mode. 
-##' @param fn_cmpd_l Filename of the compound list.
-##' @param ppm_lim_fine The ppm_limit_fine argument to RMB_EIC_Prescreen
-##' @param EIC_limit Passed down to RMB_EIC_Prescreen.
-##' @return result of RMB_EIC_Prescreen
-##' @author Todor Kondić
-##' @export
-presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001) {
+gen_fn_stgs <- function(fn_inp,fn) {
+    f <- Vectorize(function(fn_inp,fn) {
+        stgs <- yaml::yaml.load_file(fn_inp)
+        mk_sett_file(stgs,fn)
+        fn}, vectorize.args=c("fn_inp","fn"))
+
+    f(fn_inp,fn)
+}
+
+conf <- function(fn_data,fn_cmpd_l,dest) {
+    no_drama_mkdir(dest)
+    wd <- fn_data2wd(fn_data,dest)
     no_drama_mkdir(wd)
-    wd <- normalizePath(wd)
-    gen_stgs_and_load(fn_data,stgs_alist,wd)
-    
-    ## Generate and load the compound list.
-    x <- gen_cmpdl_and_load(fn_data,wd,fn_cmpd_l)
-    fn_comp <- x$fn_cmpdl
-    n_cmpd <- x$n
+    fn_inp_stgs <- get_inp_stgs_fn(fn_data)
+    fn_stgs <- get_stgs_fn(wd)
+    fn_out_cmpd_l <- get_cmpd_l_fn(wd)
 
-    ## Generate file table.
-    fn_table <- gen_file_table(fn_data,n_cmpd,wd)
-
-    #curd <- setwd(wd)
-    res <-RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode, FileList=fn_table,
-                               cmpd_list=fn_comp,
-                               ppm_limit_fine=ppm_lim_fine,
-                               EIC_limit=EIC_limit)
-    #setwd(curd)
-    res
-
+    gen_fn_stgs(fn_inp_stgs,fn_stgs)
+    n_cmpd <- gen_cmpd_l(fn_cmpd_l,fn_out_cmpd_l)
+    gen_ftable(fn_data,wd,n_cmpd)
 }
 
-##' Runs a compound mixture workflow on a single mzML file.
-##' 
-##' @title RMassBank Spectral Workflow on a Single Compound Mixture
-##' @param fn_data A mzML data file.
-##' @param stgs_alist RMassBank settings. It can either be a named
-##'     list of settings, or a filename of a YAML file.
-##' @param wd The name of the work directory.
-##' @param fn_cmpd_list The file name of he compound list
-##'     corresponding to `fn_data`.
-##' @param mode Modes as described in the standard workflow vignette
-##'     of RMassBank.
-##' @param readMethod Default read method is "mzR". Consult the
-##'     documentation of `msmsRead` for details.
-##' @param archdir The directory to store R objects created during
-##'     workflow execution.
-##' @param lastStep The last step in the workflow. Default is eight.
-##' @return MsmsWorkspace object.
-##' @author Todor Kondić
-single.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8) {
-    ## Generate settings file and load.
-    stgs_alist<-if (is.character(stgs_alist)) yaml::yaml.load_file(stgs_alist) else stgs_alist
-    sfn<-file.path(wd,paste(fn_data,".ini",sep=''))
-    mk_sett_file(stgs_alist,sfn)
-    RMassBank::loadRmbSettings(sfn)
-
-    ## Generate and load the compound list.
-    fn_comp<-file.path(wd,paste(fn_data,".comp.csv",sep=''))
-    n_cmpd<-gen_comp_list(fn_cmpd_list,fn_comp)
-    RMassBank::loadList(fn_comp)
-
-    ## Generate file table.
-    df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
-    fn_table<-file.path(wd,paste("fn-table.",fn_data,".csv",sep=''))
-    write.csv(x=df_table,file=fn_table,row.names=F)
-
-    ## Make empty workspace.
-    w <- RMassBank::newMsmsWorkspace()
-    ## Run the workflow.
-    message(paste("Reading in file:",fn_data))
-    w <-RMassBank::msmsRead(w,filetable=fn_table,readMethod="mzR",mode=mode)
-    archdir<-file.path(wd,archdir)
-    if (!dir.exists(archdir)) dir.create(archdir)
-    fn_arch<-file.path(archdir,paste(fn_data,".archive",sep=''))
-    RMassBank::msmsWorkflow(w, mode=mode, steps=2:lastStep,archivename=fn_arch)
-}
-
-
-##' Prepare single mbWorkspace object based on the workspace, the
-##' infolist name and RMassBank settings.
-##'
-##' 
-##' @title Prepare Single mbWorkspace object
-##' @param w MsmsWorkspace object.
-##' @param fn_info Filename of the infolist to be generated.
-##' @param fn_stgs Filename of the RMassBank settings.
-##' @return A mbWorkspace object.
-##' @author Todor Kondić
-mb.prep.single<-function(w,fn_info,fn_stgs) {
-    RMassBank::loadRmbSettings(fn_stgs)
-    mb <- RMassBank::newMbWorkspace(w)
-    RMassBank::resetInfolists(mb)
-    RMassBank::mbWorkflow(mb,infolist_path=fn_info)
-}
-##' Vectorize mb.prep function.
-##'
-##' 
-##' @title Vectorized mb.prep function.
-##' @param w A sequence of msmsWorkspaces.
-##' @param fn_info A sequence of infolist filenams to be generated.
-##' @param fn_stgs A sequence of settings associated with each
-##'     msmsWorkspace object.
-##' @return A list of mbWorkspaces.
-##' @author Todor Kondić
-mb.prep.v<-function(w,fn_info,fn_stgs) {
-    f<-Vectorize(mb.prep.single,vectorize.args=c("w","fn_info","fn_stgs"),SIMPLIFY=F)
-    res<-f(w,fn_info,fn_stgs)
-    names(res)<-names(w)
-    res
-}
-
-
-##' Performs a single MassBank workflow after preparation.
-##'
-##' 
-##' @title Single MassBank workflow.
-##' @param mb A mbWorkspace object.
-##' @param infodir Directory containing the infolist.
-##' @param fn_stgs The settings associated with the mbWorkspace
-##'     object.
-##' @return A mbWorkflow object.
-##' @author Todor Kondić
-mb.single<-function(mb,infodir,fn_stgs) {
+reconf <- function(wd) {## Load the settings.
+    fn_stgs <- get_stgs_fn(wd)
     RMassBank::loadRmbSettings(fn_stgs)
     
-    mb <- RMassBank::resetInfolists(mb)
-    mb <- RMassBank::loadInfolists(mb,infodir)
-    ## loadInfolists
-    ## addPeaks
-    prevd<-setwd(infodir)
-    res<-RMassBank::mbWorkflow(mb,step=1:8)
-    setwd(prevd)
-    res
-}
-
-##' Vectorises presc.single.
-##'
-##' @title Vectorises presc.single
-##' @param fn_data Sequence of mzML filenames.
-##' @param fn_cmpd_l Compound list filename.
-##' @param mode RMB mode.
-##' @param ppm_lim_fine Prescreen fine limit (see ReSOLUTION prescreening function).
-##' @param EIC_limit Prescreen EIC limit (see ReSOLUTION prescreening function).
-##' @return Nothing useful.
-##' @author Todor Kondić
-##' @export
-presc.v<-function(fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
-    idir<-function(n) file.path(".",stripext(n))
-    wd <- sapply(fn_data,idir)
-    stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
-    f<-Vectorize(presc.single,vectorize.args=c("fn_data","stgs_alist","wd"),SIMPLIFY=F)
-    f(fn_data,stgs_alist,wd,mode=mode,fn_cmpd_l=fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)
-}
-
-
-##' Interface to vectorised spectral workflow.
-##'
-##' 
-##' @title Vectorised Spectral Workflow.
-##' @param fn_data A sequence of mzML input files.
-##' @param stgs_alist A list of named list of settings, or a list of
-##'     filenames of YAML files containing the settings.
-##' @param wd The list of working directories.
-##' @param fn_cmpd_list The compound list characterising the mixtures.
-##' @param mode Same as in msmsRead.
-##' @param readMethod Same as in msmsRead.
-##' @param archdir Name of the archive.
-##' @param lastStep The last step of the spectral workflow.
-##' @param combine If TRUE, use combineMultiplicies to merge
-##'     workspaces corresponding to different collisional energies.
-##' @return A named list of spectral workspaces. The names are derived
-##'     from data filenames.
-##' @author Todor Kondić
-v<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F) {
-    idir<-function(n) file.path(".",stripext(n))
-    f<-Vectorize(single.sw,vectorize.args=c("wd","fn_data","stgs_alist"),SIMPLIFY=F)
-    rootdir <- getwd()
-    if (combine) {
-        z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=7)
-        names(z)<-basename(fn_data)
-        zz<-RMassBank::combineMultiplicities(z)
-
-        combdir<-"combined"
-        archdir<-file.path(rootdir,combdir,archdir)
-        no_drama_mkdir(combdir)
-        no_drama_mkdir(archdir)
-        fn_arch<-file.path(archdir,"archive")
-        fn_comb_stgs <- file.path(rootdir,combdir,paste(combdir,".mzML.ini",sep=''))
-        ddirs <- sapply(names(z),idir)
-        stgs_fls <- sapply(ddirs,function(x) file.path(x,paste(x,".mzML.ini",sep='')))
-        mk_combine_file(stgs_fls,fn_comb_stgs)
-
-        res<-list(RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch))
-        names(res)<-paste(combdir,".mzML",sep='') #Clearly a hack.
-        res
-    } else {
-        z<-f(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod=readMethod,archdir=archdir,lastStep=lastStep)
-        names(z)<-basename(fn_data)
-        z
-    }
+    ## Load the compound list.
+    fn_cmpd_l <- get_cmpd_l_fn(wd)
+    RMassBank::loadList(fn_cmpd_l)
 }
 
 ##' Prescreens. Writes data out. Adapted from ReSOLUTION
@@ -437,33 +315,6 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
               row.names = F)
 }
 
-
-
-##' Parallel version of presc.single.
-##'
-##' @title Parallel version of presc.single
-##' @param cl Cluster object.
-##' @param fn_data Sequence of mzML files.
-##' @param fn_cmpd_l Filename of the compound list.
-##' @param mode RMB mode.
-##' @param ppm_lim_fine See ReSOLUTION.
-##' @param EIC_limit See ReSOLUTION.
-##' @return Nothing useful.
-##' @author Todor Kondić
-##' @export
-presc.p<-function(cl,fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
-    idir<-function(n) file.path(".",stripext(n))
-    wd <- sapply(fn_data,idir)
-    stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
-
-    f <- function(fn_data,stgs_alist,wd) presc.single(fn_data=fn_data,stgs_alist=stgs_alist,wd=wd,mode=mode,
-                                                      fn_cmpd_l=fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)
-    
-    parallel::clusterMap(cl,fun=f,fn_data,stgs_alist,wd)
-    
-}
-
-
 ##' Plot the output of prescreen.
 ##'
 ##' @title Plot the Output of Prescreen
@@ -484,7 +335,7 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2",cex=0.75,digits=6) {
     for (i in seq(length(eics))) {
         eic <- eics[[i]]
         maybekid <- maybekids[[i]]
-        fn_ini <- lapply(wd,function(x) file.path(x,list.files(path=x,patt="*.ini")[[1]]))
+        fn_ini <- lapply(wd,get_stgs_fn)
         
         lbls <- lapply(fn_ini,function(x) {s <- yaml::yaml.load_file(x);s$spectraList[[1]]$ce})
         plot.new()
@@ -551,65 +402,6 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2",cex=0.75,digits=6) {
     }
     dev.off()
 }
-
-
-
-
-
-##' Interface to parallel spectral workflow.
-##'
-##' 
-##' @title Parallel Spectral Workflow.
-##' @param fn_data A sequence of mzML input files.
-##' @param stgs_alist A list of named list of settings, or a list of
-##'     filenames of YAML files containing the settings.
-##' @param wd The list of working directories.
-##' @param fn_cmpd_list The compound list characterising the mixtures.
-##' @param mode Same as in msmsRead.
-##' @param readMethod Same as in msmsRead.
-##' @param archdir Name of the archive.
-##' @param lastStep The last step in spectral workflow.
-##' @param combine If TRUE, use combineMultiplicies to merge
-##'     workspaces corresponding to different collisional energies.
-##' @param cl Cluster.
-##' @return A named list of spectral workspaces. The names are derived
-##'     from data filenames.
-##' @author Todor Kondić
-p.sw<-function(fn_data,stgs_alist,wd,fn_cmpd_list,mode,readMethod="mzR",archdir="archive",lastStep=8,combine=F,cl=NULL) {
-    idir<-function(n) file.path(".",stripext(n))
-    fnocomb<-function(fn,stgs,wd) {
-        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep=lastStep)
-    }
-    fcomb<-function(fn,stgs,wd) {
-        single.sw(fn,stgs,wd,fn_cmpd_list,mode,readMethod,archdir,lastStep=7)
-    }
-
-    if (combine) {
-        rootdir <- getwd()
-        z<-parallel::clusterMap(cl,fcomb,fn_data,stgs_alist,wd)
-        names(z)<-basename(fn_data)
-        zz<-RMassBank::combineMultiplicities(z)
-
-        combdir<-"combined"
-        archdir<-file.path(rootdir,combdir,archdir)
-        no_drama_mkdir(combdir)
-        no_drama_mkdir(archdir)
-        fn_arch<-file.path(archdir,"archive")
-        fn_comb_stgs <- file.path(rootdir,combdir,paste(combdir,".mzML.ini",sep=''))
-        ddirs <- sapply(names(z),idir)
-        stgs_fls <- sapply(ddirs,function(x) file.path(x,paste(x,".mzML.ini",sep='')))
-        mk_combine_file(stgs_fls,fn_comb_stgs)
-        
-        res<-list(RMassBank::msmsWorkflow(zz, steps=8, mode=mode, archivename = fn_arch))
-        names(res)<-paste(combdir,".yml",sep='') #Clearly a hack.
-        res
-    } else {
-        z<-parallel::clusterMap(cl,fnocomb,fn_data,stgs_alist,wd)
-        names(z)<-basename(fn_data)
-        z
-    }
-}
-
     
 ##' Interface to vectorised Mass Bank workflow.
 ##'
