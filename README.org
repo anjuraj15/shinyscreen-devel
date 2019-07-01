@@ -5,7 +5,8 @@
 ** Prescreening
    1. Generate prescreening data frames,
       #+BEGIN_SRC R
-      presc.do(list.files(patt=".*mzML"),"pH",fn_cmpd_list="./Pesticides.info.csv",proc=4)
+      presc.do(list.files(path="~/ECI_SCRATCH/20190627_HEROBER",patt=".*.mzML",full.names=T),
+               mode="pH",fn_cmpd_l="./cutlist.csv",proc=F,dest=".")
       #+END_SRC
       This is to be carried out inside the directory containing the
       ~mzML~ files. For sequential execution, leave out the ~proc~
@@ -13,7 +14,7 @@
    2. Plot,
       #+BEGIN_SRC R
       require(rmbmix)
-      presc.plot(normalizePath(list.dirs(".",recursive=F,full.names=F)))
+      presc.plot(list.files(".",patt="2.*POS",include.dirs=T),cex=0.7,digits=4)
       #+END_SRC
       The only argument is a sequence of absolute paths to directories
       containing the prescreen data. The resulting plot file is going
