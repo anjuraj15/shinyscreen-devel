@@ -4,11 +4,9 @@
 \alias{gen_stgs_and_load}
 \title{Generate and Load the RMassBank Settings File}
 \usage{
-gen_stgs_and_load(fn_data, stgs, wd)
+gen_stgs_and_load(stgs, wd)
 }
 \arguments{
-\item{fn_data}{The mzML filename.}
-
 \item{stgs}{Settings named list, or a settings filename.}
 
 \item{wd}{Directory under which results are archived.}

@@ -4,12 +4,13 @@
 \alias{sw.do}
 \title{Perform MassBank Workflow on Multiple Compound Mixtures}
 \usage{
-sw.do(fn_data, fn_cmpd_list, mode, dest = ".", combine = F, proc = F)
+sw.do(fn_data, fn_cmpd_l, mode, dest = ".", combine = F, proc = F,
+  split = 3)
 }
 \arguments{
 \item{fn_data}{List of mzML data filenames to be processed.}
 
-\item{fn_cmpd_list}{Compound list.}
+\item{fn_cmpd_l}{Compound list.}
 
 \item{mode}{as in msmsRead.}
 
@@ -20,6 +21,8 @@ workspaces corresponding to different collisional energies.}
 
 \item{proc}{Split work between this amount of processes. If FALSE
 (or, 1), run sequential.}
+
+\item{split}{This is the last step before combine}
 }
 \value{
 A named list of msmsWorkspace objects.

@@ -70,6 +70,9 @@ fn_data2wd <- function(fn_data,dest) {
     },vectorize.args="fn_data")
     f(fn_data)
 }
+
+get_presc_d <- function(wd) { file.path(wd,"prescreen")}
+gen_presc_d <- function(wd) { no_drama_mkdir(get_presc_d(wd))}
     
     
 
@@ -86,7 +89,7 @@ get_stgs_fn <- function(wd) {
 }
 
 get_ftable_fn <- function(wd) {
-    f <- function(wd) file.path(wd,"ftable.ini")
+    f <- function(wd) file.path(wd,"ftable.csv")
     fv <- Vectorize(f,vectorize.args=c("wd"))
     fv(wd)
 }
@@ -229,61 +232,6 @@ reconf <- function(wd) {## Load the settings.
     RMassBank::loadList(fn_cmpd_l)
 }
 
-##' Wrapper for a single prescreening call. Produces output in the
-##' usual mix method places.
-##'
-##' @title Wrapper for RMB_EIC_Prescreen
-##' @param fn_data The mzML filename.
-##' @param stgs_alist Settings named list, or a settings filename.
-##' @param wd Directory under which results are archived.
-##' @param mode RMB mode. 
-##' @param fn_cmpd_l Filename of the compound list.
-##' @param ppm_lim_fine The ppm_limit_fine argument to RMB_EIC_Prescreen
-##' @param EIC_limit Passed down to RMB_EIC_Prescreen.
-##' @return result of RMB_EIC_Prescreen
-##' @author Todor Kondić
-##' @export
-presc.single <- function(fn_data,stgs_alist,wd,mode,fn_cmpd_l,ppm_lim_fine=10,EIC_limit=0.001) {
-    no_drama_mkdir(wd)
-    gen_stgs_and_load(stgs_alist,wd)
-    
-    ## Generate and load the compound list.
-    x <- gen_cmpdl_and_load(wd,fn_cmpd_l)
-    fn_cmpd_l <- x$fn_cmpdl
-    n_cmpd <- x$n
-
-    ## Generate file table.
-    fn_table <- gen_file_table(fn_data,n_cmpd,wd)
-
-    #curd <- setwd(wd)
-    res <-RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode, FileList=fn_table,
-                               cmpd_list=fn_cmpd_l,
-                               ppm_limit_fine=ppm_lim_fine,
-                               EIC_limit=EIC_limit)
-    #setwd(curd)
-    res
-
-}
-
-##' Vectorises presc.single.
-##'
-##' @title Vectorises presc.single
-##' @param fn_data Sequence of mzML filenames.
-##' @param fn_cmpd_l Compound list filename.
-##' @param mode RMB mode.
-##' @param ppm_lim_fine Prescreen fine limit (see ReSOLUTION prescreening function).
-##' @param EIC_limit Prescreen EIC limit (see ReSOLUTION prescreening function).
-##' @return Nothing useful.
-##' @author Todor Kondić
-##' @export
-presc.v<-function(fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
-    idir<-function(n) file.path(".",stripext(n))
-    wd <- sapply(fn_data,idir)
-    stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
-    f<-Vectorize(presc.single,vectorize.args=c("fn_data","stgs_alist","wd"),SIMPLIFY=F)
-    f(fn_data,stgs_alist,wd,mode=mode,fn_cmpd_l=fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)
-}
-
 ##' Prescreens. Writes data out. Adapted from ReSOLUTION
 ##'
 ##' 
@@ -367,33 +315,6 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
               row.names = F)
 }
 
-
-
-##' Parallel version of presc.single.
-##'
-##' @title Parallel version of presc.single
-##' @param cl Cluster object.
-##' @param fn_data Sequence of mzML files.
-##' @param fn_cmpd_l Filename of the compound list.
-##' @param mode RMB mode.
-##' @param ppm_lim_fine See ReSOLUTION.
-##' @param EIC_limit See ReSOLUTION.
-##' @return Nothing useful.
-##' @author Todor Kondić
-##' @export
-presc.p<-function(cl,fn_data,fn_cmpd_l,mode,ppm_lim_fine=10,EIC_limit=0.001) {
-    idir<-function(n) file.path(".",stripext(n))
-    wd <- sapply(fn_data,idir)
-    stgs_alist <- sapply(wd,function(d) {paste(d,".ini",sep='')})
-
-    f <- function(fn_data,stgs_alist,wd) presc.single(fn_data=fn_data,stgs_alist=stgs_alist,wd=wd,mode=mode,
-                                                      fn_cmpd_l=fn_cmpd_l,ppm_lim_fine=ppm_lim_fine,EIC_limit=EIC_limit)
-    
-    parallel::clusterMap(cl,fun=f,fn_data,stgs_alist,wd)
-    
-}
-
-
 ##' Plot the output of prescreen.
 ##'
 ##' @title Plot the Output of Prescreen
@@ -414,7 +335,7 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2",cex=0.75,digits=6) {
     for (i in seq(length(eics))) {
         eic <- eics[[i]]
         maybekid <- maybekids[[i]]
-        fn_ini <- lapply(wd,function(x) file.path(x,list.files(path=x,patt="*.ini")[[1]]))
+        fn_ini <- lapply(wd,get_stgs_fn)
         
         lbls <- lapply(fn_ini,function(x) {s <- yaml::yaml.load_file(x);s$spectraList[[1]]$ce})
         plot.new()

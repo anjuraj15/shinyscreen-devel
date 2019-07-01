@@ -7,7 +7,7 @@
 no_drama_mkdir(path)
 }
 \arguments{
-\item{path}{Name of the directory.}
+\item{path}{Names of the directories.}
 }
 \value{
 The character string containing the input argument \code{path}.

@@ -4,12 +4,12 @@
 \alias{gen_cmpdl_and_load}
 \title{Generate and Load the RMassBank Compound List}
 \usage{
-gen_cmpdl_and_load(fn_data, wd, fn_cmpdl)
+gen_cmpdl_and_load(wd, fn_cmpdl)
 }
 \arguments{
-\item{fn_data}{The mzML filename.}
-
 \item{wd}{Directory under which results are archived.}
+
+\item{fn_cmpdl}{The input compound list filename.}
 }
 \value{
 Named list. The key \code{fn_cmpdl} is the path of the
