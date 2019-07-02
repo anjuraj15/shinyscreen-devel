@@ -24,4 +24,5 @@ Imports:
     parallel,
     yaml,
     mzR,
-    RColorBrewer
+    RColorBrewer,
+    RChemMass

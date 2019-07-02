@@ -319,26 +319,47 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
 ##'
 ##' @title Plot the Output of Prescreen
 ##' @param wd Sequence of data dirs containing the prescreen subdir.
+##' @param mode RMB mode.
 ##' @param out The name of the output file.
 ##' @param pal ColorBrewer palette name.
 ##' @param cex As in legend.
+##' @param rt_digits Number of digits after the point for the retention time.
+##' @param m_digits Number of digits after the point for the mass.
 ##' @param digits Number of significant digits for peak ret times. 
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2",cex=0.75,digits=6) {
+presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digits=2,m_digits=4) {
+    modemap=list(pH="MpHp_mass",
+                 mH="MmHm_mass",
+                 blahnh4="MpNH4_mass",
+                 blahna="MpNa_mass")
     dfdir <- file.path(wd,"prescreen")
     pdf(out)
+
+    wd1 <- wd[[1]]
+    df <- read.csv(file=get_cmpd_l_fn(wd1),stringsAsFactors = F)
+    smiles <- df$SMILES
+    no_cmpds <- length(smiles)
+    # reconf(wd1)
+    masses <- lapply(smiles,function (smile) {
+        #smiles <- tryCatch(RMassBank::findSmiles(i), error = function(e) NA)
+        zz <- RChemMass::getSuspectFormulaMass(smile)
+        zz[[modemap[[mode]]]]
+    })
+    #message("Masses:",masses)
+    #return(masses)
+
     ## Get the basenames of eic files.
     eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
     for (i in seq(length(eics))) {
+        plot.new()
         eic <- eics[[i]]
         maybekid <- maybekids[[i]]
         fn_ini <- lapply(wd,get_stgs_fn)
         
-        lbls <- lapply(fn_ini,function(x) {s <- yaml::yaml.load_file(x);s$spectraList[[1]]$ce})
-        plot.new()
+        lbls <- lapply(fn_ini,function(x) {s <- yaml::yaml.load_file(x);s$prescreen$tag})
         dfs <- lapply(file.path(dfdir,eic),function(fn) {
             tryCatch(read.csv(fn,stringsAsFactors = F),
                      error=function(e) {message(paste(e,"; offending file:",fn))})
@@ -368,17 +389,21 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2",cex=0.75,digits=6) {
 
         
         
-        rt_rng <- range(sapply(dfs,function(x) x$rt))
-        int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
-        plot.window(rt_rng,c(1.2*int_rng[[1]],1.3*int_rng[[2]]))
+        rt_rng <- 1.1*range(sapply(dfs,function(x) x$rt))
+        int_rng <- 1.3*range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
+        plot.window(rt_rng,int_rng)
         box()
         cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
-        lgnd <- Map(function(k,v) paste(k,"= ",v,sep=''),symbs,format(rt_max,digits=digits))
+        lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
         linfo <- legend("topleft",horiz=T,legend=lbls,col=cols,fill=cols,bty="n",cex=cex)
         legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty="n",cex=cex)
-
+        text(x=rt_rng[[2]],y=0.5*int_rng[[2]],smiles[[i]],cex=cex,srt=90)
+        x1=1.1*linfo$rect$left
+        y2=0.9*linfo$rect$top
+        x2=1.1*x1
+        y1=0.9*y2
         cols_kids <- cols[indkids]
-        lgnd_kids <- Map(function(k,v) paste(k,"= ",v,sep=''),symbs_kids,format(rt_max_kids,digits=digits))
+        lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
         if (length(lgnd_kids)>0) legend(x="bottomleft",horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
 
         ## Plot eic across the directory set.
@@ -393,11 +418,13 @@ presc.plot <- function(wd,out="prescreen.pdf",pal="Dark2",cex=0.75,digits=6) {
                 lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
             }
         }
-        title(main=i,xlab="retention time [min]",ylab="intensity")
+
+        title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")),xlab="retention time [min]",ylab="intensity")
         for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
         if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)
         axis(1)
         axis(2)
+        ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
         gc()
     }
     dev.off()
