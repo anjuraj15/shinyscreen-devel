@@ -14,7 +14,7 @@
    2. Plot,
       #+BEGIN_SRC R
       require(rmbmix)
-      presc.plot(list.files(".",patt="2.*POS",include.dirs=T),cex=0.7,digits=4)
+      presc.plot(list.files(".",patt="2.*POS",include.dirs=T),mode="pH",cex=0.7,rt_digits=2,m_digits=4,pal="Dark2",out="prescreen.pdf")
       #+END_SRC
       The only argument is a sequence of absolute paths to directories
       containing the prescreen data. The resulting plot file is going

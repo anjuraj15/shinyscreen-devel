@@ -4,17 +4,23 @@
 \alias{presc.plot}
 \title{Plot the Output of Prescreen}
 \usage{
-presc.plot(wd, out = "prescreen.pdf", pal = "Dark2", cex = 0.75,
-  digits = 6)
+presc.plot(wd, mode, out = "prescreen.pdf", pal = "Dark2",
+  cex = 0.75, rt_digits = 2, m_digits = 4)
 }
 \arguments{
 \item{wd}{Sequence of data dirs containing the prescreen subdir.}
+
+\item{mode}{RMB mode.}
 
 \item{out}{The name of the output file.}
 
 \item{pal}{ColorBrewer palette name.}
 
 \item{cex}{As in legend.}
+
+\item{rt_digits}{Number of digits after the point for the retention time.}
+
+\item{m_digits}{Number of digits after the point for the mass.}
 
 \item{digits}{Number of significant digits for peak ret times.}
 }
