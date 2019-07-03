@@ -315,6 +315,51 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
               row.names = F)
 }
 
+##' Helper function for rendersmiles2
+##'
+##' @title Render Compound from an Online Resource
+##' @param depictURL The URL of the object to plot.
+##' @param coords The positioning of the image (in data coords).
+##' @param filename Temp filename.
+##' @return Nothing useful.
+##' @author Todor Kondić
+renderurl <- function(depictURL,coords=c(0,0,100,100), filename=tempfile(fileext=".svg")) {
+    h <- new_handle()
+    curl::handle_setopt(h, ssl_verifyhost = 0, ssl_verifypeer=0)
+    curl::curl_download(url=depictURL,filename,handle=h)
+    img <- rsvg(filename)
+    if (length(img)>2) {
+        rasterImage(img,xleft=coords[1],ybottom=coords[2],xright=coords[3],ytop=coords[4])
+    }
+}
+
+
+## rendersmiles <- function(smiles, kekulise=TRUE, coords=c(0,0,100,100), width=200, height=200,
+##                               zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
+##                               showTitle=FALSE, smaLimit=100, sma=NULL) {
+##   dep <- get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
+##                       abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
+##                       sma = NULL)
+##   library(rcdk)
+##   library(RChemMass)
+##   mol <- getMolecule(smiles)
+##   img <- view.image.2d(mol, depictor=dep)
+##   rasterImage(img, coords[1],coords[2], coords[3],coords[4])
+
+## }
+
+##' Render smiles from an online resource.
+##'
+##' @title Turn SMILES to an Image Using Online Resource
+##' @param smiles The SMILES string.
+##' @param ... Hand over to renderurl.
+##' @return Nothing useful.
+##' @author Todor Kondić
+rendersmiles2 <- function(smiles,...) {
+    dpurl <- buildCDKdepictURL(smiles)
+    renderurl(dpurl,filename=tempfile(fileext=".svg"),...)
+}
+
 ##' Plot the output of prescreen.
 ##'
 ##' @title Plot the Output of Prescreen
@@ -339,16 +384,16 @@ presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digit
 
     wd1 <- wd[[1]]
     df <- read.csv(file=get_cmpd_l_fn(wd1),stringsAsFactors = F)
-    smiles <- df$SMILES
-    no_cmpds <- length(smiles)
+    osmesi <- df$SMILES
+    no_cmpds <- length(osmesi)
     # reconf(wd1)
-    masses <- lapply(smiles,function (smile) {
-        #smiles <- tryCatch(RMassBank::findSmiles(i), error = function(e) NA)
+    masses <- lapply(osmesi,function (smile) {
+        #osmesi <- tryCatch(RMassBank::findSmiles(i), error = function(e) NA)
         zz <- RChemMass::getSuspectFormulaMass(smile)
         zz[[modemap[[mode]]]]
     })
     #message("Masses:",masses)
-    #return(masses)
+    # return(osmesi)
 
     ## Get the basenames of eic files.
     eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
@@ -389,19 +434,28 @@ presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digit
 
         
         
-        rt_rng <- 1.1*range(sapply(dfs,function(x) x$rt))
-        int_rng <- 1.3*range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
+        rt_rng <- 1.2*range(sapply(dfs,function(x) x$rt))
+        int_rng <- 1.4*range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
         plot.window(rt_rng,int_rng)
         box()
         cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
         lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
         linfo <- legend("topleft",horiz=T,legend=lbls,col=cols,fill=cols,bty="n",cex=cex)
         legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty="n",cex=cex)
-        text(x=rt_rng[[2]],y=0.5*int_rng[[2]],smiles[[i]],cex=cex,srt=90)
-        x1=1.1*linfo$rect$left
-        y2=0.9*linfo$rect$top
-        x2=1.1*x1
-        y1=0.9*y2
+        #text(x=rt_rng[[2]],y=0.5*int_rng[[2]],osmesi[[i]],cex=cex,srt=90)
+        fxmin=rt_rng[1]+0.75*(rt_rng[2]-rt_rng[1])
+        fxmax=fxmin+0.3*(rt_rng[2]-rt_rng[1])
+        fymin=int_rng[1]+0.6*(int_rng[2]-int_rng[1])
+        fymax=fymin+0.3*(int_rng[2]-int_rng[1])
+
+        xcmp=c(fxmin,fxmax)
+        ycmp=c(fymin,fymax)
+        #xcmp=c(0.99*rt_rng[[1]],rt_rng[[2]])
+
+                                        #ycmp=c(0.99*int_rng[[1]],int_rng[[2]])
+        rendersmiles2(osmesi[i],coords=c(xcmp[1],ycmp[1],xcmp[2],ycmp[2]))
+        # RChemMass::renderSMILES.rcdk(osmesi[i],coords=c(xcmp[[1]],ycmp[[1]],xcmp[[2]],ycmp[[2]]),width=xcmp[[2]]-xcmp[[1]],height=ycmp[[2]]-ycmp[[1]])
+
         cols_kids <- cols[indkids]
         lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
         if (length(lgnd_kids)>0) legend(x="bottomleft",horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)

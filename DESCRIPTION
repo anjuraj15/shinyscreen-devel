@@ -19,10 +19,12 @@ Roxygen: list(markdown = TRUE)
 Collate:
     'mix.R'
     'run.R'
-Imports: 
+Depends:
     RMassBank,
+    RChemMass
+Imports: 
     parallel,
     yaml,
     mzR,
     RColorBrewer,
-    RChemMass
+    curl
