@@ -380,7 +380,6 @@ presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digit
                  blahnh4="MpNH4_mass",
                  blahna="MpNa_mass")
     dfdir <- file.path(wd,"prescreen")
-    pdf(out)
 
     wd1 <- wd[[1]]
     df <- read.csv(file=get_cmpd_l_fn(wd1),stringsAsFactors = F)
@@ -398,8 +397,9 @@ presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digit
     ## Get the basenames of eic files.
     eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
+
+    pdf(out)
     for (i in seq(length(eics))) {
-        plot.new()
         eic <- eics[[i]]
         maybekid <- maybekids[[i]]
         fn_ini <- lapply(wd,get_stgs_fn)
@@ -434,33 +434,30 @@ presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digit
 
         
         
-        rt_rng <- 1.2*range(sapply(dfs,function(x) x$rt))
-        int_rng <- 1.4*range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
-        plot.window(rt_rng,int_rng)
-        box()
+        rt_rng <- range(sapply(dfs,function(x) x$rt))
+        int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
         cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
         lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
+        
+        layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), 
+               widths=c(7,8), heights=c(6,6))
+        struc_xr <- c(0,100)
+        struc_yr <- c(0,100)
+        plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n")
+        rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
+       
+        col_eng <- c(0,100)
+        peak_int <- c(0,100)
+        plot(1,1,type="n",xlab="",ylab="",xlim=col_eng,ylim=peak_int,xaxt="n",yaxt="n",axes = FALSE)
         linfo <- legend("topleft",horiz=T,legend=lbls,col=cols,fill=cols,bty="n",cex=cex)
-        legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty="n",cex=cex)
-        #text(x=rt_rng[[2]],y=0.5*int_rng[[2]],osmesi[[i]],cex=cex,srt=90)
-        fxmin=rt_rng[1]+0.75*(rt_rng[2]-rt_rng[1])
-        fxmax=fxmin+0.3*(rt_rng[2]-rt_rng[1])
-        fymin=int_rng[1]+0.6*(int_rng[2]-int_rng[1])
-        fymax=fymin+0.3*(int_rng[2]-int_rng[1])
-
-        xcmp=c(fxmin,fxmax)
-        ycmp=c(fymin,fymax)
-        #xcmp=c(0.99*rt_rng[[1]],rt_rng[[2]])
-
-                                        #ycmp=c(0.99*int_rng[[1]],int_rng[[2]])
-        rendersmiles2(osmesi[i],coords=c(xcmp[1],ycmp[1],xcmp[2],ycmp[2]))
-        # RChemMass::renderSMILES.rcdk(osmesi[i],coords=c(xcmp[[1]],ycmp[[1]],xcmp[[2]],ycmp[[2]]),width=xcmp[[2]]-xcmp[[1]],height=ycmp[[2]]-ycmp[[1]])
-
+        legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty='n',cex=cex)
+         
         cols_kids <- cols[indkids]
         lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
-        if (length(lgnd_kids)>0) legend(x="bottomleft",horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
+        if (length(lgnd_kids)>0) legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
+        plot(1,1,xlab="",ylab="",xlim = rt_rng,ylim = int_rng,type="n")
 
-        ## Plot eic across the directory set.
+          ## Plot eic across the directory set.
         for (n in seq(length(dfs))) {
             df <- dfs[[n]]
             col <- cols[[n]]
@@ -472,12 +469,13 @@ presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digit
                 lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
             }
         }
-
         title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")),xlab="retention time [min]",ylab="intensity")
         for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
         if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)
         axis(1)
         axis(2)
+               
+             
         ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
         gc()
     }
