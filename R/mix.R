@@ -514,4 +514,184 @@ mb.p<-function(mb,infodir,fn_stgs,cl=F) {
     names(x)<-names(mb)
     x}
 
+##' Prescreening using shiny interface.
+##'
+##' @title Prescreening with Shiny 
+##' @return Nothing useful. 
+##' @author Jessy Krier
+##' @author Mira Narayanan
+presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
+    modemap=list(pH="MpHp_mass",
+                 mH="MmHm_mass",
+                 blahnh4="MpNH4_mass",
+                 blahna="MpNa_mass")
 
+    dfdir <- file.path(wd,"prescreen")
+
+    wd1 <- wd[[1]]
+    df <- read.csv(file=get_cmpd_l_fn(wd1),stringsAsFactors = F)
+    osmesi <- df$SMILES
+    no_cmpds <- length(osmesi)
+    # reconf(wd1)
+    masses <- lapply(osmesi,function (smile) {
+        #osmesi <- tryCatch(RMassBank::findSmiles(i), error = function(e) NA)
+        zz <- RChemMass::getSuspectFormulaMass(smile)
+        zz[[modemap[[mode]]]]
+    })
+    #message("Masses:",masses)
+    # return(osmesi)
+
+    ## Get the basenames of eic files.
+    eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
+    maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
+    idsliderrange <- range(df$ID)
+    ui <- shinydashboard::dashboardPage(
+          shinydashboard::dashboardHeader(title = "Prescreening"),
+          shinydashboard::dashboardSidebar(
+                              width = 350,
+                              shinydashboard::sidebarMenu(
+                                                  shinydashboard::sidebarSearchForm(textId = "searchText", buttonId = "searchButton", label = "Search..."),
+                                                  shinydashboard::menuItem(text = "Dashboard", tabName = "Dashboard", icon = shiny::icon("dashboard")))),
+          shinydashboard::dashboardBody(
+                              shiny::fluidRow(
+                                         shinydashboard::box(
+                                                             title = "MS Prescreening", width = 6, background = "blue", ""
+                                                         ),
+                                         shinydashboard::box(
+                                                             title = "ID N°",width = 6, background = "maroon", ""
+                                                         )
+                                     ),
+                              shiny::fluidRow(
+                                         shinydashboard::box(
+                                                             title = "Plot", width = 6, solidHeader = TRUE, collapsible = TRUE,
+                                                             plotOutput("plot1", width = "100%", height = "400px", click = NULL,
+                                                                        dblclick = NULL, hover = NULL, hoverDelay = NULL,
+                                                                        hoverDelayType = NULL, brush = NULL, clickId = NULL,
+                                                                        hoverId = NULL)
+                                                         ),
+                                         shinydashboard::box(
+                                                             title = "Compounds", solidHeader = TRUE, collapsible = TRUE, "", br(),
+                                                             sliderInput("idslider", "Compound number:", idsliderrange[1], idsliderrange[2], value=1,step=1)
+                                                         )
+                                     ),
+                              shiny::fluidRow(
+                                         shinydashboard::box(
+                                                             title = "Plot x axis range", width = 6, solidHeader = TRUE, collapsible = TRUE,
+                                                             shinyUI(pageWithSidebar(
+                                                                 headerPanel(""),
+                                                                 sidebarPanel(
+                                                                     numericInput("min_val", "Minimum x Axis Value", 1),
+                                                                     numericInput("max_val", "Maximum x Axis Value", 100),
+                                                                     uiOutput("slider")),
+                                                                 mainPanel()
+                                                             ))
+                                                         ),
+                                         shinydashboard::box(
+                                                             title = "Prescreening Results", width = 6, solidHeader = TRUE, collapsible = TRUE,
+                                                             checkboxGroupInput("variable", "Checkboxes:",
+                                                                                c("MS1" = "MS1 present",
+                                                                                  "MS2" = "MS2 present",
+                                                                                  "Alignment" = "Alignment MS1/MS2",
+                                                                                  "Intensity" = "Intensity is good",
+                                                                                  "Noise" = "MS is noisy")),
+                                                             textInput("text", "Comments:"),
+                                                             tableOutput("data")
+                                                         )
+                                     )
+                          )
+          )
+
+    plotall <- function(i) {
+        eic <- eics[[i]]
+        maybekid <- maybekids[[i]]
+        fn_ini <- lapply(wd,get_stgs_fn)
+        
+        lbls <- lapply(fn_ini,function(x) {s <- yaml::yaml.load_file(x);s$prescreen$tag})
+        dfs <- lapply(file.path(dfdir,eic),function(fn) {
+            tryCatch(read.csv(fn,stringsAsFactors = F),
+                     error=function(e) {message(paste(e,"; offending file:",fn))})
+        })
+        
+        dfs <- lapply(dfs,function(x) data.frame(rt=x$rt/60.,intensity=x$intensity))
+
+        ## Find existing children.
+        maybes <- file.path(dfdir,maybekid)
+        indkids <- which(file.exists(maybes))
+        kids <- maybes[indkids]
+        dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
+        dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime/60.,intensity= -x$intensity))
+
+
+        ## Find max intensities.
+        w_max <- sapply(dfs,function (x) which.max(x$intensity))
+        rt_max <- Map(function(df,w) df$rt[[w]],dfs,w_max)
+        i_max<- Map(function(df,w) df$intensity[[w]],dfs,w_max)
+        symbs <- LETTERS[1:length(w_max)]
+
+        ## Find max intensities in children
+        w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
+        rt_max_kids <- Map(function(df,w) df$rt[[w]],dfs_kids,w_max_kids)
+        i_max_kids <- Map(function(df,w) df$intensity[[w]],dfs_kids,w_max_kids)
+        symbs_kids<- letters[indkids]
+
+        
+        
+        rt_rng <- range(sapply(dfs,function(x) x$rt))
+        int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
+                cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
+        lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
+        
+        layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), 
+               widths=c(7,8), heights=c(6,6))
+        struc_xr <- c(0,100)
+        struc_yr <- c(0,100)
+        plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n")
+        rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
+       
+        col_eng <- c(0,100)
+        peak_int <- c(0,100)
+        plot(1,1,type="n",xlab="",ylab="",xlim=col_eng,ylim=peak_int,xaxt="n",yaxt="n",axes = FALSE)
+        linfo <- legend("topleft",horiz=T,legend=lbls,col=cols,fill=cols,bty="n",cex=cex)
+        legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty='n',cex=cex)
+         
+        cols_kids <- cols[indkids]
+        lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
+        if (length(lgnd_kids)>0) legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
+        plot(1,1,xlab="",ylab="",xlim = rt_rng,ylim = int_rng,type="n")
+
+          ## Plot eic across the directory set.
+        for (n in seq(length(dfs))) {
+            df <- dfs[[n]]
+            col <- cols[[n]]
+            lines(df$intensity ~ df$rt,col=col)
+        }
+
+        if (length(dfs_kids) >0) {
+            for (k in 1:length(indkids)) {
+                lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
+            }
+        }
+        title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")),xlab="retention time [min]",ylab="intensity")
+        for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
+        if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)
+        axis(1)
+        axis(2)
+               
+             
+        ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
+        gc()
+
+    }
+    server <- function(input, output) {
+        output$plot1 <- renderPlot(
+        {
+            i=input$idslider
+            plotall(i)
+
+        }
+        )
+
+    }
+    
+    shiny::shinyApp(ui = ui, server = server)
+}

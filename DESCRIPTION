@@ -27,4 +27,6 @@ Imports:
     yaml,
     mzR,
     RColorBrewer,
-    curl
+    curl,
+    shiny,
+    shinydashboard
