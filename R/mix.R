@@ -526,6 +526,8 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
                  blahnh4="MpNH4_mass",
                  blahna="MpNa_mass")
 
+    default_min_rt=0
+    default_max_rt=40
     dfdir <- file.path(wd,"prescreen")
 
     wd1 <- wd[[1]]
@@ -555,53 +557,50 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
           shinydashboard::dashboardBody(
                               shiny::fluidRow(
                                          shinydashboard::box(
-                                                             title = "MS Prescreening", width = 6, background = "blue", ""
+                                                             title = "MS Prescreening", width = 6, height = "80px", background = "blue", ""
                                                          ),
                                          shinydashboard::box(
-                                                             title = "ID N°",width = 6, background = "maroon", ""
+                                                             title = "Compound ID N°",width = 6, height = "80px", background = "olive",
+                                                             shiny::textOutput("compoundID")
                                                          )
                                      ),
                               shiny::fluidRow(
                                          shinydashboard::box(
                                                              title = "Plot", width = 6, solidHeader = TRUE, collapsible = TRUE,
-                                                             plotOutput("plot1", width = "100%", height = "400px", click = NULL,
+                                                             shiny::plotOutput("plot1", width = "100%", height = "900px", click = NULL,
                                                                         dblclick = NULL, hover = NULL, hoverDelay = NULL,
                                                                         hoverDelayType = NULL, brush = NULL, clickId = NULL,
                                                                         hoverId = NULL)
                                                          ),
                                          shinydashboard::box(
-                                                             title = "Compounds", solidHeader = TRUE, collapsible = TRUE, "", br(),
-                                                             sliderInput("idslider", "Compound number:", idsliderrange[1], idsliderrange[2], value=1,step=1)
-                                                         )
-                                     ),
-                              shiny::fluidRow(
-                                         shinydashboard::box(
-                                                             title = "Plot x axis range", width = 6, solidHeader = TRUE, collapsible = TRUE,
-                                                             shinyUI(pageWithSidebar(
-                                                                 headerPanel(""),
-                                                                 sidebarPanel(
-                                                                     numericInput("min_val", "Minimum x Axis Value", 1),
-                                                                     numericInput("max_val", "Maximum x Axis Value", 100),
-                                                                     uiOutput("slider")),
-                                                                 mainPanel()
-                                                             ))
+                                                             title = "Compounds", solidHeader = TRUE, collapsible = TRUE, "", shiny::br(),
+                                                             shiny::sliderInput("idslider", "Compound number:", idsliderrange[1], idsliderrange[2], value=1,step=1)
                                                          ),
                                          shinydashboard::box(
-                                                             title = "Prescreening Results", width = 6, solidHeader = TRUE, collapsible = TRUE,
-                                                             checkboxGroupInput("variable", "Checkboxes:",
-                                                                                c("MS1" = "MS1 present",
-                                                                                  "MS2" = "MS2 present",
-                                                                                  "Alignment" = "Alignment MS1/MS2",
-                                                                                  "Intensity" = "Intensity is good",
-                                                                                  "Noise" = "MS is noisy")),
-                                                             textInput("text", "Comments:"),
-                                                             tableOutput("data")
-                                                         )
+                                                             title = "Plot x axis range", width = 3, solidHeader = TRUE, collapsible = TRUE,
+                                                             shiny::numericInput("min_val", "Minimum x Axis Value", default_min_rt),
+                                                             shiny::numericInput("max_val", "Maximum x Axis Value", default_max_rt)
+                                                         ),                                                     
+                                          shinydashboard::box(
+                                                              title = "Prescreening Results", width = 3, solidHeader = TRUE, collapsible = TRUE,
+                                                              shiny::checkboxGroupInput("variable", "Checkboxes:",
+                                                                                        c("MS1" = "MS1 present",
+                                                                                          "MS2" = "MS2 present",
+                                                                                          "Alignment" = "Alignment MS1/MS2",
+                                                                                          "Intensity" = "Intensity is good",
+                                                                                          "Noise" = "MS is noisy")),
+                                                              shiny::textInput("text", "Comments:"),
+                                                              shiny::tableOutput("data")
+                                                          )
+                                     ),
+                              shiny::fluidRow(
+                                           shinydashboard::box(
+                                                              title = "Chemical structure", width = 6, solidHeader = TRUE, collapsible = TRUE)
                                      )
                           )
           )
 
-    plotall <- function(i) {
+    plotall <- function(i,rtrange) {
         eic <- eics[[i]]
         maybekid <- maybekids[[i]]
         fn_ini <- lapply(wd,get_stgs_fn)
@@ -636,9 +635,9 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
 
         
         
-        rt_rng <- range(sapply(dfs,function(x) x$rt))
+        rt_rng <- rtrange #range(sapply(dfs,function(x) x$rt))
         int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
-                cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
+        cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
         lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
         
         layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), 
@@ -682,16 +681,34 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
         gc()
 
     }
-    server <- function(input, output) {
+    clean_rtrange <- function(rtrange) {
+            x1 <- rtrange[1]
+            x2 <- rtrange[2]
+            if (is.na(x1)) x1 <- default_min_rt
+            if (is.na(x2)) x2 <- default_max_rt
+
+            c(x1,x2)
+        }
+    server <- function(input, output, session) {
+        
         output$plot1 <- renderPlot(
         {
             i=input$idslider
-            plotall(i)
 
+            rtrange <- c(input$min_val,input$max_val)
+            plotall(i,rtrange=clean_rtrange(rtrange))
+
+            session$onSessionEnded(function() {
+                stopApp()
+            })
         }
         )
-
+         output$compoundID <- renderText(
+        {
+            i=input$idslider
+            })
     }
     
     shiny::shinyApp(ui = ui, server = server)
 }
+
