@@ -1,16 +1,15 @@
-Package: rmbmix
-Title: RMassBank Mixtures Workflow
+Package: shinyscreen
+Title: Pre-screening of Mass Spectrometry Data 
 Version: 0.1
-Author: Todor Kondi<U+0107>
-Maintainer: Todor Kondi<U+0107> <todor.kondic@uni.lu>
+Author: Todor Kondić
+Maintainer: Todor Kondić <todor.kondic@uni.lu>
 Authors@R: 
     person(given = "Todor",
-           family = "Kondi<U+0107>",
+           family = "Kondić",
            role = c("aut", "cre"),
            email = "todor.kondic@uni.lu",
            comment = c(ORCID = "https://orcid.org/0000-0001-6662-4375"))
-Description: Perform RMassBank workflow on (possibly) multiple
-             compound mixture mzML data-files.
+Description: Pre-screening of Mass Spectrometry Data.
 License: Apache License (>= 2.0)
 Encoding: UTF-8
 LazyData: true
