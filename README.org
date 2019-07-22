@@ -1,4 +1,4 @@
-#+TITLE: RMassBank Compound Mix Workflow
+#+TITLE: The `shinyscreen' Package
 
 
 * Usage
