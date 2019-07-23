@@ -723,7 +723,14 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
             i=input$idslider
         })
 
-        shiny::observeEvent(input$saveplot,{message("Value is: ",input$saveplot)})
+        shiny::observeEvent(input$saveplot,{
+            fn <- paste("plotCpdID_",i,".pdf",sep='')
+            i=input$idslider
+            rtrange <- c(input$min_val,input$max_val)
+            pdf(file=fn, width=12, height=8)
+            plotall(i,rtrange=clean_rtrange(rtrange))
+            dev.off()
+        })
     }
     
     shiny::shinyApp(ui = ui, server = server)
