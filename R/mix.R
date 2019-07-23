@@ -570,8 +570,13 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
                                                              shiny::plotOutput("plot1", width = "100%", height = "900px", click = NULL,
                                                                         dblclick = NULL, hover = NULL, hoverDelay = NULL,
                                                                         hoverDelayType = NULL, brush = NULL, clickId = NULL,
-                                                                        hoverId = NULL)
-                                                         ),
+                                                                        hoverId = NULL),
+                                                             shinydashboard::box(
+                                                                                 shiny::actionButton("saveplot", "Save", icon = icon("save"))
+                                                             
+                                                                             )
+                                                             ),
+                                         
                                          shinydashboard::box(
                                                              title = "Compounds", solidHeader = TRUE, collapsible = TRUE, "", shiny::br(),
                                                              shiny::sliderInput("idslider", "Compound number:", idsliderrange[1], idsliderrange[2], value=1,step=1)
@@ -679,7 +684,7 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
              
         ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
         gc()
-
+       
     }
     clean_rtrange <- function(rtrange) {
             x1 <- rtrange[1]
@@ -703,10 +708,22 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
             })
         }
         )
+        ## output$downloadPlot <- shiny::downloadHandler(
+        ##     filename = function() {'test.pdf'},
+        ##     content = function(file){
+        ##         pdf(file=file, width=12, height=8, out.type="pdf")
+        ##         i=input$idslider
+        ##         rtrange <- c(input$min_val,input$max_val)
+        ##         plotall(i,rtrange=clean_rtrange(rtrange))
+        ##         dev.off()
+        ##     },
+        ##     contentType=NULL)
          output$compoundID <- renderText(
         {
             i=input$idslider
-            })
+        })
+
+        shiny::observeEvent(input$saveplot,{message("Value is: ",input$saveplot)})
     }
     
     shiny::shinyApp(ui = ui, server = server)
