@@ -547,6 +547,18 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
     eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
     idsliderrange <- range(df$ID)
+    tabPanelList <- lapply(1:6, function(tag) {
+        shiny::tabPanel(paste("tag",tag),shiny::checkboxGroupInput("variable", "Checkboxes:",
+                                                                   c("MS1" = "MS1 present",
+                                                                     "MS2" = "MS2 present",
+                                                                     "Alignment" = "Alignment MS1/MS2",
+                                                                     "Intensity" = "Intensity is good",
+                                                                     "Noise" = "MS is noisy")),
+                        shiny::textAreaInput("caption", "Comments:", "Insert your comment here..."),
+                        shiny::verbatimTextOutput("value")
+                        )
+    })
+    nvp <- do.call(shiny::navlistPanel, tabPanelList)
     ui <- shinydashboard::dashboardPage(
           shinydashboard::dashboardHeader(title = "Prescreening"),
           shinydashboard::dashboardSidebar(
@@ -571,7 +583,7 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
                                                                                dblclick = NULL, hover = NULL, hoverDelay = NULL,
                                                                                hoverDelayType = NULL, brush = NULL, clickId = NULL,
                                                                                hoverId = NULL),
-                                                             shiny::textInput("plotname", "Insert plot name:",value="plotCpdID_%i.pdf"),
+                                                             shiny::textInput("plotname", "Insert plot name: (e.g. plotname_%i.pdf)",value="plotCpdID_%i.pdf"),
                                                              shiny::actionButton("saveplot", "Save", icon = shiny::icon("save"))
                                                          ),
                                          shinydashboard::box(
@@ -584,15 +596,9 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
                                                              shiny::numericInput("max_val", "Maximum x Axis Value", default_max_rt)
                                                          ),                                                     
                                          shinydashboard::box(
-                                                             title = "Prescreening Results", width = 4, solidHeader = TRUE, collapsible = TRUE,
-                                                             shiny::checkboxGroupInput("variable", "Checkboxes:",
-                                                                                       c("MS1" = "MS1 present",
-                                                                                         "MS2" = "MS2 present",
-                                                                                         "Alignment" = "Alignment MS1/MS2",
-                                                                                         "Intensity" = "Intensity is good",
-                                                                                         "Noise" = "MS is noisy")),
-                                                             shiny::textAreaInput("caption", "Comments:", "Insert your comment here..."),
-                                                             shiny::verbatimTextOutput("value")
+                                                             title = "Prescreening Analysis", width = 4, solidHeader = TRUE, collapsible = TRUE,
+                                                             shiny::uiOutput("nvp")
+
                                                          )
                                      )
                           )
@@ -696,9 +702,7 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
             rtrange <- c(input$min_val,input$max_val)
             plotall(i,rtrange=clean_rtrange(rtrange))
 
-            session$onSessionEnded(function() {
-                stopApp()
-            })
+
         }
         )
 
@@ -722,6 +726,12 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
             pdf(file=fn, width=12, height=8)
             plotall(i,rtrange=clean_rtrange(rtrange))
             dev.off()
+        })
+
+        output$nvp <- shiny::renderUI({nvp})
+
+        session$onSessionEnded(function() {
+            stopApp()
         })
     }
     
