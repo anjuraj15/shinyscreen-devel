@@ -520,7 +520,7 @@ mb.p<-function(mb,infodir,fn_stgs,cl=F) {
 ##' @return Nothing useful. 
 ##' @author Jessy Krier
 ##' @author Mira Narayanan
-presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
+presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,tag_setup){
     modemap=list(pH="MpHp_mass",
                  mH="MmHm_mass",
                  blahnh4="MpNH4_mass",
@@ -547,18 +547,19 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
     eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
     idsliderrange <- range(df$ID)
-    tabPanelList <- lapply(1:6, function(tag) {
-        shiny::tabPanel(paste("tag",tag),shiny::checkboxGroupInput("variable", "Checkboxes:",
-                                                                   c("MS1" = "MS1 present",
-                                                                     "MS2" = "MS2 present",
-                                                                     "Alignment" = "Alignment MS1/MS2",
-                                                                     "Intensity" = "Intensity is good",
-                                                                     "Noise" = "MS is noisy")),
+    tabPanelList <- lapply(tag_setup$values, function(tag) {
+        shiny::tabPanel(tag,shiny::checkboxGroupInput("variable", "Checkboxes:",
+                                                      c("MS1" = "MS1 present",
+                                                        "MS2" = "MS2 present",
+                                                        "Alignment" = "Alignment MS1/MS2",
+                                                        "Intensity" = "Intensity is good",
+                                                        "Noise" = "MS is noisy")),
                         shiny::textAreaInput("caption", "Comments:", "Insert your comment here..."),
                         shiny::verbatimTextOutput("value")
                         )
     })
     nvp <- do.call(shiny::navlistPanel, tabPanelList)
+    #pt <- shiny::titlePanel(tag_setup$name)
     ui <- shinydashboard::dashboardPage(
           shinydashboard::dashboardHeader(title = "Prescreening"),
           shinydashboard::dashboardSidebar(
@@ -596,7 +597,8 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
                                                              shiny::numericInput("max_val", "Maximum x Axis Value", default_max_rt)
                                                          ),                                                     
                                          shinydashboard::box(
-                                                             title = "Prescreening Analysis", width = 4, solidHeader = TRUE, collapsible = TRUE,
+                                                             title = "Prescreening analysis", width = 4, solidHeader = TRUE, collapsible = TRUE,
+                                                             shiny::titlePanel(tag_setup$name),
                                                              shiny::uiOutput("nvp")
 
                                                          )
@@ -729,6 +731,8 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
         })
 
         output$nvp <- shiny::renderUI({nvp})
+
+        #output$pt <- shiny::renderUI({pt})
 
         session$onSessionEnded(function() {
             stopApp()
