@@ -548,18 +548,15 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,tag_s
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
     idsliderrange <- range(df$ID)
     tabPanelList <- lapply(tag_setup$values, function(tag) {
-        shiny::tabPanel(tag,shiny::checkboxGroupInput("variable", "Checkboxes:",
-                                                      c("MS1" = "MS1 present",
-                                                        "MS2" = "MS2 present",
-                                                        "Alignment" = "Alignment MS1/MS2",
-                                                        "Intensity" = "Intensity is good",
-                                                        "Noise" = "MS is noisy")),
-                        shiny::textAreaInput("caption", "Comments:", "Insert your comment here..."),
-                        shiny::verbatimTextOutput("value")
-                        )
-    })
+        shiny::tabPanel(tag,shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Checkboxes:",
+                                                      c("MS1" = "OK",
+                                                        "MS2" = "OK",
+                                                        "Alignment" = "OK",
+                                                        "Intensity" = "OK",
+                                                        "Noise" = "OK")),
+                        shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
+                        shiny::verbatimTextOutput(paste("value",tag,sep="")))})
     nvp <- do.call(shiny::navlistPanel, tabPanelList)
-    #pt <- shiny::titlePanel(tag_setup$name)
     ui <- shinydashboard::dashboardPage(
           shinydashboard::dashboardHeader(title = "Prescreening"),
           shinydashboard::dashboardSidebar(
@@ -599,7 +596,8 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,tag_s
                                          shinydashboard::box(
                                                              title = "Prescreening analysis", width = 4, solidHeader = TRUE, collapsible = TRUE,
                                                              shiny::titlePanel(tag_setup$name),
-                                                             shiny::uiOutput("nvp")
+                                                             shiny::uiOutput("nvp"),
+                                                             shiny::actionButton("submitQA", "Submit", icon = shiny::icon("save"))
 
                                                          )
                                      )
@@ -694,9 +692,15 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,tag_s
             if (is.na(x2)) x2 <- default_max_rt
 
             c(x1,x2)
-        }
+    }
+
+    captureQA <- function() {
+        QAlist <- list()
+        list(add=function (entry) QAlist[[length(QAlist)+1]]<<-entry,
+             get=function() QAlist)
+    }
     server <- function(input, output, session) {
-        
+        rv <- shiny::reactiveValues(prescList=list())
         output$plot1 <- renderPlot(
         {
             i=input$idslider
@@ -718,9 +722,10 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,tag_s
             i=input$idslider
         })
         
-        shiny::observeEvent(input$saveplot,{
+        shiny::observeEvent(input$saveplot,
+        {
             i=input$idslider
-            
+            message("Save plot button pressed.")
             pfn <-input$plotname
             if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
             fn <- sprintf(pfn,i)
@@ -730,9 +735,16 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,tag_s
             dev.off()
         })
 
-        output$nvp <- shiny::renderUI({nvp})
+        shiny::observeEvent(input$submitQA,{})
 
-        #output$pt <- shiny::renderUI({pt})
+
+
+        output$nvp <- shiny::renderUI(
+        {
+            nvp
+            
+        })
+        
 
         session$onSessionEnded(function() {
             stopApp()
