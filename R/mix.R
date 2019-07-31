@@ -520,14 +520,15 @@ mb.p<-function(mb,infodir,fn_stgs,cl=F) {
 ##' @return Nothing useful. 
 ##' @author Jessy Krier
 ##' @author Mira Narayanan
-presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
+presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,prescdf){
     modemap=list(pH="MpHp_mass",
                  mH="MmHm_mass",
                  blahnh4="MpNH4_mass",
                  blahna="MpNa_mass")
-
-    default_min_rt=0
-    default_max_rt=40
+    DEFAULT_RT_RANGE=c(0,40)
+    default_min_rt=DEFAULT_RT_RANGE[1]
+    default_max_rt=DEFAULT_RT_RANGE[2]
+    
     dfdir <- file.path(wd,"prescreen")
 
     wd1 <- wd[[1]]
@@ -540,13 +541,35 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
         zz <- RChemMass::getSuspectFormulaMass(smile)
         zz[[modemap[[mode]]]]
     })
+
+    for (col in c("MS1","MS2","Alignment","Intensity","AboveNoise","Comments")) {
+        if (is.null(prescdf[[col]])) prescdf[[col]] <- rep(T,length(prescdf$ID))
+    }
+
     #message("Masses:",masses)
     # return(osmesi)
 
     ## Get the basenames of eic files.
     eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
+
+    tags <- levels(factor(prescdf$tag))
+
+    spectProps <- sapply(tags,function (tag) paste("spectProps",tag,sep=""))
+    
     idsliderrange <- range(df$ID)
+    tabPanelList <- lapply(tags, function(tag) {
+        shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tags,sep=""), "Quality Control",
+                                                      c("MS1" = T,
+                                                        "MS2" = T,
+                                                        "Alignment" = T,
+                                                        "Intensity" = T,
+                                                        "AboveNoise" = T)),
+                        shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
+                        shiny::verbatimTextOutput(paste("value",tag,sep="")))})
+    
+    nvp <- do.call(shiny::navlistPanel, tabPanelList)
+    
     ui <- shinydashboard::dashboardPage(
           shinydashboard::dashboardHeader(title = "Prescreening"),
           shinydashboard::dashboardSidebar(
@@ -557,45 +580,40 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
           shinydashboard::dashboardBody(
                               shiny::fluidRow(
                                          shinydashboard::box(
-                                                             title = "MS Prescreening", width = 6, height = "80px", background = "blue", ""
+                                                             title = "MS Prescreening", width = 7, height = "80px", background = "blue", ""
                                                          ),
                                          shinydashboard::box(
-                                                             title = "Compound ID N°",width = 6, height = "80px", background = "olive",
+                                                             title = "Compound ID N°",width = 5, height = "80px", background = "olive",
                                                              shiny::textOutput("compoundID")
                                                          )
                                      ),
                               shiny::fluidRow(
                                          shinydashboard::box(
-                                                             title = "Plot", width = 6, solidHeader = TRUE, collapsible = TRUE,
-                                                             shiny::plotOutput("plot1", width = "100%", height = "900px", click = NULL,
-                                                                        dblclick = NULL, hover = NULL, hoverDelay = NULL,
-                                                                        hoverDelayType = NULL, brush = NULL, clickId = NULL,
-                                                                        hoverId = NULL)
+                                                             title = "Plot", width = 7, solidHeader = TRUE, collapsible = TRUE,
+                                                             shiny::plotOutput("plot1", width = "100%", height = "750px", click = NULL,
+                                                                               dblclick = NULL, hover = NULL, hoverDelay = NULL,
+                                                                               hoverDelayType = NULL, brush = NULL, clickId = NULL,
+                                                                               hoverId = NULL),
+                                                             shiny::textInput("plotname", "Insert plot name: (e.g. plotname_%i.pdf)",value="plotCpdID_%i.pdf"),
+                                                             shiny::actionButton("saveplot", "Save", icon = shiny::icon("save")),
+                                                             shiny::actionButton("saveallplots", "Save All", icon = shiny::icon("save"))
                                                          ),
                                          shinydashboard::box(
-                                                             title = "Compounds", solidHeader = TRUE, collapsible = TRUE, "", shiny::br(),
+                                                             title = "Compounds", width=5,solidHeader = TRUE, collapsible = TRUE, "", shiny::br(),
                                                              shiny::sliderInput("idslider", "Compound number:", idsliderrange[1], idsliderrange[2], value=1,step=1)
                                                          ),
                                          shinydashboard::box(
-                                                             title = "Plot x axis range", width = 3, solidHeader = TRUE, collapsible = TRUE,
+                                                             title = "Plot x axis range", width = 5, solidHeader = TRUE, collapsible = TRUE,
                                                              shiny::numericInput("min_val", "Minimum x Axis Value", default_min_rt),
                                                              shiny::numericInput("max_val", "Maximum x Axis Value", default_max_rt)
                                                          ),                                                     
-                                          shinydashboard::box(
-                                                              title = "Prescreening Results", width = 3, solidHeader = TRUE, collapsible = TRUE,
-                                                              shiny::checkboxGroupInput("variable", "Checkboxes:",
-                                                                                        c("MS1" = "MS1 present",
-                                                                                          "MS2" = "MS2 present",
-                                                                                          "Alignment" = "Alignment MS1/MS2",
-                                                                                          "Intensity" = "Intensity is good",
-                                                                                          "Noise" = "MS is noisy")),
-                                                              shiny::textInput("text", "Comments:"),
-                                                              shiny::tableOutput("data")
-                                                          )
-                                     ),
-                              shiny::fluidRow(
-                                           shinydashboard::box(
-                                                              title = "Chemical structure", width = 6, solidHeader = TRUE, collapsible = TRUE)
+                                         shinydashboard::box(
+                                                             title = "Prescreening analysis", width = 5, solidHeader = TRUE, collapsible = TRUE,
+                                                             shiny::titlePanel(prescdf$set_name),
+                                                             shiny::uiOutput("nvp"),
+                                                             shiny::actionButton("submitQA", "Submit", icon = shiny::icon("save"))
+
+                                                         )
                                      )
                           )
           )
@@ -679,7 +697,7 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
              
         ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
         gc()
-
+       
     }
     clean_rtrange <- function(rtrange) {
             x1 <- rtrange[1]
@@ -688,25 +706,91 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
             if (is.na(x2)) x2 <- default_max_rt
 
             c(x1,x2)
-        }
+    }
+
+    captureQA <- function() {
+        QAlist <- list()
+        list(add=function (entry) QAlist[[length(QAlist)+1]]<<-entry,
+             get=function() QAlist)
+    }
     server <- function(input, output, session) {
-        
+        rv <- shiny::reactiveValues(prescList=list(),
+                                    prescdf=prescdf,
+                                    spectProps=spectProps,
+                                    tags=tags,
+                                    default_range=DEFAULT_RT_RANGE,
+                                    no_cmpds=no_cmpds)
+
         output$plot1 <- renderPlot(
         {
             i=input$idslider
 
             rtrange <- c(input$min_val,input$max_val)
             plotall(i,rtrange=clean_rtrange(rtrange))
+        })
 
-            session$onSessionEnded(function() {
-                stopApp()
-            })
-        }
-        )
-         output$compoundID <- renderText(
+        output$value <- renderText(
+        {
+            input$caption
+        })
+
+        output$compoundID <- renderText(
         {
             i=input$idslider
-            })
+        })
+        
+        shiny::observeEvent(input$saveplot,
+        {
+            i=input$idslider
+            message("Save plot button pressed.")
+            pfn <-input$plotname
+            if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
+            fn <- sprintf(pfn,i)
+            rtrange <- c(input$min_val,input$max_val)
+            pdf(file=fn, width=12, height=8)
+            plotall(i,rtrange=clean_rtrange(rtrange))
+            dev.off()
+        })
+
+        shiny::observeEvent(input$saveallplots,
+        {
+            i=input$idslider
+            
+            message("Save plot button pressed.")
+            pfn <-input$plotname
+            if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
+            fn <- sprintf(pfn,i)
+            rtrange <- c(input$min_val,input$max_val)
+            pdf(file=fn, width=12, height=8)
+            for (i in 1:rv$no_cmpds) {
+                plotall(i,rtrange=rv$default_range)
+                message("Compound ID ",i," done.")
+            }
+            dev.off()
+        })
+
+        shiny::observeEvent(input$idslider,{
+            i <- input$idslider
+            tag <- rv$prescdf$tag[[i]]
+            
+            
+        })
+
+        shiny::observeEvent(input$submitQA,{
+            
+        })
+
+
+        output$nvp <- shiny::renderUI(
+        {
+            nvp
+            
+        })
+        
+
+        session$onSessionEnded(function() {
+            stopApp()
+        })
     }
     
     shiny::shinyApp(ui = ui, server = server)
