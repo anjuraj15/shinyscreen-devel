@@ -37,7 +37,7 @@ presc.do<-function(fn_data,fn_cmpd_l,mode,dest=".",proc=F,...) {
 
     if (proc) {
         cl<-parallel::makeCluster(proc)
-        parallel::clusterEvalQ(cl,library(rmbmix))
+        parallel::clusterEvalQ(cl,library(shinyscreen))
         parallel::clusterMap(cl,fread,fn_data)
     } else {
         lapply(fn_data,fread)
@@ -97,7 +97,7 @@ sw.do <- function(fn_data, fn_cmpd_l, mode, dest=".", combine=F,
     
     w <- if (proc) {
              cl=parallel::makeCluster(proc)
-             parallel::clusterEvalQ(cl,library(rmbmix))
+             parallel::clusterEvalQ(cl,library(shinyscreen))
              parallel::clusterMap(cl,fread,fn_data)
          } else {
              lapply(fn_data,fread)
@@ -175,7 +175,7 @@ mb.do<-function(mb,proc=F) {
         mb},vectorize.args = c("mb","id","wd"))
     if (proc) {
         cl<-parallel::makeCluster(proc)
-        parallel::clusterEvalQ(cl,library("rmbmix"))
+        parallel::clusterEvalQ(cl,library("shinyscreen"))
         parallel::clusterMap(cl,fwork,mb,infodir,wd)
     } else {
         fwork(mb,infodir,wd)

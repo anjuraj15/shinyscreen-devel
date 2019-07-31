@@ -1,8 +1,9 @@
+
 #+TITLE: The Shinyscreen Package
 
 
 * Usage
-** Prescreening
+** Prescreening with presc.plot
    1. Generate prescreening data frames,
       #+BEGIN_SRC R
       presc.do(list.files(path="~/ECI_SCRATCH/20190627_HEROBER",patt=".*.mzML",full.names=T),
@@ -13,11 +14,26 @@
       argument.
    2. Plot,
       #+BEGIN_SRC R
-      require(rmbmix)
+      require(shinyscreen)
       presc.plot(list.files(".",patt="2.*POS",include.dirs=T),mode="pH",cex=0.7,rt_digits=2,m_digits=4,pal="Dark2",out="prescreen.pdf")
       #+END_SRC
       The only argument is a sequence of absolute paths to directories
       containing the prescreen data. The resulting plot file is going
       to be placed into the current working directory.
-      
-      
+** Prescreening with presc.shiny
+   1. Same as above
+   2. To start the _Shiny_ prescreening, do
+      #+BEGIN_SRC R
+        require(shinyscreen)
+        df<- data.frame(Files=rep("file.mzML",15),ID=1:15,tag=rep(c(15,30,45),5),set_name="Collision Energy")
+        This dataframe is the input that has to be introduced in order
+        to have all the information from the data.
+        
+        pos_wds <- list.files(".",patt=".*2019.*_[49][35]$",include.dirs=T,full.names=T)
+        This is an example of using the POS data (pH). 
+        
+        presc.shiny(pos_wds,mode="pH",cex=1,prescdf=df)
+        The arguments which need to be put into the presc.shiny are
+        pos_wds (as an example), the mode (pH or mH), cex as a font size
+        and prescdf=df to get the information into the shiny part.
+      #+END_SRC
