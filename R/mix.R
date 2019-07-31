@@ -525,9 +525,10 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,presc
                  mH="MmHm_mass",
                  blahnh4="MpNH4_mass",
                  blahna="MpNa_mass")
-
-    default_min_rt=0
-    default_max_rt=40
+    DEFAULT_RT_RANGE=c(0,40)
+    default_min_rt=DEFAULT_RT_RANGE[1]
+    default_max_rt=DEFAULT_RT_RANGE[2]
+    
     dfdir <- file.path(wd,"prescreen")
 
     wd1 <- wd[[1]]
@@ -594,7 +595,8 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,presc
                                                                                hoverDelayType = NULL, brush = NULL, clickId = NULL,
                                                                                hoverId = NULL),
                                                              shiny::textInput("plotname", "Insert plot name: (e.g. plotname_%i.pdf)",value="plotCpdID_%i.pdf"),
-                                                             shiny::actionButton("saveplot", "Save", icon = shiny::icon("save"))
+                                                             shiny::actionButton("saveplot", "Save", icon = shiny::icon("save")),
+                                                             shiny::actionButton("saveallplots", "Save All", icon = shiny::icon("save"))
                                                          ),
                                          shinydashboard::box(
                                                              title = "Compounds", width=5,solidHeader = TRUE, collapsible = TRUE, "", shiny::br(),
@@ -712,17 +714,20 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,presc
              get=function() QAlist)
     }
     server <- function(input, output, session) {
-        rv <- shiny::reactiveValues(prescList=list(),prescdf=prescdf,spectProps=spectProps,tags=tags)
+        rv <- shiny::reactiveValues(prescList=list(),
+                                    prescdf=prescdf,
+                                    spectProps=spectProps,
+                                    tags=tags,
+                                    default_range=DEFAULT_RT_RANGE,
+                                    no_cmpds=no_cmpds)
+
         output$plot1 <- renderPlot(
         {
             i=input$idslider
 
             rtrange <- c(input$min_val,input$max_val)
             plotall(i,rtrange=clean_rtrange(rtrange))
-
-
-        }
-        )
+        })
 
         output$value <- renderText(
         {
@@ -744,6 +749,23 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,presc
             rtrange <- c(input$min_val,input$max_val)
             pdf(file=fn, width=12, height=8)
             plotall(i,rtrange=clean_rtrange(rtrange))
+            dev.off()
+        })
+
+        shiny::observeEvent(input$saveallplots,
+        {
+            i=input$idslider
+            
+            message("Save plot button pressed.")
+            pfn <-input$plotname
+            if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
+            fn <- sprintf(pfn,i)
+            rtrange <- c(input$min_val,input$max_val)
+            pdf(file=fn, width=12, height=8)
+            for (i in 1:rv$no_cmpds) {
+                plotall(i,rtrange=rv$default_range)
+                message("Compound ID ",i," done.")
+            }
             dev.off()
         })
 
