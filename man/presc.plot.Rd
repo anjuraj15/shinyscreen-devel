@@ -4,15 +4,17 @@
 \alias{presc.plot}
 \title{Plot the Output of Prescreen}
 \usage{
-presc.plot(wd, mode, out = "prescreen.pdf", pal = "Dark2",
-  cex = 0.75, rt_digits = 2, m_digits = 4)
+presc.plot(prescdf, mode, out = "prescreen.pdf", fn_cmpd_l,
+  pal = "Dark2", cex = 0.75, rt_digits = 2, m_digits = 4)
 }
 \arguments{
-\item{wd}{Sequence of data dirs containing the prescreen subdir.}
+\item{prescdf}{File table data-frame. See presc.shiny for details.}
 
 \item{mode}{RMB mode.}
 
 \item{out}{The name of the output file.}
+
+\item{fn_cmpd_l}{The compound list name.}
 
 \item{pal}{ColorBrewer palette name.}
 
@@ -21,6 +23,8 @@ presc.plot(wd, mode, out = "prescreen.pdf", pal = "Dark2",
 \item{rt_digits}{Number of digits after the point for the retention time.}
 
 \item{m_digits}{Number of digits after the point for the mass.}
+
+\item{wd}{Sequence of data dirs containing the prescreen subdir.}
 
 \item{digits}{Number of significant digits for peak ret times.}
 }
@@ -32,4 +36,8 @@ Plot the output of prescreen.
 }
 \author{
 Todor Kondić
+
+Mira Narayanan
+
+Anjana Elapavalore
 }

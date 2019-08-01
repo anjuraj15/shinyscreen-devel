@@ -352,37 +352,135 @@ renderurl <- function(depictURL,coords=c(0,0,100,100), filename=tempfile(fileext
 ##'
 ##' @title Turn SMILES to an Image Using Online Resource
 ##' @param smiles The SMILES string.
+##' @param style Structure style.
 ##' @param ... Hand over to renderurl.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
-rendersmiles2 <- function(smiles,...) {
-    dpurl <- buildCDKdepictURL(smiles)
+rendersmiles2 <- function(smiles,style="cow",...) {
+    dpurl <- buildCDKdepictURL(smiles,style=style)
     renderurl(dpurl,filename=tempfile(fileext=".svg"),...)
 }
 
+
+
+plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+    clean_rtrange <- function(def) {
+            x1 <- rtrange[1]
+            x2 <- rtrange[2]
+            if (is.na(x1) || x1 == 0) x1 <- def[1]
+            if (is.na(x2) || x2 == 0) x2 <- def[2]
+
+            c(x1,x2)
+    }
+    eic <- eics[[i]]
+    maybekid <- maybekids[[i]]
+    dfs <- lapply(file.path(wd,eic),function(fn) {
+        tryCatch(read.csv(fn,stringsAsFactors = F),
+                 error=function(e) {message(paste(e,"; offending file:",fn))})
+    })
+    
+    dfs <- lapply(dfs,function(x) data.frame(rt=x$rt/60.,intensity=x$intensity))
+
+    ## Find existing children.
+    maybes <- file.path(wd,maybekid)
+    indkids <- which(file.exists(maybes))
+    kids <- maybes[indkids]
+    dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
+    dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime/60.,intensity= -x$intensity))
+
+
+    ## Find max intensities.
+    w_max <- sapply(dfs,function (x) which.max(x$intensity))
+    rt_max <- Map(function(df,w) df$rt[[w]],dfs,w_max)
+    i_max<- Map(function(df,w) df$intensity[[w]],dfs,w_max)
+    symbs <- LETTERS[1:length(w_max)]
+
+    ## Find max intensities in children
+    w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
+    rt_max_kids <- Map(function(df,w) df$rt[[w]],dfs_kids,w_max_kids)
+    i_max_kids <- Map(function(df,w) df$intensity[[w]],dfs_kids,w_max_kids)
+    symbs_kids<- letters[indkids]
+
+    
+    def_rt_rng <- range(sapply(dfs,function(x) x$rt))
+    rt_rng <- if (is.null(rtrange))  def_rt_rng else clean_rtrange(def_rt_rng)
+    int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
+    cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
+    lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
+    
+    layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), 
+           widths=c(7,8), heights=c(4,6))
+    struc_xr <- c(0,100)
+    struc_yr <- c(0,100)
+    par(mar=c(1,1,1,1))
+    plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n")
+    rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
+    
+    col_eng <- c(0,100)
+    peak_int <- c(0,100)
+    par(mar=c(1,1,1,1))
+    plot(1,1,type="n",xlab="",ylab="",xlim=col_eng,ylim=peak_int,xaxt="n",yaxt="n",axes = FALSE)
+    linfo <- legend("topleft",horiz=T,legend=tags,col=cols,fill=cols,bty="n",cex=cex)
+    legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty='n',cex=cex)
+    
+    cols_kids <- cols[indkids]
+    lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
+    if (length(lgnd_kids)>0) legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
+    par(mar=c(4,4,1,1))
+    plot(1,1,xlab="",ylab="",xlim = rt_rng,ylim = int_rng,type="n")
+
+    ## Plot eic across the directory set.
+    for (n in seq(length(dfs))) {
+        df <- dfs[[n]]
+        col <- cols[[n]]
+        lines(df$intensity ~ df$rt,col=col)
+    }
+
+    if (length(dfs_kids) >0) {
+        for (k in 1:length(indkids)) {
+            lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
+        }
+    }
+    title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")),xlab="retention time [min]",ylab="intensity")
+    for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
+    if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)
+    axis(1)
+    axis(2)
+    
+    
+    ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
+    gc()
+    
+}
 ##' Plot the output of prescreen.
 ##'
 ##' @title Plot the Output of Prescreen
-##' @param wd Sequence of data dirs containing the prescreen subdir.
+##' @param prescdf File table data-frame. See presc.shiny for details.
 ##' @param mode RMB mode.
 ##' @param out The name of the output file.
+##' @param fn_cmpd_l The compound list name.
 ##' @param pal ColorBrewer palette name.
 ##' @param cex As in legend.
 ##' @param rt_digits Number of digits after the point for the retention time.
 ##' @param m_digits Number of digits after the point for the mass.
+##' @param wd Sequence of data dirs containing the prescreen subdir.
 ##' @param digits Number of significant digits for peak ret times. 
 ##' @return Nothing useful.
 ##' @author Todor Kondić
+##' @author Mira Narayanan
+##' @author Anjana Elapavalore
 ##' @export
-presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digits=2,m_digits=4) {
+presc.plot <- function(prescdf,mode,out="prescreen.pdf",fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4) {
     modemap=list(pH="MpHp_mass",
                  mH="MmHm_mass",
                  blahnh4="MpNH4_mass",
                  blahna="MpNa_mass")
-    dfdir <- file.path(wd,"prescreen")
 
+    tags <- levels(factor(prescdf$tag))
+    wd <- prescdf$wd[match(tags,prescdf$tag)]
+    
     wd1 <- wd[[1]]
-    df <- read.csv(file=get_cmpd_l_fn(wd1),stringsAsFactors = F)
+    df <- read.csv(file=fn_cmpd_l,stringsAsFactors = F)
     osmesi <- df$SMILES
     no_cmpds <- length(osmesi)
     # reconf(wd1)
@@ -395,180 +493,28 @@ presc.plot <- function(wd,mode,out="prescreen.pdf",pal="Dark2",cex=0.75,rt_digit
     # return(osmesi)
 
     ## Get the basenames of eic files.
-    eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
+    eics <- list.files(path=wd[[1]],patt=".*eic.csv")
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
 
     pdf(out)
-    for (i in seq(length(eics))) {
-        eic <- eics[[i]]
-        maybekid <- maybekids[[i]]
-        fn_ini <- lapply(wd,get_stgs_fn)
-        
-        lbls <- lapply(fn_ini,function(x) {s <- yaml::yaml.load_file(x);s$prescreen$tag})
-        dfs <- lapply(file.path(dfdir,eic),function(fn) {
-            tryCatch(read.csv(fn,stringsAsFactors = F),
-                     error=function(e) {message(paste(e,"; offending file:",fn))})
-        })
-        
-        dfs <- lapply(dfs,function(x) data.frame(rt=x$rt/60.,intensity=x$intensity))
-
-        ## Find existing children.
-        maybes <- file.path(dfdir,maybekid)
-        indkids <- which(file.exists(maybes))
-        kids <- maybes[indkids]
-        dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
-        dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime/60.,intensity= -x$intensity))
-
-
-        ## Find max intensities.
-        w_max <- sapply(dfs,function (x) which.max(x$intensity))
-        rt_max <- Map(function(df,w) df$rt[[w]],dfs,w_max)
-        i_max<- Map(function(df,w) df$intensity[[w]],dfs,w_max)
-        symbs <- LETTERS[1:length(w_max)]
-
-        ## Find max intensities in children
-        w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
-        rt_max_kids <- Map(function(df,w) df$rt[[w]],dfs_kids,w_max_kids)
-        i_max_kids <- Map(function(df,w) df$intensity[[w]],dfs_kids,w_max_kids)
-        symbs_kids<- letters[indkids]
-
-        
-        
-        rt_rng <- range(sapply(dfs,function(x) x$rt))
-        int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
-        cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
-        lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
-        
-        layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), 
-               widths=c(7,8), heights=c(6,6))
-        struc_xr <- c(0,100)
-        struc_yr <- c(0,100)
-        plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n")
-        rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
-       
-        col_eng <- c(0,100)
-        peak_int <- c(0,100)
-        plot(1,1,type="n",xlab="",ylab="",xlim=col_eng,ylim=peak_int,xaxt="n",yaxt="n",axes = FALSE)
-        linfo <- legend("topleft",horiz=T,legend=lbls,col=cols,fill=cols,bty="n",cex=cex)
-        legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty='n',cex=cex)
-         
-        cols_kids <- cols[indkids]
-        lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
-        if (length(lgnd_kids)>0) legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
-        plot(1,1,xlab="",ylab="",xlim = rt_rng,ylim = int_rng,type="n")
-
-          ## Plot eic across the directory set.
-        for (n in seq(length(dfs))) {
-            df <- dfs[[n]]
-            col <- cols[[n]]
-            lines(df$intensity ~ df$rt,col=col)
-        }
-
-        if (length(dfs_kids) >0) {
-            for (k in 1:length(indkids)) {
-                lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
-            }
-        }
-        title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")),xlab="retention time [min]",ylab="intensity")
-        for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
-        if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)
-        axis(1)
-        axis(2)
-               
-             
-        ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
-        gc()
-    }
+    for (i in 1:length(osmesi)) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
     dev.off()
 }
     
-##' Interface to vectorised Mass Bank workflow.
-##'
-##' 
-##' @title Vectorised Mass Bank Workflow
-##' @param mb List of mass bank workflow objects
-##' @param infodir List of subdirs containing info lists.
-##' @param fn_stgs List of settings files.
-##' @return A named list of mbWorkspace objects. The names are derived
-##'     from the input mb sequence.
-##' @author Todor Kondić
-mb.v<-function(mb,infodir,fn_stgs) {
-    f<-Vectorize(mb.single,vectorize.args=c("mb","infodir","fn_stgs"),SIMPLIFY=F)
-    x<-f(mb,infodir,fn_stgs)
-    names(x)<-names(mb)
-    x}
+mkUI <- function(idSliderRange,setName,rtRange,tags) {
 
-##' Interface to parallelised Mass Bank workflow.
-##'
-##' 
-##' @title Parallel Mass Bank Workflow
-##' @param mb List of mass bank workflow objects
-##' @param infodir List of subdirs containing info lists.
-##' @param fn_stgs List of settings files.
-##' @param cl Cluster.
-##' @return A named list of mbWorkspace objects. The names are derived
-##'     from the input mb sequence.
-##' @author Todor Kondić
-mb.p<-function(mb,infodir,fn_stgs,cl=F) {
-    x<-parallel::clusterMap(cl=cl,mb.single,mb,infodir,fn_stgs)    
-    names(x)<-names(mb)
-    x}
-
-##' Prescreening using shiny interface.
-##'
-##' @title Prescreening with Shiny 
-##' @return Nothing useful. 
-##' @author Jessy Krier
-##' @author Mira Narayanan
-presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,prescdf){
-    modemap=list(pH="MpHp_mass",
-                 mH="MmHm_mass",
-                 blahnh4="MpNH4_mass",
-                 blahna="MpNa_mass")
-    DEFAULT_RT_RANGE=c(0,40)
-    default_min_rt=DEFAULT_RT_RANGE[1]
-    default_max_rt=DEFAULT_RT_RANGE[2]
-    
-    dfdir <- file.path(wd,"prescreen")
-
-    wd1 <- wd[[1]]
-    df <- read.csv(file=get_cmpd_l_fn(wd1),stringsAsFactors = F)
-    osmesi <- df$SMILES
-    no_cmpds <- length(osmesi)
-    # reconf(wd1)
-    masses <- lapply(osmesi,function (smile) {
-        #osmesi <- tryCatch(RMassBank::findSmiles(i), error = function(e) NA)
-        zz <- RChemMass::getSuspectFormulaMass(smile)
-        zz[[modemap[[mode]]]]
-    })
-
-    for (col in c("MS1","MS2","Alignment","Intensity","AboveNoise","Comments")) {
-        if (is.null(prescdf[[col]])) prescdf[[col]] <- rep(T,length(prescdf$ID))
-    }
-
-    #message("Masses:",masses)
-    # return(osmesi)
-
-    ## Get the basenames of eic files.
-    eics <- list.files(path=dfdir[[1]],patt=".*eic.csv")
-    maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
-
-    tags <- levels(factor(prescdf$tag))
-
-    spectProps <- sapply(tags,function (tag) paste("spectProps",tag,sep=""))
-    
-    idsliderrange <- range(df$ID)
     tabPanelList <- lapply(tags, function(tag) {
-        shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tags,sep=""), "Quality Control",
-                                                      c("MS1" = T,
-                                                        "MS2" = T,
-                                                        "Alignment" = T,
-                                                        "Intensity" = T,
-                                                        "AboveNoise" = T)),
+        shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Quality Control",
+                                                      c(MS1 = "MS1",
+                                                        MS2 = "MS2",
+                                                        Alignment = "Alignment",
+                                                        Intensity = "Intensity",
+                                                        AboveNoise = "AboveNoise")),
                         shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
-                        shiny::verbatimTextOutput(paste("value",tag,sep="")))})
+                        shiny::verbatimTextOutput(paste("value",tag,sep=""))
+                        )})
     
-    nvp <- do.call(shiny::navlistPanel, tabPanelList)
+    nvPanel <- do.call(shiny::navlistPanel, tabPanelList)
     
     ui <- shinydashboard::dashboardPage(
           shinydashboard::dashboardHeader(title = "Prescreening"),
@@ -600,119 +546,115 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,presc
                                                          ),
                                          shinydashboard::box(
                                                              title = "Compounds", width=5,solidHeader = TRUE, collapsible = TRUE, "", shiny::br(),
-                                                             shiny::sliderInput("idslider", "Compound number:", idsliderrange[1], idsliderrange[2], value=1,step=1)
+                                                             shiny::sliderInput("idslider", "Compound number:", idSliderRange[1], idSliderRange[2], value=1,step=1)
                                                          ),
                                          shinydashboard::box(
                                                              title = "Plot x axis range", width = 5, solidHeader = TRUE, collapsible = TRUE,
-                                                             shiny::numericInput("min_val", "Minimum x Axis Value", default_min_rt),
-                                                             shiny::numericInput("max_val", "Maximum x Axis Value", default_max_rt)
+                                                             shiny::numericInput("min_val", "Minimum x Axis Value", rtRange[1]),
+                                                             shiny::numericInput("max_val", "Maximum x Axis Value", rtRange[2])
                                                          ),                                                     
                                          shinydashboard::box(
                                                              title = "Prescreening analysis", width = 5, solidHeader = TRUE, collapsible = TRUE,
-                                                             shiny::titlePanel(prescdf$set_name),
-                                                             shiny::uiOutput("nvp"),
-                                                             shiny::actionButton("submitQA", "Submit", icon = shiny::icon("save"))
+                                                             shiny::titlePanel(setName),
+                                                             nvPanel,
+                                                             shiny::actionButton("submitQA", "Submit", icon = shiny::icon("save")),
+                                                             shiny::textInput("fn_ftable", "File table Name",value="ftable.csv"),
+                                                             shiny::actionButton("savefiletable", "Save File Table")
 
                                                          )
                                      )
                           )
-          )
+          )}
 
-    plotall <- function(i,rtrange) {
-        eic <- eics[[i]]
-        maybekid <- maybekids[[i]]
-        fn_ini <- lapply(wd,get_stgs_fn)
-        
-        lbls <- lapply(fn_ini,function(x) {s <- yaml::yaml.load_file(x);s$prescreen$tag})
-        dfs <- lapply(file.path(dfdir,eic),function(fn) {
-            tryCatch(read.csv(fn,stringsAsFactors = F),
-                     error=function(e) {message(paste(e,"; offending file:",fn))})
-        })
-        
-        dfs <- lapply(dfs,function(x) data.frame(rt=x$rt/60.,intensity=x$intensity))
+##' Prescreening using shiny interface.
+##'
+##' @title Prescreening with Shiny 
+##' @return Nothing useful. 
+##' @author Jessy Krier
+##' @author Mira Narayanan
+##' @author Hiba Mohammed Taha
+##' @author Anjana Elapavalore
+##' @author Todor Kondić
+##' @param prescdf File table data-frame. Columns: Files,ID,wd,tag,set_name ...
+##' @param mode RMassBank mode.
+##' @param fn_cmpd_l Compound list file name.
+##' @param pal ColorBrewer palette.
+##' @param cex Size of fonts.
+##' @param rt_digits Number of decimal places for the retention time.
+##' @param m_digits Number of decimal places for the mass.
+##' @export
+presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
+    ## Helper functions
+    
+    queryFileTable <- function(df,id) {
+    df[df$ID %in% id,]
+    }
 
-        ## Find existing children.
-        maybes <- file.path(dfdir,maybekid)
-        indkids <- which(file.exists(maybes))
-        kids <- maybes[indkids]
-        dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
-        dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime/60.,intensity= -x$intensity))
 
-
-        ## Find max intensities.
-        w_max <- sapply(dfs,function (x) which.max(x$intensity))
-        rt_max <- Map(function(df,w) df$rt[[w]],dfs,w_max)
-        i_max<- Map(function(df,w) df$intensity[[w]],dfs,w_max)
-        symbs <- LETTERS[1:length(w_max)]
-
-        ## Find max intensities in children
-        w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
-        rt_max_kids <- Map(function(df,w) df$rt[[w]],dfs_kids,w_max_kids)
-        i_max_kids <- Map(function(df,w) df$intensity[[w]],dfs_kids,w_max_kids)
-        symbs_kids<- letters[indkids]
-
-        
-        
-        rt_rng <- rtrange #range(sapply(dfs,function(x) x$rt))
-        int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
-        cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
-        lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
-        
-        layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), 
-               widths=c(7,8), heights=c(6,6))
-        struc_xr <- c(0,100)
-        struc_yr <- c(0,100)
-        plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n")
-        rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
-       
-        col_eng <- c(0,100)
-        peak_int <- c(0,100)
-        plot(1,1,type="n",xlab="",ylab="",xlim=col_eng,ylim=peak_int,xaxt="n",yaxt="n",axes = FALSE)
-        linfo <- legend("topleft",horiz=T,legend=lbls,col=cols,fill=cols,bty="n",cex=cex)
-        legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty='n',cex=cex)
-         
-        cols_kids <- cols[indkids]
-        lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
-        if (length(lgnd_kids)>0) legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
-        plot(1,1,xlab="",ylab="",xlim = rt_rng,ylim = int_rng,type="n")
-
-          ## Plot eic across the directory set.
-        for (n in seq(length(dfs))) {
-            df <- dfs[[n]]
-            col <- cols[[n]]
-            lines(df$intensity ~ df$rt,col=col)
+    updateFileTable <- function(df,id,linput) {
+        for (tag in names(linput)) {
+            entries <- names(linput[[tag]])
+            cond <- (df$ID %in% id) & (df$tag == tag)
+            df[cond,entries] <- linput[[tag]]
         }
-
-        if (length(dfs_kids) >0) {
-            for (k in 1:length(indkids)) {
-                lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
-            }
-        }
-        title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")),xlab="retention time [min]",ylab="intensity")
-        for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
-        if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)
-        axis(1)
-        axis(2)
-               
-             
-        ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
-        gc()
-       
-    }
-    clean_rtrange <- function(rtrange) {
-            x1 <- rtrange[1]
-            x2 <- rtrange[2]
-            if (is.na(x1)) x1 <- default_min_rt
-            if (is.na(x2)) x2 <- default_max_rt
-
-            c(x1,x2)
+        df
     }
 
-    captureQA <- function() {
-        QAlist <- list()
-        list(add=function (entry) QAlist[[length(QAlist)+1]]<<-entry,
-             get=function() QAlist)
+    ## Constants
+    MODEMAP=list(pH="MpHp_mass",
+                 mH="MmHm_mass",
+                 blahnh4="MpNH4_mass",
+                 blahna="MpNa_mass")
+    DEFAULT_RT_RANGE=c(NA,NA)
+
+    QANAMES <- c("MS1","MS2","Alignment","Intensity","AboveNoise")
+
+    tags <- levels(factor(prescdf$tag))
+    wd <- prescdf$wd[match(tags,prescdf$tag)]
+    
+    wd1 <- wd[[1]]
+    cmpd_l_df <- read.csv(file=fn_cmpd_l,stringsAsFactors = F)
+    osmesi <- cmpd_l_df$SMILES
+    no_cmpds <- length(osmesi)
+    # reconf(wd1)
+    masses <- lapply(osmesi,function (smile) {
+        #osmesi <- tryCatch(RMassBank::findSmiles(i), error = function(e) NA)
+        zz <- RChemMass::getSuspectFormulaMass(smile)
+        zz[[MODEMAP[[mode]]]]
+    })
+
+    for (col in c("MS1","MS2","Alignment","Intensity","AboveNoise","Comments")) {
+        if (is.null(prescdf[[col]])) prescdf[[col]] <- T
     }
+
+
+
+    ## Get the basenames of eic files.
+    eics <- list.files(path=wd[[1]],patt=".*eic.csv")
+    maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
+
+    plot_id <- function (i,rtrange) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
+    
+
+
+    spectProps <- sapply(tags,function (tag) paste("spectProps",tag,sep=""))
+    idSliderRange <- range(cmpd_l_df$ID)
+    
+
+    
+    ui <- mkUI(idSliderRange=idSliderRange,setName=prescdf$set_name,rtRange=DEFAULT_RT_RANGE,tags=tags)
+
+
+    
+
+    getCheckboxValues <- function(tag,input) {
+        chkbox <- input[[spectProps[[tag]]]]
+        q <- sapply(QANAMES,function (qn) if (qn %in% chkbox) T else F)
+        names(q) <- QANAMES
+        q
+    }
+    
+    
     server <- function(input, output, session) {
         rv <- shiny::reactiveValues(prescList=list(),
                                     prescdf=prescdf,
@@ -726,7 +668,7 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,presc
             i=input$idslider
 
             rtrange <- c(input$min_val,input$max_val)
-            plotall(i,rtrange=clean_rtrange(rtrange))
+            plot_id(i,rtrange=rtrange)
         })
 
         output$value <- renderText(
@@ -742,48 +684,50 @@ presc.shiny <-function(wd,mode,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,presc
         shiny::observeEvent(input$saveplot,
         {
             i=input$idslider
-            message("Save plot button pressed.")
             pfn <-input$plotname
             if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
             fn <- sprintf(pfn,i)
             rtrange <- c(input$min_val,input$max_val)
             pdf(file=fn, width=12, height=8)
-            plotall(i,rtrange=clean_rtrange(rtrange))
+            plot_id(i,rtrange=rtrange)
             dev.off()
         })
 
         shiny::observeEvent(input$saveallplots,
         {
             i=input$idslider
-            
-            message("Save plot button pressed.")
             pfn <-input$plotname
-            if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
+            if (is.na(pfn)) pfn <- "plotall.pdf"
             fn <- sprintf(pfn,i)
-            rtrange <- c(input$min_val,input$max_val)
             pdf(file=fn, width=12, height=8)
             for (i in 1:rv$no_cmpds) {
-                plotall(i,rtrange=rv$default_range)
+                plot_id(i)
                 message("Compound ID ",i," done.")
             }
             dev.off()
         })
 
-        shiny::observeEvent(input$idslider,{
-            i <- input$idslider
-            tag <- rv$prescdf$tag[[i]]
-            
-            
-        })
-
         shiny::observeEvent(input$submitQA,{
-            
+            res <- lapply(rv$tags,getCheckboxValues,input)
+            names(res) <- rv$tags
+            rv$prescdf <- updateFileTable(df=rv$prescdf,id=input$idslider,linput=res)
         })
 
+        shiny::observe({
+            i <- input$idslider
+            sdf <- queryFileTable(df=rv$prescdf,id=i)
+            for (t in sdf$tag) {
+                sprop <- rv$spectProps[[t]]
+                sel <- as.logical(sdf[sdf$tag %in% t,QANAMES])
+                choices <- QANAMES[sel]
+                names(choices) <- QANAMES[sel]
+                shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
+            }
+        })
 
-        output$nvp <- shiny::renderUI(
+        shiny::observeEvent(input$savefiletable,
         {
-            nvp
+            write.csv(file=input$fn_ftable,x=rv$prescdf,row.names = F)
             
         })
         
