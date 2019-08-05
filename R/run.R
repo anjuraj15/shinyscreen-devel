@@ -61,7 +61,8 @@ gen<-function(fnFileTab,fnCmpdList,mode,fnDestFileTable=attch(stripext(fnFiletab
     fnData <- levels(factor(fTab$Files))
     wd <- fTab$wd[match(fnData,fTab$Files)]
     stgsName <- sapply(wd,function(w) paste(wd,".ini",sep = ''))
-    fnStgs <- file.path(stgsPath,stgsName)
+    fnStgs <- file.path(stgsPath,basename(stgsName))
+    message(fnStgs[[1]])
 
     ## Do the prescreen.
     presc.do(fnData=fnData,wd=wd,fnStgs = fnStgs,fnCmpdList=fnCmpdList,mode=mode,dest=dest,ppm_limit_fine=ppmLimFine,EIC_limit=eicLim,proc=proc,fnLog=fnLog)
