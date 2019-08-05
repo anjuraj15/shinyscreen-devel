@@ -51,7 +51,7 @@ impCmpdList <- function(fnSrc,fnDest=file.path(".",basename(fnSrc))) {
     gen_cmpd_l(src_fn=fnSrc,dest_fn=fnDest)
 }
 
-gen<-function(fnFileTab,fnCmpdList,mode,fnDestFileTable=attch(stripext(fnFiletable),"_candidate.csv"),dest=".",fnLog='prescreen.log',proc=F,intTresh=5e5,noiseFac=3,rtDelta=0.5,ppmLimFine=10,eicLim=1e-3) {
+gen<-function(fnFileTab,fnCmpdList,mode,fnDestFileTable=attch(stripext(fnFiletable),"_candidate.csv"),dest=".",stgsPath=dest,fnLog='prescreen.log',proc=F,intTresh=1e5,noiseFac=3,rtDelta=0.5,ppmLimFine=10,eicLim=1e-3) {
     message("*** Started to generate prescreen data ...")
     
     ## Read in the file table.
@@ -60,9 +60,11 @@ gen<-function(fnFileTab,fnCmpdList,mode,fnDestFileTable=attch(stripext(fnFiletab
     ## Get files and the associated work directories.
     fnData <- levels(factor(fTab$Files))
     wd <- fTab$wd[match(fnData,fTab$Files)]
+    stgsName <- sapply(wd,function(w) paste(wd,".ini",sep = ''))
+    fnStgs <- file.path(stgsPath,stgsName)
 
     ## Do the prescreen.
-    presc.do(fnData=fnData,wd=wd,fnCmpdList=fnCmpdList,mode=mode,dest=dest,ppm_limit_fine=ppmLimFine,EIC_limit=eicLim,proc=proc,fnLog=fnLog)
+    presc.do(fnData=fnData,wd=wd,fnStgs = fnStgs,fnCmpdList=fnCmpdList,mode=mode,dest=dest,ppm_limit_fine=ppmLimFine,EIC_limit=eicLim,proc=proc,fnLog=fnLog)
     message("*** ... done generating prescreen data.")
 }
 
