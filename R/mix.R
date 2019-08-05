@@ -314,7 +314,7 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
               row.names = F)
 }
 
-preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=5e5) {
+preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
 
     ## read in .csv file as file
     ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
