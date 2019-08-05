@@ -20,26 +20,49 @@ attch<-function(...) paste(...,sep='')
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-presc.do<-function(fn_data,fn_cmpd_l,mode,dest=".",proc=F,...) {
-    conf(fn_data,fn_cmpd_l,dest)
-
-    fread <- function(fn_data) {
-        wd <- fn_data2wd(fn_data,dest)
+presc.do<-function(fnData,fnStgs=attch(stripext(fnData),".ini"),wd,fnCmpdList,mode,dest=".",proc=F,fnLog='prescreen.log',...) {
+    
+    RMassBank::loadRmbSettings(fnStgs[[1]])
+    RMassBank::loadList(fnCmpdList)
+    cmpd <- read.csv(file=fnCmpdList,stringsAsFactors = F)
+    n_cmpd <- nrow(cmpd)
+    
+    fread <- function(fnData,fnStgs,wd) {
         gen_presc_d(wd)
-        reconf(wd)
+        RMassBank::loadRmbSettings(fnStgs)
+        RMassBank::loadList(fnCmpdList)
         message("Currently processing: ",wd)
+        gen_ftable(fnData,wd,n_cmpd)
         fn_ftable <- get_ftable_fn(wd)
-        fn_cmpd_l <- get_cmpd_l_fn(wd)
         RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode,FileList=fn_ftable,
-                             cmpd_list=fn_cmpd_l,...)
+                             cmpd_list=fnCmpdList,...)
     }
 
     if (proc) {
-        cl<-parallel::makeCluster(proc)
+        cl<-parallel::makeCluster(proc,type='PSOCK',outfile=fnLog)
         parallel::clusterEvalQ(cl,library(shinyscreen))
-        parallel::clusterMap(cl,fread,fn_data)
+        parallel::clusterMap(cl,fread,fnData,fnStgs,wd)
     } else {
-        lapply(fn_data,fread)
+        Map(fread,fnData,fnStgs,wd)
     }
+}
+
+impCmpdList <- function(fnSrc,fnDest=file.path(".",basename(fnSrc))) {
+    gen_cmpd_l(src_fn=fnSrc,dest_fn=fnDest)
+}
+
+gen<-function(fnFileTab,fnCmpdList,mode,fnDestFileTable=attch(stripext(fnFiletable),"_candidate.csv"),dest=".",fnLog='prescreen.log',proc=F,intTresh=5e5,noiseFac=3,rtDelta=0.5,ppmLimFine=10,eicLim=1e-3) {
+    message("*** Started to generate prescreen data ...")
+    
+    ## Read in the file table.
+    fTab <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
+
+    ## Get files and the associated work directories.
+    fnData <- levels(factor(fTab$Files))
+    wd <- fTab$wd[match(fnData,fTab$Files)]
+
+    ## Do the prescreen.
+    presc.do(fnData=fnData,wd=wd,fnCmpdList=fnCmpdList,mode=mode,dest=dest,ppm_limit_fine=ppmLimFine,EIC_limit=eicLim,proc=proc,fnLog=fnLog)
+    message("*** ... done generating prescreen data.")
 }
 

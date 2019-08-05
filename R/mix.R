@@ -71,8 +71,8 @@ fn_data2wd <- function(fn_data,dest) {
     f(fn_data)
 }
 
-get_presc_d <- function(wd) { file.path(wd,"prescreen")}
-gen_presc_d <- function(wd) { no_drama_mkdir(get_presc_d(wd))}
+get_presc_d <- function(wd) {wd}
+gen_presc_d <- function(wd) { no_drama_mkdir(wd)}
     
     
 
@@ -257,8 +257,7 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
     file_list <- read.csv(FileList, stringsAsFactors = FALSE)
     cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE)
     ncmpd <- nrow(cmpd_info)
-    odir=file.path(wd,"prescreen")
-    no_drama_mkdir(odir)
+    odir=wd
     get_width <- function(maxid) {log10(maxid)+1}
     id_field_width <- get_width(ncmpd)
 
@@ -314,6 +313,65 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
               file = file.path(odir,"RTs_wI.csv"), 
               row.names = F)
 }
+
+preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=5e5) {
+
+    ## read in .csv file as file
+    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
+    
+    getWidth <- function(maxid) {log10(maxid)+1}
+    ids <- as.numeric(levels(factor(ftable$ID)))
+    id_field_width <- getWidth(max(ids))
+    fn_out<- function(id,suff) {paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')}
+
+    ## for loop through dataframe called file to set tresholds
+    ftable[c("MS1","MS2","Alignment","Intensity","AboveNoise")] <- T
+    ftable$Comments <- ""
+    for (ind in 1:nrow(ftable)) {
+        wd <- ftable$wd[ind]
+        id <- ftable$ID[ind]
+        odir=file.path(wd)
+        fn_eic <- file.path(wd,fn_out(id,".eic"))
+        eic <- NULL
+        maxInt <- NULL
+        eicExists <- F
+        if(!file.exists(fn_eic)) {
+            ftable[ind,"MS1"] = FALSE
+            eicExists <- T
+        }
+        else {
+            eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F)
+            maxInt <- max(eic$intensity)
+            if (maxInt < intTresh) {
+                ftable[ind,"Intensity"] = FALSE
+            }
+            ## Detect noisy signal. This is a naive implementation, so careful.
+            mInt <- mean(eic$intensity)
+            if (maxInt < noiseFac*mInt) ftable[ind,"AboveNoise"] <- F
+        }
+        fn_kids <- file.path(wd,fn_out(id,".kids"))
+        if(!file.exists(fn_kids)) {
+            ftable[ind,"MS2"] = FALSE
+        } else {
+            ## Detect RT shifts. Naive implementation, so careful.
+            if (eicExists) {
+                rtInd <- match(maxInt,eic$intensity)
+                rtMax <- eic$rt[rtInd]
+                msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F)
+                whc <- msms$rt > rtMax - rtDelta
+                whc <- whc < rtMax + rtDelta
+                ints <- msms$intensity[whc]
+                if (! any(ints>0)) ftable[ind,"Alignment"] = FALSE
+            }
+            
+        }
+    }
+
+    ## get a csv outfile
+    write.csv(ftable, file = fnDest,row.names=F)
+
+}
+
 
 ##' Helper function for rendersmiles2
 ##'
@@ -609,6 +667,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
 
     QANAMES <- c("MS1","MS2","Alignment","Intensity","AboveNoise")
 
+    prescdf$tag <- as.character(prescdf$tag)
     tags <- levels(factor(prescdf$tag))
     wd <- prescdf$wd[match(tags,prescdf$tag)]
     
@@ -626,7 +685,6 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     for (col in c("MS1","MS2","Alignment","Intensity","AboveNoise","Comments")) {
         if (is.null(prescdf[[col]])) prescdf[[col]] <- T
     }
-
 
 
     ## Get the basenames of eic files.
@@ -653,7 +711,6 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
         names(q) <- QANAMES
         q
     }
-    
     
     server <- function(input, output, session) {
         rv <- shiny::reactiveValues(prescList=list(),

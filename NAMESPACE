@@ -3,3 +3,6 @@
 export(presc.do)
 export(presc.plot)
 export(presc.shiny)
+export(gen)
+export(preProc)
+export(impCmpdList)
