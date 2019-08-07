@@ -510,6 +510,8 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
 
             c(x1,x2)
     }
+    #LEFT_MARGIN=11
+    
     eic <- eics[[i]]
     maybekid <- maybekids[[i]]
     dfs <- lapply(file.path(wd,eic),function(fn) {
@@ -556,13 +558,13 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
     ## par(mar=c(1,2,1,4))
     struc_xr <- c(0,100)
     struc_yr <- c(0,100)
-    par(mar=c(1,2,1,4))
-    plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1)
+    par(mar=c(1,9,3,4))
+    plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1,axes = FALSE)
     rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
     
     col_eng <- c(0,100)
     peak_int <- c(0,100)
-    par(mar=c(1,1,1,1))
+    par(mar=c(1,6,3,1))
     plot(1,1,type="n",xlab="",ylab="",xlim=col_eng,ylim=peak_int,xaxt="n",yaxt="n",axes = FALSE)
     linfo <- legend("topleft",horiz=T,legend=tags,col=cols,fill=cols,bty="n",cex=1.5)
     legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd,fill=cols,bty='n',cex=1.5)
@@ -572,11 +574,11 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
     if (length(lgnd_kids)>0) legend(x=linfo$rect$left-14*linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=1.5)
 
 
-    arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,7,3,0),log="")
+    arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,9,3,0),log="")
     title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")))
     for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
 
-    mtext("intensity",side = 2,adj=-0.1,line = 4)
+    mtext("intensity",side = 2,adj=0.2,cex=1.3,line=7)
     ## Plot eic across the directory set.
     for (n in 1:length(dfs)) {
         df <- dfs[[n]]
@@ -586,14 +588,14 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
 
 
     if (length(dfs_kids) >0) {
-        arrPlotStd(xlim=rt_rng,ylim=int_rng_kids,xaxis=T,log="y",mar=c(4,7,0,0))
+        arrPlotStd(xlim=rt_rng,ylim=int_rng_kids,xaxis=T,log="y",mar=c(4,9,0,0))
         for (k in 1:length(indkids)) {
             lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
         }
     } else {
-        arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log="y",mar=c(4,7,0,0))
+        arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log="y",mar=c(4,9,0,0))
     }
-    mtext("retention time [min]",side = 1,adj=0.5,line = 3)
+    mtext("retention time [min]",side = 1,adj=0.5,cex=1.3,line = 3)
     if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
     ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
     gc()
