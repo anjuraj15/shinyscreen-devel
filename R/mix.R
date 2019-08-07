@@ -419,6 +419,86 @@ rendersmiles2 <- function(smiles,style="cow",...) {
     renderurl(dpurl,filename=tempfile(fileext=".svg"),...)
 }
 
+calcLogTics <- function(lims,powUnit=1,linDiv=1,howMany=NULL) {
+    ## Find integer power limits.
+    llim <- log10(lims)
+    llim[is.infinite(llim)] <- 0
+    nlim <- llim/powUnit
+    ilim <- round(nlim)*powUnit
+
+    all <- if (linDiv>1) {
+               z <- sapply(seq(ilim[1],(ilim[2]-1),by=powUnit),
+                           function(i) {
+                               a <- 10.**i
+                               b <- 10.**(i+1)
+                               st <- b/linDiv
+                               s <- seq(0,b,by=st)
+                               s[2:length(s)]
+                           })
+               dim(z) <- prod(dim(z))
+               z
+           } else
+               10**seq(ilim[1],ilim[2],by=powUnit)
+    
+    res <- if (!is.null(howMany)) {
+               if (howMany<length(all)) {
+                   step <- length(all) %/% howMany    
+                   ind <- seq(1,howMany*step,by=step)
+                   rev(rev(all)[ind])
+               } else
+                   return(NULL)
+               
+           } else
+               all
+
+    res
+
+}
+
+calcLabels <- function(ticVals) {
+    pw <- as.integer(log10(abs(ticVals)))
+    mags <- 10**pw
+    mags[is.na(mags)] <- 0
+    pw[is.na(mags)] <- 0
+    mant <- signif(ticVals/mags,3)
+    zz <- Map(function (m,p) c(m=m,p=p),mant,pw)
+    sapply(zz,function (z) {as.expression(bquote(.(z['m']) %*% 10^.(z['p'])))},USE.NAMES = F)
+}
+
+arrPlot <- function(xlim,ylim,ytics,xaxis=F,log=NULL,cex=0.2) {
+    ylim[is.na(ylim)] <- 1
+    ylim[ylim == 0] <- 1
+    if (is.null(ylim)) ylim <- c(1,10)
+
+    if (xaxis) xaxt="s" else xaxt="n"
+    if (! is.null(log) && ! any(is.na(ytics)) ) {
+        plot(1,1,xlab="",ylab="",xlim = xlim,ylim = ylim,type="n",log=log,xaxt=xaxt,yaxt = "n")
+        message("ytics:",ytics)
+        ltics <- calcLabels(ytics)
+        axis(side=2,at=ytics,labels=ltics,las=2,cex=cex,gap.axis = -1)
+    } else {
+        plot(1,1,xlab="",ylab="",xlim = xlim,ylim = ylim,type="n",xaxt = xaxt)
+        axis(side=2,las=2,cex=cex)
+    }
+
+}
+
+
+arrPlotStd <- function(xlim,ylim,xaxis=F,log="",cex=1.5,mar) {
+    if (ylim[1]<1) ylim[1] <- 1
+    if  (is.na(ylim[2])) ylim[2] <- 10
+    if (xaxis) xaxt="s" else xaxt="n"
+    par(mar=mar)
+    plot(1,1,xlab="",ylab="",xlim = xlim,ylim = ylim,type="n",log=log,xaxt=xaxt,yaxt = "n",cex.axis=cex)
+    ytics <- if (log=="y") axTicks(side=2, nintLog = 3) else axTicks(side=2)
+    message("YTICS:",do.call(paste,as.list(ytics)))
+                                                                             
+    ltics <- calcLabels(ytics)
+    axis(side=2,at=ytics,labels=ltics,las=2,cex.axis=cex,gap.axis = -1)
+    
+
+
+}
 
 
 plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
@@ -444,7 +524,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
     indkids <- which(file.exists(maybes))
     kids <- maybes[indkids]
     dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
-    dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime/60.,intensity= -x$intensity))
+    dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime/60.,intensity= x$intensity))
 
 
     ## Find max intensities.
@@ -462,16 +542,22 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
     
     def_rt_rng <- range(sapply(dfs,function(x) x$rt))
     rt_rng <- if (is.null(rtrange))  def_rt_rng else clean_rtrange(def_rt_rng)
-    int_rng <- range(sapply(append(dfs_kids,dfs),function(x) x$intensity))
+
+    int_rng<- range(sapply(dfs,function(x) x$intensity))
+    int_rng_kids<- if (! is.null(dfs_kids))
+                       range(sapply(dfs_kids,function(x) x$intensity)) else
+                                                                           c(0,1)
     cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
     lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
-    
-    layout(matrix(c(1,2,3,3), 2, 2, byrow = TRUE), 
-           widths=c(7,8), heights=c(4,6))
+
+
+   
+    layout(matrix(c(3,3,4,4,1,2), 3, 2, byrow = TRUE))
+    ## par(mar=c(1,2,1,4))
     struc_xr <- c(0,100)
     struc_yr <- c(0,100)
-    par(mar=c(1,1,1,1))
-    plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n")
+    par(mar=c(1,2,1,4))
+    plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1)
     rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
     
     col_eng <- c(0,100)
@@ -484,28 +570,31 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
     cols_kids <- cols[indkids]
     lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
     if (length(lgnd_kids)>0) legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
-    par(mar=c(4,4,1,1))
-    plot(1,1,xlab="",ylab="",xlim = rt_rng,ylim = int_rng,type="n")
 
+
+    arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,7,3,0),log="")
+    title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")))
+    for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
+
+    mtext("intensity",side = 2,adj=-0.1,line = 4)
     ## Plot eic across the directory set.
-    for (n in seq(length(dfs))) {
+    for (n in 1:length(dfs)) {
         df <- dfs[[n]]
         col <- cols[[n]]
-        lines(df$intensity ~ df$rt,col=col)
+        lines(intensity ~ rt,data=df,col=col)
     }
 
+
     if (length(dfs_kids) >0) {
+        arrPlotStd(xlim=rt_rng,ylim=int_rng_kids,xaxis=T,log="y",mar=c(4,7,0,0))
         for (k in 1:length(indkids)) {
             lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
         }
+    } else {
+        arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log="y",mar=c(4,7,0,0))
     }
-    title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")),xlab="retention time [min]",ylab="intensity")
-    for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
-    if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)
-    axis(1)
-    axis(2)
-    
-    
+    mtext("retention time [min]",side = 1,adj=0.5,line = 3)
+    if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
     ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
     gc()
     
