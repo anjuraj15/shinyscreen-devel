@@ -483,9 +483,8 @@ arrPlot <- function(xlim,ylim,ytics,xaxis=F,log=NULL,cex=0.2) {
 
 }
 
-
-arrPlotStd <- function(xlim,ylim,xaxis=F,log="",cex=1.5,mar) {
-    if (ylim[1]<1) ylim[1] <- 1
+arrPlotStd <- function(xlim,ylim,xaxis=F,log=log,cex=1.5,mar,intTresh) {
+    if (ylim[1]<intTresh) ylim[1] <- intTresh
     if  (is.na(ylim[2])) ylim[2] <- 10
     if (xaxis) xaxt="s" else xaxt="n"
     par(mar=mar)
@@ -496,12 +495,11 @@ arrPlotStd <- function(xlim,ylim,xaxis=F,log="",cex=1.5,mar) {
     ltics <- calcLabels(ytics)
     axis(side=2,at=ytics,labels=ltics,las=2,cex.axis=cex,gap.axis = -1)
     
-
-
 }
 
 
-plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+
+plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
     clean_rtrange <- function(def) {
             x1 <- rtrange[1]
             x2 <- rtrange[2]
@@ -510,7 +508,14 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
 
             c(x1,x2)
     }
-    #LEFT_MARGIN=11
+
+
+
+    if (logYAxis == "linear") log = ""
+    if (logYAxis == "log") log = "y"
+    
+    LEFT_MARGIN=9
+
     
     eic <- eics[[i]]
     maybekid <- maybekids[[i]]
@@ -558,7 +563,8 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
     ## par(mar=c(1,2,1,4))
     struc_xr <- c(0,100)
     struc_yr <- c(0,100)
-    par(mar=c(1,9,3,4))
+
+    par(mar=c(1,LEFT_MARGIN,3,4))
     plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1,axes = FALSE)
     rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
     
@@ -571,10 +577,11 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
     
     cols_kids <- cols[indkids]
     lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
+
     if (length(lgnd_kids)>0) legend(x=linfo$rect$left-14*linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=1.5)
 
 
-    arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,9,3,0),log="")
+    arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,LEFT_MARGIN,3,0),log=log,intTresh=1e4)
     title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")))
     for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
 
@@ -588,12 +595,12 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
 
 
     if (length(dfs_kids) >0) {
-        arrPlotStd(xlim=rt_rng,ylim=int_rng_kids,xaxis=T,log="y",mar=c(4,9,0,0))
+        arrPlotStd(xlim=rt_rng,ylim=int_rng_kids,xaxis=T,log=log,mar=c(4,LEFT_MARGIN,0,0),intTresh=1)
         for (k in 1:length(indkids)) {
             lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
         }
     } else {
-        arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log="y",mar=c(4,9,0,0))
+        arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log=log,mar=c(4,9,0,0),intTresh=1)
     }
     mtext("retention time [min]",side = 1,adj=0.5,cex=1.3,line = 3)
     if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
@@ -646,7 +653,7 @@ presc.plot <- function(prescdf,mode,out="prescreen.pdf",fn_cmpd_l,pal="Dark2",ce
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
 
     pdf(out)
-    for (i in 1:length(osmesi)) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
+    for (i in 1:length(osmesi)) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,log="y",tags=tags,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
     dev.off()
 }
     
@@ -665,7 +672,7 @@ mkUI <- function(idSliderRange,setName,rtRange,tags) {
     
     nvPanel <- do.call(shiny::navlistPanel, tabPanelList)
     
-    ui <- shinydashboard::dashboardPage(
+    ui <- shinydashboard::dashboardPage(skin="black",
           shinydashboard::dashboardHeader(title = "Prescreening"),
           shinydashboard::dashboardSidebar(
                               width = 350,
@@ -673,6 +680,7 @@ mkUI <- function(idSliderRange,setName,rtRange,tags) {
                                                   shinydashboard::sidebarSearchForm(textId = "searchText", buttonId = "searchButton", label = "Search..."),
                                                   shinydashboard::menuItem(text = "Dashboard", tabName = "Dashboard", icon = shiny::icon("dashboard")))),
           shinydashboard::dashboardBody(
+
                               shiny::fluidRow(
                                          shinydashboard::box(
                                                              title = "MS Prescreening", width = 7, height = "80px", background = "blue", ""
@@ -684,34 +692,39 @@ mkUI <- function(idSliderRange,setName,rtRange,tags) {
                                      ),
                               shiny::fluidRow(
                                          shinydashboard::box(
-                                                             title = "Plot", width = 7, solidHeader = TRUE, collapsible = TRUE,
+                                                             title = "Plot", width = 7, color = "olive", solidHeader = FALSE, collapsible = TRUE,
                                                              shiny::plotOutput("plot1", width = "100%", height = "750px", click = NULL,
                                                                                dblclick = NULL, hover = NULL, hoverDelay = NULL,
                                                                                hoverDelayType = NULL, brush = NULL, clickId = NULL,
                                                                                hoverId = NULL),
                                                              shiny::textInput("plotname", "Insert plot name: (e.g. plotname_%i.pdf)",value="plotCpdID_%i.pdf"),
                                                              shiny::actionButton("saveplot", "Save", icon = shiny::icon("save")),
-                                                             shiny::actionButton("saveallplots", "Save All", icon = shiny::icon("save"))
+                                                             shiny::actionButton("saveallplots", "Save All Plots", icon = shiny::icon("save"))
+                                                            
                                                          ),
                                          shinydashboard::box(
-                                                             title = "Compounds", width=5,solidHeader = TRUE, collapsible = TRUE, "", shiny::br(),
+                                                             title = "Compounds", width=5, solidHeader = FALSE, color = "olive", collapsible = TRUE, "", shiny::br(),
                                                              shiny::sliderInput("idslider", "Compound number:", idSliderRange[1], idSliderRange[2], value=1,step=1)
                                                          ),
                                          shinydashboard::box(
-                                                             title = "Plot x axis range", width = 5, solidHeader = TRUE, collapsible = TRUE,
-                                                             shiny::numericInput("min_val", "Minimum x Axis Value", rtRange[1]),
-                                                             shiny::numericInput("max_val", "Maximum x Axis Value", rtRange[2])
-                                                         ),                                                     
-                                         shinydashboard::box(
-                                                             title = "Prescreening analysis", width = 5, solidHeader = TRUE, collapsible = TRUE,
+                                                             title = "Prescreening analysis", width = 5, solidHeader = FALSE, collapsible = TRUE,
                                                              shiny::titlePanel(setName),
                                                              nvPanel,
                                                              shiny::actionButton("submitQA", "Submit", icon = shiny::icon("save")),
                                                              shiny::textInput("fn_ftable", "File table Name",value="ftable.csv"),
-                                                             shiny::actionButton("savefiletable", "Save File Table")
-
-                                                         )
-                                     )
+                                                             shiny::actionButton("savefiletable", "Save File Table", icon = shiny::icon("save"))
+                                                         ),
+                                         shinydashboard::box(
+                                                             title = "Plot Parameters", width=7, solidHeader = FALSE, collapsible = TRUE, "", shiny::br(),
+                                                             shiny::numericInput("min_val", "Minimum x Axis Value", rtRange[1]),
+                                                             shiny::numericInput("max_val", "Maximum x Axis Value", rtRange[2]),
+                                                             shiny::radioButtons("yaxis", "Parameters for y Axis",
+                                                                                 c(linear = "linear",
+                                                                                   log = "log")),
+                                                             shiny::numericInput("nice", "Nice", rtRange[1]),
+                                                             shiny::numericInput("steps", "Steps", rtRange[2])
+                                                         )                                      
+                                         )
                           )
           )}
 
@@ -782,7 +795,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     eics <- list.files(path=wd[[1]],patt=".*eic.csv")
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
 
-    plot_id <- function (i,rtrange) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
+    plot_id <- function (i,rtrange,log=rv$yaxis) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
     
 
 
@@ -812,11 +825,13 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
                                     no_cmpds=no_cmpds)
 
         output$plot1 <- renderPlot(
-        {
-            i=input$idslider
+        { i=input$idslider
+            
+          rtrange <- c(input$min_val,input$max_val)
+          plot_id(i,rtrange=rtrange, log=input$yaxis)
 
-            rtrange <- c(input$min_val,input$max_val)
-            plot_id(i,rtrange=rtrange)
+                                        #           intParameter <- c(input$nice, input$steps)
+                
         })
 
         output$value <- renderText(
@@ -837,7 +852,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
             fn <- sprintf(pfn,i)
             rtrange <- c(input$min_val,input$max_val)
             pdf(file=fn, width=12, height=8)
-            plot_id(i,rtrange=rtrange)
+            plot_id(i,rtrange=rtrange, log=input$yaxis)
             dev.off()
         })
 
@@ -849,7 +864,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
             fn <- sprintf(pfn,i)
             pdf(file=fn, width=12, height=8)
             for (i in 1:rv$no_cmpds) {
-                plot_id(i)
+                plot_id(i,log=input$yaxis)
                 message("Compound ID ",i," done.")
             }
             dev.off()
@@ -860,6 +875,11 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
             names(res) <- rv$tags
             rv$prescdf <- updateFileTable(df=rv$prescdf,id=input$idslider,linput=res)
         })
+
+        ## shiny::observeEvent(input$yaxis,{
+        ##     rv$yaxis <- input$yaxis
+            
+        ## })
 
         shiny::observe({
             i <- input$idslider
