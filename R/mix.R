@@ -564,12 +564,12 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,pal="Dark2",cex=0
     peak_int <- c(0,100)
     par(mar=c(1,1,1,1))
     plot(1,1,type="n",xlab="",ylab="",xlim=col_eng,ylim=peak_int,xaxt="n",yaxt="n",axes = FALSE)
-    linfo <- legend("topleft",horiz=T,legend=tags,col=cols,fill=cols,bty="n",cex=cex)
-    legend(x=linfo$rect$left,y=linfo$rect$top-0.5*linfo$rect$h,horiz=T,legend=lgnd,fill=cols,bty='n',cex=cex)
+    linfo <- legend("topleft",horiz=T,legend=tags,col=cols,fill=cols,bty="n",cex=1.5)
+    legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd,fill=cols,bty='n',cex=1.5)
     
     cols_kids <- cols[indkids]
     lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
-    if (length(lgnd_kids)>0) legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=T,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=cex)
+    if (length(lgnd_kids)>0) legend(x=linfo$rect$left-14*linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=1.5)
 
 
     arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,7,3,0),log="")
