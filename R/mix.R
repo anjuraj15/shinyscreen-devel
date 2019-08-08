@@ -795,7 +795,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     eics <- list.files(path=wd[[1]],patt=".*eic.csv")
     maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
 
-    plot_id <- function (i,rtrange,log=rv$yaxis) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
+    plot_id <- function (i,rtrange=NULL,log=rv$yaxis) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
     
 
 
