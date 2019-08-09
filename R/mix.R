@@ -677,10 +677,27 @@ mkUI <- function(idSliderRange,setName,rtRange,tags) {
           shinydashboard::dashboardSidebar(
                               width = 350,
                               shinydashboard::sidebarMenu(
-                                                  shinydashboard::sidebarSearchForm(textId = "searchText", buttonId = "searchButton", label = "Search..."),
-                                                  shinydashboard::menuItem(text = "Dashboard", tabName = "Dashboard", icon = shiny::icon("dashboard")))),
+                                                  shinydashboard::menuItem(text = "The Prescreening", tabName = "Prescreen", icon = shiny::icon("dashboard")),
+                                               shinydashboard::menuItem(text = "Adduct Calculator", tabName = "Adducts", icon = shiny::icon("th")))),
           shinydashboard::dashboardBody(
-
+                              shinydashboard::tabItems(
+                                  shinydashboard::tabItem(tabName = "Adducts",
+                                                          shiny::h2("Calculate the adducts"),
+                                                          shiny::fluidRow(
+                                                      shinydashboard::box(
+                                                                          title = "INPUT", width = 4, solidHeader = TRUE, status = "primary",
+                                                                          shiny::textAreaInput("IdSmiles","Enter Smiles",value="",width="100%"),
+                                                                          shiny::fileInput("smileslist", "Upload SMILES List", multiple = FALSE,accept=(".csv"))
+                                                                      ),
+                                                      shinydashboard::box(
+                                                                          title = "Adduct Masses",width = 8,status="primary",
+                                                                          shiny::tableOutput("masses"),
+                                                                          shiny::textInput("adduct-table", "Adduct Masses",value="adductable.csv"),
+                                                                          shiny::actionButton("downloadtable", "Download", icon = shiny::icon("download"))
+                                                                      )
+                                                      )),
+                        shinydashboard::tabItem(tabName = "Prescreen",
+                                          shiny::h2("The Prescreen plot"),
                               shiny::fluidRow(
                                          shinydashboard::box(
                                                              title = "MS Prescreening", width = 7, height = "80px", background = "blue", ""
@@ -726,7 +743,7 @@ mkUI <- function(idSliderRange,setName,rtRange,tags) {
                                                          )                                      
                                          )
                           )
-          )}
+         )))}
 
 ##' Prescreening using shiny interface.
 ##'
@@ -817,6 +834,8 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     }
     
     server <- function(input, output, session) {
+        rv_adduc<- shiny::reactiveValues(smiles=1,
+                                         resTable=1)
         rv <- shiny::reactiveValues(prescList=list(),
                                     prescdf=prescdf,
                                     spectProps=spectProps,
@@ -843,7 +862,40 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
         {
             i=input$idslider
         })
+        shiny::observeEvent(input$smileslist,
+        {
+            rv_adduc$smiles <- read.csv(input$smileslist$datapath, header=FALSE,sep=',',stringsAsFactors=FALSE)[[1]]
+        })
+
+        shiny::observeEvent(input$IdSmiles,
+        {
+            rv_adduc$smiles <- trimws(strsplit(input$IdSmiles,split="\n")[[1]],which="both")
+        })
         
+        output$masses <- renderTable(
+        {
+
+            message("LEN:",length(rv_adduc$smiles))
+
+            expr =lapply(rv_adduc$smiles,RChemMass::getSuspectFormulaMass) 
+            if (! length(expr) == 0) {
+                df <- do.call(rbind,expr)
+                df <- as.data.frame(df)
+                names(df) <- c("SMILES", "Monoisotopicmass", "[M+H]+", "[M+NH4]+", "[M+Na]+", "[M-H]-")
+                rv$resTable <- df
+                df
+            } else NULL
+                      
+        },digits=4)
+
+        shiny::observeEvent(input$downloadtable,
+        {
+          
+            write.csv(file=input[["adduct-table"]],x=rv$resTable,row.names = F)
+          
+        })
+ 
+
         shiny::observeEvent(input$saveplot,
         {
             i=input$idslider
