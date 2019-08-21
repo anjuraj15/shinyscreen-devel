@@ -134,19 +134,27 @@ gen_cmpd_l<-function(src_fn,dest_fn) {
     ## Names
     nms<-if ("PREFERRED_NAME" %in% names(df)) df$PREFERRED_NAME else df$Name
     if (is.null(nms)) stop("Unable to read compound names from the input compound list.")
-
-    ## SMILES
-    haha<-df$SMILES
+    print(df)	
+    print(is.null(df$SMILES))
+    ## take Mass, else SMILES 	
+    if (is.null(df$SMILES)){ # SMILES column in cpdList must be non-existent
+	    mass<- df$Mass
+	    haha<-rep("",length(mass))
+	    level<-rep(5,length(mass))
+    }else{
+	    haha <- df$SMILES
+	    level<- rep(5,length(haha))
+    }
+    
     sz<-length(haha)
     
     ## CAS
     casvals<-if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
     if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
-    outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz))
+    outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz),mz=mass,Level=level)
     f <- Vectorize(function (dest_fn) {
         write.csv(outdf,file=dest_fn,row.names=F,na="")
     },vectorize.args="dest_fn",SIMPLIFY=F)
-    
     f(dest_fn)
     length(nms)
 }
@@ -177,7 +185,7 @@ gen_stgs_and_load <- function(stgs,wd) {
 gen_cmpdl_and_load <- function(wd,fn_cmpdl) {
     fn_comp<-get_cmpd_l_fn(wd)
     n_cmpd<-gen_cmpd_l(fn_cmpdl,fn_comp)
-    RMassBank::loadList(fn_comp)
+    RMassBank::loadList(fn_comp,check=F) #reduce universality of this statement!!!
     list(fn_cmpdl=fn_comp,n=n_cmpd)
 }
 
@@ -566,7 +574,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
 
     par(mar=c(1,LEFT_MARGIN,3,4))
     plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1,axes = FALSE)
-    rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
+    #rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
     
     col_eng <- c(0,100)
     peak_int <- c(0,100)
