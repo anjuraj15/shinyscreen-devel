@@ -134,19 +134,27 @@ gen_cmpd_l<-function(src_fn,dest_fn) {
     ## Names
     nms<-if ("PREFERRED_NAME" %in% names(df)) df$PREFERRED_NAME else df$Name
     if (is.null(nms)) stop("Unable to read compound names from the input compound list.")
-
-    ## SMILES
-    haha<-df$SMILES
+    print(df)	
+    print(is.null(df$SMILES))
+    ## take Mass, else SMILES 	
+    if (is.null(df$SMILES)){ # SMILES column in cpdList must be non-existent
+	    mass<- df$Mass
+	    haha<-rep("",length(mass))
+	    level<-rep(5,length(mass))
+    }else{
+	    haha <- df$SMILES
+	    level<- rep(5,length(haha))
+    }
+    
     sz<-length(haha)
     
     ## CAS
     casvals<-if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
     if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
-    outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz))
+    outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz),mz=mass,Level=level)
     f <- Vectorize(function (dest_fn) {
         write.csv(outdf,file=dest_fn,row.names=F,na="")
     },vectorize.args="dest_fn",SIMPLIFY=F)
-    
     f(dest_fn)
     length(nms)
 }
@@ -177,7 +185,7 @@ gen_stgs_and_load <- function(stgs,wd) {
 gen_cmpdl_and_load <- function(wd,fn_cmpdl) {
     fn_comp<-get_cmpd_l_fn(wd)
     n_cmpd<-gen_cmpd_l(fn_cmpdl,fn_comp)
-    RMassBank::loadList(fn_comp)
+    RMassBank::loadList(fn_comp,check=F) #reduce universality of this statement!!!
     list(fn_cmpdl=fn_comp,n=n_cmpd)
 }
 
@@ -314,18 +322,20 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
               row.names = F)
 }
 
-preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
+preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,ms1_intTresh=1e5,ms2_intTresh=1e4,MS1peakWi=0.3) {
 
     ## read in .csv file as file
     ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
     
     getWidth <- function(maxid) {log10(maxid)+1}
-    ids <- as.numeric(levels(factor(ftable$ID)))
+    ids <- as.numeric(levels(factor(ftable$ID))
+		      
+		      ##is MS1 intensity high enough?)
     id_field_width <- getWidth(max(ids))
     fn_out<- function(id,suff) {paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')}
 
     ## for loop through dataframe called file to set tresholds
-    ftable[c("MS1","MS2","Alignment","Intensity","AboveNoise")] <- T
+    ftable[c("MS1","MS2","Alignment","MS1Intensity","AboveNoise","MS2Intensity","MS1peakWidth")] <- T
     ftable$Comments <- ""
     for (ind in 1:nrow(ftable)) {
         wd <- ftable$wd[ind]
@@ -334,36 +344,57 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
         fn_eic <- file.path(wd,fn_out(id,".eic"))
         eic <- NULL
         maxInt <- NULL
-        eicExists <- F
-        if(!file.exists(fn_eic)) {
+        eicExists <- T
+
+	##does MS1 exist?
+        if(!file.exists(fn_eic)) { 
             ftable[ind,"MS1"] = FALSE
-            eicExists <- T
+            eicExists <- F
         }
         else {
             eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F)
             maxInt <- max(eic$intensity)
-            if (maxInt < intTresh) {
-                ftable[ind,"Intensity"] = FALSE
+
+	    ##is MS1 intensity high enough?
+            if (maxInt < ms1_intTresh) {
+                ftable[ind,"MS1Intensity"] = FALSE
             }
-            ## Detect noisy signal. This is a naive implementation, so careful.
+            ##Detect noisy signal. This is a naive implementation, so careful.
             mInt <- mean(eic$intensity)
             if (maxInt < noiseFac*mInt) ftable[ind,"AboveNoise"] <- F
+
+	    ##Is MS1 peak a proper peak, or just a spike? Check peakwidth.
+	    MS1peakWi
+
         }
+
+	#####MS2 checks
         fn_kids <- file.path(wd,fn_out(id,".kids"))
+
+	##does MS2 exist? Regardless of quality/alignment.
         if(!file.exists(fn_kids)) {
             ftable[ind,"MS2"] = FALSE
+	    ftable[ind,"MS2Intensity"] = NA #moot
+	    ftable[ind,"Alignment"] = NA #moot
         } else {
-            ## Detect RT shifts. Naive implementation, so careful.
-            if (eicExists) {
-                rtInd <- match(maxInt,eic$intensity)
-                rtMax <- eic$rt[rtInd]
-                msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F)
-                whc <- msms$rt > rtMax - rtDelta
-                whc <- whc < rtMax + rtDelta
-                ints <- msms$intensity[whc]
-                if (! any(ints>0)) ftable[ind,"Alignment"] = FALSE
-            }
-            
+        ## Detect RT shifts. Naive implementation, so careful.
+            if (eicExists) {  ################WHY THIS IF CONDITIONAL?? If MS2 exists, then eic MUST exist, no? Seems redundant.
+		    ##Is MS2 intensity high enough?
+		    ms2maxInt <- max(msms@intensity)
+		    if (ms2maxInt > ms2_intTresh){
+			    rtInd <- match(maxInt,eic$intensity) #returns position of first match in eic$intensity
+                	    rtMax <- eic$rt[rtInd] #fetch the rtmax value (RT with highest int;seconds)  using above index
+                	    msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F)
+                	    whc <- msms$rt > rtMax - rtDelta #T/F vector: are RT vals of ms2 above rtMax within Delta? Good peaks=TRUE;rt must be retentionTime!!!
+                	    whc <- whc < rtMax + rtDelta #T/F vector: are RT vals of ms2 above rtMax within Delta?
+		#Overwrites whc! In any case, cannot use this as both must be T to give final whc of T (i.e. fall within the window).
+                	    ints <- msms$intensity[whc] #builds ints vector with intensities which fall in window
+                	    if (! any(ints>0)) ftable[ind,"Alignment"] = FALSE #if none of ints larger than 0, Alignment <-F 
+		    } else {
+			ftable[ind,"MS2Intensity"] = FALSE
+		    	ftable[ind,"Alignment"] = NA #neither T or F, the MS2 was not of decent intensity in first place, alignment moot. 
+		}   
+	    }
         }
     }
 
@@ -566,7 +597,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
 
     par(mar=c(1,LEFT_MARGIN,3,4))
     plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1,axes = FALSE)
-    rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
+    #rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
     
     col_eng <- c(0,100)
     peak_int <- c(0,100)

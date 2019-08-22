@@ -23,14 +23,14 @@ attch<-function(...) paste(...,sep='')
 presc.do<-function(fnData,fnStgs,wd,fnCmpdList,mode,dest=".",proc=F,fnLog='prescreen.log',...) {
     
     RMassBank::loadRmbSettings(fnStgs[[1]])
-    RMassBank::loadList(fnCmpdList)
+    RMassBank::loadList(fnCmpdList,check=F)
     cmpd <- read.csv(file=fnCmpdList,stringsAsFactors = F)
     n_cmpd <- nrow(cmpd)
     
     fread <- function(fnData,fnStgs,wd) {
         gen_presc_d(wd)
         RMassBank::loadRmbSettings(fnStgs)
-        RMassBank::loadList(fnCmpdList)
+        RMassBank::loadList(fnCmpdList,check=F)
         message("Currently processing: ",wd)
         gen_ftable(fnData,wd,n_cmpd)
         fn_ftable <- get_ftable_fn(wd)
