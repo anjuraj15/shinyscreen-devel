@@ -4,10 +4,12 @@
 \alias{rendersmiles2}
 \title{Turn SMILES to an Image Using Online Resource}
 \usage{
-rendersmiles2(smiles, ...)
+rendersmiles2(smiles, style = "cow", ...)
 }
 \arguments{
 \item{smiles}{The SMILES string.}
+
+\item{style}{Structure style.}
 
 \item{...}{Hand over to renderurl.}
 }
