@@ -115,7 +115,7 @@ gen_info_dir <- function(wd) {
     nm
 }
 
-
+emptyfield <- function (f) {length(f) == 0 | is.na(f) | f == ""}
 
 ##' Generate the RMassBank compound list from the input compound list
 ##' in CSV file src_fn. The input compound list format is either a
@@ -130,30 +130,34 @@ gen_info_dir <- function(wd) {
 ##' @return Number of compounds.
 ##' @author Todor Kondić
 gen_cmpd_l<-function(src_fn,dest_fn) {
-    df<-read.csv(src_fn)
+    df<-read.csv(src_fn,sep=',',stringsAsFactors=F)
+
     ## Names
     nms<-if ("PREFERRED_NAME" %in% names(df)) df$PREFERRED_NAME else df$Name
-    if (is.null(nms)) stop("Unable to read compound names from the input compound list.")
-    print(df)	
-    print(is.null(df$SMILES))
-    ## take Mass, else SMILES 	
-    if (is.null(df$SMILES)){ # SMILES column in cpdList must be non-existent
-	    mass<- df$Mass
-	    haha<-rep("",length(mass))
-	    level<-rep(5,length(mass))
-    }else{
-	    haha <- df$SMILES
-	    level<- rep(5,length(haha))
+    ## CAS
+    casvals<-if ("CASRN" %in% names(df)) df$CASRN else df$CAS
+    ## CAS
+    rt<- df$RT
+    
+    if (is.null(casvals)) casvals <- rep(NA,sz)
+    if (is.null(nms)) nms <- rep(NA,nrow(df))
+    if (is.null(rt)) rt <- rep(NA,nrow(df))
+    
+    odf <- data.frame(ID=df$ID,Name=nms,SMILES="",mz=NA,RT=rt,Level=3,CAS=casvals,stringsAsFactors=F)
+
+    for (ri in 1:nrow(df)) {
+        if (emptyfield(df$SMILES[ri])) {
+            if (! emptyfield(df$Mass[ri])) {
+                odf$mz[ri] <- df$Mass[ri]
+                odf$Level[ri] <- 5
+            } else 
+                stop ("At row ",ri," of the input compound list, there are neither SMILES, nor Mass to be found.")
+            
+        } else odf$SMILES[ri] <- df$SMILES[ri]
     }
     
-    sz<-length(haha)
-    
-    ## CAS
-    casvals<-if ("CASRN" %in% names(df)) df$CASRN else rep(NA,sz)
-    if (is.null(haha)) stop("Unable to read SMILES from the input compound list.")
-    outdf<-data.frame(ID=1:sz,Name=nms,SMILES=haha,CAS=casvals,RT=rep(NA,sz),mz=mass,Level=level)
     f <- Vectorize(function (dest_fn) {
-        write.csv(outdf,file=dest_fn,row.names=F,na="")
+        write.csv(odf,file=dest_fn,row.names=F,na="")
     },vectorize.args="dest_fn",SIMPLIFY=F)
     f(dest_fn)
     length(nms)
@@ -198,7 +202,7 @@ gen_cmpdl_and_load <- function(wd,fn_cmpdl) {
 ##' @param n_cmpd Number of compounds.
 ##' @return File path of the file table.
 ##' @author Todor Kondić
-gen_ftable <- function(fn_data,wd,n_cmpd) {
+gen_ftable_old <- function(fn_data,wd,n_cmpd) {
     f <- Vectorize(function(fn_data,wd) {
         df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
         fn_table<-get_ftable_fn(wd)
@@ -207,6 +211,13 @@ gen_ftable <- function(fn_data,wd,n_cmpd) {
     }, vectorize.args=c("fn_data","wd"))
 
     f(fn_data,wd)
+}
+
+gen_ftable <- function(id,fnData,wd) {
+    n <- length(id)
+    files <- rep(fnData,n)
+    df <- data.frame(Files=files,ID=id,wd=wd,stringsAsFactors=F)
+    write.csv(x=df,file=get_ftable_fn(wd))
 }
 
 gen_fn_stgs <- function(fn_inp,fn) {
@@ -240,6 +251,8 @@ reconf <- function(wd) {## Load the settings.
     RMassBank::loadList(fn_cmpd_l)
 }
 
+
+
 ##' Prescreens. Writes data out. Adapted from ReSOLUTION
 ##'
 ##' 
@@ -252,7 +265,7 @@ reconf <- function(wd) {## Load the settings.
 ##' @param ppm_limit_fine ...
 ##' @param EIC_limit ...
 ##' @author Emma Schymanski, Todor Kondić
-RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
+RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
                                   ppm_limit_fine = 10, EIC_limit = 0.001) {
 
 
@@ -322,13 +335,107 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
               row.names = F)
 }
 
-preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,ms1_intTresh=1e5,ms2_intTresh=1e4,MS1peakWi=0.3) {
+
+##' Prescreens. Writes data out. Adapted from ReSOLUTION
+##'
+##' 
+##' @title Prescreen
+##' @param wd Absolute path to the directory that will contain the
+##'     resulting data frame.
+##' @param RMB_mode ...
+##' @param FileList ...
+##' @param cmpd_list ...
+##' @param ppm_limit_fine ...
+##' @param EIC_limit ...
+##' @author Emma Schymanski, Todor Kondić
+RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
+                                  ppm_limit_fine = 10, EIC_limit = 0.001) {
+
+
+    n_spec <- 0
+    cmpd_RT_maxI <- ""
+    msms_found <- ""
+    rts <- 0
+    max_I_prec <- ""
+    cmpd_RT_maxI_min <- ""
+    file_list <- read.csv(FileList, stringsAsFactors = FALSE)
+    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE)
+    ncmpd <- nrow(cmpd_info)
+    odir=wd
+    fid <- file_list$ID
+    cmpind <- which(cmpd_info$ID %in% fid)
+    mzCol <- cmpd_info$mz[cmpind]
+    nmCol <- cmpd_info$Name[cmpind]
+    get_width <- function(maxid) {log10(maxid)+1}
+    id_field_width <- get_width(ncmpd)
+
+    fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
+    f <- mzR::openMSfile(file_list$Files[1])
+    for (i in 1:length(file_list$ID)) {
+        cpdID <- file_list$ID[i]
+        n_spec <- n_spec + 1
+        smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
+        if (!is.na(smiles)) {
+            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
+        }
+        else {
+            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
+        }
+        if (is.na(mzCol[[i]])) mzCol[[i]] <- mz ## infer from findMz.
+        eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
+        msms_found[n_spec] <- FALSE
+        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
+                                                           p = TRUE))
+        max_I_prec_index <- which.max(eic$intensity)
+        cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
+        max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
+        cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60 ## conversion to minutes
+
+        if (length(eic$rt)>0) eic$rt <- eic$rt/60 ## conversion to minutes
+
+        write.csv(x=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"),row.names=F)
+        bindKids <- function(kids)
+            do.call(rbind,lapply(kids,function (kid)
+                c(rt=kid@rt,intensity=max(kid@intensity))))
+
+        
+
+        bindSpec <- function(specLst) {
+            do.call(rbind,lapply(specLst,function (sp) bindKids(sp@children)))
+        }
+        
+        found <- which(vapply(msms,function(sp) sp@found,FUN.VALUE=F))
+        msmsExst <- msms[found]
+        message("found:",found)
+        message("Lall:",length(msms))
+        message("Lsome:",length(msmsExst))
+        if (length(found)>0) {
+            msms_found[n_spec] <- T
+            msmsTab <- as.data.frame(bindSpec(msmsExst),stringsAsFactors=F)
+            names(msmsTab) <- c("rt","intensity")
+            if (nrow(msmsTab)>0) {
+                msmsTab$rt <- msmsTab$rt/60 ## conversion to minutes
+                write.csv(x=msmsTab,file=fn_out(cpdID,".kids"),row.names=F)
+            }
+        }
+
+        rts[i] <- (cmpd_RT_maxI[n_spec])
+    }
+    mzR::close(f)
+    rtwiDf <- data.frame(ID=file_list$ID, mz=mzCol, Name=nmCol, 
+                         cmpd_RT_maxI=cmpd_RT_maxI, cmpd_RT_maxI_min=cmpd_RT_maxI_min,
+                         max_I_prec=max_I_prec, msms_found=msms_found,stringsAsFactors=F)
+    
+    write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
+}
+
+preProcLai <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,ms1_intTresh=1e5,ms2_intTresh=1e4,MS1peakWi=0.3) {
 
     ## read in .csv file as file
     ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
     
     getWidth <- function(maxid) {log10(maxid)+1}
-    ids <- as.numeric(levels(factor(ftable$ID))
+    ids <- as.numeric(levels(factor(ftable$ID)))
 		      
 		      ##is MS1 intensity high enough?)
     id_field_width <- getWidth(max(ids))
@@ -402,6 +509,98 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
     write.csv(ftable, file = fnDest,row.names=F)
 
 }
+
+
+preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
+    ## read in .csv file as file
+    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
+    getWidth <- function(maxid) {log10(maxid)+1}
+    ids <- as.numeric(levels(factor(ftable$ID)))
+    id_field_width <- getWidth(max(ids))
+    fn_out<- function(id,suff) {paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')}
+    
+    ## For loop through dataframe called file to set thresholds.
+    ftable[c("MS1","MS2","Alignment","AboveNoise")] <- T
+    ftable["MS2rt"] <- NA
+    ## QA check plan:
+    ##
+    ## If MS1 does not exist, set MS1 to F, as well as everything else except MS2.
+    ## If it exists, proceed to noise check.
+    ## If noise check fails, set AboveNoise and Alignment to F.
+    ##
+    ##
+    ## MS2 will be checked independently.
+    ## If MS2 does not exist, set MS2 and Alignment to F.
+    ## If it does, check the Alignment.
+    ## If Alignment is wrong, set Alignment to F.
+    ##
+    ## Terminology: MS1 does not exist if the intensity is below the
+    ## intensity threshold. MS2 does not exist if it was not picked up
+    ## during the dataframe generation stage. In this case, the file
+    ## with the corresponding ID will not be there.
+
+    ftable$Comments <- ""
+    for (ind in 1:nrow(ftable)) {
+        wd <- ftable$wd[ind]
+        id <- ftable$ID[ind]
+        odir=file.path(wd)
+        fn_eic <- file.path(wd,fn_out(id,".eic"))
+        eic <- NULL
+        maxInt <- NULL
+        if (!file.exists(fn_eic)) {
+            warning("File ",fn_eic,"does not exist. Skipping.")
+            next
+        }
+        eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F)
+        maxInt <- max(eic$intensity)
+        
+        ##If MS1 does not exist, set entry to F.
+        if (maxInt < intTresh) {
+            ftable[ind,"MS1"] <- F
+            ## Other checks automatically fail, too.
+            ftable[ind,"Alignment"] <- F
+            ftable[ind,"AboveNoise"] <- F
+        } else {
+            ## Noisy?
+            if (ftable[ind,"AboveNoise"]) {
+                mInt <- mean(eic$intensity)
+                if (maxInt < noiseFac*mInt) {
+                    ftable[ind,"AboveNoise"] <- F
+                    ftable[ind,"Alignment"] <- F ## If noisy, this is
+                                                 ## probably meaningles, so
+                                                 ## F.
+                }
+                
+            }
+        }
+            
+    
+
+        ## MS2 checks.
+        fn_kids <- file.path(wd,fn_out(id,".kids"))
+        if (!file.exists(fn_kids)) {
+            ftable[ind,"MS2"] <- F
+            ftable[ind,"Alignment"] <- F
+        } else {
+            ## Alignment still makes sense to be checked?
+            if (ftable[ind,"Alignment"]) {
+                rtInd <- match(maxInt,eic$intensity)
+                rtMS1Peak <- eic$rt[[rtInd]]
+                msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F)
+                rtInd <- which(msms$rt > rtMS1Peak - rtDelta & msms$rt < rtMS1Peak + rtDelta)
+                msmsRT <- msms$rt[rtInd]
+                if (length(msmsRT) > 0) {
+                    ftable[ind,"iMS2rt"] <- which.min(abs(msmsRT - rtMS1Peak))
+                    ftable[ind,"MS2rt"] <- msmsRT[ftable[ind,"iMS2rt"]]
+                }
+            }
+        }
+    }
+    write.csv(ftable, file = fnDest,row.names=F)
+}
+
+
+
 
 
 ##' Helper function for rendersmiles2
@@ -521,7 +720,6 @@ arrPlotStd <- function(xlim,ylim,xaxis=F,log=log,cex=1.5,mar,intTresh) {
     par(mar=mar)
     plot(1,1,xlab="",ylab="",xlim = xlim,ylim = ylim,type="n",log=log,xaxt=xaxt,yaxt = "n",cex.axis=cex)
     ytics <- if (log=="y") axTicks(side=2, nintLog = 3) else axTicks(side=2)
-    message("YTICS:",do.call(paste,as.list(ytics)))
                                                                              
     ltics <- calcLabels(ytics)
     axis(side=2,at=ytics,labels=ltics,las=2,cex.axis=cex,gap.axis = -1)
@@ -530,7 +728,7 @@ arrPlotStd <- function(xlim,ylim,xaxis=F,log=log,cex=1.5,mar,intTresh) {
 
 
 
-plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
     clean_rtrange <- function(def) {
             x1 <- rtrange[1]
             x2 <- rtrange[2]
@@ -546,8 +744,11 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
     if (logYAxis == "log") log = "y"
     
     LEFT_MARGIN=9
+    ##FIXME: fTab will break presc.plot.
+    recs <- fTab[fTab$ID %in% as.integer(i),c("wd","MS2rt","iMS2rt")]
 
-    
+    MS2Peak <- sapply(wd,function(x) recs[recs$wd %in% x,"MS2rt"])
+    iMS2Peak <- sapply(wd,function(x) recs[recs$wd %in% x,"iMS2rt"])
     eic <- eics[[i]]
     maybekid <- maybekids[[i]]
     dfs <- lapply(file.path(wd,eic),function(fn) {
@@ -555,14 +756,16 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
                  error=function(e) {message(paste(e,"; offending file:",fn))})
     })
     
-    dfs <- lapply(dfs,function(x) data.frame(rt=x$rt/60.,intensity=x$intensity))
+    dfs <- lapply(dfs,function(x) data.frame(rt=x$rt,intensity=x$intensity))
 
     ## Find existing children.
     maybes <- file.path(wd,maybekid)
     indkids <- which(file.exists(maybes))
     kids <- maybes[indkids]
     dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
-    dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime/60.,intensity= x$intensity))
+    MS2Peak <- MS2Peak[indkids]
+    iMS2Peak <- iMS2Peak[indkids]
+    #dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime,intensity= x$intensity))
 
 
     ## Find max intensities.
@@ -571,11 +774,14 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
     i_max<- Map(function(df,w) df$intensity[[w]],dfs,w_max)
     symbs <- LETTERS[1:length(w_max)]
 
+
     ## Find max intensities in children
     w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
-    rt_max_kids <- Map(function(df,w) df$rt[[w]],dfs_kids,w_max_kids)
-    i_max_kids <- Map(function(df,w) df$intensity[[w]],dfs_kids,w_max_kids)
+    rt_near_kids <-  Map(function(df,w) {if (!is.na(w) && !is.null(df$rt)) df$rt[[w]] else NA},dfs_kids,iMS2Peak)
+    i_near_kids <- Map(function(df,w) {if (!is.na(w) && !is.null(df$intensity)) df$intensity[[w]] else NA},dfs_kids,iMS2Peak)
     symbs_kids<- letters[indkids]
+
+
 
     
     def_rt_rng <- range(sapply(dfs,function(x) x$rt))
@@ -597,7 +803,8 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
 
     par(mar=c(1,LEFT_MARGIN,3,4))
     plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1,axes = FALSE)
-    #rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
+    if (!emptyfield(osmesi[i]))
+        rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
     
     col_eng <- c(0,100)
     peak_int <- c(0,100)
@@ -607,7 +814,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
     legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd,fill=cols,bty='n',cex=1.5)
     
     cols_kids <- cols[indkids]
-    lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
+    lgnd_kids <- Map(function(k,v) paste(k,"= ",tryCatch(formatC(v,digits=rt_digits,format="f"),error=function(e) "NA"),sep=''),symbs_kids,rt_near_kids)
 
     if (length(lgnd_kids)>0) legend(x=linfo$rect$left-14*linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=1.5)
 
@@ -634,8 +841,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
         arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log=log,mar=c(4,9,0,0),intTresh=1)
     }
     mtext("retention time [min]",side = 1,adj=0.5,cex=1.3,line = 3)
-    if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
-    ## RChemMass::renderSMILES.rcdk(smiles[[i]],coords=c(x1,y1,x2,y2))
+    if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_near_kids[[k]],i_near_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
     gc()
     
 }
@@ -688,15 +894,12 @@ presc.plot <- function(prescdf,mode,out="prescreen.pdf",fn_cmpd_l,pal="Dark2",ce
     dev.off()
 }
     
-mkUI <- function(idSliderRange,setName,rtRange,tags) {
+mkUI <- function(idSliderRange,setName,rtRange,tags,QANms) {
 
+    names(QANms) <- QANms
     tabPanelList <- lapply(tags, function(tag) {
         shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Quality Control",
-                                                      c(MS1 = "MS1",
-                                                        MS2 = "MS2",
-                                                        Alignment = "Alignment",
-                                                        Intensity = "Intensity",
-                                                        AboveNoise = "AboveNoise")),
+                                                       QANms),
                         shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
                         shiny::verbatimTextOutput(paste("value",tag,sep=""))
                         )})
@@ -817,42 +1020,44 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
                  blahna="MpNa_mass")
     DEFAULT_RT_RANGE=c(NA,NA)
 
-    QANAMES <- c("MS1","MS2","Alignment","Intensity","AboveNoise")
+    QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
 
     prescdf$tag <- as.character(prescdf$tag)
     tags <- levels(factor(prescdf$tag))
     wd <- prescdf$wd[match(tags,prescdf$tag)]
-    
+
     wd1 <- wd[[1]]
     cmpd_l_df <- read.csv(file=fn_cmpd_l,stringsAsFactors = F)
-    osmesi <- cmpd_l_df$SMILES
-    no_cmpds <- length(osmesi)
+    preID <- as.integer(levels(factor(prescdf$ID)))
+    selID <- which(preID %in% cmpd_l_df$ID)
+    osmesi <- cmpd_l_df$SMILES[selID]
+    no_cmpds <- length(preID)
     # reconf(wd1)
     masses <- lapply(osmesi,function (smile) {
         #osmesi <- tryCatch(RMassBank::findSmiles(i), error = function(e) NA)
         zz <- RChemMass::getSuspectFormulaMass(smile)
         zz[[MODEMAP[[mode]]]]
     })
-
-    for (col in c("MS1","MS2","Alignment","Intensity","AboveNoise","Comments")) {
-        if (is.null(prescdf[[col]])) prescdf[[col]] <- T
-    }
-
+    
+    names(osmesi) <- as.character(preID)
+    names(masses) <- as.character(preID)
 
     ## Get the basenames of eic files.
     eics <- list.files(path=wd[[1]],patt=".*eic.csv")
-    maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
+    eicsPref <- sapply(strsplit(eics,split="\\."),function(x) x[[1]])
+    eicsID <- as.integer(eicsPref)
+    maybekids <- sapply(eicsPref,function(x) {paste(x,'.kids.csv',sep='')})
+    names(eics) <- eicsID
+    names(maybekids) <- eicsID
 
-    plot_id <- function (i,rtrange=NULL,log=rv$yaxis) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
-    
-
+    plot_id <- function (i,rtrange=NULL,log=rv$yaxis) plot_id_aux(i=as.character(i),wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits,fTab=prescdf)
 
     spectProps <- sapply(tags,function (tag) paste("spectProps",tag,sep=""))
-    idSliderRange <- range(cmpd_l_df$ID)
+    idSliderRange <- c(1,length(preID))
     
 
     
-    ui <- mkUI(idSliderRange=idSliderRange,setName=prescdf$set_name,rtRange=DEFAULT_RT_RANGE,tags=tags)
+    ui <- mkUI(idSliderRange=idSliderRange,setName=prescdf$set_name,rtRange=DEFAULT_RT_RANGE,tags=tags,QANms=QANAMES)
 
 
     
@@ -875,7 +1080,8 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
                                     no_cmpds=no_cmpds)
 
         output$plot1 <- renderPlot(
-        { i=input$idslider
+        {
+            i=preID[[input$idslider]]
             
           rtrange <- c(input$min_val,input$max_val)
           plot_id(i,rtrange=rtrange, log=input$yaxis)
@@ -891,7 +1097,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
 
         output$compoundID <- renderText(
         {
-            i=input$idslider
+            i=preID[[input$idslider]]
         })
         shiny::observeEvent(input$smileslist,
         {
@@ -929,7 +1135,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
 
         shiny::observeEvent(input$saveplot,
         {
-            i=input$idslider
+            i=preID[[input$idslider]]
             pfn <-input$plotname
             if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
             fn <- sprintf(pfn,i)
@@ -941,12 +1147,12 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
 
         shiny::observeEvent(input$saveallplots,
         {
-            i=input$idslider
+            i=preID[[input$idslider]]
             pfn <-input$plotname
             if (is.na(pfn)) pfn <- "plotall.pdf"
             fn <- sprintf(pfn,i)
             pdf(file=fn, width=12, height=8)
-            for (i in 1:rv$no_cmpds) {
+            for (i in preID) {
                 plot_id(i,log=input$yaxis)
                 message("Compound ID ",i," done.")
             }
@@ -956,7 +1162,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
         shiny::observeEvent(input$submitQA,{
             res <- lapply(rv$tags,getCheckboxValues,input)
             names(res) <- rv$tags
-            rv$prescdf <- updateFileTable(df=rv$prescdf,id=input$idslider,linput=res)
+            rv$prescdf <- updateFileTable(df=rv$prescdf,id=preID[[input$idslider]],linput=res)
         })
 
         ## shiny::observeEvent(input$yaxis,{
@@ -965,7 +1171,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
         ## })
 
         shiny::observe({
-            i <- input$idslider
+            i <- preID[[input$idslider]]
             sdf <- queryFileTable(df=rv$prescdf,id=i)
             for (t in sdf$tag) {
                 sprop <- rv$spectProps[[t]]
