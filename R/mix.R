@@ -590,7 +590,8 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
                 rtInd <- which(msms$rt > rtMS1Peak - rtDelta & msms$rt < rtMS1Peak + rtDelta)
                 msmsRT <- msms$rt[rtInd]
                 if (length(msmsRT) > 0) {
-                    ftable[ind,"MS2rt"] <- msmsRT[which.min(abs(msmsRT - rtMS1Peak))]
+                    ftable[ind,"iMS2rt"] <- which.min(abs(msmsRT - rtMS1Peak))
+                    ftable[ind,"MS2rt"] <- msmsRT[ftable[ind,"iMS2rt"]]
                 }
             }
         }
@@ -728,7 +729,7 @@ arrPlotStd <- function(xlim,ylim,xaxis=F,log=log,cex=1.5,mar,intTresh) {
 
 
 
-plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
     clean_rtrange <- function(def) {
             x1 <- rtrange[1]
             x2 <- rtrange[2]
@@ -744,8 +745,13 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
     if (logYAxis == "log") log = "y"
     
     LEFT_MARGIN=9
+    ##FIXME: fTab will break presc.plot.
+    recs <- fTab[fTab$ID %in% as.integer(i),c("wd","MS2rt","iMS2rt")]
 
-    
+    message("HERE")
+    MS2Peak <- sapply(wd,function(x) recs[recs$wd %in% x,"MS2rt"])
+    iMS2Peak <- sapply(wd,function(x) recs[recs$wd %in% x,"iMS2rt"])
+    message("STILL HERE")
     eic <- eics[[i]]
     maybekid <- maybekids[[i]]
     dfs <- lapply(file.path(wd,eic),function(fn) {
@@ -769,11 +775,19 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
     i_max<- Map(function(df,w) df$intensity[[w]],dfs,w_max)
     symbs <- LETTERS[1:length(w_max)]
 
+
     ## Find max intensities in children
-    w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
-    rt_max_kids <- Map(function(df,w) df$rt[[w]],dfs_kids,w_max_kids)
-    i_max_kids <- Map(function(df,w) df$intensity[[w]],dfs_kids,w_max_kids)
-    symbs_kids<- letters[indkids]
+    if (length(dfs_kids)>0) {
+        w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
+        rt_near_kids <-  Map(function(df,w) {if (!is.na(w) && !is.null(df$rt)) df$rt[[w]] else NA},dfs_kids,iMS2Peak)
+        i_near_kids <- Map(function(df,w) {if (!is.na(w) && !is.null(df$intensity)) df$intensity[[w]] else NA},dfs_kids,iMS2Peak)
+        symbs_kids<- letters[indkids]
+    } else {
+        w_max_kids <- NULL
+        rt_near_kids <-  NULL
+        i_near_kids <- NULL
+        symbs_kids<- NULL
+    }
 
     
     def_rt_rng <- range(sapply(dfs,function(x) x$rt))
@@ -806,7 +820,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
     legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd,fill=cols,bty='n',cex=1.5)
     
     cols_kids <- cols[indkids]
-    lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_max_kids)
+    lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_near_kids)
 
     if (length(lgnd_kids)>0) legend(x=linfo$rect$left-14*linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=1.5)
 
@@ -833,7 +847,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,logYAxis,pal="Dar
         arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log=log,mar=c(4,9,0,0),intTresh=1)
     }
     mtext("retention time [min]",side = 1,adj=0.5,cex=1.3,line = 3)
-    if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_max_kids[[k]],i_max_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
+    if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_near_kids[[k]],i_near_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
     gc()
     
 }
@@ -1017,11 +1031,12 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     prescdf$tag <- as.character(prescdf$tag)
     tags <- levels(factor(prescdf$tag))
     wd <- prescdf$wd[match(tags,prescdf$tag)]
-    
+
     wd1 <- wd[[1]]
     cmpd_l_df <- read.csv(file=fn_cmpd_l,stringsAsFactors = F)
     preID <- as.integer(levels(factor(prescdf$ID)))
-    osmesi <- cmpd_l_df$SMILES[preID %in% cmpd_l_df$ID]
+    selID <- which(preID %in% cmpd_l_df$ID)
+    osmesi <- cmpd_l_df$SMILES[selID]
     no_cmpds <- length(preID)
     # reconf(wd1)
     masses <- lapply(osmesi,function (smile) {
@@ -1041,7 +1056,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     names(eics) <- eicsID
     names(maybekids) <- eicsID
 
-    plot_id <- function (i,rtrange=NULL,log=rv$yaxis) plot_id_aux(i=as.character(i),wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
+    plot_id <- function (i,rtrange=NULL,log=rv$yaxis) plot_id_aux(i=as.character(i),wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits,fTab=prescdf)
 
     spectProps <- sapply(tags,function (tag) paste("spectProps",tag,sep=""))
     idSliderRange <- c(1,length(preID))
