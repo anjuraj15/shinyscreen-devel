@@ -720,7 +720,6 @@ arrPlotStd <- function(xlim,ylim,xaxis=F,log=log,cex=1.5,mar,intTresh) {
     par(mar=mar)
     plot(1,1,xlab="",ylab="",xlim = xlim,ylim = ylim,type="n",log=log,xaxt=xaxt,yaxt = "n",cex.axis=cex)
     ytics <- if (log=="y") axTicks(side=2, nintLog = 3) else axTicks(side=2)
-    message("YTICS:",do.call(paste,as.list(ytics)))
                                                                              
     ltics <- calcLabels(ytics)
     axis(side=2,at=ytics,labels=ltics,las=2,cex.axis=cex,gap.axis = -1)
@@ -748,10 +747,8 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal
     ##FIXME: fTab will break presc.plot.
     recs <- fTab[fTab$ID %in% as.integer(i),c("wd","MS2rt","iMS2rt")]
 
-    message("HERE")
     MS2Peak <- sapply(wd,function(x) recs[recs$wd %in% x,"MS2rt"])
     iMS2Peak <- sapply(wd,function(x) recs[recs$wd %in% x,"iMS2rt"])
-    message("STILL HERE")
     eic <- eics[[i]]
     maybekid <- maybekids[[i]]
     dfs <- lapply(file.path(wd,eic),function(fn) {
@@ -766,6 +763,8 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal
     indkids <- which(file.exists(maybes))
     kids <- maybes[indkids]
     dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
+    MS2Peak <- MS2Peak[indkids]
+    iMS2Peak <- iMS2Peak[indkids]
     #dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime,intensity= x$intensity))
 
 
@@ -777,17 +776,12 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal
 
 
     ## Find max intensities in children
-    if (length(dfs_kids)>0) {
-        w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
-        rt_near_kids <-  Map(function(df,w) {if (!is.na(w) && !is.null(df$rt)) df$rt[[w]] else NA},dfs_kids,iMS2Peak)
-        i_near_kids <- Map(function(df,w) {if (!is.na(w) && !is.null(df$intensity)) df$intensity[[w]] else NA},dfs_kids,iMS2Peak)
-        symbs_kids<- letters[indkids]
-    } else {
-        w_max_kids <- NULL
-        rt_near_kids <-  NULL
-        i_near_kids <- NULL
-        symbs_kids<- NULL
-    }
+    w_max_kids <- sapply(dfs_kids,function (x) which.max(abs(x$intensity)))
+    rt_near_kids <-  Map(function(df,w) {if (!is.na(w) && !is.null(df$rt)) df$rt[[w]] else NA},dfs_kids,iMS2Peak)
+    i_near_kids <- Map(function(df,w) {if (!is.na(w) && !is.null(df$intensity)) df$intensity[[w]] else NA},dfs_kids,iMS2Peak)
+    symbs_kids<- letters[indkids]
+
+
 
     
     def_rt_rng <- range(sapply(dfs,function(x) x$rt))
@@ -820,7 +814,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal
     legend(x=linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd,fill=cols,bty='n',cex=1.5)
     
     cols_kids <- cols[indkids]
-    lgnd_kids <- Map(function(k,v) paste(k,"= ",formatC(v,digits=rt_digits,format="f"),sep=''),symbs_kids,rt_near_kids)
+    lgnd_kids <- Map(function(k,v) paste(k,"= ",tryCatch(formatC(v,digits=rt_digits,format="f"),error=function(e) "NA"),sep=''),symbs_kids,rt_near_kids)
 
     if (length(lgnd_kids)>0) legend(x=linfo$rect$left-14*linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=1.5)
 
