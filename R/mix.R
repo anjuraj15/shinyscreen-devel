@@ -511,12 +511,12 @@ preProcLai <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.c
 }
 
 
-preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
+preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
     ## read in .csv file as file
     ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
     getWidth <- function(maxid) {log10(maxid)+1}
     ids <- as.numeric(levels(factor(ftable$ID)))
-    id_field_width <- getWidth(max(ids))
+    id_field_width <- getWidth(lCmpdList)
     fn_out<- function(id,suff) {paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')}
     
     ## For loop through dataframe called file to set thresholds.
@@ -727,8 +727,9 @@ arrPlotStd <- function(xlim,ylim,xaxis=F,log=log,cex=1.5,mar,intTresh) {
 }
 
 
-
-plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+cmpdID2nm_1 <- function(id) paste("id",id,sep='')
+cmpdIDnm <- Vectorize(cmpdID2nm_1)
+plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
     clean_rtrange <- function(def) {
             x1 <- rtrange[1]
             x2 <- rtrange[2]
@@ -740,13 +741,15 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal
 
 
 
+
     if (logYAxis == "linear") log = ""
     if (logYAxis == "log") log = "y"
     
     LEFT_MARGIN=9
     ##FIXME: fTab will break presc.plot.
     recs <- fTab[fTab$ID %in% as.integer(i),c("wd","MS2rt","iMS2rt")]
-
+    ## osmesi <- fTab[fTab$ID %in% as.integer(i),"SMILES"]
+    message("smile arg:",smile)
     MS2Peak <- sapply(wd,function(x) recs[recs$wd %in% x,"MS2rt"])
     iMS2Peak <- sapply(wd,function(x) recs[recs$wd %in% x,"iMS2rt"])
     eic <- eics[[i]]
@@ -803,8 +806,8 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal
 
     par(mar=c(1,LEFT_MARGIN,3,4))
     plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1,axes = FALSE)
-    if (!emptyfield(osmesi[i]))
-        rendersmiles2(osmesi[i],coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
+    if (!emptyfield(smile))
+        rendersmiles2(smile,coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
     
     col_eng <- c(0,100)
     peak_int <- c(0,100)
@@ -820,7 +823,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal
 
 
     arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,LEFT_MARGIN,3,0),log=log,intTresh=1e4)
-    title(main=paste("ID:",i,"Ion m:",formatC(masses[[i]],digits=m_digits,format="f")))
+    title(main=paste("ID:",i,"Ion m:",formatC(mass,digits=m_digits,format="f")))
     for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
 
     mtext("intensity",side = 2,adj=0.2,cex=1.3,line=7)
@@ -844,54 +847,6 @@ plot_id_aux <- function(i,wd,eics,maybekids,masses,osmesi,tags,fTab,logYAxis,pal
     if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_near_kids[[k]],i_near_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
     gc()
     
-}
-##' Plot the output of prescreen.
-##'
-##' @title Plot the Output of Prescreen
-##' @param prescdf File table data-frame. See presc.shiny for details.
-##' @param mode RMB mode.
-##' @param out The name of the output file.
-##' @param fn_cmpd_l The compound list name.
-##' @param pal ColorBrewer palette name.
-##' @param cex As in legend.
-##' @param rt_digits Number of digits after the point for the retention time.
-##' @param m_digits Number of digits after the point for the mass.
-##' @param wd Sequence of data dirs containing the prescreen subdir.
-##' @param digits Number of significant digits for peak ret times. 
-##' @return Nothing useful.
-##' @author Todor Kondić
-##' @author Mira Narayanan
-##' @author Anjana Elapavalore
-##' @export
-presc.plot <- function(prescdf,mode,out="prescreen.pdf",fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4) {
-    modemap=list(pH="MpHp_mass",
-                 mH="MmHm_mass",
-                 blahnh4="MpNH4_mass",
-                 blahna="MpNa_mass")
-
-    tags <- levels(factor(prescdf$tag))
-    wd <- prescdf$wd[match(tags,prescdf$tag)]
-    
-    wd1 <- wd[[1]]
-    df <- read.csv(file=fn_cmpd_l,stringsAsFactors = F)
-    osmesi <- df$SMILES
-    no_cmpds <- length(osmesi)
-    # reconf(wd1)
-    masses <- lapply(osmesi,function (smile) {
-        #osmesi <- tryCatch(RMassBank::findSmiles(i), error = function(e) NA)
-        zz <- RChemMass::getSuspectFormulaMass(smile)
-        zz[[modemap[[mode]]]]
-    })
-    #message("Masses:",masses)
-    # return(osmesi)
-
-    ## Get the basenames of eic files.
-    eics <- list.files(path=wd[[1]],patt=".*eic.csv")
-    maybekids <- sapply(strsplit(eics,split="\\."),function(x) {paste(x[[1]][1],'.kids.csv',sep='')})
-
-    pdf(out)
-    for (i in 1:length(osmesi)) plot_id_aux(i=i,wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,log="y",tags=tags,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits)
-    dev.off()
 }
     
 mkUI <- function(idSliderRange,setName,rtRange,tags,QANms) {
@@ -1029,7 +984,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     wd1 <- wd[[1]]
     cmpd_l_df <- read.csv(file=fn_cmpd_l,stringsAsFactors = F)
     preID <- as.integer(levels(factor(prescdf$ID)))
-    selID <- which(preID %in% cmpd_l_df$ID)
+    selID <- which(cmpd_l_df$ID %in% preID)
     osmesi <- cmpd_l_df$SMILES[selID]
     no_cmpds <- length(preID)
     # reconf(wd1)
@@ -1038,6 +993,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
         zz <- RChemMass::getSuspectFormulaMass(smile)
         zz[[MODEMAP[[mode]]]]
     })
+
     
     names(osmesi) <- as.character(preID)
     names(masses) <- as.character(preID)
@@ -1050,7 +1006,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     names(eics) <- eicsID
     names(maybekids) <- eicsID
 
-    plot_id <- function (i,rtrange=NULL,log=rv$yaxis) plot_id_aux(i=as.character(i),wd=wd,eics=eics,maybekids=maybekids,masses=masses,osmesi=osmesi,tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits,fTab=prescdf)
+    plot_id <- function (i,rtrange=NULL,log=rv$yaxis) plot_id_aux(i=as.character(i),wd=wd,eics=eics,maybekids=maybekids,mass=masses[[as.character(i)]],smile=osmesi[[as.character(i)]],tags=tags,log=log,rtrange=rtrange,cex=cex,pal=pal,rt_digits=rt_digits,m_digits=m_digits,fTab=prescdf)
 
     spectProps <- sapply(tags,function (tag) paste("spectProps",tag,sep=""))
     idSliderRange <- c(1,length(preID))
@@ -1097,7 +1053,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
 
         output$compoundID <- renderText(
         {
-            i=preID[[input$idslider]]
+            preID[[input$idslider]]
         })
         shiny::observeEvent(input$smileslist,
         {
