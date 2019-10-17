@@ -130,7 +130,7 @@ emptyfield <- function (f) {length(f) == 0 | is.na(f) | f == ""}
 ##' @return Number of compounds.
 ##' @author Todor Kondić
 gen_cmpd_l<-function(src_fn,dest_fn) {
-    df<-read.csv(src_fn,sep=',',stringsAsFactors=F)
+    df<-read.csv(src_fn,sep=',',stringsAsFactors=F,comment.char='')
 
     ## Names
     nms<-if ("PREFERRED_NAME" %in% names(df)) df$PREFERRED_NAME else df$Name
@@ -275,8 +275,8 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
     rts <- 0
     max_I_prec <- ""
     cmpd_RT_maxI_min <- ""
-    file_list <- read.csv(FileList, stringsAsFactors = FALSE)
-    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE)
+    file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
+    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE,comment.char='')
     ncmpd <- nrow(cmpd_info)
     odir=wd
     get_width <- function(maxid) {log10(maxid)+1}
@@ -358,8 +358,8 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
     rts <- 0
     max_I_prec <- ""
     cmpd_RT_maxI_min <- ""
-    file_list <- read.csv(FileList, stringsAsFactors = FALSE)
-    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE)
+    file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
+    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE,comment.char='')
     ncmpd <- nrow(cmpd_info)
     odir=wd
     fid <- file_list$ID
@@ -432,7 +432,7 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
 preProcLai <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,ms1_intTresh=1e5,ms2_intTresh=1e4,MS1peakWi=0.3) {
 
     ## read in .csv file as file
-    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
+    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F,comment.char='')
     
     getWidth <- function(maxid) {log10(maxid)+1}
     ids <- as.numeric(levels(factor(ftable$ID)))
@@ -459,7 +459,7 @@ preProcLai <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.c
             eicExists <- F
         }
         else {
-            eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F)
+            eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F,comment.char='')
             maxInt <- max(eic$intensity)
 
 	    ##is MS1 intensity high enough?
@@ -491,7 +491,7 @@ preProcLai <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.c
 		    if (ms2maxInt > ms2_intTresh){
 			    rtInd <- match(maxInt,eic$intensity) #returns position of first match in eic$intensity
                 	    rtMax <- eic$rt[rtInd] #fetch the rtmax value (RT with highest int;seconds)  using above index
-                	    msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F)
+                	    msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F,comment.char='')
                 	    whc <- msms$rt > rtMax - rtDelta #T/F vector: are RT vals of ms2 above rtMax within Delta? Good peaks=TRUE;rt must be retentionTime!!!
                 	    whc <- whc < rtMax + rtDelta #T/F vector: are RT vals of ms2 above rtMax within Delta?
 		#Overwrites whc! In any case, cannot use this as both must be T to give final whc of T (i.e. fall within the window).
@@ -513,7 +513,7 @@ preProcLai <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.c
 
 preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
     ## read in .csv file as file
-    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
+    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F,comment.char='')
     getWidth <- function(maxid) {log10(maxid)+1}
     ids <- as.numeric(levels(factor(ftable$ID)))
     id_field_width <- getWidth(lCmpdList)
@@ -551,7 +551,7 @@ preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_cand
             warning("File ",fn_eic,"does not exist. Skipping.")
             next
         }
-        eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F)
+        eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F,comment.char='')
         maxInt <- max(eic$intensity)
         
         ##If MS1 does not exist, set entry to F.
@@ -586,7 +586,7 @@ preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_cand
             if (ftable[ind,"Alignment"]) {
                 rtInd <- match(maxInt,eic$intensity)
                 rtMS1Peak <- eic$rt[[rtInd]]
-                msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F)
+                msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F,comment.char='')
                 rtInd <- which(msms$rt > rtMS1Peak - rtDelta & msms$rt < rtMS1Peak + rtDelta)
                 msmsRT <- msms$rt[rtInd]
                 if (length(msmsRT) > 0) {
@@ -755,7 +755,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
     eic <- eics[[i]]
     maybekid <- maybekids[[i]]
     dfs <- lapply(file.path(wd,eic),function(fn) {
-        tryCatch(read.csv(fn,stringsAsFactors = F),
+        tryCatch(read.csv(fn,stringsAsFactors = F,comment.char=''),
                  error=function(e) {message(paste(e,"; offending file:",fn))})
     })
     
@@ -765,7 +765,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
     maybes <- file.path(wd,maybekid)
     indkids <- which(file.exists(maybes))
     kids <- maybes[indkids]
-    dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F)
+    dfs_kids <- lapply(kids,read.csv,stringsAsFactors=F,comment.char='')
     MS2Peak <- MS2Peak[indkids]
     iMS2Peak <- iMS2Peak[indkids]
     #dfs_kids <- lapply(dfs_kids,function(x) data.frame(rt=x$retentionTime,intensity= x$intensity))
@@ -951,7 +951,7 @@ mkUI <- function(idSliderRange,setName,rtRange,tags,QANms) {
 ##' @param rt_digits Number of decimal places for the retention time.
 ##' @param m_digits Number of decimal places for the mass.
 ##' @export
-presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
+presc.shiny <-function(prescdf=NULL,mode=NULL,fn_cmpd_l=NULL,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4){
     ## Helper functions
     
     queryFileTable <- function(df,id) {
@@ -982,7 +982,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
     wd <- prescdf$wd[match(tags,prescdf$tag)]
 
     wd1 <- wd[[1]]
-    cmpd_l_df <- read.csv(file=fn_cmpd_l,stringsAsFactors = F)
+    cmpd_l_df <- read.csv(file=fn_cmpd_l,stringsAsFactors = F,comment.char='')
     preID <- as.integer(levels(factor(prescdf$ID)))
     selID <- which(cmpd_l_df$ID %in% preID)
     osmesi <- cmpd_l_df$SMILES[selID]
@@ -1057,7 +1057,7 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
         })
         shiny::observeEvent(input$smileslist,
         {
-            rv_adduc$smiles <- read.csv(input$smileslist$datapath, header=FALSE,sep=',',stringsAsFactors=FALSE)[[1]]
+            rv_adduc$smiles <- read.csv(input$smileslist$datapath, header=FALSE,sep=',',stringsAsFactors=FALSE,comment.char = '')[[1]]
         })
 
         shiny::observeEvent(input$IdSmiles,
@@ -1067,24 +1067,38 @@ presc.shiny <-function(prescdf,mode,fn_cmpd_l,pal="Dark2",cex=0.75,rt_digits=2,m
         
         output$masses <- renderTable(
         {
-
-            message("LEN:",length(rv_adduc$smiles))
-
-            expr =lapply(rv_adduc$smiles,RChemMass::getSuspectFormulaMass) 
+            legend <- list(MolForm="Formula",Monoiso_mass="Monoisotopic mass",MpHp_mass="[M+H]+","MpNH4_mass"="[M+NH4]+",MpNa_mass="[M+Na]+",MmHm_mass="[M-H]-")
+            expr =lapply(rv_adduc$smiles,function(smile) {
+                tryCatch(RChemMass::getSuspectFormulaMass(smile),
+                         error=function(e) {message("getSuspectFormulaMass:",e);xx <- lapply(names(legend),
+                                                         function (x) 0);names(xx) <- names(legend);xx$MolForm <- "ERROR";xx
+                         },
+                         warning=function(w) {message("getSuspectFormulaMass:",w);xx <- lapply(names(legend),
+                                                         function (x) 0);names(xx) <- names(legend);xx$MolForm <- "ERROR";xx
+                         })
+            }) 
             if (! length(expr) == 0) {
                 df <- do.call(rbind,expr)
-                df <- as.data.frame(df)
-                names(df) <- c("SMILES", "Monoisotopicmass", "[M+H]+", "[M+NH4]+", "[M+Na]+", "[M-H]-")
-                rv$resTable <- df
+                names(df) <- sapply(names(legend),function (nm) legend[[nm]],USE.NAMES=F)
+                df <- as.data.frame(df,stringsAsFactors=F)
+                names(df) <- sapply(names(legend),function (nm) legend[[nm]],USE.NAMES=F)
+                for (nm in names(df)) {
+                    for (nr in 1:nrow(df)) {
+                        if(df[nr,nm]=="error") df[nr,nm] <- NA
+                    }
+                }
+                rv_adduc$resTable <- df
                 df
             } else NULL
-                      
         },digits=4)
+                      
+            
 
         shiny::observeEvent(input$downloadtable,
         {
-          
-            write.csv(file=input[["adduct-table"]],x=rv$resTable,row.names = F)
+
+            
+            write.csv(file=input[["adduct-table"]],x=as.matrix(rv_adduc[["resTable"]]),row.names = F,col.names = names(rv_adduc[["resTable"]]))
           
         })
  
