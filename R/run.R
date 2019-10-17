@@ -62,7 +62,7 @@ gen<-function(fnFileTab,fnCmpdList,mode,fnStgs,fnDestFileTable=attch(stripext(fn
     message("*** Started to generate prescreen data ...")
     
     ## Read in the file table.
-    fnTab <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F)
+    fnTab <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F, comment.char='')
    
 
     ## Do the prescreen.
