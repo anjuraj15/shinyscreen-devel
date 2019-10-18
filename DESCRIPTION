@@ -33,6 +33,7 @@ RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)
 Collate:
     'mix.R'
+    'shinyUI.R'
     'run.R'
 Depends:
     RMassBank,
