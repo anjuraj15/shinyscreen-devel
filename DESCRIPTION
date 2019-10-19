@@ -45,4 +45,6 @@ Imports:
     RColorBrewer,
     curl,
     shiny,
-    shinydashboard
+    shinydashboard,
+    shinyFiles,
+    rhandsontable

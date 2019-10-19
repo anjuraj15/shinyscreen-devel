@@ -295,3 +295,85 @@ presc.shiny <-function(prescdf=NULL,mode=NULL,fn_cmpd_l=NULL,pal="Dark2",cex=0.7
     
     shiny::shinyApp(ui = ui, server = server)
 }
+
+mkUI2 <- function() {
+    browseFile <- function(title,
+                           buttonName,
+                           txtName,
+                           buttonTxt="Set",
+                           txtTxt="",
+                           icon="file",
+                           ...)
+    {shinydashboard::box(title=title,
+                         shiny::textInput(txtName,NULL,value=txtTxt),
+                         shinyFiles::shinyFilesButton(buttonName,
+                                                      label=buttonTxt,
+                                                      title=buttonTxt,
+                                                      icon=shiny::icon(icon),
+                                                      multiple=T),
+                         ## shiny::actionButton(buttonName,
+                         ##                     buttonTxt,
+                         ##                     icon=shiny::icon(icon)),
+
+                         solidHeader=T,
+                         collapsible=F,...)}
+
+    confCompFnBrowse <- browseFile(title="Compound table file",
+                                   txtName="compListInp",
+                                   buttonName="compListB",
+                                   width=4)
+    confmzMLBrowseDir <- browseFile(title="Directory containing mzML data",
+                                    txtName="mzMLDirInp",
+                                    buttonName="mzMLDirB",
+                                    icon="folder-open",
+                                    width=4)
+    confBasicRow <- shiny::fluidRow(confCompFnBrowse,
+                                    confmzMLBrowseDir)
+
+
+    headerText <- "Shinyscreen"
+
+    
+
+    confSideItem <- shinydashboard::menuItem(text="Config",
+                                             tabName="config",
+                                             icon=shiny::icon("dashboard"))
+    
+    compListSideItem <- shinydashboard::menuItem(text="Compound List",
+                                                 tabName="compList",
+                                                 icon=shiny::icon("dashboard"))
+
+    presSideItem <- shinydashboard::menuItem(text="Prescreening",
+                                             tabName="prescreen",
+                                             icon=shiny::icon("dashboard"))
+    
+    header <- shinydashboard::dashboardHeader(title=headerText)
+    sidebar <- shinydashboard::dashboardSidebar(confSideItem,
+                                                compListSideItem,
+                                                presSideItem)
+
+    confTab <- shinydashboard::tabItem(tabName="config",
+                                       shiny::h2("Config"),
+                                       confBasicRow)
+    compListTab <- shinydashboard::tabItem(tabName="compList",shiny::h2("Compound Table"))
+    presTab <- shinydashboard::tabItem(tabName="prescreen",shiny::h2("Prescreening"))
+    body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
+                                                                   compListTab,
+                                                                   presTab))
+    
+    shinydashboard::dashboardPage(header,
+                                  sidebar,
+                                  body)}
+
+##' @export
+shinyScreenApp <- function() {
+    
+    server <- function(input,output,session) {
+        rvConf <- shiny::reactiveValues(conf=list())
+        shinyFiles::shinyFileChoose(input, 'compListB',root=c(system="/",wd=getwd()),defaultRoot="wd")
+        
+        session$onSessionEnded(function () stopApp())
+    }
+
+    shiny::shinyApp(ui=mkUI2(),server=server)
+}
