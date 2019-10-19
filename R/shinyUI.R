@@ -1,6 +1,8 @@
 mkUI <- function(idSliderRange,setName,rtRange,tags,QANms) {
 
+    
     names(QANms) <- QANms
+    ## Elements
     tabPanelList <- lapply(tags, function(tag) {
         shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Quality Control",
                                                        QANms),
@@ -9,99 +11,112 @@ mkUI <- function(idSliderRange,setName,rtRange,tags,QANms) {
                         )})
     
     nvPanel <- do.call(shiny::navlistPanel, tabPanelList)
+
+    ## Prescreening elements
+    preshead <- shinydashboard::dashboardHeader(title = "Prescreening")
+    presMenuItem <- shinydashboard::menuItem(text = "The Prescreening",
+                                             tabName = "Prescreen",
+                                             icon = shiny::icon("dashboard"))
+    presCompInfo <- shiny::fluidRow(shinydashboard::box(title = "MS Prescreening",
+                                                                               width = 7,
+                                                                               height = "80px",
+                                                                               background = "blue",
+                                                                               ""),
+                                                           shinydashboard::box(title = "Compound ID N°",
+                                                                               width = 5,
+                                                                               height = "80px",
+                                                                               background = "olive",
+                                                                               shiny::textOutput("compoundID")))
+    presPlotBox <- shinydashboard::box(title = "Plot",
+                                       width = 7,color = "olive",
+                                       solidHeader = FALSE,
+                                       collapsible = TRUE,
+                                       shiny::plotOutput("plot1",
+                                                         width = "100%",
+                                                         height = "750px",
+                                                         click = NULL,
+                                                         dblclick = NULL,
+                                                         hover = NULL,
+                                                         hoverDelay = NULL,
+                                                         hoverDelayType = NULL,
+                                                         brush = NULL,
+                                                         clickId = NULL,
+                                                         hoverId = NULL),
+                                       shiny::textInput("plotname",
+                                                        "Insert plot name: (e.g. plotname_%i.pdf)",
+                                                        value="plotCpdID_%i.pdf"),
+                                       shiny::actionButton("saveplot",
+                                                           "Save",
+                                                           icon = shiny::icon("save")),
+                                       shiny::actionButton("saveallplots",
+                                                           "Save All Plots",
+                                                           icon = shiny::icon("save")))
+    presCompSelBox <- shinydashboard::box(title = "Compounds",
+                                          width=5,
+                                          solidHeader = FALSE,
+                                          color = "olive",
+                                          collapsible = TRUE,
+                                          "",
+                                          shiny::br(),
+                                          shiny::sliderInput("idslider",
+                                                             "Compound number:",
+                                                             idSliderRange[1],
+                                                             idSliderRange[2],
+                                                             value=1,
+                                                             step=1))
     
+    presQABox <- shinydashboard::box(title = "Prescreening analysis",
+                                     width = 5,
+                                     solidHeader = FALSE,
+                                     collapsible = TRUE,
+                                     shiny::titlePanel(setName),
+                                     nvPanel,
+                                     shiny::actionButton("submitQA",
+                                                         "Submit",
+                                                         icon = shiny::icon("save")),
+                                     shiny::textInput("fn_ftable",
+                                                      "File table Name",
+                                                      value="ftable.csv"),
+                                     shiny::actionButton("savefiletable",
+                                                         "Save File Table",
+                                                         icon = shiny::icon("save")))
+    presPlotParBox <- shinydashboard::box(title = "Plot Parameters",
+                                          width=7,
+                                          solidHeader = FALSE,
+                                          collapsible = TRUE,
+                                          "",
+                                          shiny::br(),
+                                          shiny::numericInput("min_val",
+                                                              "Minimum x Axis Value",
+                                                              rtRange[1]),
+                                          shiny::numericInput("max_val",
+                                                              "Maximum x Axis Value",
+                                                              rtRange[2]),
+                                          shiny::radioButtons("yaxis",
+                                                              "Parameters for y Axis",
+                                                              c(linear = "linear",
+                                                                log = "log")),
+                                          shiny::numericInput("nice",
+                                                              "Nice",
+                                                              rtRange[1]),
+                                          shiny::numericInput("steps",
+                                                              "Steps",
+                                                              rtRange[2]))
+    presPlotWidget <- shiny::fluidRow(presPlotBox,
+                                      presCompSelBox,
+                                      presQABox,
+                                      presPlotParBox)
+    presTabItem <- shinydashboard::tabItem(tabName = "Prescreen",
+                                           shiny::h2("The Prescreen plot"),
+                                           presCompInfo,
+                                           presPlotWidget)
+
+    ## Assemble the UI.
     ui <- shinydashboard::dashboardPage(skin="black",
-                                        shinydashboard::dashboardHeader(title = "Prescreening"),
+                                        presHead,
                                         shinydashboard::dashboardSidebar(width = 350,
-                                                                         shinydashboard::sidebarMenu(shinydashboard::menuItem(text = "The Prescreening",
-                                                                                                                              tabName = "Prescreen",
-                                                                                                                              icon = shiny::icon("dashboard")))),
-                                        shinydashboard::dashboardBody(shinydashboard::tabItems(shinydashboard::tabItem(tabName = "Prescreen",
-                                                                                                                       shiny::h2("The Prescreen plot"),
-                                                                                                                       shiny::fluidRow(shinydashboard::box(title = "MS Prescreening",
-                                                                                                                                                           width = 7,
-                                                                                                                                                           height = "80px",
-                                                                                                                                                           background = "blue",
-                                                                                                                                                           ""),
-                                                                                                                                       shinydashboard::box(title = "Compound ID N°",
-                                                                                                                                                           width = 5,
-                                                                                                                                                           height = "80px",
-                                                                                                                                                           background = "olive",
-                                                                                                                                                           shiny::textOutput("compoundID"))),
-                                                                                                                       shiny::fluidRow(shinydashboard::box(title = "Plot",
-                                                                                                                                                           width = 7,color = "olive",
-                                                                                                                                                           solidHeader = FALSE,
-                                                                                                                                                           collapsible = TRUE,
-                                                                                                                                                           shiny::plotOutput("plot1",
-                                                                                                                                                                             width = "100%",
-                                                                                                                                                                             height = "750px",
-                                                                                                                                                                             click = NULL,
-                                                                                                                                                                             dblclick = NULL,
-                                                                                                                                                                             hover = NULL,
-                                                                                                                                                                             hoverDelay = NULL,
-                                                                                                                                                                             hoverDelayType = NULL,
-                                                                                                                                                                             brush = NULL,
-                                                                                                                                                                             clickId = NULL,
-                                                                                                                                                                             hoverId = NULL),
-                                                                                                                                                           shiny::textInput("plotname",
-                                                                                                                                                                            "Insert plot name: (e.g. plotname_%i.pdf)",
-                                                                                                                                                                            value="plotCpdID_%i.pdf"),
-                                                                                                                                                           shiny::actionButton("saveplot",
-                                                                                                                                                                               "Save",
-                                                                                                                                                                               icon = shiny::icon("save")),
-                                                                                                                                                           shiny::actionButton("saveallplots",
-                                                                                                                                                                               "Save All Plots",
-                                                                                                                                                                               icon = shiny::icon("save"))),
-                                                                                                                                       shinydashboard::box(title = "Compounds",
-                                                                                                                                                           width=5,
-                                                                                                                                                           solidHeader = FALSE,
-                                                                                                                                                           color = "olive",
-                                                                                                                                                           collapsible = TRUE,
-                                                                                                                                                           "",
-                                                                                                                                                           shiny::br(),
-                                                                                                                                                           shiny::sliderInput("idslider",
-                                                                                                                                                                              "Compound number:",
-                                                                                                                                                                              idSliderRange[1],
-                                                                                                                                                                              idSliderRange[2],
-                                                                                                                                                                              value=1,
-                                                                                                                                                                              step=1)),
-                                                                                                                                       shinydashboard::box(title = "Prescreening analysis",
-                                                                                                                                                           width = 5,
-                                                                                                                                                           solidHeader = FALSE,
-                                                                                                                                                           collapsible = TRUE,
-                                                                                                                                                           shiny::titlePanel(setName),
-                                                                                                                                                           nvPanel,
-                                                                                                                                                           shiny::actionButton("submitQA",
-                                                                                                                                                                               "Submit",
-                                                                                                                                                                               icon = shiny::icon("save")),
-                                                                                                                                                           shiny::textInput("fn_ftable",
-                                                                                                                                                                            "File table Name",
-                                                                                                                                                                            value="ftable.csv"),
-                                                                                                                                                           shiny::actionButton("savefiletable",
-                                                                                                                                                                               "Save File Table",
-                                                                                                                                                                               icon = shiny::icon("save"))),
-                                                                                                                                       shinydashboard::box(title = "Plot Parameters",
-                                                                                                                                                           width=7,
-                                                                                                                                                           solidHeader = FALSE,
-                                                                                                                                                           collapsible = TRUE,
-                                                                                                                                                           "",
-                                                                                                                                                           shiny::br(),
-                                                                                                                                                           shiny::numericInput("min_val",
-                                                                                                                                                                               "Minimum x Axis Value",
-                                                                                                                                                                               rtRange[1]),
-                                                                                                                                                           shiny::numericInput("max_val",
-                                                                                                                                                                               "Maximum x Axis Value",
-                                                                                                                                                                               rtRange[2]),
-                                                                                                                                                           shiny::radioButtons("yaxis",
-                                                                                                                                                                               "Parameters for y Axis",
-                                                                                                                                                                               c(linear = "linear",
-                                                                                                                                                                                 log = "log")),
-                                                                                                                                                           shiny::numericInput("nice",
-                                                                                                                                                                               "Nice",
-                                                                                                                                                                               rtRange[1]),
-                                                                                                                                                           shiny::numericInput("steps",
-                                                                                                                                                                               "Steps",
-                                                                                                                                                                               rtRange[2])))))))}
+                                                                         shinydashboard::sidebarMenu(presMenuItem)),
+                                        shinydashboard::dashboardBody(shinydashboard::tabItems(presTabItem)))}
 
 ##' Prescreening using shiny interface.
 ##'
@@ -195,8 +210,6 @@ presc.shiny <-function(prescdf=NULL,mode=NULL,fn_cmpd_l=NULL,pal="Dark2",cex=0.7
     }
     
     server <- function(input, output, session) {
-        rv_adduc<- shiny::reactiveValues(smiles=1,
-                                         resTable=1)
         rv <- shiny::reactiveValues(prescList=list(),
                                     prescdf=prescdf,
                                     spectProps=spectProps,
@@ -224,54 +237,6 @@ presc.shiny <-function(prescdf=NULL,mode=NULL,fn_cmpd_l=NULL,pal="Dark2",cex=0.7
         {
             preID[[input$idslider]]
         })
-        shiny::observeEvent(input$smileslist,
-        {
-            rv_adduc$smiles <- read.csv(input$smileslist$datapath, header=FALSE,sep=',',stringsAsFactors=FALSE,comment.char = '')[[1]]
-        })
-
-        shiny::observeEvent(input$IdSmiles,
-        {
-            rv_adduc$smiles <- trimws(strsplit(input$IdSmiles,split="\n")[[1]],which="both")
-        })
-        
-        output$masses <- renderTable(
-        {
-            legend <- list(MolForm="Formula",Monoiso_mass="Monoisotopic mass",MpHp_mass="[M+H]+","MpNH4_mass"="[M+NH4]+",MpNa_mass="[M+Na]+",MmHm_mass="[M-H]-")
-            expr =lapply(rv_adduc$smiles,function(smile) {
-                tryCatch(RChemMass::getSuspectFormulaMass(smile),
-                         error=function(e) {message("getSuspectFormulaMass:",e);xx <- lapply(names(legend),
-                                                         function (x) 0);names(xx) <- names(legend);xx$MolForm <- "ERROR";xx
-                         },
-                         warning=function(w) {message("getSuspectFormulaMass:",w);xx <- lapply(names(legend),
-                                                         function (x) 0);names(xx) <- names(legend);xx$MolForm <- "ERROR";xx
-                         })
-            }) 
-            if (! length(expr) == 0) {
-                df <- do.call(rbind,expr)
-                names(df) <- sapply(names(legend),function (nm) legend[[nm]],USE.NAMES=F)
-                df <- as.data.frame(df,stringsAsFactors=F)
-                names(df) <- sapply(names(legend),function (nm) legend[[nm]],USE.NAMES=F)
-                for (nm in names(df)) {
-                    for (nr in 1:nrow(df)) {
-                        if(df[nr,nm]=="error") df[nr,nm] <- NA
-                    }
-                }
-                rv_adduc$resTable <- df
-                df
-            } else NULL
-        },digits=4)
-                      
-            
-
-        shiny::observeEvent(input$downloadtable,
-        {
-
-            
-            write.csv(file=input[["adduct-table"]],x=as.matrix(rv_adduc[["resTable"]]),row.names = F,col.names = names(rv_adduc[["resTable"]]))
-          
-        })
- 
-
         shiny::observeEvent(input$saveplot,
         {
             i=preID[[input$idslider]]
@@ -303,11 +268,6 @@ presc.shiny <-function(prescdf=NULL,mode=NULL,fn_cmpd_l=NULL,pal="Dark2",cex=0.7
             names(res) <- rv$tags
             rv$prescdf <- updateFileTable(df=rv$prescdf,id=preID[[input$idslider]],linput=res)
         })
-
-        ## shiny::observeEvent(input$yaxis,{
-        ##     rv$yaxis <- input$yaxis
-            
-        ## })
 
         shiny::observe({
             i <- preID[[input$idslider]]
