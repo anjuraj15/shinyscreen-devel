@@ -303,32 +303,34 @@ mkUI2 <- function() {
                            buttonTxt="Set",
                            txtTxt="",
                            icon="file",
-                           ...)
-    {shinydashboard::box(title=title,
-                         shiny::textInput(txtName,NULL,value=txtTxt),
-                         shinyFiles::shinyFilesButton(buttonName,
-                                                      label=buttonTxt,
-                                                      title=buttonTxt,
-                                                      icon=shiny::icon(icon),
-                                                      multiple=T),
-                         ## shiny::actionButton(buttonName,
-                         ##                     buttonTxt,
-                         ##                     icon=shiny::icon(icon)),
-
-                         solidHeader=T,
-                         collapsible=F,...)}
-
+                           ...) {
+        shinydashboard::box(title=title,
+                            shiny::textInput(txtName,NULL,value=txtTxt),
+                            shinyFiles::shinyFilesButton(buttonName,
+                                                         label=buttonTxt,
+                                                         title=buttonTxt,
+                                                         icon=shiny::icon(icon),
+                                                         multiple=T),
+                            solidHeader=T,
+                            collapsible=F,...)}
+    
     confCompFnBrowse <- browseFile(title="Compound table file",
                                    txtName="compListInp",
                                    buttonName="compListB",
-                                   width=4)
-    confmzMLBrowseDir <- browseFile(title="Directory containing mzML data",
-                                    txtName="mzMLDirInp",
-                                    buttonName="mzMLDirB",
-                                    icon="folder-open",
-                                    width=4)
-    confBasicRow <- shiny::fluidRow(confCompFnBrowse,
-                                    confmzMLBrowseDir)
+                                   width=NULL)
+    confmzMLBrowseDir <- shinydashboard::box(title="Mass-spectrometry data in mzML format",
+                                             shinyFiles::shinyFilesButton("mzMLB",
+                                                                          label="Select mzML files.",
+                                                                          title="Select mzML files.",
+                                                                          icon=shiny::icon("files"),
+                                                                          multiple=T),width=NULL)
+
+    confLayout <- shiny::fluidRow(shiny::column(confCompFnBrowse,
+                                               confmzMLBrowseDir,
+                                               width=4),
+                                  shiny::column(width=6,
+                                                 shinydashboard::box(title="mzML file table",
+                                                                     rhandsontable::rHandsontableOutput("mzMLtabCtrl"))))
 
 
     headerText <- "Shinyscreen"
@@ -354,7 +356,7 @@ mkUI2 <- function() {
 
     confTab <- shinydashboard::tabItem(tabName="config",
                                        shiny::h2("Config"),
-                                       confBasicRow)
+                                       confLayout)
     compListTab <- shinydashboard::tabItem(tabName="compList",shiny::h2("Compound Table"))
     presTab <- shinydashboard::tabItem(tabName="prescreen",shiny::h2("Prescreening"))
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
@@ -367,10 +369,48 @@ mkUI2 <- function() {
 
 ##' @export
 shinyScreenApp <- function() {
+
+    volumes <- shinyFiles::getVolumes()
     
+    mk_mzMLtab<-function() {data.frame(Files=character(),
+                                        set=character(),
+                                        tag=character(),
+                                        stringsAsFactors=F)}
+    extd_mzMLtab<-function(ft,fn) {
+        as.data.frame(rbind(ft,
+                            data.frame(Files=fn,
+                                       set="",
+                                       tag="",
+                                       stringsAsFactors=F),
+                            make.row.names=F,
+                            stringsAsFactors = F),
+                      stringsAsFactors=F)
+    }
+
     server <- function(input,output,session) {
-        rvConf <- shiny::reactiveValues(conf=list())
-        shinyFiles::shinyFileChoose(input, 'compListB',root=c(system="/",wd=getwd()),defaultRoot="wd")
+        rvConf <- shiny::reactiveValues(mzMLtab=mk_mzMLtab(),
+                                        zig=data.frame(X=c(1,2,3),Y=c("a","b","c")))
+        shinyFiles::shinyFileChoose(input, 'compListB',root=volumes)
+        shinyFiles::shinyFileChoose(input, 'mzMLB',root=volumes)
+
+        shiny::observe({
+            input$mzMLB
+
+            fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
+            paths<-fchoice[["datapath"]]
+            for (pt in paths) {
+                isolate(rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt))
+            }
+        })
+
+
+
+        output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
+            df <- rvConf$mzMLtab
+            if (nrow(df) !=0) {
+                rhandsontable::rhandsontable(df,stretchH="all")
+            }
+    })
         
         session$onSessionEnded(function () stopApp())
     }
