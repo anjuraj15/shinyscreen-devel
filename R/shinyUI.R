@@ -318,19 +318,48 @@ mkUI2 <- function() {
                                    txtName="compListInp",
                                    buttonName="compListB",
                                    width=NULL)
-    confmzMLBrowseDir <- shinydashboard::box(title="Mass-spectrometry data in mzML format",
-                                             shinyFiles::shinyFilesButton("mzMLB",
-                                                                          label="Select mzML files.",
-                                                                          title="Select mzML files.",
-                                                                          icon=shiny::icon("files"),
-                                                                          multiple=T),width=NULL)
+
+    confmzMLSets <- shinydashboard::box(title="Sets and tags",
+                                        shiny::textInput("setPropInp",
+                                                         "What is a set?",
+                                                         value=""),
+                                        shiny::textInput("setsInp",
+                                                         "Comma-delimited list of set types",
+                                                         value=""),
+                                        shiny::textInput("tagPropInp",
+                                                         "What is a tag?",
+                                                         value=""),
+                                        shiny::textInput("tagsInp",
+                                                         "Comma-delimited list of tag types",
+                                                         value=""),
+                                        width=NULL)
+
+    confState <- shinydashboard::box(title="Configuration state",
+                                     shinyFiles::shinySaveButton("saveConfB",
+                                                                 "Save configuration",
+                                                                 title="Save",
+                                                                 filename = "conf-state.rds",
+                                                                 "rds"),
+                                     shinyFiles::shinyFilesButton("restoreConfB",
+                                                                  label="Restore configuration",
+                                                                  title="Restore",
+                                                                  multiple=F,
+                                                                  icon=shiny::icon("file")),
+                                     width=NULL)
 
     confLayout <- shiny::fluidRow(shiny::column(confCompFnBrowse,
-                                               confmzMLBrowseDir,
-                                               width=4),
-                                  shiny::column(width=6,
-                                                 shinydashboard::box(title="mzML file table",
-                                                                     rhandsontable::rHandsontableOutput("mzMLtabCtrl"))))
+                                                confmzMLSets,
+                                                confState,
+                                                width=4),
+                                  shiny::column(width=8,
+                                                shinydashboard::box(title="mzML file table",
+                                                                    shinyFiles::shinyFilesButton("mzMLB",
+                                                                                                 label="Select mzML files",
+                                                                                                 title="Select mzML files",
+                                                                                                 icon=shiny::icon("files"),
+                                                                                                 multiple=T),
+                                                                    rhandsontable::rHandsontableOutput("mzMLtabCtrl"),
+                                                                    width=NULL)))
 
 
     headerText <- "Shinyscreen"
@@ -389,9 +418,23 @@ shinyScreenApp <- function() {
 
     server <- function(input,output,session) {
         rvConf <- shiny::reactiveValues(mzMLtab=mk_mzMLtab(),
-                                        zig=data.frame(X=c(1,2,3),Y=c("a","b","c")))
+                                        tags=list(),
+                                        sets=list(),
+                                        compListFn="")
         shinyFiles::shinyFileChoose(input, 'compListB',root=volumes)
         shinyFiles::shinyFileChoose(input, 'mzMLB',root=volumes)
+
+
+        shiny::observe({
+            input$compListB
+            res<-shinyFiles::parseFilePaths(root=volumes,input$compListB)
+            rvConf$compListFn<-res[["datapath"]]
+            message("huh:",str(rvConf$compListFn))
+        })
+        
+        output$compListInp<-shiny::renderText({
+            "aaa"             ## rvConf$compListFn
+        })
 
         shiny::observe({
             input$mzMLB
@@ -403,14 +446,45 @@ shinyScreenApp <- function() {
             }
         })
 
+        shiny::observe({
+            input$setsInp
+            rvConf$sets <- if (length(input$setsInp)!=0) unlist(strsplit(input$setsInp, ",")) else list()
+            if (length(rvConf$sets) != 0) {
+                if (!is.factor(rvConf$mzMLtab$set)) {
+                    rvConf$mzMLtab$set <- factor(rvConf$mzMLtab$set)
+                }
+                
+                lvl<-levels(rvConf$mzMLtab$set)
+                sets<-rvConf$sets
+                if (length(sets) < length(lvl)) rvConf$mzMLtab$set<-as.character(rvConf$mzMLtab$set)
+                levels(rvConf$mzMLtab$set)<-rvConf$sets
+                 
+            }
+        })
+
+
+        shiny::observe({
+            input$tagsInp
+            rvConf$tags <- if (length(input$tagsInp)!=0) unlist(strsplit(input$tagsInp, ",")) else list()
+            if (length(rvConf$tags) != 0) {
+                if (!is.factor(rvConf$mzMLtab$tag)) {
+                    rvConf$mzMLtab$tag <- factor(rvConf$mzMLtab$tag)
+                }
+                
+                lvl<-levels(rvConf$mzMLtab$tag)
+                tags<-rvConf$tags
+                if (length(tags) < length(lvl)) rvConf$mzMLtab$tag<-as.character(rvConf$mzMLtab$tag)
+                levels(rvConf$mzMLtab$tag)<-rvConf$tags
+                 
+            }
+        })
+
+
 
 
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-            df <- rvConf$mzMLtab
-            if (nrow(df) !=0) {
-                rhandsontable::rhandsontable(df,stretchH="all")
-            }
-    })
+            if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all")
+        })
         
         session$onSessionEnded(function () stopApp())
     }
