@@ -458,11 +458,7 @@ shinyScreenApp <- function() {
         update_setstags_mzMLtab<-shiny::reactive({
             tags<-getTags()
             sets<-getSets()
-            message("+++++++++++++++++")
-            message("tags:",str(tags))
-            message("-----------------")
-            message("sets:",str(sets))
-            message("=================")
+
             tagCol<-rvConf$mzMLtab$tag
             setCol<-rvConf$mzMLtab$set
             if (length(levels(tagCol))==0) rvConf$mzMLtab$tag<-factor(tagCol)
@@ -474,50 +470,47 @@ shinyScreenApp <- function() {
 
         })
 
-        
-        ## shiny::observe({
-        ##     input$saveConfB
-        ##     fn<-shinyFiles::parseSavePath(root=volumes,input$saveConfB)[["datapath"]]
-        ##     if ((! is.null(fn)) && length(fn)>0) {
-        ##         sav<-list()
-        ##         shiny::isolate(for (nm in names(rvConf)) {
-        ##                            sav[[nm]]<-rvConf[[nm]]
-        ##                        })
-        ##         saveRDS(object=sav,file=fn)
-        ##     }
-           
-        ## })
+        saveConf<-reactive({
+            fn<-shinyFiles::parseSavePath(root=volumes,input$saveConfB)[["datapath"]]
+            if ((! is.na(fn)) && length(fn)>0) {
+                sav<-list()
+                sav<-list(rvConf=list(),
+                          input=list())
+                shiny::isolate(for (nm in names(rvConf)) {
+                                   sav$rvConf[[nm]]<-rvConf[[nm]]
+                               })
+                sav$input$tagsInp<-input$tagsInp
+                sav$input$setsInp<-input$setsInp
+                sav$input$compListInp<-input$compListInp
+                saveRDS(object=sav,file=fn)
+                }
+        })
 
-        ## shiny::observe({
-        ##     input$restoreConfB
-        ##     fn<-shinyFiles::parseSavePath(root=volumes,input$restoreConfB)[["datapath"]]
-        ##     if ((! is.null(fn)) && length(fn)>0) {
-        ##         lod<-readRDS(fn)
-        ##         for (nm in names(lod)) {
-        ##             rvConf[[nm]]<-lod[[nm]]
-        ##         }
+        restoreConf<-reactive({
+            fn<-shinyFiles::parseSavePath(root=volumes,input$restoreConfB)[["datapath"]]
+            if ((! is.na(fn)) && length(fn)>0) {
+                sav<-readRDS(fn)
+                message("------------")
+                message(str(sav))
+                message("============")
+                for (nm in names(sav$rvConf)) {
+                    rvConf[[nm]]<-sav$rvConf[[nm]]
+                }
+                shiny::isolate({
+                    shiny::updateTextInput(session=session,
+                                           inputId="tagsInp",
+                                           value=sav$input$tagsInp)
+                    shiny::updateTextInput(session=session,
+                                           inputId="setsInp",
+                                           value=sav$input$setsInp)
+                    shiny::updateTextInput(session=session,
+                                           inputId="compListInp",
+                                           value=sav$input$compListInp)
+                })
+            }
+        })
 
-        ##         sets<-levels(rvConf$mzMLtab$set)
-        ##         tags<-levels(rvConf$mzMLtab$tag)
-                
-        ##         if (!is.null(sets)) {
-        ##             thing<-do.call(paste,
-        ##                            c(as.list(sets),
-        ##                              list(sep=',')))
-        ##             shiny::updateTextInput(session=session,
-        ##                                    inputId="setsInp",
-        ##                                    value=thing)
-                    
-        ##         }
 
-        ##         if (!is.null(tags)) {
-        ##             thing<-do.call(paste,
-        ##                            c(as.list(tags),
-        ##                              list(sep=',')))
-        ##             shiny::updateTextInput(session=session,
-        ##                                    inputId="tagsInp",
-        ##                                    value=thing)
-        ##         }
         ##         shiny::isolate({
         ##         shiny::updateTextInput(session=session,
         ##                                inputId="setPropInp",
@@ -528,11 +521,6 @@ shinyScreenApp <- function() {
         ##                                value=rvConf$tagProp)
 
                 
-        ##         shiny::updateTextInput(session=session, #FIXME: this does not update right.
-        ##                                inputId = "compListInp",
-        ##                                value=rvConf$compListFn)})
-        ##     }
-        ## })
         
         shiny::observe({
             input$compListB
@@ -556,6 +544,18 @@ shinyScreenApp <- function() {
             })
         })
 
+        shiny::observe({
+            input$restoreConfB
+            restoreConf()
+        })
+
+        shiny::observe({
+            input$saveConfB
+            saveConf()
+        })
+        ## restoreConf()
+        ## saveConf()
+        
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
             rvConf$mzMLtab
             update_setstags_mzMLtab()
