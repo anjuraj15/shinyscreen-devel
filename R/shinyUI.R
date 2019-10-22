@@ -340,11 +340,11 @@ mkUI2 <- function() {
                                                                  title="Save",
                                                                  filename = "conf-state.rds",
                                                                  "rds"),
-                                     shinyFiles::shinyFilesButton("restoreConfB",
-                                                                  label="Restore configuration",
-                                                                  title="Restore",
-                                                                  multiple=F,
-                                                                  icon=shiny::icon("file")),
+                                     shinyFiles::shinySaveButton("restoreConfB",
+                                                                 label="Restore configuration",
+                                                                 title="Restore",
+                                                                 filename= "",
+                                                                 "rds"),
                                      width=NULL)
 
     confLayout <- shiny::fluidRow(shiny::column(confCompFnBrowse,
@@ -398,42 +398,149 @@ mkUI2 <- function() {
 
 ##' @export
 shinyScreenApp <- function() {
-
+    modeLvl<- c("pH","pNa","pM",
+                "mH","mFA")
     volumes <- shinyFiles::getVolumes()
     
-    mk_mzMLtab<-function() {data.frame(Files=character(),
-                                        set=character(),
-                                        tag=character(),
-                                        stringsAsFactors=F)}
+    mk_mzMLtab<-function() {
+        modeLvl<- c("pH","pNa","pM",
+                "mH","mFA")
+        res<-data.frame(Files=character(),
+                        mode=factor(levels=modeLvl),
+                        set=character(),
+                        tag=character(),
+                        stringsAsFactors=F)
+        res
+        
+    }
+
     extd_mzMLtab<-function(ft,fn) {
-        as.data.frame(rbind(ft,
-                            data.frame(Files=fn,
-                                       set="",
-                                       tag="",
-                                       stringsAsFactors=F),
-                            make.row.names=F,
-                            stringsAsFactors = F),
-                      stringsAsFactors=F)
+        modeLvl<- c("select","pH","pNa","pM",
+                    "mH","mFA")
+        lSet<-levels(ft$set)
+        lTag<-levels(ft$tag)
+        newRow<-data.frame(Files=fn,
+                           mode=factor(modeLvl[[1]],levels=modeLvl),
+                           set=if (! is.null(lSet)) factor(lSet[[1]],levels=lSet) else "",
+                           tag=if (! is.null(lTag)) factor(lTag[[1]],levels=lTag) else "",
+                           stringsAsFactors = F)
+
+        levels(newRow$mode)<-modeLvl
+        
+        res<-rbind(ft,newRow,
+                   stringsAsFactors = F,
+                   make.row.names = F)
+        levels(res$mode)<-modeLvl
+        res
     }
 
     server <- function(input,output,session) {
         rvConf <- shiny::reactiveValues(mzMLtab=mk_mzMLtab(),
                                         tags=list(),
                                         sets=list(),
-                                        compListFn="")
+                                        compListFn="",
+                                        tagProp="",
+                                        setProp="",
+                                        mode=modeLvl)
         shinyFiles::shinyFileChoose(input, 'compListB',root=volumes)
         shinyFiles::shinyFileChoose(input, 'mzMLB',root=volumes)
+        shinyFiles::shinyFileSave(input, 'saveConfB',root=volumes)
+        shinyFiles::shinyFileSave(input, 'restoreConfB',root=volumes)
+
+        getTags<-shiny::reactive({
+            if (length(input$tagsInp)>0 && !is.na(input$tagsInp)) unlist(strsplit(input$tagsInp, ",")) else list()
+        })
+
+        getSets<-shiny::reactive({
+            if (length(input$setsInp)>0 && !is.na(input$setsInp)) unlist(strsplit(input$setsInp, ",")) else list()
+        })
+
+        update_setstags_mzMLtab<-shiny::reactive({
+            tags<-getTags()
+            sets<-getSets()
+            message("+++++++++++++++++")
+            message("tags:",str(tags))
+            message("-----------------")
+            message("sets:",str(sets))
+            message("=================")
+            tagCol<-rvConf$mzMLtab$tag
+            setCol<-rvConf$mzMLtab$set
+            if (length(levels(tagCol))==0) rvConf$mzMLtab$tag<-factor(tagCol)
+            if (length(levels(setCol))==0) rvConf$mzMLtab$set<-factor(setCol)
+
+            rvConf$mzMLtab$tag<-factor(tagCol,levels=tags)
+            rvConf$mzMLtab$set<-factor(setCol,levels=sets)
 
 
+        })
+
+        
+        ## shiny::observe({
+        ##     input$saveConfB
+        ##     fn<-shinyFiles::parseSavePath(root=volumes,input$saveConfB)[["datapath"]]
+        ##     if ((! is.null(fn)) && length(fn)>0) {
+        ##         sav<-list()
+        ##         shiny::isolate(for (nm in names(rvConf)) {
+        ##                            sav[[nm]]<-rvConf[[nm]]
+        ##                        })
+        ##         saveRDS(object=sav,file=fn)
+        ##     }
+           
+        ## })
+
+        ## shiny::observe({
+        ##     input$restoreConfB
+        ##     fn<-shinyFiles::parseSavePath(root=volumes,input$restoreConfB)[["datapath"]]
+        ##     if ((! is.null(fn)) && length(fn)>0) {
+        ##         lod<-readRDS(fn)
+        ##         for (nm in names(lod)) {
+        ##             rvConf[[nm]]<-lod[[nm]]
+        ##         }
+
+        ##         sets<-levels(rvConf$mzMLtab$set)
+        ##         tags<-levels(rvConf$mzMLtab$tag)
+                
+        ##         if (!is.null(sets)) {
+        ##             thing<-do.call(paste,
+        ##                            c(as.list(sets),
+        ##                              list(sep=',')))
+        ##             shiny::updateTextInput(session=session,
+        ##                                    inputId="setsInp",
+        ##                                    value=thing)
+                    
+        ##         }
+
+        ##         if (!is.null(tags)) {
+        ##             thing<-do.call(paste,
+        ##                            c(as.list(tags),
+        ##                              list(sep=',')))
+        ##             shiny::updateTextInput(session=session,
+        ##                                    inputId="tagsInp",
+        ##                                    value=thing)
+        ##         }
+        ##         shiny::isolate({
+        ##         shiny::updateTextInput(session=session,
+        ##                                inputId="setPropInp",
+        ##                                value=rvConf$setProp)
+
+        ##         shiny::updateTextInput(session=session,
+        ##                                inputId="tagPropInp",
+        ##                                value=rvConf$tagProp)
+
+                
+        ##         shiny::updateTextInput(session=session, #FIXME: this does not update right.
+        ##                                inputId = "compListInp",
+        ##                                value=rvConf$compListFn)})
+        ##     }
+        ## })
+        
         shiny::observe({
             input$compListB
             res<-shinyFiles::parseFilePaths(root=volumes,input$compListB)
             rvConf$compListFn<-res[["datapath"]]
-            message("huh:",str(rvConf$compListFn))
-        })
-        
-        output$compListInp<-shiny::renderText({
-            "aaa"             ## rvConf$compListFn
+            shiny::updateTextInput(session=session,
+                                   inputId = "compListInp",
+                                   value=rvConf$compListFn)
         })
 
         shiny::observe({
@@ -441,48 +548,17 @@ shinyScreenApp <- function() {
 
             fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
             paths<-fchoice[["datapath"]]
-            for (pt in paths) {
-                isolate(rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt))
-            }
-        })
-
-        shiny::observe({
-            input$setsInp
-            rvConf$sets <- if (length(input$setsInp)!=0) unlist(strsplit(input$setsInp, ",")) else list()
-            if (length(rvConf$sets) != 0) {
-                if (!is.factor(rvConf$mzMLtab$set)) {
-                    rvConf$mzMLtab$set <- factor(rvConf$mzMLtab$set)
+            isolate({
+                for (pt in paths) {
+                    rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt)
                 }
-                
-                lvl<-levels(rvConf$mzMLtab$set)
-                sets<-rvConf$sets
-                if (length(sets) < length(lvl)) rvConf$mzMLtab$set<-as.character(rvConf$mzMLtab$set)
-                levels(rvConf$mzMLtab$set)<-rvConf$sets
-                 
-            }
+
+            })
         })
-
-
-        shiny::observe({
-            input$tagsInp
-            rvConf$tags <- if (length(input$tagsInp)!=0) unlist(strsplit(input$tagsInp, ",")) else list()
-            if (length(rvConf$tags) != 0) {
-                if (!is.factor(rvConf$mzMLtab$tag)) {
-                    rvConf$mzMLtab$tag <- factor(rvConf$mzMLtab$tag)
-                }
-                
-                lvl<-levels(rvConf$mzMLtab$tag)
-                tags<-rvConf$tags
-                if (length(tags) < length(lvl)) rvConf$mzMLtab$tag<-as.character(rvConf$mzMLtab$tag)
-                levels(rvConf$mzMLtab$tag)<-rvConf$tags
-                 
-            }
-        })
-
-
-
 
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
+            rvConf$mzMLtab
+            update_setstags_mzMLtab()
             if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all")
         })
         
