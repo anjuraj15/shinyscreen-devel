@@ -849,3 +849,40 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
     
 }    
 
+
+
+adornmzMLTab<-function(df,projDir=getwd()) {
+    wd<-basename(file_path_sans_ext(df$Files))
+    pref<-df$set
+    mask<-is.na(pref)
+    ln<-length(mask)
+    pref[mask]<-paste0(wd[mask],"_",1:ln)
+    wd<-file.path(projDir,pref,wd)
+    df$wd<-wd
+    df
+}
+
+genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
+    genOneFileTbl <- function(id,fileTbl) {
+        n <- nrow(fileTbl)
+        K <- length(id)
+        longid <- rep(id,n)
+        cols <- lapply(names(fileTbl),function(cn) rep("",n*K))
+        names(cols) <- names(fileTbl)
+        bdf <- as.data.frame(cols,stringsAsFactors = F)
+        rows <- lapply(1:n*K,function(x) NA)
+        for (j in 1:n) {
+            for (i in 1:K)
+                rows[[(j-1)*K+i]] <- fileTbl[j,]
+        }
+        bdf <- as.data.frame(do.call(rbind,rows),stringsAsFactors = F)
+        bdf <- cbind(bdf,data.frame(ID=longid))
+        bdf
+    }
+    
+    sets <- levels(factor(IDSet$set))
+    setTbl <- lapply(sets,function (s) genOneFileTbl(IDSet[IDSet$set %in% s,]$ID,fileTbl[fileTbl$set==s,]))
+    allTbl <- do.call(rbind,setTbl)
+    write.csv(x=allTbl,file=destFn)
+    allTbl 
+}
