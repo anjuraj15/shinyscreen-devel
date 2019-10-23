@@ -307,25 +307,30 @@ mkUI2 <- function() {
                            ...) {
         shinydashboard::box(title=title,
                             shiny::h5(description),
-                            shiny::textInput(txtName,
-                                             "Compound List",
-                                             value=txtTxt),
-                            shinyFiles::shinyFilesButton(buttonName,
-                                                         label=buttonTxt,
-                                                         title=buttonTxt,
-                                                         icon=shiny::icon(icon),
-                                                         multiple=T),
+
+,
                             solidHeader=T,
                             collapsible=F,...)}
     
-    confCompFnBrowse <- browseFile(title="Import",
-                                   buttonName="impCmpListB",
-                                   txtName="impCmpListInp",
-                                   description="There are two tables that need to be supplied before prescreening starts. One is the compound list, its format being the same like the one for the RMassBank (fields: ID,Name,SMILES,RT,CAS,mz,Level). Another is the compound set table (fields: ID,Name). Once those tables are imported, they can further be modified as copies inside the project dir. Shinyscreen will never modify any initial (meta)data.",
-                                   width=NULL)
+    confImport <- shinydashboard::box(title="Import",
+                                      shiny::h5("There are two tables that need to be supplied before prescreening starts. One is the compound list, its format being the same like the one for the RMassBank (fields: ID,Name,SMILES,RT,CAS,mz,Level). Another is the compound set table (fields: ID,set). Once those tables are imported, they can further be modified as copies inside the project dir. Shinyscreen will never modify any initial (meta)data. If set field of the compound set table is NA, then that file is in a set of its own."),
+                                      shiny::textInput("impCmpListInp",
+                                                       "Compound List",
+                                                       value=""),
+                                      shinyFiles::shinyFilesButton("impCmpListB",
+                                                                   label="Import compound list.",
+                                                                   title="",
+                                                                   icon=shiny::icon("file"),
+                                                                   multiple=T),
+                                      shinyFiles::shinyFilesButton("impSetIdB",
+                                                                   label="Import compound set table.",
+                                                                   title="",
+                                                                   icon=shiny::icon("file"),
+                                                                   multiple=T),
+                                      width=NULL)
 
-    confmzMLTags <- shinydashboard::box(title="Tags",
-                                        shiny::h5("Shinyscreen uses two properties, tags and sets, to categorise mzML data. Tags are properties of individual files. For example, if a single file represents a collection of spectra acquired at a specific collision energy, that energy could be used as a tag. Tags are used to differentiate the spectra in a chromatogram."),
+    confmzMLTags <- shinydashboard::box(title="Sets and Tags",
+                                        shiny::h5("Shinyscreen uses two properties, tags and sets, to categorise mzML data. Tags are properties of individual files. For example, if a single file represents a collection of spectra acquired at a specific collision energy, that energy could be used as a tag. Tags are used to differentiate the spectra in a chromatogram. Sets are collections of tagged files and are read from the compound set table. Each set is going to be screened for a designated collection of masses."),
                                         shiny::textInput("tagPropInp",
                                                          "What is a tag? (example: collision energy; can be left empty.)",
                                                          value=""),
@@ -358,7 +363,7 @@ mkUI2 <- function() {
                                       width=NULL)
 
     
-    confLayout <- shiny::fluidRow(shiny::column(confCompFnBrowse,
+    confLayout <- shiny::fluidRow(shiny::column(confImport,
                                                 confmzMLTags,
                                                 confState,
                                                 width=4),
@@ -398,7 +403,7 @@ mkUI2 <- function() {
     ## ***** Sets of compounds *****
 
     setIdBox<-shinydashboard::box(title="Compound sets",
-                                  rhandsontable::rHandsontableOutput("setIdtab"),
+                                  rhandsontable::rHandsontableOutput("setIdtabCtrl"),
                                   width = NULL)
 
     setIdBoxState<-shinydashboard::box(title="Compound list state",
@@ -478,7 +483,8 @@ shinyScreenApp <- function() {
                 "mH","mFA")
         res<-data.frame(Files=character(),
                         mode=factor(levels=modeLvl),
-                        tag=character(),
+                        set=factor(),
+                        tag=factor(),
                         stringsAsFactors=F)
         res
         
@@ -493,6 +499,10 @@ shinyScreenApp <- function() {
                    stringsAsFactors = F)
     }
 
+    mk_setId<-function() {
+        data.frame(ID=integer(),
+                   set=character())}
+    
     extd_mzMLtab<-function(ft,fn) {
         modeLvl<- c("select","pH","pNa","pM",
                     "mH","mFA")
@@ -500,8 +510,8 @@ shinyScreenApp <- function() {
         lTag<-levels(ft$tag)
         newRow<-data.frame(Files=fn,
                            mode=factor(modeLvl[[1]],levels=modeLvl),
-                           set=if (! is.null(lSet)) factor(lSet[[1]],levels=lSet) else "",
-                           tag=if (! is.null(lTag)) factor(lTag[[1]],levels=lTag) else "",
+                           set=if (! is.null(lSet)) factor(lSet[[1]],levels=lSet) else factor("unspecified"),
+                           tag=if (! is.null(lTag)) factor(lTag[[1]],levels=lTag) else factor("unspecified"),
                            stringsAsFactors = F)
 
         levels(newRow$mode)<-modeLvl
@@ -520,8 +530,18 @@ shinyScreenApp <- function() {
                  comment.char = '')
     }
 
+    readSetId<-function(fn) {
+        read.csv(file=fn,
+                 header=T,
+                 stringsAsFactors = T,
+                 comment.char = '',
+                 na.strings = c("","NA"))
+    }
+
 
     server <- function(input,output,session) {
+
+        ## ***** reactive values *****
         rvConf <- shiny::reactiveValues(mzMLtab=mk_mzMLtab(),
                                         tags=list(),
                                         sets=list(),
@@ -529,36 +549,49 @@ shinyScreenApp <- function() {
                                         tagProp="",
                                         setProp="",
                                         mode=modeLvl,
-                                        freshCmpListInp=F)
+                                        freshCmpListInp=F,
+                                        freshSetIdInp=F)
 
         rvCmpList<- shiny::reactiveValues(df=mk_cmpList())
+        rvSetId<- shiny::reactiveValues(df=mk_setId())
+
+        ## ***** shinyFiles observers *****
         
         shinyFiles::shinyFileChoose(input, 'impCmpListB',root=volumes)
-        shinyFiles::shinyFileChoose(input, 'mzMLB',root=volumes)
+        shinyFiles::shinyFileChoose(input, 'impSetIdB',root=volumes)
         shinyFiles::shinyFileSave(input, 'saveConfB',root=volumes)
         shinyFiles::shinyFileChoose(input, 'restoreConfB',root=volumes)
+        shinyFiles::shinyFileChoose(input, 'mzMLB',root=volumes)
 
+        shinyFiles::shinyFileSave(input, 'saveCmpListB',root=volumes)
+        shinyFiles::shinyFileChoose(input, 'restoreCmpListB',root=volumes)
+
+        shinyFiles::shinyFileSave(input, 'saveSetIdB',root=volumes)
+        shinyFiles::shinyFileChoose(input, 'restoreSetIdB',root=volumes)
+
+
+        ## ***** reactive function definitions *****
+        
         getTags<-shiny::reactive({
             if (length(input$tagsInp)>0 && !is.na(input$tagsInp)) unlist(strsplit(input$tagsInp, ",")) else list()
         })
 
         getSets<-shiny::reactive({
-            if (length(input$setsInp)>0 && !is.na(input$setsInp)) unlist(strsplit(input$setsInp, ",")) else list()
+            levels(rvSetId$df$set)
         })
 
-        update_setstags_mzMLtab<-shiny::reactive({
+        update_tags_mzMLtab<-shiny::reactive({
             tags<-getTags()
-            sets<-getSets()
-
             tagCol<-rvConf$mzMLtab$tag
-            setCol<-rvConf$mzMLtab$set
             if (length(levels(tagCol))==0) rvConf$mzMLtab$tag<-factor(tagCol)
-            if (length(levels(setCol))==0) rvConf$mzMLtab$set<-factor(setCol)
-
             rvConf$mzMLtab$tag<-factor(tagCol,levels=tags)
+        })
+
+        update_sets_mzMLtab<-shiny::reactive({
+            sets<-getSets()
+            setCol<-rvConf$mzMLtab$set
+            if (length(levels(setCol))==0) rvConf$mzMLtab$set<-factor(setCol)
             rvConf$mzMLtab$set<-factor(setCol,levels=sets)
-
-
         })
 
         saveConf<-reactive({
@@ -615,6 +648,18 @@ shinyScreenApp <- function() {
             }
         })
 
+        importSetIddf<-shiny::reactive({
+            impSetIdFn<-shinyFiles::parseFilePaths(root=volumes,
+                                                   input$impSetIdB)[["datapath"]]
+            message("updating set compound path:",str(impSetIdFn))
+
+            if (! (is.null(impSetIdFn) || is.na(impSetIdFn) || length(impSetIdFn)==0)) {
+                rvConf$impSetIdFn<-impSetIdFn
+                rvConf$freshSetIdImp<-T
+                rvSetId$df<-readSetId(rvConf$impSetIdFn)
+            }
+        })
+
 
         ##         shiny::isolate({
         ##         shiny::updateTextInput(session=session,
@@ -651,15 +696,13 @@ shinyScreenApp <- function() {
             input$saveConfB
             saveConf()
         })
-        ## restoreConf()
-        ## saveConf()
         
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
             rvConf$mzMLtab
-            update_setstags_mzMLtab()
-            if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all")
+            update_tags_mzMLtab()
+            update_sets_mzMLtab()
+            if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
         })
-
 
         shiny::observe({
 
@@ -694,6 +737,18 @@ shinyScreenApp <- function() {
             }
             rhandsontable::rhandsontable(df,stretchH="all")
         })
+
+        output$setIdtabCtrl<- rhandsontable::renderRHandsontable({
+            importSetIddf()
+            df<-rvSetId$df
+            if (rvConf$freshSetIdInp) {
+                shiny::isolate({
+                    rvConf$freshSetIdInp<-F
+                })
+            }
+        })
+        
+
         
         session$onSessionEnded(function () stopApp())
     }
