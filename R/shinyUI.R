@@ -406,7 +406,7 @@ mkUI2 <- function() {
     ## ***** Sets of compounds *****
 
     setIdBox<-shinydashboard::box(title="Compound sets",
-                                  rhandsontable::rHandsontableOutput("setIdtabCtrl"),
+                                  rhandsontable::rHandsontableOutput("setIdTabCtrl"),
                                   width = NULL)
 
     setIdBoxState<-shinydashboard::box(title="Compound list state",
@@ -509,20 +509,23 @@ shinyScreenApp <- function() {
     extd_mzMLtab<-function(ft,fn) {
         modeLvl<- c("select","pH","pNa","pM",
                     "mH","mFA")
+
         lSet<-levels(ft$set)
         lTag<-levels(ft$tag)
         newRow<-data.frame(Files=fn,
                            mode=factor(modeLvl[[1]],levels=modeLvl),
-                           set=if (! is.null(lSet)) factor(lSet[[1]],levels=lSet) else factor("unspecified"),
-                           tag=if (! is.null(lTag)) factor(lTag[[1]],levels=lTag) else factor("unspecified"),
+                           set=if (length(lSet) > 0) factor(lSet[[1]],levels=lSet) else factor("unspecified"),
+                           tag=if (length(lTag) > 0) factor(lTag[[1]],levels=lTag) else factor("unspecified"),
                            stringsAsFactors = F)
 
         levels(newRow$mode)<-modeLvl
-        
+
+
         res<-rbind(ft,newRow,
                    stringsAsFactors = F,
                    make.row.names = F)
         levels(res$mode)<-modeLvl
+
         res
     }
 
@@ -662,19 +665,6 @@ shinyScreenApp <- function() {
         })
 
 
-        ##         shiny::isolate({
-        ##         shiny::updateTextInput(session=session,
-        ##                                inputId="setPropInp",
-        ##                                value=rvConf$setProp)
-
-        ##         shiny::updateTextInput(session=session,
-        ##                                inputId="tagPropInp",
-        ##                                value=rvConf$tagProp)
-
-                
-        
-        
-
         shiny::observe({
             input$mzMLB
 
@@ -686,6 +676,20 @@ shinyScreenApp <- function() {
                 }
 
             })
+        })
+
+        shiny::observeEvent(input$mzMLtabCtrl,{
+            shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
+            
+        })
+
+
+        shiny::observeEvent(input$cmpListCtrl,{
+            shiny::isolate({rvCmpList$df<-rhandsontable::hot_to_r(input$cmpListCtrl)})
+        })
+
+        shiny::observeEvent(input$setIdTabCtrl,{
+            shiny::isolate({rvSetId$df<-rhandsontable::hot_to_r(input$setIdTabCtrl)})
         })
 
         shiny::observe({
@@ -711,26 +715,10 @@ shinyScreenApp <- function() {
                                    inputId = "impCmpListInp",
                                    value=rvConf$impCmpListFn)
         })
-        ## shiny::observeEvent(input$impCmpListB,
-        ## {
-        ##     message("Here a")
-        ##     impCmpFn<-shinyFiles::parseFilePaths(root=volumes,
-        ##                                          input$impCmpListB)[["datapath"]]
 
-        ##     if (!is.null(impCmpFn) && !is.na(impCmpFn)) {
-        ##         message("Here b")
-        ##         shiny::isolate({
-        ##             rvConf$impCmpListFn<-impCmpFn
-        ##             rvConf$freshCmpListImp<-T
-        ##             rvCmpList$df<-readCmpList(rvConf$impCmpListFn)})
-        ##         message("New compound list import.")
-        ##     }
-            
-            
-        ## })
         output$cmpListCtrl <- rhandsontable::renderRHandsontable({
             importCmpListdf()
-            df<-getCmpListdf()
+            df<-rvCmpList$df #getCmpListdf()
             if (rvConf$freshCmpListImp) {
                 shiny::isolate({
                     rvConf$freshCmpListImp<-F
@@ -739,7 +727,7 @@ shinyScreenApp <- function() {
             rhandsontable::rhandsontable(df,stretchH="all")
         })
 
-        output$setIdtabCtrl<- rhandsontable::renderRHandsontable({
+        output$setIdTabCtrl<- rhandsontable::renderRHandsontable({
             importSetIddf()
             df<-rvSetId$df
             if (rvConf$freshSetIdInp) {
