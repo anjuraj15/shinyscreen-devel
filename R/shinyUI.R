@@ -303,8 +303,10 @@ mkUI2 <- function() {
                            buttonTxt="Import compound list.",
                            txtTxt="",
                            icon="file",
+                           description=NULL,
                            ...) {
         shinydashboard::box(title=title,
+                            shiny::h5(description),
                             shiny::textInput(txtName,
                                              "Compound List",
                                              value=txtTxt),
@@ -316,9 +318,10 @@ mkUI2 <- function() {
                             solidHeader=T,
                             collapsible=F,...)}
     
-    confCompFnBrowse <- browseFile(title="Import compound list",
+    confCompFnBrowse <- browseFile(title="Import",
                                    buttonName="impCmpListB",
                                    txtName="impCmpListInp",
+                                   description="There are two tables that need to be supplied before prescreening starts. One is the compound list, its format being the same like the one for the RMassBank (fields: ID,Name,SMILES,RT,CAS,mz,Level). Another is the compound set table (fields: ID,Name).",
                                    width=NULL)
 
     confmzMLSets <- shinydashboard::box(title="Sets and tags",
@@ -394,6 +397,31 @@ mkUI2 <- function() {
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
                                           cmpListLayout)
 
+    ## ***** Sets of compounds *****
+
+    setIdBox<-shinydashboard::box(title="Compound sets",
+                                  rhandsontable::rHandsontableOutput("setIdtab"),
+                                  width = NULL)
+
+    setIdBoxState<-shinydashboard::box(title="Compound list state",
+                                     shinyFiles::shinySaveButton("saveSetIdB",
+                                                                 "Save",
+                                                                 title="Save",
+                                                                 filename = "compound_sets.csv",
+                                                                 "csv"),
+                                     shinyFiles::shinyFilesButton("restoreSetIdB",
+                                                                  label="Restore",
+                                                                  multiple=F,
+                                                                  title="Restore"),
+                                     width=NULL)
+
+    setIdLayout<-shiny::fluidRow(shiny::column(setIdBoxState,
+                                               setIdBox,
+                                               width = 12))
+
+    setIdTab<-shinydashboard::tabItem(tabName="setId",
+                                        setIdLayout)
+
 
     ## ***** Prescreening *****
 
@@ -413,6 +441,10 @@ mkUI2 <- function() {
                                                  tabName="compList",
                                                  icon=shiny::icon("table"))
 
+    setIdSideItem <- shinydashboard::menuItem(text="Compound sets",
+                                                 tabName="setId",
+                                                 icon=shiny::icon("table"))
+
     presSideItem <- shinydashboard::menuItem(text="Prescreening",
                                              tabName="prescreen",
                                              icon=shiny::icon("chart-bar"))
@@ -421,11 +453,13 @@ mkUI2 <- function() {
     
     sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(confSideItem,
                                                                             compListSideItem,
+                                                                            setIdSideItem,
                                                                             presSideItem))
 
 
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
                                                                    cmpListTab,
+                                                                   setIdTab,
                                                                    presTab))
 
 
