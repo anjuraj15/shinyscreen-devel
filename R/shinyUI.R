@@ -300,12 +300,14 @@ mkUI2 <- function() {
     browseFile <- function(title,
                            buttonName,
                            txtName,
-                           buttonTxt="Set",
+                           buttonTxt="Import compound list.",
                            txtTxt="",
                            icon="file",
                            ...) {
         shinydashboard::box(title=title,
-                            shiny::textInput(txtName,NULL,value=txtTxt),
+                            shiny::textInput(txtName,
+                                             "Compound List",
+                                             value=txtTxt),
                             shinyFiles::shinyFilesButton(buttonName,
                                                          label=buttonTxt,
                                                          title=buttonTxt,
@@ -314,9 +316,9 @@ mkUI2 <- function() {
                             solidHeader=T,
                             collapsible=F,...)}
     
-    confCompFnBrowse <- browseFile(title="Compound table file",
-                                   txtName="compListInp",
-                                   buttonName="compListB",
+    confCompFnBrowse <- browseFile(title="Import compound list",
+                                   buttonName="impCmpListB",
+                                   txtName="impCmpListInp",
                                    width=NULL)
 
     confmzMLSets <- shinydashboard::box(title="Sets and tags",
@@ -340,28 +342,62 @@ mkUI2 <- function() {
                                                                  title="Save",
                                                                  filename = "conf-state.rds",
                                                                  "rds"),
-                                     shinyFiles::shinySaveButton("restoreConfB",
-                                                                 label="Restore configuration",
-                                                                 title="Restore",
-                                                                 filename= "",
-                                                                 "rds"),
+                                     shinyFiles::shinyFilesButton("restoreConfB",
+                                                                  label="Restore configuration",
+                                                                  multiple=F,
+                                                                  title="Restore"),
                                      width=NULL)
 
+    confmzMLtab <-shinydashboard::box(title="mzML file table",
+                                      shinyFiles::shinyFilesButton("mzMLB",
+                                                                   label="Select mzML files",
+                                                                   title="Select mzML files",
+                                                                   icon=shiny::icon("files"),
+                                                                   multiple=T),
+                                      rhandsontable::rHandsontableOutput("mzMLtabCtrl"),
+                                      width=NULL)
+
+    
     confLayout <- shiny::fluidRow(shiny::column(confCompFnBrowse,
                                                 confmzMLSets,
                                                 confState,
                                                 width=4),
                                   shiny::column(width=8,
-                                                shinydashboard::box(title="mzML file table",
-                                                                    shinyFiles::shinyFilesButton("mzMLB",
-                                                                                                 label="Select mzML files",
-                                                                                                 title="Select mzML files",
-                                                                                                 icon=shiny::icon("files"),
-                                                                                                 multiple=T),
-                                                                    rhandsontable::rHandsontableOutput("mzMLtabCtrl"),
-                                                                    width=NULL)))
+                                                confmzMLtab))
 
 
+    confTab <- shinydashboard::tabItem(tabName="config",
+                                       shiny::h2("Config"),
+                                       confLayout)
+
+    ## ***** Compound List Tab *****
+
+    cmpListBox<-shinydashboard::box(title="Compound List",
+                                    rhandsontable::rHandsontableOutput("cmpListCtrl"),
+                                    width=NULL)
+
+    cmpListState <- shinydashboard::box(title="Compound list state",
+                                     shinyFiles::shinySaveButton("saveCmpListB",
+                                                                 "Save",
+                                                                 title="Save",
+                                                                 filename = "compounds.csv",
+                                                                 "csv"),
+                                     shinyFiles::shinyFilesButton("restoreCmpListB",
+                                                                  label="Restore",
+                                                                  multiple=F,
+                                                                  title="Restore"),
+                                     width=NULL)
+    
+    cmpListLayout <- shiny::fluidRow(shiny::column(cmpListState,
+                                                   cmpListBox,
+                                                   width = 12))
+
+    cmpListTab <- shinydashboard::tabItem(tabName="compList",
+                                          shiny::h2("Compound Table"),
+                                          cmpListLayout)
+
+    ## ***** Top-level Elements *****
+    
     headerText <- "Shinyscreen"
 
     
@@ -383,13 +419,11 @@ mkUI2 <- function() {
                                                 compListSideItem,
                                                 presSideItem)
 
-    confTab <- shinydashboard::tabItem(tabName="config",
-                                       shiny::h2("Config"),
-                                       confLayout)
-    compListTab <- shinydashboard::tabItem(tabName="compList",shiny::h2("Compound Table"))
+
+
     presTab <- shinydashboard::tabItem(tabName="prescreen",shiny::h2("Prescreening"))
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
-                                                                   compListTab,
+                                                                   cmpListTab,
                                                                    presTab))
     
     shinydashboard::dashboardPage(header,
@@ -414,6 +448,15 @@ shinyScreenApp <- function() {
         
     }
 
+    mk_cmpList<-function() {
+        data.frame(ID=integer(),
+                   Name=character(),
+                   SMILES=character(),
+                   RT=double(),
+                   CAS=character(),
+                   stringsAsFactors = F)
+    }
+
     extd_mzMLtab<-function(ft,fn) {
         modeLvl<- c("select","pH","pNa","pM",
                     "mH","mFA")
@@ -434,18 +477,30 @@ shinyScreenApp <- function() {
         res
     }
 
+    readCmpList<-function(fn) {
+        read.csv(file=fn,
+                 header=T,
+                 stringsAsFactors = F,
+                 comment.char = '')
+    }
+
+
     server <- function(input,output,session) {
         rvConf <- shiny::reactiveValues(mzMLtab=mk_mzMLtab(),
                                         tags=list(),
                                         sets=list(),
-                                        compListFn="",
+                                        impCmpListFn="",
                                         tagProp="",
                                         setProp="",
-                                        mode=modeLvl)
-        shinyFiles::shinyFileChoose(input, 'compListB',root=volumes)
+                                        mode=modeLvl,
+                                        freshCmpListInp=F)
+
+        rvCmpList<- shiny::reactiveValues(df=mk_cmpList())
+        
+        shinyFiles::shinyFileChoose(input, 'impCmpListB',root=volumes)
         shinyFiles::shinyFileChoose(input, 'mzMLB',root=volumes)
         shinyFiles::shinyFileSave(input, 'saveConfB',root=volumes)
-        shinyFiles::shinyFileSave(input, 'restoreConfB',root=volumes)
+        shinyFiles::shinyFileChoose(input, 'restoreConfB',root=volumes)
 
         getTags<-shiny::reactive({
             if (length(input$tagsInp)>0 && !is.na(input$tagsInp)) unlist(strsplit(input$tagsInp, ",")) else list()
@@ -481,18 +536,15 @@ shinyScreenApp <- function() {
                                })
                 sav$input$tagsInp<-input$tagsInp
                 sav$input$setsInp<-input$setsInp
-                sav$input$compListInp<-input$compListInp
+                sav$input$impCmpListInp<-input$impCmpListInp
                 saveRDS(object=sav,file=fn)
                 }
         })
 
         restoreConf<-reactive({
-            fn<-shinyFiles::parseSavePath(root=volumes,input$restoreConfB)[["datapath"]]
+            fn<-shinyFiles::parseFilePaths(root=volumes,input$restoreConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 sav<-readRDS(fn)
-                message("------------")
-                message(str(sav))
-                message("============")
                 for (nm in names(sav$rvConf)) {
                     rvConf[[nm]]<-sav$rvConf[[nm]]
                 }
@@ -504,9 +556,26 @@ shinyScreenApp <- function() {
                                            inputId="setsInp",
                                            value=sav$input$setsInp)
                     shiny::updateTextInput(session=session,
-                                           inputId="compListInp",
-                                           value=sav$input$compListInp)
+                                           inputId="impCmpListInp",
+                                           value=sav$input$impCmpListInp)
+                    shiny::updateTextInput(session=session,
+                                           inputId="impCmpListInp",
+                                           value=sav$input$impCmpListInp)
                 })
+            }
+        })
+
+        getCmpListdf<-shiny::reactive({rvCmpList$df})
+
+        importCmpListdf<-shiny::reactive({
+            impCmpFn<-shinyFiles::parseFilePaths(root=volumes,
+                                                 input$impCmpListB)[["datapath"]]
+            message("updating path:",str(impCmpFn))
+
+            if (! (is.null(impCmpFn) || is.na(impCmpFn) || length(impCmpFn)==0)) {
+                rvConf$impCmpListFn<-impCmpFn
+                rvConf$freshCmpListImp<-T
+                rvCmpList$df<-readCmpList(rvConf$impCmpListFn)
             }
         })
 
@@ -522,14 +591,7 @@ shinyScreenApp <- function() {
 
                 
         
-        shiny::observe({
-            input$compListB
-            res<-shinyFiles::parseFilePaths(root=volumes,input$compListB)
-            rvConf$compListFn<-res[["datapath"]]
-            shiny::updateTextInput(session=session,
-                                   inputId = "compListInp",
-                                   value=rvConf$compListFn)
-        })
+        
 
         shiny::observe({
             input$mzMLB
@@ -560,6 +622,41 @@ shinyScreenApp <- function() {
             rvConf$mzMLtab
             update_setstags_mzMLtab()
             if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all")
+        })
+
+
+        shiny::observe({
+
+            shiny::updateTextInput(session=session,
+                                   inputId = "impCmpListInp",
+                                   value=rvConf$impCmpListFn)
+        })
+        ## shiny::observeEvent(input$impCmpListB,
+        ## {
+        ##     message("Here a")
+        ##     impCmpFn<-shinyFiles::parseFilePaths(root=volumes,
+        ##                                          input$impCmpListB)[["datapath"]]
+
+        ##     if (!is.null(impCmpFn) && !is.na(impCmpFn)) {
+        ##         message("Here b")
+        ##         shiny::isolate({
+        ##             rvConf$impCmpListFn<-impCmpFn
+        ##             rvConf$freshCmpListImp<-T
+        ##             rvCmpList$df<-readCmpList(rvConf$impCmpListFn)})
+        ##         message("New compound list import.")
+        ##     }
+            
+            
+        ## })
+        output$cmpListCtrl <- rhandsontable::renderRHandsontable({
+            importCmpListdf()
+            df<-getCmpListdf()
+            if (rvConf$freshCmpListImp) {
+                shiny::isolate({
+                    rvConf$freshCmpListImp<-F
+                })
+            }
+            rhandsontable::rhandsontable(df,stretchH="all")
         })
         
         session$onSessionEnded(function () stopApp())
