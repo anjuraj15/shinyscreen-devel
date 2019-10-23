@@ -317,6 +317,9 @@ mkUI2 <- function() {
                                       shiny::textInput("impCmpListInp",
                                                        "Compound List",
                                                        value=""),
+                                      shiny::textInput("impSetIdInp",
+                                                       "Compound Set Table",
+                                                       value=""),
                                       shinyFiles::shinyFilesButton("impCmpListB",
                                                                    label="Import compound list.",
                                                                    title="",
@@ -646,7 +649,7 @@ shinyScreenApp <- function() {
                 rvCmpList$df<-readCmpList(rvConf$impCmpListFn)
             }
         })
-
+        
         importSetIddf<-shiny::reactive({
             impSetIdFn<-shinyFiles::parseFilePaths(root=volumes,
                                                    input$impSetIdB)[["datapath"]]
