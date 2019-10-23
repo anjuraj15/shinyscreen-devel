@@ -321,18 +321,13 @@ mkUI2 <- function() {
     confCompFnBrowse <- browseFile(title="Import",
                                    buttonName="impCmpListB",
                                    txtName="impCmpListInp",
-                                   description="There are two tables that need to be supplied before prescreening starts. One is the compound list, its format being the same like the one for the RMassBank (fields: ID,Name,SMILES,RT,CAS,mz,Level). Another is the compound set table (fields: ID,Name).",
+                                   description="There are two tables that need to be supplied before prescreening starts. One is the compound list, its format being the same like the one for the RMassBank (fields: ID,Name,SMILES,RT,CAS,mz,Level). Another is the compound set table (fields: ID,Name). Once those tables are imported, they can further be modified as copies inside the project dir. Shinyscreen will never modify any initial (meta)data.",
                                    width=NULL)
 
-    confmzMLSets <- shinydashboard::box(title="Sets and tags",
-                                        shiny::textInput("setPropInp",
-                                                         "What is a set?",
-                                                         value=""),
-                                        shiny::textInput("setsInp",
-                                                         "Comma-delimited list of set types",
-                                                         value=""),
+    confmzMLTags <- shinydashboard::box(title="Tags",
+                                        shiny::h5("Shinyscreen uses two properties, tags and sets, to categorise mzML data. Tags are properties of individual files. For example, if a single file represents a collection of spectra acquired at a specific collision energy, that energy could be used as a tag. Tags are used to differentiate the spectra in a chromatogram."),
                                         shiny::textInput("tagPropInp",
-                                                         "What is a tag?",
+                                                         "What is a tag? (example: collision energy; can be left empty.)",
                                                          value=""),
                                         shiny::textInput("tagsInp",
                                                          "Comma-delimited list of tag types",
@@ -340,6 +335,7 @@ mkUI2 <- function() {
                                         width=NULL)
 
     confState <- shinydashboard::box(title="Configuration state",
+                                     shiny::h5("Saves and restores current configuration."),
                                      shinyFiles::shinySaveButton("saveConfB",
                                                                  "Save configuration",
                                                                  title="Save",
@@ -352,6 +348,7 @@ mkUI2 <- function() {
                                      width=NULL)
 
     confmzMLtab <-shinydashboard::box(title="mzML file table",
+                                      shiny::h5("Use this file table to assign adduct modes and tags to the data files."),
                                       shinyFiles::shinyFilesButton("mzMLB",
                                                                    label="Select mzML files",
                                                                    title="Select mzML files",
@@ -362,7 +359,7 @@ mkUI2 <- function() {
 
     
     confLayout <- shiny::fluidRow(shiny::column(confCompFnBrowse,
-                                                confmzMLSets,
+                                                confmzMLTags,
                                                 confState,
                                                 width=4),
                                   shiny::column(width=8,
@@ -374,7 +371,7 @@ mkUI2 <- function() {
 
     ## ***** Compound List Tab *****
 
-    cmpListBox<-shinydashboard::box(title="Compound List",
+    cmpListBox<-shinydashboard::box(title="Compound list",
                                     rhandsontable::rHandsontableOutput("cmpListCtrl"),
                                     width=NULL)
 
@@ -395,6 +392,7 @@ mkUI2 <- function() {
                                                    width = 12))
 
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
+                                          shiny::h5("This is an editable view of the compound list."),
                                           cmpListLayout)
 
     ## ***** Sets of compounds *****
@@ -420,7 +418,8 @@ mkUI2 <- function() {
                                                width = 12))
 
     setIdTab<-shinydashboard::tabItem(tabName="setId",
-                                        setIdLayout)
+                                      shiny::h5("This is an editable view of the id/set list."),
+                                      setIdLayout)
 
 
     ## ***** Prescreening *****
@@ -479,7 +478,6 @@ shinyScreenApp <- function() {
                 "mH","mFA")
         res<-data.frame(Files=character(),
                         mode=factor(levels=modeLvl),
-                        set=character(),
                         tag=character(),
                         stringsAsFactors=F)
         res
