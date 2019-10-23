@@ -367,7 +367,6 @@ mkUI2 <- function() {
 
 
     confTab <- shinydashboard::tabItem(tabName="config",
-                                       shiny::h2("Config"),
                                        confLayout)
 
     ## ***** Compound List Tab *****
@@ -393,8 +392,12 @@ mkUI2 <- function() {
                                                    width = 12))
 
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
-                                          shiny::h2("Compound Table"),
                                           cmpListLayout)
+
+
+    ## ***** Prescreening *****
+
+    presTab <- shinydashboard::tabItem(tabName="prescreen")
 
     ## ***** Top-level Elements *****
     
@@ -404,27 +407,28 @@ mkUI2 <- function() {
 
     confSideItem <- shinydashboard::menuItem(text="Config",
                                              tabName="config",
-                                             icon=shiny::icon("dashboard"))
+                                             icon=shiny::icon("user-cog"))
     
     compListSideItem <- shinydashboard::menuItem(text="Compound List",
                                                  tabName="compList",
-                                                 icon=shiny::icon("dashboard"))
+                                                 icon=shiny::icon("table"))
 
     presSideItem <- shinydashboard::menuItem(text="Prescreening",
                                              tabName="prescreen",
-                                             icon=shiny::icon("dashboard"))
+                                             icon=shiny::icon("chart-bar"))
     
     header <- shinydashboard::dashboardHeader(title=headerText)
-    sidebar <- shinydashboard::dashboardSidebar(confSideItem,
-                                                compListSideItem,
-                                                presSideItem)
+    
+    sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(confSideItem,
+                                                                            compListSideItem,
+                                                                            presSideItem))
 
 
-
-    presTab <- shinydashboard::tabItem(tabName="prescreen",shiny::h2("Prescreening"))
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
                                                                    cmpListTab,
                                                                    presTab))
+
+
     
     shinydashboard::dashboardPage(header,
                                   sidebar,
