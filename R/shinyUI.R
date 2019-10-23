@@ -639,9 +639,8 @@ shinyScreenApp <- function() {
         importCmpListdf<-shiny::reactive({
             impCmpFn<-shinyFiles::parseFilePaths(root=volumes,
                                                  input$impCmpListB)[["datapath"]]
-            message("updating path:",str(impCmpFn))
-
             if (! (is.null(impCmpFn) || is.na(impCmpFn) || length(impCmpFn)==0)) {
+                message("Importing compound list from ",str(impCmpFn))
                 rvConf$impCmpListFn<-impCmpFn
                 rvConf$freshCmpListImp<-T
                 rvCmpList$df<-readCmpList(rvConf$impCmpListFn)
@@ -651,9 +650,8 @@ shinyScreenApp <- function() {
         importSetIddf<-shiny::reactive({
             impSetIdFn<-shinyFiles::parseFilePaths(root=volumes,
                                                    input$impSetIdB)[["datapath"]]
-            message("updating set compound path:",str(impSetIdFn))
-
             if (! (is.null(impSetIdFn) || is.na(impSetIdFn) || length(impSetIdFn)==0)) {
+                message("Importing setid table from ",str(impSetIdFn))
                 rvConf$impSetIdFn<-impSetIdFn
                 rvConf$freshSetIdImp<-T
                 rvSetId$df<-readSetId(rvConf$impSetIdFn)
@@ -746,6 +744,7 @@ shinyScreenApp <- function() {
                     rvConf$freshSetIdInp<-F
                 })
             }
+            rhandsontable::rhandsontable(df,stretchH="all")
         })
         
 
