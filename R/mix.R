@@ -852,11 +852,13 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
 
 
 adornmzMLTab<-function(df,projDir=getwd()) {
-    wd<-basename(file_path_sans_ext(df$Files))
     pref<-df$set
     mask<-is.na(pref)
-    ln<-length(mask)
-    pref[mask]<-paste0(wd[mask],"_",1:ln)
+    drop<-df$files[mask]
+    for (d in drop) warning("Dropping",d,"because no set specified for it.")
+    df<-df[!mask,]
+    pref<-df$set
+    wd<-basename(file_path_sans_ext(df$Files))
     wd<-file.path(projDir,pref,wd)
     df$wd<-wd
     df
@@ -883,6 +885,6 @@ genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
     sets <- levels(factor(IDSet$set))
     setTbl <- lapply(sets,function (s) genOneFileTbl(IDSet[IDSet$set %in% s,]$ID,fileTbl[fileTbl$set==s,]))
     allTbl <- do.call(rbind,setTbl)
-    write.csv(x=allTbl,file=destFn)
+    write.csv(x=allTbl,file=destFn,row.names=F)
     allTbl 
 }

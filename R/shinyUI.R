@@ -429,6 +429,20 @@ mkUI2 <- function() {
                                       shiny::h5("This is an editable view of the id/set list."),
                                       setIdLayout)
 
+    ## ***** Generate Prescreen Data *****
+
+    genBox<-shinydashboard::box(title="Produce file table",
+                                shinyFiles::shinySaveButton("genFileTabB",
+                                                            "Generate File table.",
+                                                            "Generate File table.",
+                                                            filename = "ftable.csv",
+                                                            "csv"),
+                                width=NULL)
+    genLayout<-shiny::fluidRow(genBox,width=4)
+
+    genTab<-shinydashboard::tabItem(tabName = "gen",
+                                    shiny::h5("Prepare for prescreening."),
+                                    genLayout)
 
     ## ***** Prescreening *****
 
@@ -444,13 +458,17 @@ mkUI2 <- function() {
                                              tabName="config",
                                              icon=shiny::icon("user-cog"))
     
-    compListSideItem <- shinydashboard::menuItem(text="Compound List",
+    compListSideItem <- shinydashboard::menuItem(text="Compound list",
                                                  tabName="compList",
                                                  icon=shiny::icon("table"))
 
     setIdSideItem <- shinydashboard::menuItem(text="Compound sets",
                                                  tabName="setId",
-                                                 icon=shiny::icon("table"))
+                                              icon=shiny::icon("table"))
+
+    genSideItem <- shinydashboard::menuItem(text="Generate prescreen data",
+                                                 tabName="gen",
+                                                 icon=shiny::icon("cogs"))
 
     presSideItem <- shinydashboard::menuItem(text="Prescreening",
                                              tabName="prescreen",
@@ -461,12 +479,14 @@ mkUI2 <- function() {
     sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(confSideItem,
                                                                             compListSideItem,
                                                                             setIdSideItem,
+                                                                            genSideItem,
                                                                             presSideItem))
 
 
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
                                                                    cmpListTab,
                                                                    setIdTab,
+                                                                   genTab,
                                                                    presTab))
 
 
@@ -476,11 +496,11 @@ mkUI2 <- function() {
                                   body)}
 
 ##' @export
-shinyScreenApp <- function() {
+shinyScreenApp <- function(projDir=getwd()) {
     modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
     volumes <- shinyFiles::getVolumes()
-    
+
     mk_mzMLtab<-function() {
         modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
@@ -556,7 +576,8 @@ shinyScreenApp <- function() {
                                         setProp="",
                                         mode=modeLvl,
                                         freshCmpListInp=F,
-                                        freshSetIdInp=F)
+                                        freshSetIdInp=F,
+                                        projDir=projDir)
 
         rvCmpList<- shiny::reactiveValues(df=mk_cmpList())
         rvSetId<- shiny::reactiveValues(df=mk_setId())
@@ -565,15 +586,16 @@ shinyScreenApp <- function() {
         
         shinyFiles::shinyFileChoose(input, 'impCmpListB',root=volumes)
         shinyFiles::shinyFileChoose(input, 'impSetIdB',root=volumes)
-        shinyFiles::shinyFileSave(input, 'saveConfB',root=volumes)
-        shinyFiles::shinyFileChoose(input, 'restoreConfB',root=volumes)
+        shinyFiles::shinyFileSave(input, 'saveConfB',root=c(wd=projDir))
+        shinyFiles::shinyFileChoose(input, 'restoreConfB',root=c(wd=projDir))
         shinyFiles::shinyFileChoose(input, 'mzMLB',root=volumes)
 
-        shinyFiles::shinyFileSave(input, 'saveCmpListB',root=volumes)
-        shinyFiles::shinyFileChoose(input, 'restoreCmpListB',root=volumes)
+        shinyFiles::shinyFileSave(input, 'saveCmpListB',root=c(wd=projDir))
+        shinyFiles::shinyFileChoose(input, 'restoreCmpListB',root=projDir)
 
-        shinyFiles::shinyFileSave(input, 'saveSetIdB',root=volumes)
-        shinyFiles::shinyFileChoose(input, 'restoreSetIdB',root=volumes)
+        shinyFiles::shinyFileSave(input, 'saveSetIdB',root=c(wd=projDir))
+        shinyFiles::shinyFileChoose(input, 'restoreSetIdB',root=c(wd=projDir))
+        shinyFiles::shinyFileSave(input, 'genFileTabB',root=c(wd=projDir))
 
 
         ## ***** reactive function definitions *****
@@ -601,7 +623,7 @@ shinyScreenApp <- function() {
         })
 
         saveConf<-reactive({
-            fn<-shinyFiles::parseSavePath(root=volumes,input$saveConfB)[["datapath"]]
+            fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 sav<-list()
                 sav<-list(rvConf=list(),
@@ -617,7 +639,7 @@ shinyScreenApp <- function() {
         })
 
         restoreConf<-reactive({
-            fn<-shinyFiles::parseFilePaths(root=volumes,input$restoreConfB)[["datapath"]]
+            fn<-shinyFiles::parseFilePaths(root=rvConf$projDir,input$restoreConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 sav<-readRDS(fn)
                 for (nm in names(sav$rvConf)) {
@@ -700,6 +722,16 @@ shinyScreenApp <- function() {
         shiny::observe({
             input$saveConfB
             saveConf()
+        })
+
+
+        shiny::observeEvent(input$genFileTab,{
+            fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
+                setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
+                genSuprFileTbl(files,setId,destFn=fn)
+            }
         })
         
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
