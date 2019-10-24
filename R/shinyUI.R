@@ -497,6 +497,7 @@ mkUI2 <- function() {
 
 ##' @export
 shinyScreenApp <- function(projDir=getwd()) {
+    message("projDir=",projDir)
     modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
     volumes <- shinyFiles::getVolumes()
@@ -583,19 +584,19 @@ shinyScreenApp <- function(projDir=getwd()) {
         rvSetId<- shiny::reactiveValues(df=mk_setId())
 
         ## ***** shinyFiles observers *****
-        
-        shinyFiles::shinyFileChoose(input, 'impCmpListB',root=volumes)
-        shinyFiles::shinyFileChoose(input, 'impSetIdB',root=volumes)
-        shinyFiles::shinyFileSave(input, 'saveConfB',root=c(wd=projDir))
-        shinyFiles::shinyFileChoose(input, 'restoreConfB',root=c(wd=projDir))
-        shinyFiles::shinyFileChoose(input, 'mzMLB',root=volumes)
+        wdroot<-c(wd=projDir)
+        shinyFiles::shinyFileChoose(input, 'impCmpListB',roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
+        shinyFiles::shinyFileSave(input, 'saveConfB',roots=wdroot)
+        shinyFiles::shinyFileChoose(input, 'restoreConfB',roots=wdroot)
+        shinyFiles::shinyFileChoose(input, 'mzMLB',roots=volumes)
 
-        shinyFiles::shinyFileSave(input, 'saveCmpListB',root=c(wd=projDir))
-        shinyFiles::shinyFileChoose(input, 'restoreCmpListB',root=projDir)
+        shinyFiles::shinyFileSave(input, 'saveCmpListB',roots=wdroot)
+        shinyFiles::shinyFileChoose(input, 'restoreCmpListB',roots=projDir)
 
-        shinyFiles::shinyFileSave(input, 'saveSetIdB',root=c(wd=projDir))
-        shinyFiles::shinyFileChoose(input, 'restoreSetIdB',root=c(wd=projDir))
-        shinyFiles::shinyFileSave(input, 'genFileTabB',root=c(wd=projDir))
+        shinyFiles::shinyFileSave(input, 'saveSetIdB',roots=wdroot)
+        shinyFiles::shinyFileChoose(input, 'restoreSetIdB',roots=wdroot)
+        shinyFiles::shinyFileSave(input, 'genFileTabB',roots=wdroot)
 
 
         ## ***** reactive function definitions *****
@@ -625,6 +626,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         saveConf<-reactive({
             fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
+                message("Saving config to",fn)
                 sav<-list()
                 sav<-list(rvConf=list(),
                           input=list())
@@ -639,22 +641,24 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         restoreConf<-reactive({
-            fn<-shinyFiles::parseFilePaths(root=rvConf$projDir,input$restoreConfB)[["datapath"]]
-            if ((! is.na(fn)) && length(fn)>0) {
-                sav<-readRDS(fn)
-                for (nm in names(sav$rvConf)) {
-                    rvConf[[nm]]<-sav$rvConf[[nm]]
-                }
+            input$restoreConfB
+            fnobj<-shinyFiles::parseFilePaths(root=c(wd=rvConf$projDir),input$restoreConfB)
+            fn<-fnobj[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                message("Restoring config from",fn)
+
                 shiny::isolate({
+                    sav<-readRDS(fn)
+                    for (nm in names(sav$rvConf)) {
+                        rvConf[[nm]]<-sav$rvConf[[nm]]
+                    }
+
+                    #FIXME: remove this, once local saves/restores supported
+                    rvConf$freshCmpListInp<-T
+                    rvConf$freshSetIdInp<-T
                     shiny::updateTextInput(session=session,
                                            inputId="tagsInp",
                                            value=sav$input$tagsInp)
-                    shiny::updateTextInput(session=session,
-                                           inputId="setsInp",
-                                           value=sav$input$setsInp)
-                    shiny::updateTextInput(session=session,
-                                           inputId="impCmpListInp",
-                                           value=sav$input$impCmpListInp)
                     shiny::updateTextInput(session=session,
                                            inputId="impCmpListInp",
                                            value=sav$input$impCmpListInp)
@@ -714,20 +718,20 @@ shinyScreenApp <- function(projDir=getwd()) {
             shiny::isolate({rvSetId$df<-rhandsontable::hot_to_r(input$setIdTabCtrl)})
         })
 
-        shiny::observe({
-            input$restoreConfB
+        shiny::observeEvent(input$restoreConfB,{
+            message("Restore event observed.")
             restoreConf()
         })
 
-        shiny::observe({
-            input$saveConfB
+        shiny::observeEvent(input$saveConfB,{
             saveConf()
         })
 
 
-        shiny::observeEvent(input$genFileTab,{
-            fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
+        shiny::observeEvent(input$genFileTabB,{
+            fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$genFileTabB)[["datapath"]]
             if (length(fn)>0 && !is.na(fn)) {
+                message("Saving file table to",fn)
                 files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
                 setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
                 genSuprFileTbl(files,setId,destFn=fn)

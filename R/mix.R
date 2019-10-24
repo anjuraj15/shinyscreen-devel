@@ -858,7 +858,7 @@ adornmzMLTab<-function(df,projDir=getwd()) {
     for (d in drop) warning("Dropping",d,"because no set specified for it.")
     df<-df[!mask,]
     pref<-df$set
-    wd<-basename(file_path_sans_ext(df$Files))
+    wd<-basename(tools::file_path_sans_ext(df$Files))
     wd<-file.path(projDir,pref,wd)
     df$wd<-wd
     df

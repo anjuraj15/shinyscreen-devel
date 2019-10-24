@@ -38,7 +38,8 @@ Collate:
 Depends:
     RMassBank,
     RChemMass
-Imports: 
+Imports:
+    tools,
     parallel,
     yaml,
     mzR,
