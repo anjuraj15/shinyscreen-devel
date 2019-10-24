@@ -660,6 +660,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                 sav$input$tagsInp<-input$tagsInp
                 sav$input$setsInp<-input$setsInp
                 sav$input$impCmpListInp<-input$impCmpListInp
+                sav$input$impSetIdInp<-input$impSetIdInp
+                sav$input$impGenRMBInp<-input$impGenRMBInp
                 saveRDS(object=sav,file=fn)
                 }
         })
@@ -680,30 +682,29 @@ shinyScreenApp <- function(projDir=getwd()) {
                     #FIXME: remove this, once local saves/restores supported
                     rvConf$freshCmpListInp<-T
                     rvConf$freshSetIdInp<-T
+                    
                     shiny::updateTextInput(session=session,
                                            inputId="tagsInp",
                                            value=sav$input$tagsInp)
                     shiny::updateTextInput(session=session,
                                            inputId="impCmpListInp",
                                            value=sav$input$impCmpListInp)
+                    shiny::updateTextInput(session=session,
+                                           inputId="impGenRMBInp",
+                                           value=sav$input$impGenRMBInp)
+                    shiny::updateTextInput(session=session,
+                                           inputId="impSetIdInp",
+                                           value=sav$input$impSetIdInp)
                 })
             }
         })
 
-        ## getImpGenRMB<-shiny::reactive({
-        ##     input$impGenRMBB
-        ##     fnobj<-shinyFiles::parseFilePaths(roots=c(wd=rvConf$projDir),input$impGenRMBB)
-        ##     message("Looking for the settings file",str(fnobj))
-        ##     fnobj[["datapath"]]
-        ## })
-
         getCmpListdf<-shiny::reactive({rvCmpList$df})
 
         importCmpListdf<-shiny::reactive({
-            impCmpFn<-shinyFiles::parseFilePaths(root=volumes,
-                                                 input$impCmpListB)[["datapath"]]
-            if (! (is.null(impCmpFn) || is.na(impCmpFn) || length(impCmpFn)==0)) {
-                message("Importing compound list from ",str(impCmpFn))
+            impCmpFn<-input$impCmpListInp
+            if (length(impCmpFn)>0 && !is.na(impCmpFn)) {
+                message("Importing compound list from ",impCmpFn)
                 rvConf$impCmpListFn<-impCmpFn
                 rvConf$freshCmpListImp<-T
                 rvCmpList$df<-readCmpList(rvConf$impCmpListFn)
@@ -711,10 +712,9 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
         
         importSetIddf<-shiny::reactive({
-            impSetIdFn<-shinyFiles::parseFilePaths(root=volumes,
-                                                   input$impSetIdB)[["datapath"]]
-            if (! (is.null(impSetIdFn) || is.na(impSetIdFn) || length(impSetIdFn)==0)) {
-                message("Importing setid table from ",str(impSetIdFn))
+            impSetIdFn<-input$impSetIdInp
+            if (length(impSetIdFn)>0 && !is.na(impSetIdFn)) {
+                message("Importing setid table from ",impSetIdFn)
                 rvConf$impSetIdFn<-impSetIdFn
                 rvConf$freshSetIdImp<-T
                 rvSetId$df<-readSetId(rvConf$impSetIdFn)
@@ -722,75 +722,69 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
-        ## shiny::observe({
-        ##     input$mzMLB
+        shiny::observe({
+            input$mzMLB
 
-        ##     fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
-        ##     paths<-fchoice[["datapath"]]
-        ##     isolate({
-        ##         for (pt in paths) {
-        ##             rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt)
-        ##         }
+            fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
+            paths<-fchoice[["datapath"]]
+            isolate({
+                for (pt in paths) {
+                    rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt)
+                }
 
-        ##     })
-        ## })
+            })
+        })
 
-        ## shiny::observeEvent(input$mzMLtabCtrl,{
-        ##     shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
+        shiny::observeEvent(input$mzMLtabCtrl,{
+            shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
             
-        ## })
+        })
 
 
-        ## shiny::observeEvent(input$cmpListCtrl,{
-        ##     shiny::isolate({rvCmpList$df<-rhandsontable::hot_to_r(input$cmpListCtrl)})
-        ## })
+        shiny::observeEvent(input$cmpListCtrl,{
+            shiny::isolate({rvCmpList$df<-rhandsontable::hot_to_r(input$cmpListCtrl)})
+        })
 
-        ## shiny::observeEvent(input$setIdTabCtrl,{
-        ##     df<-rhandsontable::hot_to_r(input$setIdTabCtrl)
-        ##     rvSetId$df<-df
-        ##     shiny::updateSelectInput(session=session,
-        ##                              inputId="genSetSelInp",
-        ##                              choices=levels(df$set))})
+        shiny::observeEvent(input$setIdTabCtrl,{
+            df<-rhandsontable::hot_to_r(input$setIdTabCtrl)
+            rvSetId$df<-df
+            shiny::updateSelectInput(session=session,
+                                     inputId="genSetSelInp",
+                                     choices=levels(df$set))})
 
-        ## shiny::observeEvent(input$restoreConfB,{
-        ##     message("Restore event observed.")
-        ##     restoreConf()
-        ## })
+        shiny::observeEvent(input$restoreConfB,{
+            message("Restore event observed.")
+            restoreConf()
+        })
 
-        ## shiny::observeEvent(input$saveConfB,{
-        ##     saveConf()
-        ## })
+        shiny::observeEvent(input$saveConfB,{
+            saveConf()
+        })
 
 
-        ## shiny::observeEvent(input$genFileTabB,{
-        ##     fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$genFileTabB)[["datapath"]]
-        ##     if (length(fn)>0 && !is.na(fn)) {
-        ##         message("Saving file table to",fn)
-        ##         files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
-        ##         setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
-        ##         genSuprFileTbl(files,setId,destFn=fn)
-        ##     }
-        ## })
+        shiny::observeEvent(input$genFileTabB,{
+            fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$genFileTabB)[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                message("Saving file table to",fn)
+                files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
+                setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
+                genSuprFileTbl(files,setId,destFn=fn)
+            }
+        })
 
-        ## shiny::observeEvent(input$genRunB,{
-        ##     FnRMB<-input$impGenRMBInp
-        ##     nProc<-input$genNoProc
-        ##     message("NoProc:",nProc,"FnRMB:",FnRMB)
-        ## })
+        shiny::observeEvent(input$genRunB,{
+            FnRMB<-input$impGenRMBInp
+            nProc<-input$genNoProc
+            message("NoProc:",nProc,"FnRMB:",FnRMB)
+        })
         
-        ## output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-        ##     rvConf$mzMLtab
-        ##     update_tags_mzMLtab()
-        ##     update_sets_mzMLtab()
-        ##     if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
-        ## })
+        output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
+            rvConf$mzMLtab
+            update_tags_mzMLtab()
+            update_sets_mzMLtab()
+            if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
+        })
 
-        ## shiny::observe({
-
-        ##     shiny::updateTextInput(session=session,
-        ##                            inputId = "impCmpListInp",
-        ##                            value=rvConf$impCmpListFn)
-        ## })
         shiny::observeEvent(input$impSetIdB,{
             fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impSetIdB)
             fn<-fnobj[["datapath"]]
