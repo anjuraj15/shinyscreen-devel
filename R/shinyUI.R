@@ -286,7 +286,6 @@ presc.shiny <-function(prescdf=NULL,mode=NULL,fn_cmpd_l=NULL,pal="Dark2",cex=0.7
             write.csv(file=input$fn_ftable,x=rv$prescdf,row.names = F)
             
         })
-        
 
         session$onSessionEnded(function() {
             stopApp()
@@ -315,21 +314,29 @@ mkUI2 <- function() {
     confImport <- shinydashboard::box(title="Import",
                                       shiny::h5("There are two tables that need to be supplied before prescreening starts. One is the compound list, its format being the same like the one for the RMassBank (fields: ID,Name,SMILES,RT,CAS,mz,Level). Another is the compound set table (fields: ID,set). Once those tables are imported, they can further be modified as copies inside the project dir. Shinyscreen will never modify any initial (meta)data. If set field of the compound set table is NA, then that file is in a set of its own."),
                                       shiny::textInput("impCmpListInp",
-                                                       "Compound List",
+                                                       "Compound list.",
                                                        value=""),
                                       shiny::textInput("impSetIdInp",
-                                                       "Compound Set Table",
+                                                       "Compound set table.",
+                                                       value=""),
+                                      shiny::textInput("impGenRMBInp",
+                                                       "RMassBank settings.",
                                                        value=""),
                                       shinyFiles::shinyFilesButton("impCmpListB",
                                                                    label="Import compound list.",
                                                                    title="",
                                                                    icon=shiny::icon("file"),
-                                                                   multiple=T),
+                                                                   multiple=F),
                                       shinyFiles::shinyFilesButton("impSetIdB",
                                                                    label="Import compound set table.",
                                                                    title="",
                                                                    icon=shiny::icon("file"),
                                                                    multiple=T),
+                                      shinyFiles::shinyFilesButton("impGenRMBB",
+                                                                   label="Import RMassBank settings.",
+                                                                   title="",
+                                                                   icon=shiny::icon("file"),
+                                                                   multiple=F),
                                       width=NULL)
 
     confmzMLTags <- shinydashboard::box(title="Sets and Tags",
@@ -438,11 +445,25 @@ mkUI2 <- function() {
                                                             filename = "ftable.csv",
                                                             "csv"),
                                 width=NULL)
-    genLayout<-shiny::fluidRow(genBox,width=4)
+
+    genBoxParam<-shinydashboard::box(title="Parameters",
+                                     shiny::selectInput("genSetSelInp",
+                                                        label="Select set(s).",
+                                                        choices="",
+                                                        multiple=T),
+                                     shiny::textInput("genNoProc",
+                                                      label="Number of Processes",
+                                                      value=1),
+                                     shiny::actionButton(inputId="genRunB",
+                                                         label="Run!",
+                                                         icon=shiny::icon("radiation-alt")),
+                                     width=NULL)
+
 
     genTab<-shinydashboard::tabItem(tabName = "gen",
                                     shiny::h5("Prepare for prescreening."),
-                                    genLayout)
+                                    shiny::fluidRow(shiny::column(genBox,width=4)),
+                                    shiny::fluidRow(shiny::column(genBoxParam,width=4)))
 
     ## ***** Prescreening *****
 
@@ -573,6 +594,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         tags=list(),
                                         sets=list(),
                                         impCmpListFn="",
+                                        impGenRMBFn="",
                                         tagProp="",
                                         setProp="",
                                         mode=modeLvl,
@@ -587,6 +609,8 @@ shinyScreenApp <- function(projDir=getwd()) {
         wdroot<-c(wd=projDir)
         shinyFiles::shinyFileChoose(input, 'impCmpListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'impGenRMBB',roots=volumes)
+        
         shinyFiles::shinyFileSave(input, 'saveConfB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'restoreConfB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'mzMLB',roots=volumes)
@@ -666,6 +690,13 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
+        ## getImpGenRMB<-shiny::reactive({
+        ##     input$impGenRMBB
+        ##     fnobj<-shinyFiles::parseFilePaths(roots=c(wd=rvConf$projDir),input$impGenRMBB)
+        ##     message("Looking for the settings file",str(fnobj))
+        ##     fnobj[["datapath"]]
+        ## })
+
         getCmpListdf<-shiny::reactive({rvCmpList$df})
 
         importCmpListdf<-shiny::reactive({
@@ -691,65 +722,104 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
-        shiny::observe({
-            input$mzMLB
+        ## shiny::observe({
+        ##     input$mzMLB
 
-            fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
-            paths<-fchoice[["datapath"]]
-            isolate({
-                for (pt in paths) {
-                    rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt)
-                }
+        ##     fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
+        ##     paths<-fchoice[["datapath"]]
+        ##     isolate({
+        ##         for (pt in paths) {
+        ##             rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt)
+        ##         }
 
-            })
-        })
+        ##     })
+        ## })
 
-        shiny::observeEvent(input$mzMLtabCtrl,{
-            shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
+        ## shiny::observeEvent(input$mzMLtabCtrl,{
+        ##     shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
             
-        })
+        ## })
 
 
-        shiny::observeEvent(input$cmpListCtrl,{
-            shiny::isolate({rvCmpList$df<-rhandsontable::hot_to_r(input$cmpListCtrl)})
-        })
+        ## shiny::observeEvent(input$cmpListCtrl,{
+        ##     shiny::isolate({rvCmpList$df<-rhandsontable::hot_to_r(input$cmpListCtrl)})
+        ## })
 
-        shiny::observeEvent(input$setIdTabCtrl,{
-            shiny::isolate({rvSetId$df<-rhandsontable::hot_to_r(input$setIdTabCtrl)})
-        })
+        ## shiny::observeEvent(input$setIdTabCtrl,{
+        ##     df<-rhandsontable::hot_to_r(input$setIdTabCtrl)
+        ##     rvSetId$df<-df
+        ##     shiny::updateSelectInput(session=session,
+        ##                              inputId="genSetSelInp",
+        ##                              choices=levels(df$set))})
 
-        shiny::observeEvent(input$restoreConfB,{
-            message("Restore event observed.")
-            restoreConf()
-        })
+        ## shiny::observeEvent(input$restoreConfB,{
+        ##     message("Restore event observed.")
+        ##     restoreConf()
+        ## })
 
-        shiny::observeEvent(input$saveConfB,{
-            saveConf()
-        })
+        ## shiny::observeEvent(input$saveConfB,{
+        ##     saveConf()
+        ## })
 
 
-        shiny::observeEvent(input$genFileTabB,{
-            fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$genFileTabB)[["datapath"]]
-            if (length(fn)>0 && !is.na(fn)) {
-                message("Saving file table to",fn)
-                files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
-                setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
-                genSuprFileTbl(files,setId,destFn=fn)
-            }
-        })
+        ## shiny::observeEvent(input$genFileTabB,{
+        ##     fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$genFileTabB)[["datapath"]]
+        ##     if (length(fn)>0 && !is.na(fn)) {
+        ##         message("Saving file table to",fn)
+        ##         files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
+        ##         setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
+        ##         genSuprFileTbl(files,setId,destFn=fn)
+        ##     }
+        ## })
+
+        ## shiny::observeEvent(input$genRunB,{
+        ##     FnRMB<-input$impGenRMBInp
+        ##     nProc<-input$genNoProc
+        ##     message("NoProc:",nProc,"FnRMB:",FnRMB)
+        ## })
         
-        output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-            rvConf$mzMLtab
-            update_tags_mzMLtab()
-            update_sets_mzMLtab()
-            if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
-        })
+        ## output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
+        ##     rvConf$mzMLtab
+        ##     update_tags_mzMLtab()
+        ##     update_sets_mzMLtab()
+        ##     if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
+        ## })
 
+        ## shiny::observe({
+
+        ##     shiny::updateTextInput(session=session,
+        ##                            inputId = "impCmpListInp",
+        ##                            value=rvConf$impCmpListFn)
+        ## })
+        shiny::observeEvent(input$impSetIdB,{
+            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impSetIdB)
+            fn<-fnobj[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                shiny::updateTextInput(session=session,
+                                       inputId="impSetIdInp",
+                                       value=fn)
+            }})
+        shiny::observeEvent(input$impCmpListB,{
+            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impCmpListB)
+            fn<-fnobj[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                shiny::updateTextInput(session=session,
+                                       inputId="impCmpListInp",
+                                       value=fn)
+            }})
+
+        shiny::observeEvent(input$impGenRMBB,{
+            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impGenRMBB)
+            fn<-fnobj[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                shiny::updateTextInput(session=session,
+                                       inputId="impGenRMBInp",
+                                       value=fn)
+            }})
         shiny::observe({
-
-            shiny::updateTextInput(session=session,
-                                   inputId = "impCmpListInp",
-                                   value=rvConf$impCmpListFn)
+            input$impGenRMBInp
+            input$impSetIdInp
+            input$impCmpListInp
         })
 
         output$cmpListCtrl <- rhandsontable::renderRHandsontable({
