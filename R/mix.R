@@ -269,7 +269,6 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
                                   ppm_limit_fine = 10, EIC_limit = 0.001) {
 
 
-    message("NoviSad",ppm_limit_fine,":",EIC_limit)
     n_spec <- 0
     cmpd_RT_maxI <- ""
     msms_found <- ""
