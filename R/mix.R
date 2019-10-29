@@ -72,7 +72,7 @@ fn_data2wd <- function(fn_data,dest) {
 }
 
 get_presc_d <- function(wd) {wd}
-gen_presc_d <- function(wd) { no_drama_mkdir(wd)}
+gen_presc_d <- function(wd) dir.create(wd,recursive = T,showWarnings = F)
     
     
 
@@ -269,6 +269,7 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
                                   ppm_limit_fine = 10, EIC_limit = 0.001) {
 
 
+    message("NoviSad",ppm_limit_fine,":",EIC_limit)
     n_spec <- 0
     cmpd_RT_maxI <- ""
     msms_found <- ""
@@ -277,16 +278,19 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
     cmpd_RT_maxI_min <- ""
     file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
     cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE,comment.char='')
+    message("Healthy 2")
     ncmpd <- nrow(cmpd_info)
     odir=wd
     get_width <- function(maxid) {log10(maxid)+1}
     id_field_width <- get_width(ncmpd)
-
+    message("Healthy 3")
     fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
     f <- mzR::openMSfile(file_list$Files[1])
     for (i in 1:length(file_list$ID)) {
+        message("Healthy 4")
         cpdID <- file_list$ID[i]
         n_spec <- n_spec + 1
+        message("Healthy 5")
         smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
         if (!is.na(smiles)) {
             mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
@@ -294,14 +298,17 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
         else {
             mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
         }
+        message("Healthy 6")
         eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
         msms_found[n_spec] <- FALSE
         msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
-                                                           p = TRUE))
+                                                                      p = TRUE))
+        message("Healthy 7")
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
         max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
         cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60
+        message("Healthy 8")
         ## plot.new()
         ## plot.window(range(eic$rt), range(eic$intensity))
         ## box()
@@ -319,7 +326,9 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
                 msms_found[n_spec] <- TRUE
             }
         }
+        message("Healthy 9")
         if (nrow(cpd_df)>0) write.csv(x=cpd_df,file=fn_out(cpdID,".kids"),row.names=F)
+        message("Healthy 10")
         ## title(main = cpdID, xlab = "RT (sec)", ylab = "Intensity")
         ## text(as.numeric(cmpd_RT_maxI[n_spec]), as.numeric(max_I_prec[n_spec]), 
         ##      labels = as.numeric(cmpd_RT_maxI_min[n_spec]), pos = 4)
@@ -351,7 +360,6 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
 RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
                                   ppm_limit_fine = 10, EIC_limit = 0.001) {
 
-
     n_spec <- 0
     cmpd_RT_maxI <- ""
     msms_found <- ""
@@ -375,17 +383,21 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
         cpdID <- file_list$ID[i]
         n_spec <- n_spec + 1
         smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
-        if (!is.na(smiles)) {
-            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
-        }
-        else {
-            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
-        }
-        if (is.na(mzCol[[i]])) mzCol[[i]] <- mz ## infer from findMz.
+        mz<-if (!is.na(smiles)) {
+                mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
+            } else {
+                mzCol[[i]]  ## TODOR REMOVE mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
+            }
+        message("Pre findeic")
+        ## TODOR REMOVED if (is.na(mzCol[[i]])) mzCol[[i]] <- mz ## infer from findMz.
         eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
+        message("Post findeic")
         msms_found[n_spec] <- FALSE
         msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
-                                                           p = TRUE))
+                                                                      p = TRUE))
+
+        message("here?")
+
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
         max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
@@ -399,16 +411,15 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
                 c(rt=kid@rt,intensity=max(kid@intensity))))
 
         
-
         bindSpec <- function(specLst) {
             do.call(rbind,lapply(specLst,function (sp) bindKids(sp@children)))
         }
         
         found <- which(vapply(msms,function(sp) sp@found,FUN.VALUE=F))
         msmsExst <- msms[found]
-        message("found:",found)
-        message("Lall:",length(msms))
-        message("Lsome:",length(msmsExst))
+        ## message("found:",found)
+        ## message("Lall:",length(msms))
+        ## message("Lsome:",length(msmsExst))
         if (length(found)>0) {
             msms_found[n_spec] <- T
             msmsTab <- as.data.frame(bindSpec(msmsExst),stringsAsFactors=F)
@@ -881,10 +892,22 @@ genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
         bdf <- cbind(bdf,data.frame(ID=longid))
         bdf
     }
-    
+    message("POS 1")
+    message("Tbl:",str(fileTbl))
+    message("IDSet:",str(IDSet))
     sets <- levels(factor(IDSet$set))
-    setTbl <- lapply(sets,function (s) genOneFileTbl(IDSet[IDSet$set %in% s,]$ID,fileTbl[fileTbl$set==s,]))
+    setTbl <- lapply(sets,function (s) {
+        sl1<-IDSet$set %in% s
+        sl2<-fileTbl$set==s
+        message("--------------------b")
+        message("set:",s,"sl1:",any(sl1),"sl2:",any(sl2))
+        message("--------------------e")
+        genOneFileTbl(IDSet[sl1,]$ID,fileTbl[sl2,])
+
+    })
+    message("POS 2")
     allTbl <- do.call(rbind,setTbl)
+    message("POS 3")
     write.csv(x=allTbl,file=destFn,row.names=F)
     allTbl 
 }

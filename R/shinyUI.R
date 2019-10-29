@@ -446,24 +446,44 @@ mkUI2 <- function() {
                                                             "csv"),
                                 width=NULL)
 
-    genBoxParam<-shinydashboard::box(title="Parameters",
+    genBoxParam1<-shinydashboard::box(title="Parameters of the run",
+                                      shiny::textInput("genNoProc",
+                                                      label="Number of processes.",
+                                                      value=1),
+                                      shiny::textInput("ppmLimFine",
+                                                       label="ppm limit fine",
+                                                       value=10),
+                                      shiny::textInput("eicLim",
+                                                       label="EIC limit.",
+                                                       value=1e-3),
+                                      shiny::textInput("intTresh",
+                                                       label="Intensity threshold.",
+                                                       value=1e5),
+                                      shiny::textInput("noiseFac",
+                                                       label="Signal-to-noise ratio.",
+                                                       value=3),
+                                      shiny::textInput("rtDelta",
+                                                       label="Retention time Δ",
+                                                       value=0.5),
+                                      width=NULL)
+    
+    genBoxParam2<-shinydashboard::box(title=NULL,
                                      shiny::selectInput("genSetSelInp",
                                                         label="Select set(s).",
                                                         choices="",
                                                         multiple=T),
-                                     shiny::textInput("genNoProc",
-                                                      label="Number of Processes",
-                                                      value=1),
+                                     
                                      shiny::actionButton(inputId="genRunB",
                                                          label="Run!",
-                                                         icon=shiny::icon("radiation-alt")),
-                                     width=NULL)
+                                                         icon=shiny::icon("bomb")),
+                                     width=NULL) #TODO more boxes
 
 
     genTab<-shinydashboard::tabItem(tabName = "gen",
                                     shiny::h5("Prepare for prescreening."),
                                     shiny::fluidRow(shiny::column(genBox,width=4)),
-                                    shiny::fluidRow(shiny::column(genBoxParam,width=4)))
+                                    shiny::fluidRow(shiny::column(genBoxParam1,width=4)),
+                                    shiny::fluidRow(shiny::column(genBoxParam2,width=4)))
 
     ## ***** Prescreening *****
 
@@ -595,6 +615,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         sets=list(),
                                         impCmpListFn="",
                                         impGenRMBFn="",
+                                        FileTabFn="",
                                         tagProp="",
                                         setProp="",
                                         mode=modeLvl,
@@ -736,6 +757,8 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         shiny::observeEvent(input$mzMLtabCtrl,{
+            input$cmpListCtrl
+            input$setIdTabCtrl
             shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
             
         })
@@ -769,13 +792,54 @@ shinyScreenApp <- function(projDir=getwd()) {
                 files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
                 setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
                 genSuprFileTbl(files,setId,destFn=fn)
+                rvConf$FileTabFn<-fn
             }
+
         })
 
         shiny::observeEvent(input$genRunB,{
             FnRMB<-input$impGenRMBInp
-            nProc<-input$genNoProc
-            message("NoProc:",nProc,"FnRMB:",FnRMB)
+            nProc<-as.integer(input$genNoProc)
+            fnTab<-rvConf$FileTabFn
+            sets<-input$genSetSelInp
+            message("Selected sets:")
+            message(str(sets))
+            message("Number of processes:",nProc)
+            message("RMassBank settings file:",FnRMB)
+            message("File table:",fnTab)
+            if (length(fnTab)>0) {
+                ## fTab<-read.csv(file=fnTab,
+                ##                row.names=F,
+                ##                heander=T,
+                ##                comment.char='',
+                ##                na.strings=c("","NA"),
+                ##                stringsAsFactors=F)
+                ## mask<-fTab$set %in% sets
+                ## fTab<-fTab[mask,]
+
+                for (s in sets) {
+                    message("***** BEGIN set",s, " *****")
+                    fnCmpdList<-input$impCmpListInp
+                    fnStgs<-input$impGenRMBInp
+                    intTresh<-as.numeric(input$intTresh)
+                    noiseFac<-as.numeric(input$noiseFac)
+                    rtDelta<-as.numeric(input$rtDelta)
+                    ppmLimFine<-as.numeric(input$ppmLimFine)
+                    dest<-rvConf$projDir
+                    eicLim<-as.numeric(input$eicLim)
+                    gc()
+                    gen(fnFileTab=fnTab,
+                        fnCmpdList=fnCmpdList,
+                        fnStgs=fnStgs,
+                        dest=dest,
+                        proc=nProc,
+                        intTresh=intTresh,
+                        noiseFac=noiseFac,
+                        rtDelta=rtDelta,
+                        ppmLimFine=ppmLimFine,
+                        eicLim=eicLim)
+                    message("***** END set",s, " *****")
+                }}
         })
         
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
