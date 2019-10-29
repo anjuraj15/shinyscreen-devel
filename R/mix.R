@@ -278,19 +278,15 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
     cmpd_RT_maxI_min <- ""
     file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
     cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE,comment.char='')
-    message("Healthy 2")
     ncmpd <- nrow(cmpd_info)
     odir=wd
     get_width <- function(maxid) {log10(maxid)+1}
     id_field_width <- get_width(ncmpd)
-    message("Healthy 3")
     fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
     f <- mzR::openMSfile(file_list$Files[1])
     for (i in 1:length(file_list$ID)) {
-        message("Healthy 4")
         cpdID <- file_list$ID[i]
         n_spec <- n_spec + 1
-        message("Healthy 5")
         smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
         if (!is.na(smiles)) {
             mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
@@ -298,21 +294,15 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
         else {
             mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
         }
-        message("Healthy 6")
         eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
         msms_found[n_spec] <- FALSE
         msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
                                                                       p = TRUE))
-        message("Healthy 7")
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
         max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
         cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60
-        message("Healthy 8")
-        ## plot.new()
-        ## plot.window(range(eic$rt), range(eic$intensity))
-        ## box()
-        ## lines(eic$intensity ~ eic$rt)
+
         write.csv(x=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"),row.names=F)
         cpd_df <- data.frame("rt"=c(),"intensity"=c())
         for (specs in msms) {
@@ -321,23 +311,15 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
                 df <- do.call(rbind, lapply(specs@children, function(sp) c(sp@rt, 
                                                                            intensity = max(sp@intensity))))
                 cpd_df <- rbind(cpd_df,df,make.row.names = F)
-                ## lines(intensity ~ retentionTime, data = df, type = "h", 
-                ##       col = "blue")
+
                 msms_found[n_spec] <- TRUE
             }
         }
-        message("Healthy 9")
         if (nrow(cpd_df)>0) write.csv(x=cpd_df,file=fn_out(cpdID,".kids"),row.names=F)
-        message("Healthy 10")
-        ## title(main = cpdID, xlab = "RT (sec)", ylab = "Intensity")
-        ## text(as.numeric(cmpd_RT_maxI[n_spec]), as.numeric(max_I_prec[n_spec]), 
-        ##      labels = as.numeric(cmpd_RT_maxI_min[n_spec]), pos = 4)
-        ## axis(1)
-        ## axis(2)
-        ## gc()
+
         rts[i] <- (cmpd_RT_maxI[n_spec])
     }
-    # dev.off()
+
     write.csv(cbind(file_list$ID, cmpd_info$mz, cmpd_info$Name, 
                     cmpd_RT_maxI, cmpd_RT_maxI_min, max_I_prec, msms_found), 
               file = file.path(odir,"RTs_wI.csv"), 
@@ -899,9 +881,7 @@ genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
     setTbl <- lapply(sets,function (s) {
         sl1<-IDSet$set %in% s
         sl2<-fileTbl$set==s
-        message("--------------------b")
-        message("set:",s,"sl1:",any(sl1),"sl2:",any(sl2))
-        message("--------------------e")
+        if (!any(sl2)) stop("Set",s,"does not select anything in the currently processed files.")
         genOneFileTbl(IDSet[sl1,]$ID,fileTbl[sl2,])
 
     })
