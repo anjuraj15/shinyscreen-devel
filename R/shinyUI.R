@@ -472,16 +472,28 @@ mkUI2 <- function() {
                                                         label="Select set(s).",
                                                         choices="",
                                                         multiple=T),
-                                     
                                      shiny::actionButton(inputId="genRunB",
                                                          label="Run!",
                                                          icon=shiny::icon("bomb")),
                                      width=NULL) #TODO more boxes
 
-
+    genBoxProcessed<-shinydashboard::box(title="Processed sets",
+                                         shiny::textInput("genFileTabProcInp",
+                                                          "Postprocessed file table.",
+                                                          value="ftable.cand.csv"),
+                                         shinyFiles::shinySaveButton("genFileTabProcB",
+                                                                     label="Postproceessed file table.",
+                                                                     title="Browse.",
+                                                                     icon=shiny::icon("file"),
+                                                                     filename="ftable.cand.csv"),
+                                         rhandsontable::rHandsontableOutput("genTabProcCtrl"),
+                                         width=NULL)
     genTab<-shinydashboard::tabItem(tabName = "gen",
                                     shiny::h5("Prepare for prescreening."),
-                                    shiny::fluidRow(shiny::column(genBox,width=4)),
+                                    shiny::fluidRow(shiny::column(genBox,
+                                                                  width=4),
+                                                    shiny::column(genBoxProcessed,
+                                                                  width=4)),
                                     shiny::fluidRow(shiny::column(genBoxParam1,width=4)),
                                     shiny::fluidRow(shiny::column(genBoxParam2,width=4)))
 
@@ -642,6 +654,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         shinyFiles::shinyFileSave(input, 'saveSetIdB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'restoreSetIdB',roots=wdroot)
         shinyFiles::shinyFileSave(input, 'genFileTabB',roots=wdroot)
+        shinyFiles::shinyFileSave(input, 'genFileTabProcB',roots=wdroot)
 
 
         ## ***** reactive function definitions *****
@@ -818,7 +831,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 ## fTab<-fTab[mask,]
 
                 for (s in sets) {
-                    message("***** BEGIN set",s, " *****")
+                    message("***** BEGIN set ",s, " *****")
                     fnCmpdList<-input$impCmpListInp
                     fnStgs<-input$impGenRMBInp
                     intTresh<-as.numeric(input$intTresh)
@@ -838,7 +851,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                         rtDelta=rtDelta,
                         ppmLimFine=ppmLimFine,
                         eicLim=eicLim)
-                    message("***** END set",s, " *****")
+                    message("***** END set ",s, " *****")
                 }}
         })
         
@@ -857,6 +870,16 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        inputId="impSetIdInp",
                                        value=fn)
             }})
+
+        shiny::observeEvent(input$genFileTabProcB,{
+            fnobj<-shinyFiles::parseFilePaths(roots=wdroot,input$genFileTabProcB)
+            fn<-fnobj[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                shiny::updateTextInput(session=session,
+                                       inputId="genFileTabProcInp",
+                                       value=fn)
+            }
+        })
         shiny::observeEvent(input$impCmpListB,{
             fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impCmpListB)
             fn<-fnobj[["datapath"]]
@@ -874,6 +897,40 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        inputId="impGenRMBInp",
                                        value=fn)
             }})
+
+        shiny::observe({
+            shiny::isolate({
+                sets<-getSets()
+                cdf<-if (!is.null(input$cmpListCtrl)) rhandsontable::hot_to_r(input$cmpListCtrl) else NULL})
+
+            shiny::invalidateLater(100,session=session)
+            nr<-nrow(cdf)
+            if (!is.null(nr)) {
+                if (is.na(nr)) nr<-0
+            } else nr<-0
+
+
+            if (length(sets)>0 && nr>0) {
+                cmpdL<-rhandsontable::hot_to_r(input$cmpListCtrl)
+                maxId<-max(cmpdL$ID)
+                intTresh<-as.numeric(input$intTresh)
+                noiseFac<-as.numeric(input$noiseFac)
+                rtDelta<-as.numeric(input$rtDelta)
+                fnCand<-input$genFileTabProcInp
+                dr<-file.path(dirname(fnCand),sets)
+                message("dr:",dr)
+                if (isGenDone(dr) && !isPPDone(dr)) {
+                    message("Preprocessing:",dr)
+                    preProc(fnFileTab=rvConf$FileTabFn,
+                            lCmpdList=maxId,
+                            fnDest=fnCand,
+                            intTresh=intTresh,
+                            noiseFac=noiseFac,
+                            rtDelta=rtDelta)
+                    setPPDone(dr)
+                }
+            }
+        })
         shiny::observe({
             input$impGenRMBInp
             input$impSetIdInp
@@ -900,6 +957,31 @@ shinyScreenApp <- function(projDir=getwd()) {
                 })
             }
             rhandsontable::rhandsontable(df,stretchH="all")
+        })
+
+        shiny::observe({
+            shiny::invalidateLater(100,
+                                   session=session)
+            output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
+                                
+                sets<-getSets()
+                genState<-sapply(sets,isGenDone)
+                ppState<-sapply(sets,isPPDone)
+                df<-if (!is.null(sets)) {data.frame(set=sets,
+                                                    generated=genState,
+                                                    preprocessed=ppState,
+                                                    stringsAsFactors=F)
+                    } else {data.frame(sets=character(),
+                                       generated=logical(),
+                                       preprocessed=logical(),
+                                       stringsAsFactors=F)} 
+                
+                rhandsontable::rhandsontable(df,
+                                             rowHeaders=NULL,
+                                             readOnly=T,
+                                             stretchH="all")
+                
+            })
         })
         
 

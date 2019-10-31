@@ -873,9 +873,6 @@ genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
         bdf <- cbind(bdf,data.frame(ID=longid))
         bdf
     }
-    message("POS 1")
-    message("Tbl:",str(fileTbl))
-    message("IDSet:",str(IDSet))
     sets <- levels(factor(IDSet$set))
     setTbl <- lapply(sets,function (s) {
         sl1<-IDSet$set %in% s
@@ -884,9 +881,7 @@ genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
         genOneFileTbl(IDSet[sl1,]$ID,fileTbl[sl2,])
 
     })
-    message("POS 2")
     allTbl <- do.call(rbind,setTbl)
-    message("POS 3")
     write.csv(x=allTbl,file=destFn,row.names=F)
     allTbl 
 }

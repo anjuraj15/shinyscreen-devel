@@ -1,3 +1,35 @@
+isGenDone<-function(dest) {
+    fnFlag<-file.path(dest,".gen.DONE")
+    file.exists(fnFlag)
+}
+
+isPPDone<-function(dest) {
+    fnFlag<-file.path(dest,".pp.DONE")
+    file.exists(fnFlag)
+    
+}
+
+setPPDone<-function(dest) {
+    fnFlag<-file.path(dest,".pp.DONE")
+    if (isPPDone(dest)) file.create(fnFlag)
+}
+
+unsetPPDone<-function(dest) {
+    fnFlag<-file.path(dest,".pp.DONE")
+    if (isPPDone(dest)) unlink(fnFlag,force=T)
+}
+
+setGenDone<-function(dest) {
+    fnFlag<-file.path(dest,".gen.DONE")
+    if (isGenDone(dest)) file.create(fnFlag)
+}
+
+unsetGenDone<-function(dest) {
+    fnFlag<-file.path(dest,".gen.DONE")
+    if (isGenDone(dest)) unlink(fnFlag,force=T)
+}
+
+
 ##' Paste with no separator.
 ##'
 ##' 
@@ -29,6 +61,8 @@ presc.do<-function(fnTab,fnStgs,fnCmpdList,dest=".",proc=F,fnLog='prescreen.log'
     fread <- function(fnData,fnStgs) {
         idc <- which(fnTab$Files %in% fnData)
         wd <- fnTab$wd[idc[[1]]]
+        
+        
         id <- fnTab$ID[idc]
         mode<-fnTab$mode[idc[[1]]]
         gen_presc_d(wd)
@@ -43,6 +77,13 @@ presc.do<-function(fnTab,fnStgs,fnCmpdList,dest=".",proc=F,fnLog='prescreen.log'
         T
     }
 
+
+    unsetGenDone(dest)
+    unsetPPDone(dest)
+    if (file.exists(fnFlag)) {
+        unlink(fnFlag,force=T)
+    }
+
     if (proc>1) {
         cl<-parallel::makeCluster(spec=proc,type='PSOCK',outfile=fnLog)
         parallel::clusterEvalQ(cl,library(shinyscreen))
@@ -53,6 +94,8 @@ presc.do<-function(fnTab,fnStgs,fnCmpdList,dest=".",proc=F,fnLog='prescreen.log'
         message("SERIAL")
         Map(fread,levels(factor(fnTab$Files)),fnStgs)
     }
+
+    setGenDone(dest)
 }
 
 impCmpdList <- function(fnSrc,fnDest=file.path(".",basename(fnSrc))) {
