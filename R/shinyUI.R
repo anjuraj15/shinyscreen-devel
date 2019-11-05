@@ -76,7 +76,7 @@ mkUI <- function(idSliderRange,setName,rtRange,tags,QANms) {
                                                          icon = shiny::icon("save")),
                                      shiny::textInput("fn_ftable",
                                                       "File table Name",
-                                                      value="ftable.csv"),
+                                                      value=FN_FTAB),
                                      shiny::actionButton("savefiletable",
                                                          "Save File Table",
                                                          icon = shiny::icon("save")))
@@ -361,7 +361,27 @@ mkUI2 <- function() {
                                                                   multiple=F,
                                                                   title="Restore"),
                                      width=NULL)
+    
+    ## confFileTab<-shinydashboard::box(title="File table generation settings",
+    ##                                  shinyFiles::shinySaveButton("confFileTabB",
+    ##                                                              "Basic file table.",
+    ##                                                              "Basic file table.",
+    ##                                                              filename = FN_FTAB_BASE,
+    ##                                                              "csv"),
+    ##                                  width=NULL)
 
+    confPP<-shinydashboard::box(title="Preprocessing settings",
+                                shiny::textInput("confFileTabBase",
+                                                 "Basic file table.",
+                                                 value=FN_FTAB_BASE),
+                                shiny::textInput("confFileTabProcInp",
+                                                 "Preprocessed file table.",
+                                                 value=FN_FTAB_PP),
+                                shiny::textInput("confResFileTab",
+                                                 "Resulting file table.",
+                                                 value=FN_FTAB),
+                                width=NULL)
+    
     confmzMLtab <-shinydashboard::box(title="mzML file table",
                                       shiny::h5("Use this file table to assign adduct modes and tags to the data files."),
                                       shinyFiles::shinyFilesButton("mzMLB",
@@ -378,6 +398,7 @@ mkUI2 <- function() {
                                                 confState,
                                                 width=4),
                                   shiny::column(width=8,
+                                                confPP,
                                                 confmzMLtab))
 
 
@@ -438,13 +459,12 @@ mkUI2 <- function() {
 
     ## ***** Generate Prescreen Data *****
 
-    genBox<-shinydashboard::box(title="Produce file table",
-                                shinyFiles::shinySaveButton("genFileTabB",
-                                                            "Generate File table.",
-                                                            "Generate File table.",
-                                                            filename = "ftable.csv",
-                                                            "csv"),
-                                width=NULL)
+##     genBox<-shinydashboard::box(title="Produce file table",
+##                                 shiny::actionButton(inputId="genRunB",
+##                                                     label="Run!",
+##                                                     icon=shiny::icon("bomb")),
+## ,
+##                                 width=NULL)
 
     genBoxParam1<-shinydashboard::box(title="Parameters of the run",
                                       shiny::textInput("genNoProc",
@@ -468,31 +488,27 @@ mkUI2 <- function() {
                                       width=NULL)
     
     genBoxParam2<-shinydashboard::box(title=NULL,
-                                     shiny::selectInput("genSetSelInp",
-                                                        label="Select set(s).",
-                                                        choices="",
-                                                        multiple=T),
-                                     shiny::actionButton(inputId="genRunB",
-                                                         label="Run!",
-                                                         icon=shiny::icon("bomb")),
-                                     width=NULL) #TODO more boxes
-
+                                      shiny::selectInput("genSetSelInp",
+                                                         label="Select set(s).",
+                                                         choices="",
+                                                         multiple=T),
+                                      shiny::actionButton(inputId="genRunB",
+                                                          label="Run!",
+                                                          icon=shiny::icon("bomb")),
+                                      width=NULL)
     genBoxProcessed<-shinydashboard::box(title="Processed sets",
-                                         shiny::textInput("genFileTabProcInp",
-                                                          "Postprocessed file table.",
-                                                          value="ftable.cand.csv"),
-                                         shinyFiles::shinySaveButton("genFileTabProcB",
-                                                                     label="Postproceessed file table.",
-                                                                     title="Browse.",
-                                                                     icon=shiny::icon("file"),
-                                                                     filename="ftable.cand.csv"),
+                                         shiny::actionButton(inputId="genFileTabB",
+                                                             label="Generate file table.",
+                                                             icon=shiny::icon("save")),
+                                         shiny::actionButton(inputId="genRunPPB",
+                                                             label="Preprocess!",
+                                                             icon=shiny::icon("bomb")),
                                          rhandsontable::rHandsontableOutput("genTabProcCtrl"),
                                          width=NULL)
+    
     genTab<-shinydashboard::tabItem(tabName = "gen",
                                     shiny::h5("Prepare for prescreening."),
-                                    shiny::fluidRow(shiny::column(genBox,
-                                                                  width=4),
-                                                    shiny::column(genBoxProcessed,
+                                    shiny::fluidRow(shiny::column(genBoxProcessed,
                                                                   width=4)),
                                     shiny::fluidRow(shiny::column(genBoxParam1,width=4)),
                                     shiny::fluidRow(shiny::column(genBoxParam2,width=4)))
@@ -653,9 +669,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shinyFiles::shinyFileSave(input, 'saveSetIdB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'restoreSetIdB',roots=wdroot)
-        shinyFiles::shinyFileSave(input, 'genFileTabB',roots=wdroot)
-        shinyFiles::shinyFileSave(input, 'genFileTabProcB',roots=wdroot)
-
 
         ## ***** reactive function definitions *****
         
@@ -729,6 +742,16 @@ shinyScreenApp <- function(projDir=getwd()) {
                     shiny::updateTextInput(session=session,
                                            inputId="impSetIdInp",
                                            value=sav$input$impSetIdInp)
+                    shiny::updateTextInput(session=session,
+                                           inputId="confFileTabBase",
+                                           value=sav$input$confFileTabBase)
+                    shiny::updateTextInput(session=session,
+                                           inputId="confFileTabProcInp",
+                                           value=sav$input$confFileTabProcInp)
+                    shiny::updateTextInput(session=session,
+                                           inputId="confResFileTab",
+                                           value=sav$input$confResFileTab)
+                    
                 })
             }
         })
@@ -797,9 +820,15 @@ shinyScreenApp <- function(projDir=getwd()) {
             saveConf()
         })
 
+        ## shiny::observeEvent(input$confFileTabBase, {
+        ##     fn<-input$confFileTabBase
+        ##     if (length(fn)>0 && !is.na(fn)) {
+        ##         rvConf$FileTabFn<-fn
+        ##     }
+        ## })
 
         shiny::observeEvent(input$genFileTabB,{
-            fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$genFileTabB)[["datapath"]]
+            fn<-input$confFileTabBase
             if (length(fn)>0 && !is.na(fn)) {
                 message("Saving file table to",fn)
                 files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
@@ -871,15 +900,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
-        shiny::observeEvent(input$genFileTabProcB,{
-            fnobj<-shinyFiles::parseFilePaths(roots=wdroot,input$genFileTabProcB)
-            fn<-fnobj[["datapath"]]
-            if (length(fn)>0 && !is.na(fn)) {
-                shiny::updateTextInput(session=session,
-                                       inputId="genFileTabProcInp",
-                                       value=fn)
-            }
-        })
+
         shiny::observeEvent(input$impCmpListB,{
             fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impCmpListB)
             fn<-fnobj[["datapath"]]
@@ -898,39 +919,68 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
-        shiny::observe({
-            shiny::isolate({
-                sets<-getSets()
-                cdf<-if (!is.null(input$cmpListCtrl)) rhandsontable::hot_to_r(input$cmpListCtrl) else NULL})
+        shiny::observeEvent(input$genRunPPB,{
+                            shiny::isolate({
+                                sets<-getSets()
+                                cdf<-if (!is.null(input$cmpListCtrl)) rhandsontable::hot_to_r(input$cmpListCtrl) else NULL})
+                            
+                            nr<-nrow(cdf)
+                            if (!is.null(nr)) {
+                                if (is.na(nr)) nr<-0
+                            } else nr<-0
 
-            shiny::invalidateLater(100,session=session)
-            nr<-nrow(cdf)
-            if (!is.null(nr)) {
-                if (is.na(nr)) nr<-0
-            } else nr<-0
+                            if (length(sets)>0 && nr>0) {
 
+                                doneSets<-sets[sapply(sets,isGenDone)]
+                                if (length(doneSets)>0) {
+                                    fnFullTab<-input$confFileTabProcInp
+                                    fullFTab<-read.csv(file=fnFullTab,
+                                                       comment.char = '',
+                                                       stringsAsFactors = F)
+                                    doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
+                                    if (nrow(doneFTab)>0) {
+                                        fnTmp<-ppInpFt()
+                                        write.csv(file=fnTmp,
+                                                  x=doneFTab,
+                                                  row.names=F)
+                                        message("fnTmp: ",fnTmp)
+                                        cmpdL<-rhandsontable::hot_to_r(input$cmpListCtrl)
+                                        maxId<-max(sapply(doneSets,idsFromFiles))
+                                        message("maxId: ",maxId)
+                                        intTresh<-as.numeric(input$intTresh)
+                                        noiseFac<-as.numeric(input$noiseFac)
+                                        rtDelta<-as.numeric(input$rtDelta)
+                                        ## dr<-file.path(dirname(fnCand),sets)
+                                        preProc(fnFileTab=fnTmp,
+                                                lCmpdList=maxId,
+                                                fnDest=fnTmp,
+                                                intTresh=intTresh,
+                                                noiseFac=noiseFac,
+                                                rtDelta=rtDelta)
+                                        ppFnTab<-read.csv(file=fnFullTab,
+                                                          comment.char = '',
+                                                          stringsAsFactors = F)
 
-            if (length(sets)>0 && nr>0) {
-                cmpdL<-rhandsontable::hot_to_r(input$cmpListCtrl)
-                maxId<-max(cmpdL$ID)
-                intTresh<-as.numeric(input$intTresh)
-                noiseFac<-as.numeric(input$noiseFac)
-                rtDelta<-as.numeric(input$rtDelta)
-                fnCand<-input$genFileTabProcInp
-                dr<-file.path(dirname(fnCand),sets)
-                message("dr:",dr)
-                if (isGenDone(dr) && !isPPDone(dr)) {
-                    message("Preprocessing:",dr)
-                    preProc(fnFileTab=rvConf$FileTabFn,
-                            lCmpdList=maxId,
-                            fnDest=fnCand,
-                            intTresh=intTresh,
-                            noiseFac=noiseFac,
-                            rtDelta=rtDelta)
-                    setPPDone(dr)
-                }
-            }
+                                        extNms<-names(ppFnTab)
+                                        basNms<-names(fullFTab)
+                                        diffNms<-setdiff(extNms,basNms)
+                                        nrf<-nrow(fullFTab)
+                                        for (nm in diffNms) {
+                                            z<-logical(length=nrf)
+                                            z<-T
+                                            fullFTab[[nm]]<-z
+                                        }
+                                        fullFTab[fullFTab$set %in% doneSets,]<-ppFnTab
+                                        write.csv(file=fnFullTab,
+                                                  x=fullFTab,
+                                                  row.names=F)
+                                        
+                                        
+                                    }
+                                }
+                            }
         })
+
         shiny::observe({
             input$impGenRMBInp
             input$impSetIdInp
@@ -966,14 +1016,11 @@ shinyScreenApp <- function(projDir=getwd()) {
                                 
                 sets<-getSets()
                 genState<-sapply(sets,isGenDone)
-                ppState<-sapply(sets,isPPDone)
                 df<-if (!is.null(sets)) {data.frame(set=sets,
                                                     generated=genState,
-                                                    preprocessed=ppState,
                                                     stringsAsFactors=F)
                     } else {data.frame(sets=character(),
                                        generated=logical(),
-                                       preprocessed=logical(),
                                        stringsAsFactors=F)} 
                 
                 rhandsontable::rhandsontable(df,

@@ -1,6 +1,24 @@
+## Constants
+FN_FTAB_BASE<-"ftable.base.csv"
+FN_FTAB_PP<-"ftable.pp.csv"
+FN_PP_OUT_PREF<-"PP.filetable"
+FN_FTAB<-"ftable.csv"
+
+
+ppInpFt<-function() {
+    tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
+}
+
 stripext<-function(fn) {
     bits<-strsplit(fn,split="\\.")[[1]]
     if (length(bits)> 1) paste(head(bits,-1),collapse=".") else fn}
+
+idsFromFiles<-function(setDir) {
+    fls<-list.files(path=setDir,patt=".*eic.*csv",rec=T)
+    bas<-basename(fls)
+    res<-strsplit(bas,"\\.")
+    sapply(res,function (r) as.integer(r[[1]]))
+}
 
 ##' Create directories without drama.
 ##'
