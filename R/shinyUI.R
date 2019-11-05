@@ -934,9 +934,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                                 doneSets<-sets[sapply(sets,isGenDone)]
                                 if (length(doneSets)>0) {
                                     fnFullTab<-input$confFileTabProcInp
-                                    fullFTab<-read.csv(file=fnFullTab,
+                                    fnBaseTab<-input$confFileTabBase
+                                    fnOpen<-""
+                                    fnOpen<-if (file.exists(fnFullTab)) fnFullTab else fnBaseTab
+                                    fullFTab<-read.csv(file=fnOpen,
                                                        comment.char = '',
                                                        stringsAsFactors = F)
+
                                     doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
                                     if (nrow(doneFTab)>0) {
                                         fnTmp<-ppInpFt()
@@ -945,7 +949,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                                                   row.names=F)
                                         message("fnTmp: ",fnTmp)
                                         cmpdL<-rhandsontable::hot_to_r(input$cmpListCtrl)
-                                        maxId<-max(sapply(doneSets,idsFromFiles))
+
+                                        maxId<-do.call(max,sapply(doneSets,idsFromFiles))
                                         message("maxId: ",maxId)
                                         intTresh<-as.numeric(input$intTresh)
                                         noiseFac<-as.numeric(input$noiseFac)
@@ -957,7 +962,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                                 intTresh=intTresh,
                                                 noiseFac=noiseFac,
                                                 rtDelta=rtDelta)
-                                        ppFnTab<-read.csv(file=fnFullTab,
+                                        ppFnTab<-read.csv(file=fnTmp,
                                                           comment.char = '',
                                                           stringsAsFactors = F)
 
