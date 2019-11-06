@@ -515,7 +515,133 @@ mkUI2 <- function() {
 
     ## ***** Prescreening *****
 
-    presTab <- shinydashboard::tabItem(tabName="prescreen")
+
+    ## QA
+    QANms<-names(QANAMES)
+    ## tags<-
+    ## tabPanelList <- lapply(tags, function(tag) {
+    ##     shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Quality Control",
+    ##                                                    QANms),
+    ##                     shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
+    ##                     shiny::verbatimTextOutput(paste("value",tag,sep=""))
+    ##                     )})
+    
+    ## nvPanel <- do.call(shiny::navlistPanel, tabPanelList)
+
+
+        ## Prescreening elements
+    preshead <- shinydashboard::dashboardHeader(title = "Prescreening")
+    
+    presCompInfo <- shiny::fluidRow(shinydashboard::box(title = "MS Prescreening",
+                                                        width = 7,
+                                                        height = "80px",
+                                                        background = "blue",
+                                                        ""),
+                                    shinydashboard::box(title = "Compound ID N°",
+                                                        width = 5,
+                                                        height = "80px",
+                                                        background = "olive",
+                                                        shiny::textOutput("compoundID")))
+
+    presPlotBox <- shinydashboard::box(title = "Plot",
+                                       width = 7,color = "olive",
+                                       solidHeader = FALSE,
+                                       collapsible = TRUE,
+                                       shiny::plotOutput("plot1",
+                                                         width = "100%",
+                                                         height = "750px",
+                                                         click = NULL,
+                                                         dblclick = NULL,
+                                                         hover = NULL,
+                                                         hoverDelay = NULL,
+                                                         hoverDelayType = NULL,
+                                                         brush = NULL,
+                                                         clickId = NULL,
+                                                         hoverId = NULL),
+                                       shiny::textInput("plotname",
+                                                        "Insert plot name: (e.g. plotname_%i.pdf)",
+                                                        value="plotCpdID_%i.pdf"),
+                                       shiny::actionButton("saveplot",
+                                                           "Save",
+                                                           icon = shiny::icon("save")),
+                                       shiny::actionButton("saveallplots",
+                                                           "Save All Plots",
+                                                           icon = shiny::icon("save")))
+
+    presCompSelBox <- shinydashboard::box(title = "Compounds",
+                                          width=5,
+                                          solidHeader = FALSE,
+                                          color = "olive",
+                                          collapsible = TRUE,
+                                          "",
+                                          shiny::br(),
+                                          shiny::selectInput("presSelSet",
+                                                             "Set",
+                                                             choices="",
+                                                             multiple=F),
+                                          shiny::actionButton("presPrev",
+                                                              "Previous compound.",
+                                                              icon = shiny::icon("backward")),
+                                          shiny::actionButton("presNext",
+                                                              "Next compound.",
+                                                              icon = shiny::icon("forward")),
+                                          shiny::selectInput("presSelCmpd",
+                                                             "Compound",
+                                                             choices="",
+                                                             multiple=F))
+
+    presTitle<-shiny::uiOutput("presTitle")
+    nvPanel<-shiny::uiOutput("nvPanel")
+    presQABox <- shinydashboard::box(title = "Prescreening analysis",
+                                     width = 5,
+                                     solidHeader = FALSE,
+                                     collapsible = TRUE,
+                                     presTitle,
+                                     nvPanel,
+                                     shiny::actionButton("submitQA",
+                                                         "Submit",
+                                                         icon = shiny::icon("save")),
+                                     shiny::textInput("fn_ftable",
+                                                      "File table Name",
+                                                      value=FN_FTAB),
+                                     shiny::actionButton("savefiletable",
+                                                         "Save File Table",
+                                                         icon = shiny::icon("save")))
+    presPlotParBox <- shinydashboard::box(title = "Plot Parameters",
+                                          width=7,
+                                          solidHeader = FALSE,
+                                          collapsible = TRUE,
+                                          "",
+                                          shiny::br(),
+                                          shiny::numericInput("min_val",
+                                                              "Minimum x Axis Value",
+                                                              DEFAULT_RT_RANGE[[1]]),
+                                          shiny::numericInput("max_val",
+                                                              "Maximum x Axis Value",
+                                                              DEFAULT_RT_RANGE[[2]]),
+                                          shiny::radioButtons("yaxis",
+                                                              "Parameters for y Axis",
+                                                              c(linear = "linear",
+                                                                log = "log")),
+                                          shiny::numericInput("nice",
+                                                              "Nice",
+                                                              DEFAULT_RT_RANGE[[1]]),
+                                          shiny::numericInput("steps",
+                                                              "Steps",
+                                                              DEFAULT_RT_RANGE[[2]]))
+    presPlotWidget <- shiny::fluidRow(presPlotBox,
+                                      presCompSelBox,
+                                      presQABox,
+                                      presPlotParBox)
+    
+    presTab <- shinydashboard::tabItem(tabName = "prescreen",
+                                       shiny::h2("Prescreening"),
+                                       presCompInfo,
+                                       presPlotWidget)
+
+
+
+
 
     ## ***** Top-level Elements *****
     
@@ -634,7 +760,19 @@ shinyScreenApp <- function(projDir=getwd()) {
                  na.strings = c("","NA"))
     }
 
-
+    getMz<-function(ids,cmpdL) {
+        mz<-sapply(ids,function(i) {mzs<-cmpdL$mz[cmpdL$ID==i]
+            if (length(mzs)>1) mzs[[1]] else mzs
+        })
+        names(mz)<-NULL
+        mz
+    }
+    mkCmpdDrop<-function(ids,cmpdL) {
+        cmpdL$ID<-as.numeric(cmpdL$ID)
+        mz<-getMz(ids,cmpdL)
+        entries<-base::Map(function(i,m) paste(i,'; ','mz: ',m,sep=''),ids,mz)
+        entries
+    }
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
@@ -649,7 +787,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         mode=modeLvl,
                                         freshCmpListInp=F,
                                         freshSetIdInp=F,
-                                        projDir=projDir)
+                                        projDir=projDir,
+                                        currSet=NA,
+                                        currIDSel=NA)
 
         rvCmpList<- shiny::reactiveValues(df=mk_cmpList())
         rvSetId<- shiny::reactiveValues(df=mk_setId())
@@ -678,6 +818,14 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         getSets<-shiny::reactive({
             levels(rvSetId$df$set)
+        })
+
+        getCmpdL<-shiny::reactive({
+            rhandsontable::hot_to_r(input$cmpListCtrl)
+        })
+
+        getSetId<-shiny::reactive({
+            rhandsontable::hot_to_r(input$setIdTabCtrl)
         })
 
         update_tags_mzMLtab<-shiny::reactive({
@@ -801,7 +949,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         shiny::observeEvent(input$cmpListCtrl,{
-            shiny::isolate({rvCmpList$df<-rhandsontable::hot_to_r(input$cmpListCtrl)})
+            df<-rhandsontable::hot_to_r(input$cmpListCtrl)
         })
 
         shiny::observeEvent(input$setIdTabCtrl,{
@@ -951,7 +1099,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         cmpdL<-rhandsontable::hot_to_r(input$cmpListCtrl)
 
                                         maxId<-do.call(max,sapply(doneSets,idsFromFiles))
-                                        message("maxId: ",maxId)
                                         intTresh<-as.numeric(input$intTresh)
                                         noiseFac<-as.numeric(input$noiseFac)
                                         rtDelta<-as.numeric(input$rtDelta)
@@ -979,6 +1126,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         write.csv(file=fnFullTab,
                                                   x=fullFTab,
                                                   row.names=F)
+                                        file.copy(fnFullTab,input$confResFileTab,overwrite=T)
                                         
                                         
                                     }
@@ -986,6 +1134,24 @@ shinyScreenApp <- function(projDir=getwd()) {
                             }
         })
 
+        shiny::observeEvent(input$presSelSet,{
+            sets<-getSets()
+            if (length(sets)>0 && !is.na(sets)) {
+                cmpdL<-getCmpdL()
+                setID<-getSetId()
+                if (nrow(cmpdL)>0 && nrow(setID)>0) {
+                    ids<-setID$ID[setID$set %in% sets[[1]]]
+                    entries<-mkCmpdDrop(ids,cmpdL)
+                    ch<-as.list(1:length(ids))
+                    names(ch)<-entries
+                    shiny::updateSelectInput(session=session,
+                                             "presSelCmpd",
+                                             choices=ch,
+                                             selected = 1)
+                }
+            }
+        })
+        
         shiny::observe({
             input$impGenRMBInp
             input$impSetIdInp
@@ -1035,6 +1201,18 @@ shinyScreenApp <- function(projDir=getwd()) {
                 
             })
         })
+
+        shiny::observe({
+            sets<-getSets()
+            if (length(sets)>0 && !is.na(sets)) {
+                shiny::updateSelectInput(session=session,
+                                         "presSelSet",
+                                         choices=sets,
+                                         selected=sets[[1]])
+            }
+        })
+
+
         
 
         

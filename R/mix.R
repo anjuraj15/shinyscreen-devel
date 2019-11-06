@@ -5,6 +5,17 @@ FN_PP_OUT_PREF<-"PP.filetable"
 FN_FTAB<-"ftable.csv"
 
 
+MODEMAP=list(pH="MpHp_mass",
+             mH="MmHm_mass",
+             pNH4="MpNH4_mass",
+             pNa="MpNa_mass")
+
+DEFAULT_RT_RANGE=c(NA,NA)
+
+QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
+PLOT_DEF_TAGS<-NA
+PLOT_DEF_SET<-NA
+
 ppInpFt<-function() {
     tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
 }
