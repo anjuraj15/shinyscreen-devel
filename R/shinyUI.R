@@ -765,17 +765,18 @@ shinyScreenApp <- function(projDir=getwd()) {
     }
 
 
-    updateFileTable <- function(df,id,linput) {
+    updateFileTable <- function(df,set,id,linput) {
         for (tag in names(linput)) {
             entries <- names(linput[[tag]])
-            cond <- (df$ID %in% id) & (df$tag == tag)
+            cond <- (df$ID %in% id) & (df$tag == tag) & (df$set %in% set)
+
             df[cond,entries] <- linput[[tag]]
         }
         df
     }
     
-    getCheckboxValues <- function(tag,input) {
-        chkbox <- input[[spectProps[[tag]]]]
+    getCheckboxValues <- function(tag,input,rv) {
+        chkbox <- input[[rv$spectProps[[tag]]]]
         q <- sapply(QANAMES,function (qn) if (qn %in% chkbox) T else F)
         names(q) <- QANAMES
         q
@@ -1310,6 +1311,15 @@ shinyScreenApp <- function(projDir=getwd()) {
                     shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
                 }
             }
+        })
+
+        shiny::observeEvent(input$submitQA,{
+            res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
+            names(res) <- rvConf$tags
+            rvConf$fTab <- updateFileTable(df=rvConf$fTab,
+                                           set=input$presSelSet,
+                                           id=rvConf$currID,
+                                           linput=res)
         })
 
 
