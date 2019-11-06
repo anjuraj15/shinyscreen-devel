@@ -516,20 +516,8 @@ mkUI2 <- function() {
     ## ***** Prescreening *****
 
 
-    ## QA
-    QANms<-names(QANAMES)
-    ## tags<-
-    ## tabPanelList <- lapply(tags, function(tag) {
-    ##     shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Quality Control",
-    ##                                                    QANms),
-    ##                     shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
-    ##                     shiny::verbatimTextOutput(paste("value",tag,sep=""))
-    ##                     )})
-    
-    ## nvPanel <- do.call(shiny::navlistPanel, tabPanelList)
 
-
-        ## Prescreening elements
+    ## Prescreening elements
     preshead <- shinydashboard::dashboardHeader(title = "Prescreening")
     
     presCompInfo <- shiny::fluidRow(shinydashboard::box(title = "MS Prescreening",
@@ -790,7 +778,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         currSet=NA,
                                         currIDSel=1,
                                         currIDSet=list(),
-                                        fnFT=NULL)
+                                        fnFT=NULL,
+                                        fTab=NULL)
 
         rvCmpList<- shiny::reactiveValues(df=mk_cmpList())
         rvSetId<- shiny::reactiveValues(df=mk_setId())
@@ -1172,6 +1161,15 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (x<=len) rvConf$currIDSel<-x
         })
 
+        shiny::observeEvent(rvConf$fnFT,{
+            fn<-rvConf$fnFT
+            if (!is.null(fn)) {
+                rvConf$fTab<-read.csv(file=fn,
+                                      comment.char = '',
+                                      stringsAsFactors = F)
+            }
+        })
+
         shiny::observe({
             shiny::updateSelectInput(session=session,
                                      inputId="presSelCmpd",
@@ -1208,16 +1206,11 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         
         output$nvPanel<-shiny::renderUI({
-            fnFT<-rvConf$fnFT
-            ft<-if (!is.null(fnFT)) {
-                    read.csv(file=fnFT,
-                             stringsAsFactors = F,
-                             comment.char = '')
-                } else NULL
-            
+            ft<-rvConf$fTab
             set<-input$presSelSet
             if (nchar(set)>0 && !is.null(ft)) {
-                QANms<-names(rvConf$QANAMES)
+                QANms<-rvConf$QANAMES
+                names(QANms)<-QANms
                 tags<-levels(factor(ft[ft$set==set,]$tag))
                 tabPanelList <- lapply(tags, function(tag) {
                     shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Quality Control",
