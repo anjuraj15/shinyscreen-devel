@@ -759,12 +759,34 @@ shinyScreenApp <- function(projDir=getwd()) {
         entries<-base::Map(function(i,m) paste(i,'; ','mz: ',m,sep=''),ids,mz)
         entries
     }
+
+    queryFileTable <- function(df,set,id) {
+        df[(df$ID %in% id) & (df$set %in% set),]
+    }
+
+
+    updateFileTable <- function(df,id,linput) {
+        for (tag in names(linput)) {
+            entries <- names(linput[[tag]])
+            cond <- (df$ID %in% id) & (df$tag == tag)
+            df[cond,entries] <- linput[[tag]]
+        }
+        df
+    }
+    
+    getCheckboxValues <- function(tag,input) {
+        chkbox <- input[[spectProps[[tag]]]]
+        q <- sapply(QANAMES,function (qn) if (qn %in% chkbox) T else F)
+        names(q) <- QANAMES
+        q
+    }
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
         rvConf <- shiny::reactiveValues(mzMLtab=mk_mzMLtab(),
                                         tags=list(),
                                         sets=list(),
+                                        spectProps=list(),
                                         QANAMES=QANAMES,
                                         impCmpListFn="",
                                         impGenRMBFn="",
@@ -778,6 +800,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         currSet=NA,
                                         currIDSel=1,
                                         currIDSet=list(),
+                                        currID=NA,
                                         fnFT=NULL,
                                         fTab=NULL)
 
@@ -1170,6 +1193,10 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
+        shiny::observeEvent(rvConf$currIDSel,{
+            ids<-rvConf$currIDSet
+            if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]})
+
         shiny::observe({
             shiny::updateSelectInput(session=session,
                                      inputId="presSelCmpd",
@@ -1212,8 +1239,11 @@ shinyScreenApp <- function(projDir=getwd()) {
                 QANms<-rvConf$QANAMES
                 names(QANms)<-QANms
                 tags<-levels(factor(ft[ft$set==set,]$tag))
+                rvConf$tags<-tags
+                spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
+                rvConf$spectProps<-spectProps
                 tabPanelList <- lapply(tags, function(tag) {
-                    shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Quality Control",
+                    shiny::tabPanel(tag, shiny::checkboxGroupInput(spectProps[[tag]], "Quality Control",
                                                                    QANms),
                                     shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
                                     shiny::verbatimTextOutput(paste("value",tag,sep=""))
@@ -1261,6 +1291,24 @@ shinyScreenApp <- function(projDir=getwd()) {
                                          "presSelSet",
                                          choices=sets,
                                          selected=sets[[1]])
+            }
+        })
+
+
+        shiny::observe({
+            i<-rvConf$currID
+            spectProps<-rvConf$spectProps
+            set<-input$presSelSet
+            if (!is.na(i) && length(spectProps)>0) {
+                QANAMES<-rvConf$QANAMES
+                sdf <- queryFileTable(df=rvConf$fTab,set=set,id=i)
+                for (t in sdf$tag) {
+                    sprop <- rvConf$spectProps[[t]]
+                    sel <- as.logical(sdf[sdf$tag %in% t,QANAMES])
+                    choices <- QANAMES[sel]
+                    names(choices) <- QANAMES[sel]
+                    shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
+                }
             }
         })
 
