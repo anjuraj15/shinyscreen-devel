@@ -1322,6 +1322,15 @@ shinyScreenApp <- function(projDir=getwd()) {
                                            linput=res)
         })
 
+        shiny::observeEvent(input$savefiletable,
+        {
+            fn<-input$fn_ftable
+            message("Writing current file table to ",fn)
+            write.csv(file=fn,x=rvConf$fTab,row.names = F)
+            
+            
+        })
+
 
         
 
