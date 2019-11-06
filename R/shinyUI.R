@@ -789,7 +789,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         freshSetIdInp=F,
                                         projDir=projDir,
                                         currSet=NA,
-                                        currIDSel=NA)
+                                        currIDSel=1,
+                                        currIDSet=list())
 
         rvCmpList<- shiny::reactiveValues(df=mk_cmpList())
         rvSetId<- shiny::reactiveValues(df=mk_setId())
@@ -1148,8 +1149,33 @@ shinyScreenApp <- function(projDir=getwd()) {
                                              "presSelCmpd",
                                              choices=ch,
                                              selected = 1)
+                    rvConf$currIDSet<-ids
+                    rvConf$currSet<-sets[[1]]
                 }
             }
+        })
+
+        shiny::observeEvent(input$presSelCmpd,{
+            pos<-input$presSelCmpd
+            rvConf$currIDSel<-as.numeric(pos)
+        })
+
+        shiny::observeEvent(input$presPrev,{
+            len<-length(rvConf$currIDSet)
+            x<-rvConf$currIDSel-1
+            if (x>0) rvConf$currIDSel<-x
+        })
+
+        shiny::observeEvent(input$presNext,{
+            len<-length(rvConf$currIDSet)
+            x<-rvConf$currIDSel+1
+            if (x<=len) rvConf$currIDSel<-x
+        })
+
+        shiny::observe({
+            shiny::updateSelectInput(session=session,
+                                     inputId="presSelCmpd",
+                                     selected=rvConf$currIDSel)
         })
         
         shiny::observe({
