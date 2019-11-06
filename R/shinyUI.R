@@ -590,13 +590,11 @@ mkUI2 <- function() {
                                                              choices="",
                                                              multiple=F))
 
-    presTitle<-shiny::uiOutput("presTitle")
     nvPanel<-shiny::uiOutput("nvPanel")
     presQABox <- shinydashboard::box(title = "Prescreening analysis",
                                      width = 5,
                                      solidHeader = FALSE,
                                      collapsible = TRUE,
-                                     presTitle,
                                      nvPanel,
                                      shiny::actionButton("submitQA",
                                                          "Submit",
@@ -779,6 +777,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         rvConf <- shiny::reactiveValues(mzMLtab=mk_mzMLtab(),
                                         tags=list(),
                                         sets=list(),
+                                        QANAMES=QANAMES,
                                         impCmpListFn="",
                                         impGenRMBFn="",
                                         FileTabFn="",
@@ -790,7 +789,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         projDir=projDir,
                                         currSet=NA,
                                         currIDSel=1,
-                                        currIDSet=list())
+                                        currIDSet=list(),
+                                        fnFT=NULL)
 
         rvCmpList<- shiny::reactiveValues(df=mk_cmpList())
         rvSetId<- shiny::reactiveValues(df=mk_setId())
@@ -1206,6 +1206,30 @@ shinyScreenApp <- function(projDir=getwd()) {
             rhandsontable::rhandsontable(df,stretchH="all")
         })
 
+        
+        output$nvPanel<-shiny::renderUI({
+            fnFT<-rvConf$fnFT
+            ft<-if (!is.null(fnFT)) {
+                    read.csv(file=fnFT,
+                             stringsAsFactors = F,
+                             comment.char = '')
+                } else NULL
+            
+            set<-input$presSelSet
+            if (nchar(set)>0 && !is.null(ft)) {
+                QANms<-names(rvConf$QANAMES)
+                tags<-levels(factor(ft[ft$set==set,]$tag))
+                tabPanelList <- lapply(tags, function(tag) {
+                    shiny::tabPanel(tag, shiny::checkboxGroupInput(paste("spectProps",tag,sep=""), "Quality Control",
+                                                                   QANms),
+                                    shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
+                                    shiny::verbatimTextOutput(paste("value",tag,sep=""))
+                                    )})
+    
+                do.call(shiny::navlistPanel, tabPanelList)
+            } else NULL
+        })
+        
         shiny::observe({
             shiny::invalidateLater(100,
                                    session=session)
@@ -1227,6 +1251,15 @@ shinyScreenApp <- function(projDir=getwd()) {
                 
             })
         })
+    
+    shiny::observe({
+        shiny::invalidateLater(100,
+                               session=session)
+        fnFT<-if (file.exists(input$confResFileTab)) input$confResFileTab else NULL
+        rvConf$fnFT<-fnFT
+              
+    })
+    
 
         shiny::observe({
             sets<-getSets()
