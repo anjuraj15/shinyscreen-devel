@@ -1224,6 +1224,23 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
+        shiny::observeEvent(input$submitQA,{
+            res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
+            names(res) <- rvConf$tags
+            rvConf$fTab <- updateFileTable(df=rvConf$fTab,
+                                           set=input$presSelSet,
+                                           id=rvConf$currID,
+                                           linput=res)
+        })
+        
+        shiny::observeEvent(input$savefiletable,
+        {
+            fn<-input$fn_ftable
+            message("Writing current file table to ",fn)
+            write.csv(file=fn,x=rvConf$fTab,row.names = F)
+        })
+
+
 
         ## ***** Observe *****
         shiny::observe({
@@ -1345,23 +1362,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             } else NULL
         })
 
-
-
-
-
-
-
-        
-        
-
-
-        
-
-    ##     ## shiny::observeEvent(input$impCmpListInp,{
-    ##     ##     fn<-input$impCmpListInp
-    ##     ##     if (length(fn)>0 && !is.na(fn)) rvConf$impCmpListFn<-fn
-    ##     ## })
-
     ##     ## output$plot1 <- renderPlot(
     ##     ## {
     ##     ##     i=rvConf$currID
@@ -1370,23 +1370,7 @@ shinyScreenApp <- function(projDir=getwd()) {
     ##     ## })
         
 
-    ##     shiny::observeEvent(input$submitQA,{
-    ##         res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
-    ##         names(res) <- rvConf$tags
-    ##         rvConf$fTab <- updateFileTable(df=rvConf$fTab,
-    ##                                        set=input$presSelSet,
-    ##                                        id=rvConf$currID,
-    ##                                        linput=res)
-    ##     })
 
-    ##     shiny::observeEvent(input$savefiletable,
-    ##     {
-    ##         fn<-input$fn_ftable
-    ##         message("Writing current file table to ",fn)
-    ##         write.csv(file=fn,x=rvConf$fTab,row.names = F)
-            
-            
-    ##     })
 
 
         
