@@ -1172,7 +1172,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                             }
         })
 
-    ## START REMOVING HERE ...
         shiny::observeEvent(input$presSelSet,{
             sets<-getSets()
             if (length(sets)>0 && !is.na(sets)) {
@@ -1193,36 +1192,36 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
-        ## shiny::observeEvent(input$presSelCmpd,{
-        ##     pos<-input$presSelCmpd
-        ##     rvConf$currIDSel<-as.numeric(pos)
-        ## })
+        shiny::observeEvent(input$presSelCmpd,{
+            pos<-input$presSelCmpd
+            rvConf$currIDSel<-as.numeric(pos)
+        })
 
-        ## shiny::observeEvent(input$presPrev,{
-        ##     len<-length(rvConf$currIDSet)
-        ##     x<-rvConf$currIDSel-1
-        ##     if (x>0) rvConf$currIDSel<-x
-        ## })
+        shiny::observeEvent(input$presPrev,{
+            len<-length(rvConf$currIDSet)
+            x<-rvConf$currIDSel-1
+            if (x>0) rvConf$currIDSel<-x
+        })
 
-        ## shiny::observeEvent(input$presNext,{
-        ##     len<-length(rvConf$currIDSet)
-        ##     x<-rvConf$currIDSel+1
-        ##     if (x<=len) rvConf$currIDSel<-x
-        ## })
+        shiny::observeEvent(input$presNext,{
+            len<-length(rvConf$currIDSet)
+            x<-rvConf$currIDSel+1
+            if (x<=len) rvConf$currIDSel<-x
+        })
 
-        ## shiny::observeEvent(rvConf$fnFT,{
-        ##     fn<-rvConf$fnFT
-        ##     if (!is.null(fn)) {
-        ##         rvConf$fTab<-read.csv(file=fn,
-        ##                               comment.char = '',
-        ##                               stringsAsFactors = F)
-        ##     }
-        ## })
+        shiny::observeEvent(rvConf$fnFT,{
+            fn<-rvConf$fnFT
+            if (!is.null(fn)) {
+                rvConf$fTab<-read.csv(file=fn,
+                                      comment.char = '',
+                                      stringsAsFactors = F)
+            }
+        })
 
-        ## shiny::observeEvent(rvConf$currIDSel,{
-        ##     ids<-rvConf$currIDSet
-        ##     if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
-        ## })
+        shiny::observeEvent(rvConf$currIDSel,{
+            ids<-rvConf$currIDSet
+            if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
+        })
 
 
 
@@ -1325,6 +1324,28 @@ shinyScreenApp <- function(projDir=getwd()) {
                 if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
         })
 
+        output$nvPanel<-shiny::renderUI({
+            ft<-rvConf$fTab
+            set<-input$presSelSet
+            if (nchar(set)>0 && !is.null(ft)) {
+                QANms<-rvConf$QANAMES
+                names(QANms)<-QANms
+                tags<-levels(factor(ft[ft$set==set,]$tag))
+                rvConf$tags<-tags
+                spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
+                rvConf$spectProps<-spectProps
+                tabPanelList <- lapply(tags, function(tag) {
+                    shiny::tabPanel(tag, shiny::checkboxGroupInput(spectProps[[tag]], "Quality Control",
+                                                                   QANms),
+                                    shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
+                                    shiny::verbatimTextOutput(paste("value",tag,sep=""))
+                                    )})
+        
+                do.call(shiny::navlistPanel, tabPanelList)
+            } else NULL
+        })
+
+
 
 
 
@@ -1335,26 +1356,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         
-    ##     output$nvPanel<-shiny::renderUI({
-    ##         ft<-rvConf$fTab
-    ##         set<-input$presSelSet
-    ##         if (nchar(set)>0 && !is.null(ft)) {
-    ##             QANms<-rvConf$QANAMES
-    ##             names(QANms)<-QANms
-    ##             tags<-levels(factor(ft[ft$set==set,]$tag))
-    ##             rvConf$tags<-tags
-    ##             spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
-    ##             rvConf$spectProps<-spectProps
-    ##             tabPanelList <- lapply(tags, function(tag) {
-    ##                 shiny::tabPanel(tag, shiny::checkboxGroupInput(spectProps[[tag]], "Quality Control",
-    ##                                                                QANms),
-    ##                                 shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
-    ##                                 shiny::verbatimTextOutput(paste("value",tag,sep=""))
-    ##                                 )})
-    
-    ##             do.call(shiny::navlistPanel, tabPanelList)
-    ##         } else NULL
-    ##     })
 
     ##     ## shiny::observeEvent(input$impCmpListInp,{
     ##     ##     fn<-input$impCmpListInp
