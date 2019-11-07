@@ -3,7 +3,7 @@ FN_FTAB_BASE<-"ftable.base.csv"
 FN_FTAB_PP<-"ftable.pp.csv"
 FN_PP_OUT_PREF<-"PP.filetable"
 FN_FTAB<-"ftable.csv"
-
+FN_CMP_L<-"compounds.csv"
 
 MODEMAP=list(pH="MpHp_mass",
              mH="MmHm_mass",
@@ -29,6 +29,58 @@ idsFromFiles<-function(setDir) {
     bas<-basename(fls)
     res<-strsplit(bas,"\\.")
     sapply(res,function (r) as.integer(r[[1]]))
+}
+
+
+readCmpList<-function(fn) {
+    read.csv(file=fn,
+             header=T,
+             stringsAsFactors = F,
+             comment.char = '')
+}
+
+
+importCmpList<-function(fn) {
+    df<-readCmpList(fn)
+    dfNm<-names(df)
+    nRow<-nrow(df)
+
+    naCol<-rep(NA,nRow)
+    blankCol<-rep("",nRow)
+    if (! "CAS" %in% dfNm) df$CAS<-naCol
+    if (! "Name" %in% dfNm) df$Name<-blankCol
+    if (! "RT" %in% dfNm) df$RT<-naCol
+    if (! ("mz" %in% dfNm || "SMILES" %in% dfNm)) stop("Either `mz', or `SMILES' columns must be present in the compound list.")
+
+    if (! ("mz" %in% dfNm)) df$mz<-naCol
+    if (! ("SMILES" %in% dfNm)) df$SMILES<-blankCol
+
+    if (! ("Level" %in% dfNm)) df$Level<-1
+    for (ri in 1:nRow) {
+        if (emptyfield(df$SMILES[[ri]])) {
+            if (! emptyfield(df$mz[[ri]])) {
+                df$Level[[ri]]<-5
+            } else
+                stop ("At row ",ri," of the input compound list, there are neither SMILES, nor Mass to be found.")
+        }
+    }
+
+    df
+    
+    
+}
+
+getMzFromCmpL<-function(id,mode,cmpL) {
+    ind<-which(cmpL$ID %in% id)
+    mz<-cmpL$mz[[ind]]
+    smiles<-cmpL$SMILES[[ind]]
+    res<-if (!is.na(mz)) {
+             mz
+         } else if (nchar(smiles)>0)
+         {
+             RChemMass::getSuspectFormulaMass(smiles)[[MODEMAP[[mode]]]]
+         } else stop("Both SMILES and mz fields, for ID ",id,", found empty in the compound list. Aborting.")
+
 }
 
 ##' Create directories without drama.
@@ -162,10 +214,10 @@ gen_cmpd_l<-function(src_fn,dest_fn) {
     df<-read.csv(src_fn,sep=',',stringsAsFactors=F,comment.char='')
 
     ## Names
-    nms<-if ("PREFERRED_NAME" %in% names(df)) df$PREFERRED_NAME else df$Name
+    nms<-df$Name
     ## CAS
-    casvals<-if ("CASRN" %in% names(df)) df$CASRN else df$CAS
-    ## CAS
+    casvals<-df$CAS
+    ## RT
     rt<- df$RT
     
     if (is.null(casvals)) casvals <- rep(NA,sz)
@@ -367,8 +419,8 @@ RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
 ##' @param ppm_limit_fine ...
 ##' @param EIC_limit ...
 ##' @author Emma Schymanski, Todor Kondić
-RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
-                                  ppm_limit_fine = 10, EIC_limit = 0.001) {
+RMB_EIC_prescreen_df_old1 <- function (wd, RMB_mode, FileList, cmpd_list,
+                                       ppm_limit_fine = 10, EIC_limit = 0.001) {
 
     n_spec <- 0
     cmpd_RT_maxI <- ""
@@ -398,10 +450,90 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList, cmpd_list,
             } else {
                 mzCol[[i]]  ## TODOR REMOVE mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
             }
-        message("Pre findeic")
         ## TODOR REMOVED if (is.na(mzCol[[i]])) mzCol[[i]] <- mz ## infer from findMz.
         eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
-        message("Post findeic")
+        msms_found[n_spec] <- FALSE
+        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
+                                                                      p = TRUE))
+
+        message("here?")
+
+        max_I_prec_index <- which.max(eic$intensity)
+        cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
+        max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
+        cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60 ## conversion to minutes
+
+        if (length(eic$rt)>0) eic$rt <- eic$rt/60 ## conversion to minutes
+
+        write.csv(x=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"),row.names=F)
+        bindKids <- function(kids)
+            do.call(rbind,lapply(kids,function (kid)
+                c(rt=kid@rt,intensity=max(kid@intensity))))
+
+        
+        bindSpec <- function(specLst) {
+            do.call(rbind,lapply(specLst,function (sp) bindKids(sp@children)))
+        }
+        
+        found <- which(vapply(msms,function(sp) sp@found,FUN.VALUE=F))
+        msmsExst <- msms[found]
+        ## message("found:",found)
+        ## message("Lall:",length(msms))
+        ## message("Lsome:",length(msmsExst))
+        if (length(found)>0) {
+            msms_found[n_spec] <- T
+            msmsTab <- as.data.frame(bindSpec(msmsExst),stringsAsFactors=F)
+            names(msmsTab) <- c("rt","intensity")
+            if (nrow(msmsTab)>0) {
+                msmsTab$rt <- msmsTab$rt/60 ## conversion to minutes
+                write.csv(x=msmsTab,file=fn_out(cpdID,".kids"),row.names=F)
+            }
+        }
+
+        rts[i] <- (cmpd_RT_maxI[n_spec])
+    }
+    mzR::close(f)
+    rtwiDf <- data.frame(ID=file_list$ID, mz=mzCol, Name=nmCol, 
+                         cmpd_RT_maxI=cmpd_RT_maxI, cmpd_RT_maxI_min=cmpd_RT_maxI_min,
+                         max_I_prec=max_I_prec, msms_found=msms_found,stringsAsFactors=F)
+    
+    write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
+}
+
+
+RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
+                                  ppm_limit_fine = 10, EIC_limit = 0.001) {
+    ## TODO TODO
+    n_spec <- 0
+    cmpd_RT_maxI <- ""
+    msms_found <- ""
+    rts <- 0
+    max_I_prec <- ""
+    cmpd_RT_maxI_min <- ""
+    file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
+    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE,comment.char='')
+    ncmpd <- nrow(cmpd_info)
+    odir=wd
+    fid <- file_list$ID
+    cmpind <- which(cmpd_info$ID %in% fid)
+    mzCol <- cmpd_info$mz[cmpind]
+    nmCol <- cmpd_info$Name[cmpind]
+    get_width <- function(maxid) {log10(maxid)+1}
+    id_field_width <- get_width(ncmpd)
+
+    fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
+    f <- mzR::openMSfile(file_list$Files[1])
+    for (i in 1:length(file_list$ID)) {
+        cpdID <- file_list$ID[i]
+        n_spec <- n_spec + 1
+        smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
+        mz<-if (!is.na(smiles)) {
+                mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
+            } else {
+                mzCol[[i]]  ## TODOR REMOVE mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
+            }
+        ## TODOR REMOVED if (is.na(mzCol[[i]])) mzCol[[i]] <- mz ## infer from findMz.
+        eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
         msms_found[n_spec] <- FALSE
         msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
                                                                       p = TRUE))
@@ -913,4 +1045,17 @@ genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
     allTbl <- do.call(rbind,setTbl)
     write.csv(x=allTbl,file=destFn,row.names=F)
     allTbl 
+}
+
+addMzToFileTbl<-function(ft,cmpL) {
+    nR<-nrow(ft)
+    mzCol<-rep(NA,nR)
+
+    for (ir in 1:nR) {
+        id<-ft[ir,"ID"]
+        mode<-ft[ir,"mode"]
+        mzCol[[ir]]<- getMzFromCmpL(id,mode,cmpL)
+    }
+    ft$mz<-mzCol
+    ft
 }
