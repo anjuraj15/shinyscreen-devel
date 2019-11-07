@@ -537,7 +537,7 @@ mkUI2 <- function() {
                                        width = 7,color = "olive",
                                        solidHeader = FALSE,
                                        collapsible = TRUE,
-                                       shiny::plotOutput("plot1",
+                                       shiny::plotOutput("chromGram",
                                                          width = "100%",
                                                          height = "750px",
                                                          click = NULL,
@@ -777,22 +777,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         q
     }
 
-    ## plot_id<-function(rv,input) {
-    ##     tags<-rv$tags
-    ##     set<-input$presSelSet
-    ##     fTab<-rv$fTab
-    ##     sfTab<-fTab[fTab$set==set,]
-    ##     wd<-sfTab$wd[match(tags,sfTab$tag)]
-    ##     wd1<-wd[[1]]
-    ##     cmpL<-rhandsontable::hot_to_r(input$cmpListCtrl)
-    ##     preID<-rv$currIDSet
-    ##     smiles<- cmpL$SMILES[which(cmpL$ID %in% ids)]
-    ##     no_cmpds<-length(ids)
-    ##     mz<-lapply(smiles,function(smile)
-    ##         zz <- RChemMass::getSuspectFormulaMass(smile)
-    ##         zz[[MODEMAP[[mode]]]])
-        
-    ## }
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
@@ -819,6 +803,11 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         rvCmpList<- shiny::reactiveValues(df=mk_cmpList())
         rvSetId<- shiny::reactiveValues(df=mk_setId())
+        rvPres<-shiny::reactiveValues(cex=CEX,
+                                      rt_digits=RT_DIGITS,
+                                      m_digits=M_DIGITS,
+                                      pal=PAL,
+                                      plot_id=NULL)
 
         ## ***** shinyFiles observers *****
         wdroot<-c(wd=projDir)
@@ -925,6 +914,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
                 rvConf$mzMLtab<-sav$rvConf$mzMLtab
                 rvConf$fnFTBase<-sav$rvConf$fnFTBase
+                rvConf$fnFT<-sav$rvConf$fnFT
 
 
                     
@@ -1187,7 +1177,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                 cmpdL<-getCmpdL()
                 setID<-getSetId()
                 if (nrow(cmpdL)>0 && nrow(setID)>0) {
-                    ids<-setID$ID[setID$set %in% sets[[1]]]
+                    set<-input$presSelSet
+                    rvConf$currSet<-set
+                    ids<-setID$ID[setID$set %in% set]
                     entries<-mkCmpdDrop(ids,cmpdL)
                     ch<-as.list(1:length(ids))
                     names(ch)<-entries
@@ -1196,8 +1188,46 @@ shinyScreenApp <- function(projDir=getwd()) {
                                              choices=ch,
                                              selected = 1)
                     rvConf$currIDSet<-ids
-                    rvConf$currSet<-sets[[1]]
                 }
+            }
+        })
+
+        shiny::observeEvent(rvConf$currSet,{
+            set<-rvConf$currSet
+            fTab<-rvConf$fTab
+            message("set:",set)
+            message("n ftab:",nrow(fTab))
+            if (!is.na(set) && length(fTab)>0) {
+                message("000000")
+                tags<-rvConf$tags
+                message("1111111")
+                iSet<-which(set==fTab$set)
+                sfTab<-fTab$set[iSet]
+                tags<-levels(factor(sfTab$tag))
+                iTag<- match(tags,sfTab$tag)
+                message("AAAAA")
+                wd<-sfTab$wd[iTag]
+                preID<-sfTab$ID[iTag]
+
+                cmpL<-rvCmpList$df
+                iCmpL<-match(preID,cmpL$ID)
+                message("BBBB")
+                smiles<-cmpL$SMILES[iCmpL]
+                mz<-cmpL$mz[iCmpl]
+                names(smiles)<-as.character(preID)
+                names(mz)<-as.character(preID)
+                message("CCCCC")
+                ## Get the basenames of eic files.
+                eics <- list.files(path=wd[[1]],patt=".*eic.csv")
+                eicsPref <- sapply(strsplit(eics,split="\\."),function(x) x[[1]])
+                eicsID <- as.integer(eicsPref)
+                maybekids <- sapply(eicsPref,function(x) {paste(x,'.kids.csv',sep='')})
+                names(eics) <- eicsID
+                names(maybekids) <- eicsID
+                message("CCCCC")
+                plot_id <- function (i,rtrange=NULL,log=input$yaxis) plot_id_aux(i=as.character(i),wd=wd,eics=eics,maybekids=maybekids,mass=mz[[as.character(i)]],smile=smiles[[as.character(i)]],tags=tags,log=log,rtrange=rtrange,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
+                message("DDDDD")
+                rvPres$plot_id<-plot_id
             }
         })
 
@@ -1220,7 +1250,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observeEvent(rvConf$fnFT,{
             fn<-rvConf$fnFT
-            if (!is.null(fn)) {
+            if (!is.null(fn) && file.exists(fn)) {
                 rvConf$fTab<-read.csv(file=fn,
                                       comment.char = '',
                                       stringsAsFactors = F)
@@ -1371,18 +1401,17 @@ shinyScreenApp <- function(projDir=getwd()) {
             } else NULL
         })
 
-    ##     ## output$plot1 <- renderPlot(
-    ##     ## {
-    ##     ##     i=rvConf$currID
-    ##     ##     rtrange <- c(input$min_val,input$max_val)
-    ##     ##     plot_id(i,rtrange=rtrange, log=input$yaxis)
-    ##     ## })
-        
-
-
-
-
-        
+        output$chromGram <- renderPlot(
+        {
+            message("TADAAA")
+            plot_id<-rvPres$plot_id
+            i=rvConf$currIDSel
+            rtrange <- c(input$min_val,input$max_val)
+            if (!is.null(plot_id)) {
+                message("Tirii")
+                plot_id(i,rtrange=rtrange, log=input$yaxis)
+            }
+        })
 
         
         session$onSessionEnded(function () stopApp())

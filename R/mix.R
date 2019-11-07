@@ -16,6 +16,11 @@ QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
 PLOT_DEF_TAGS<-NA
 PLOT_DEF_SET<-NA
 
+CEX<-0.75
+RT_DIGITS=2
+M_DIGITS=4
+PAL="Dark2"
+
 ppInpFt<-function() {
     tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
 }
