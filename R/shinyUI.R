@@ -805,7 +805,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         impCmpListFn="",
                                         impSetIdFn="",
                                         impGenRMBFn="",
-                                        FileTabFn="",
+                                        fnFTBase="",
                                         tagProp="",
                                         setProp="",
                                         mode=modeLvl,
@@ -924,6 +924,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=sav$input$confResFileTab)
 
                 rvConf$mzMLtab<-sav$rvConf$mzMLtab
+                rvConf$fnFTBase<-sav$rvConf$fnFTBase
 
 
                     
@@ -1042,18 +1043,21 @@ shinyScreenApp <- function(projDir=getwd()) {
         ## shiny::observeEvent(input$confFileTabBase, {
         ##     fn<-input$confFileTabBase
         ##     if (length(fn)>0 && !is.na(fn)) {
-        ##         rvConf$FileTabFn<-fn
+        ##         rvConf$fnFTBase<-fn
         ##     }
         ## })
 
         shiny::observeEvent(input$genFileTabB,{
             fn<-input$confFileTabBase
-            if (length(fn)>0 && !is.na(fn)) {
+            if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
                 message("Saving file table to",fn)
                 files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
-                setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
-                genSuprFileTbl(files,setId,destFn=fn)
-                rvConf$FileTabFn<-fn
+                setId<-rvSetId$df
+                cmpL<-rvCmpList$df
+                df<-genSuprFileTbl(files,setId,destFn=fn)
+                df<-addCmpLColsToFileTbl(df,cmpL)
+                write.csv(x=df,file=fn,row.names=F)
+                rvConf$fnFTBase<-fn
             }
 
         })
@@ -1061,7 +1065,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(input$genRunB,{
             FnRMB<-input$impGenRMBInp
             nProc<-as.integer(input$genNoProc)
-            fnTab<-rvConf$FileTabFn
+            fnTab<-rvConf$fnFTBase
             sets<-input$genSetSelInp
             message("Selected sets:")
             message(str(sets))
@@ -1100,8 +1104,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                         ppmLimFine=ppmLimFine,
                         eicLim=eicLim)
                     message("***** END set ",s, " *****")
-                }}
-        })
+                }
+                gc()
+            }})
         
 
 
@@ -1126,9 +1131,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                                     fullFTab<-read.csv(file=fnOpen,
                                                        comment.char = '',
                                                        stringsAsFactors = F)
-                                    
-                                    fullFTab<-addMzToFileTbl(fullFTab,rvCmpList$df)
-                                    
 
                                     doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
                                     if (nrow(doneFTab)>0) {

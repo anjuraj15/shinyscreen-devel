@@ -294,10 +294,10 @@ gen_ftable_old <- function(fn_data,wd,n_cmpd) {
     f(fn_data,wd)
 }
 
-gen_ftable <- function(id,fnData,wd) {
+gen_ftable <- function(id,fnData,wd,name,mz) {
     n <- length(id)
     files <- rep(fnData,n)
-    df <- data.frame(Files=files,ID=id,wd=wd,stringsAsFactors=F)
+    df <- data.frame(Files=files,ID=id,wd=wd,mz=mz,Name=name,stringsAsFactors=F)
     write.csv(x=df,file=get_ftable_fn(wd))
 }
 
@@ -503,7 +503,6 @@ RMB_EIC_prescreen_df_old1 <- function (wd, RMB_mode, FileList, cmpd_list,
 
 RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
                                   ppm_limit_fine = 10, EIC_limit = 0.001) {
-    ## TODO TODO
     n_spec <- 0
     cmpd_RT_maxI <- ""
     msms_found <- ""
@@ -511,13 +510,10 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
     max_I_prec <- ""
     cmpd_RT_maxI_min <- ""
     file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
-    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE,comment.char='')
-    ncmpd <- nrow(cmpd_info)
+    ncmpd <- length(levels(factor(file_list$ID))) #nrow(cmpd_info)
     odir=wd
     fid <- file_list$ID
-    cmpind <- which(cmpd_info$ID %in% fid)
-    mzCol <- cmpd_info$mz[cmpind]
-    nmCol <- cmpd_info$Name[cmpind]
+    ## cmpind <- which(cmpd_info$ID %in% fid)
     get_width <- function(maxid) {log10(maxid)+1}
     id_field_width <- get_width(ncmpd)
 
@@ -526,19 +522,18 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
     for (i in 1:length(file_list$ID)) {
         cpdID <- file_list$ID[i]
         n_spec <- n_spec + 1
-        smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
-        mz<-if (!is.na(smiles)) {
-                mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
-            } else {
-                mzCol[[i]]  ## TODOR REMOVE mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
-            }
+        mz<-file_list$mz[i]
+        ## smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
+        ## mz<-if (!is.na(smiles)) {
+        ##         mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
+        ##     } else {
+        ##         mzCol[[i]]  ## TODOR REMOVE mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
+        ##     }
         ## TODOR REMOVED if (is.na(mzCol[[i]])) mzCol[[i]] <- mz ## infer from findMz.
         eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
         msms_found[n_spec] <- FALSE
         msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
                                                                       p = TRUE))
-
-        message("here?")
 
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
@@ -559,9 +554,7 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
         
         found <- which(vapply(msms,function(sp) sp@found,FUN.VALUE=F))
         msmsExst <- msms[found]
-        ## message("found:",found)
-        ## message("Lall:",length(msms))
-        ## message("Lsome:",length(msmsExst))
+
         if (length(found)>0) {
             msms_found[n_spec] <- T
             msmsTab <- as.data.frame(bindSpec(msmsExst),stringsAsFactors=F)
@@ -575,7 +568,7 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
         rts[i] <- (cmpd_RT_maxI[n_spec])
     }
     mzR::close(f)
-    rtwiDf <- data.frame(ID=file_list$ID, mz=mzCol, Name=nmCol, 
+    rtwiDf <- data.frame(ID=file_list$ID, mz=file_list$mz, Name=file_list$Name, 
                          cmpd_RT_maxI=cmpd_RT_maxI, cmpd_RT_maxI_min=cmpd_RT_maxI_min,
                          max_I_prec=max_I_prec, msms_found=msms_found,stringsAsFactors=F)
     
@@ -1043,19 +1036,22 @@ genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
 
     })
     allTbl <- do.call(rbind,setTbl)
-    write.csv(x=allTbl,file=destFn,row.names=F)
     allTbl 
 }
 
-addMzToFileTbl<-function(ft,cmpL) {
+addCmpLColsToFileTbl<-function(ft,cmpL) {
     nR<-nrow(ft)
     mzCol<-rep(NA,nR)
-
+    nmCol<-rep("",nR)
     for (ir in 1:nR) {
         id<-ft[ir,"ID"]
         mode<-ft[ir,"mode"]
         mzCol[[ir]]<- getMzFromCmpL(id,mode,cmpL)
+        cmI<-which(id==cmpL$ID)
+        nm<-cmpL$Name[[cmI]]
+        nmCol[[ir]]<- if (!is.na(nm)) nm else ""
     }
     ft$mz<-mzCol
+    ft$Name<-nmCol
     ft
 }

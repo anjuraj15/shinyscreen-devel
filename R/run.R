@@ -21,7 +21,7 @@ unsetPPDone<-function(dest) {
 
 setGenDone<-function(dest) {
     fnFlag<-file.path(dest,".gen.DONE")
-    if (isGenDone(dest)) file.create(fnFlag)
+    file.create(fnFlag)
 }
 
 unsetGenDone<-function(dest) {
@@ -64,26 +64,24 @@ presc.do<-function(fnTab,fnStgs,fnCmpdList,dest=".",proc=F,fnLog='prescreen.log'
         
         
         id <- fnTab$ID[idc]
+
+        mz <- fnTab$mz[idc]
+        nms<-fnTab$Name[idc]
         mode<-fnTab$mode[idc[[1]]]
         gen_presc_d(wd)
         RMassBank::loadRmbSettings(fnStgs)
         RMassBank::loadList(fnCmpdList,check=F)
         message("started: ",wd)
-        gen_ftable(id=id,fnData=fnData,wd=wd)
+        gen_ftable(id=id,fnData=fnData,wd=wd,mz=mz,name=nms)
         fn_ftable <- get_ftable_fn(wd)
         RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode,FileList=fn_ftable,
-                             cmpd_list=fnCmpdList,...)
+                             ...)
         message("finished: ",wd)
         T
     }
 
 
     unsetGenDone(dest)
-    unsetPPDone(dest)
-    if (file.exists(fnFlag)) {
-        unlink(fnFlag,force=T)
-    }
-
     if (proc>1) {
         cl<-parallel::makeCluster(spec=proc,type='PSOCK',outfile=fnLog)
         parallel::clusterEvalQ(cl,library(shinyscreen))
