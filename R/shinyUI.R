@@ -847,11 +847,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         getCmpdL<-shiny::reactive({
-            rhandsontable::hot_to_r(input$cmpListCtrl)
+            rvCmpList$df #rhandsontable::hot_to_r(input$cmpListCtrl)
         })
 
         getSetId<-shiny::reactive({
-            rhandsontable::hot_to_r(input$setIdTabCtrl)
+            rvSetId$df #rhandsontable::hot_to_r(input$setIdTabCtrl)
         })
 
         update_tags_mzMLtab<-shiny::reactive({
@@ -1026,6 +1026,205 @@ shinyScreenApp <- function(projDir=getwd()) {
             
         })
 
+        shiny::observeEvent(input$cmpListCtrl,{
+            df<-rhandsontable::hot_to_r(input$cmpListCtrl)
+        })
+
+        shiny::observeEvent(input$setIdTabCtrl,{
+            df<-rhandsontable::hot_to_r(input$setIdTabCtrl)
+            rvSetId$df<-df
+            shiny::updateSelectInput(session=session,
+                                     inputId="genSetSelInp",
+                                     choices=levels(df$set))})
+
+
+
+        ## shiny::observeEvent(input$confFileTabBase, {
+        ##     fn<-input$confFileTabBase
+        ##     if (length(fn)>0 && !is.na(fn)) {
+        ##         rvConf$FileTabFn<-fn
+        ##     }
+        ## })
+
+        shiny::observeEvent(input$genFileTabB,{
+            fn<-input$confFileTabBase
+            if (length(fn)>0 && !is.na(fn)) {
+                message("Saving file table to",fn)
+                files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
+                setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
+                genSuprFileTbl(files,setId,destFn=fn)
+                rvConf$FileTabFn<-fn
+            }
+
+        })
+
+        shiny::observeEvent(input$genRunB,{
+            FnRMB<-input$impGenRMBInp
+            nProc<-as.integer(input$genNoProc)
+            fnTab<-rvConf$FileTabFn
+            sets<-input$genSetSelInp
+            message("Selected sets:")
+            message(str(sets))
+            message("Number of processes:",nProc)
+            message("RMassBank settings file:",FnRMB)
+            message("File table:",fnTab)
+            if (length(fnTab)>0) {
+                ## fTab<-read.csv(file=fnTab,
+                ##                row.names=F,
+                ##                heander=T,
+                ##                comment.char='',
+                ##                na.strings=c("","NA"),
+                ##                stringsAsFactors=F)
+                ## mask<-fTab$set %in% sets
+                ## fTab<-fTab[mask,]
+
+                for (s in sets) {
+                    message("***** BEGIN set ",s, " *****")
+                    fnCmpdList<-input$impCmpListInp
+                    fnStgs<-input$impGenRMBInp
+                    intTresh<-as.numeric(input$intTresh)
+                    noiseFac<-as.numeric(input$noiseFac)
+                    rtDelta<-as.numeric(input$rtDelta)
+                    ppmLimFine<-as.numeric(input$ppmLimFine)
+                    dest<-rvConf$projDir
+                    eicLim<-as.numeric(input$eicLim)
+                    gc()
+                    gen(fnFileTab=fnTab,
+                        fnCmpdList=fnCmpdList,
+                        fnStgs=fnStgs,
+                        dest=dest,
+                        proc=nProc,
+                        intTresh=intTresh,
+                        noiseFac=noiseFac,
+                        rtDelta=rtDelta,
+                        ppmLimFine=ppmLimFine,
+                        eicLim=eicLim)
+                    message("***** END set ",s, " *****")
+                }}
+        })
+        
+
+
+        shiny::observeEvent(input$genRunPPB,{
+                            shiny::isolate({
+                                sets<-getSets()
+                                cdf<-if (!is.null(input$cmpListCtrl)) rhandsontable::hot_to_r(input$cmpListCtrl) else NULL})
+                            
+                            nr<-nrow(cdf)
+                            if (!is.null(nr)) {
+                                if (is.na(nr)) nr<-0
+                            } else nr<-0
+
+                            if (length(sets)>0 && nr>0) {
+
+                                doneSets<-sets[sapply(sets,isGenDone)]
+                                if (length(doneSets)>0) {
+                                    fnFullTab<-input$confFileTabProcInp
+                                    fnBaseTab<-input$confFileTabBase
+                                    fnOpen<-""
+                                    fnOpen<-if (file.exists(fnFullTab)) fnFullTab else fnBaseTab
+                                    fullFTab<-read.csv(file=fnOpen,
+                                                       comment.char = '',
+                                                       stringsAsFactors = F)
+
+                                    doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
+                                    if (nrow(doneFTab)>0) {
+                                        fnTmp<-ppInpFt()
+                                        write.csv(file=fnTmp,
+                                                  x=doneFTab,
+                                                  row.names=F)
+                                        message("fnTmp: ",fnTmp)
+                                        cmpdL<-rhandsontable::hot_to_r(input$cmpListCtrl)
+
+                                        maxId<-do.call(max,sapply(doneSets,idsFromFiles))
+                                        intTresh<-as.numeric(input$intTresh)
+                                        noiseFac<-as.numeric(input$noiseFac)
+                                        rtDelta<-as.numeric(input$rtDelta)
+                                        ## dr<-file.path(dirname(fnCand),sets)
+                                        preProc(fnFileTab=fnTmp,
+                                                lCmpdList=maxId,
+                                                fnDest=fnTmp,
+                                                intTresh=intTresh,
+                                                noiseFac=noiseFac,
+                                                rtDelta=rtDelta)
+                                        ppFnTab<-read.csv(file=fnTmp,
+                                                          comment.char = '',
+                                                          stringsAsFactors = F)
+
+                                        extNms<-names(ppFnTab)
+                                        basNms<-names(fullFTab)
+                                        diffNms<-setdiff(extNms,basNms)
+                                        nrf<-nrow(fullFTab)
+                                        for (nm in diffNms) {
+                                            z<-logical(length=nrf)
+                                            z<-T
+                                            fullFTab[[nm]]<-z
+                                        }
+                                        fullFTab[fullFTab$set %in% doneSets,]<-ppFnTab
+                                        write.csv(file=fnFullTab,
+                                                  x=fullFTab,
+                                                  row.names=F)
+                                        file.copy(fnFullTab,input$confResFileTab,overwrite=T)
+                                        
+                                        
+                                    }
+                                }
+                            }
+        })
+
+    ## START REMOVING HERE ...
+        shiny::observeEvent(input$presSelSet,{
+            sets<-getSets()
+            if (length(sets)>0 && !is.na(sets)) {
+                cmpdL<-getCmpdL()
+                setID<-getSetId()
+                if (nrow(cmpdL)>0 && nrow(setID)>0) {
+                    ids<-setID$ID[setID$set %in% sets[[1]]]
+                    entries<-mkCmpdDrop(ids,cmpdL)
+                    ch<-as.list(1:length(ids))
+                    names(ch)<-entries
+                    shiny::updateSelectInput(session=session,
+                                             "presSelCmpd",
+                                             choices=ch,
+                                             selected = 1)
+                    rvConf$currIDSet<-ids
+                    rvConf$currSet<-sets[[1]]
+                }
+            }
+        })
+
+        ## shiny::observeEvent(input$presSelCmpd,{
+        ##     pos<-input$presSelCmpd
+        ##     rvConf$currIDSel<-as.numeric(pos)
+        ## })
+
+        ## shiny::observeEvent(input$presPrev,{
+        ##     len<-length(rvConf$currIDSet)
+        ##     x<-rvConf$currIDSel-1
+        ##     if (x>0) rvConf$currIDSel<-x
+        ## })
+
+        ## shiny::observeEvent(input$presNext,{
+        ##     len<-length(rvConf$currIDSet)
+        ##     x<-rvConf$currIDSel+1
+        ##     if (x<=len) rvConf$currIDSel<-x
+        ## })
+
+        ## shiny::observeEvent(rvConf$fnFT,{
+        ##     fn<-rvConf$fnFT
+        ##     if (!is.null(fn)) {
+        ##         rvConf$fTab<-read.csv(file=fn,
+        ##                               comment.char = '',
+        ##                               stringsAsFactors = F)
+        ##     }
+        ## })
+
+        ## shiny::observeEvent(rvConf$currIDSel,{
+        ##     ids<-rvConf$currIDSet
+        ##     if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
+        ## })
+
+
 
         ## ***** Observe *****
         shiny::observe({
@@ -1130,202 +1329,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
 
-    ##     shiny::observeEvent(input$cmpListCtrl,{
-    ##         df<-rhandsontable::hot_to_r(input$cmpListCtrl)
-    ##     })
-
-    ##     shiny::observeEvent(input$setIdTabCtrl,{
-    ##         df<-rhandsontable::hot_to_r(input$setIdTabCtrl)
-    ##         rvSetId$df<-df
-    ##         shiny::updateSelectInput(session=session,
-    ##                                  inputId="genSetSelInp",
-    ##                                  choices=levels(df$set))})
-
-
-
-    ##     ## shiny::observeEvent(input$confFileTabBase, {
-    ##     ##     fn<-input$confFileTabBase
-    ##     ##     if (length(fn)>0 && !is.na(fn)) {
-    ##     ##         rvConf$FileTabFn<-fn
-    ##     ##     }
-    ##     ## })
-
-    ##     shiny::observeEvent(input$genFileTabB,{
-    ##         fn<-input$confFileTabBase
-    ##         if (length(fn)>0 && !is.na(fn)) {
-    ##             message("Saving file table to",fn)
-    ##             files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
-    ##             setId<-rhandsontable::hot_to_r(input$setIdTabCtrl)
-    ##             genSuprFileTbl(files,setId,destFn=fn)
-    ##             rvConf$FileTabFn<-fn
-    ##         }
-
-    ##     })
-
-    ##     shiny::observeEvent(input$genRunB,{
-    ##         FnRMB<-input$impGenRMBInp
-    ##         nProc<-as.integer(input$genNoProc)
-    ##         fnTab<-rvConf$FileTabFn
-    ##         sets<-input$genSetSelInp
-    ##         message("Selected sets:")
-    ##         message(str(sets))
-    ##         message("Number of processes:",nProc)
-    ##         message("RMassBank settings file:",FnRMB)
-    ##         message("File table:",fnTab)
-    ##         if (length(fnTab)>0) {
-    ##             ## fTab<-read.csv(file=fnTab,
-    ##             ##                row.names=F,
-    ##             ##                heander=T,
-    ##             ##                comment.char='',
-    ##             ##                na.strings=c("","NA"),
-    ##             ##                stringsAsFactors=F)
-    ##             ## mask<-fTab$set %in% sets
-    ##             ## fTab<-fTab[mask,]
-
-    ##             for (s in sets) {
-    ##                 message("***** BEGIN set ",s, " *****")
-    ##                 fnCmpdList<-input$impCmpListInp
-    ##                 fnStgs<-input$impGenRMBInp
-    ##                 intTresh<-as.numeric(input$intTresh)
-    ##                 noiseFac<-as.numeric(input$noiseFac)
-    ##                 rtDelta<-as.numeric(input$rtDelta)
-    ##                 ppmLimFine<-as.numeric(input$ppmLimFine)
-    ##                 dest<-rvConf$projDir
-    ##                 eicLim<-as.numeric(input$eicLim)
-    ##                 gc()
-    ##                 gen(fnFileTab=fnTab,
-    ##                     fnCmpdList=fnCmpdList,
-    ##                     fnStgs=fnStgs,
-    ##                     dest=dest,
-    ##                     proc=nProc,
-    ##                     intTresh=intTresh,
-    ##                     noiseFac=noiseFac,
-    ##                     rtDelta=rtDelta,
-    ##                     ppmLimFine=ppmLimFine,
-    ##                     eicLim=eicLim)
-    ##                 message("***** END set ",s, " *****")
-    ##             }}
-    ##     })
-        
-
-
-    ##     shiny::observeEvent(input$genRunPPB,{
-    ##                         shiny::isolate({
-    ##                             sets<-getSets()
-    ##                             cdf<-if (!is.null(input$cmpListCtrl)) rhandsontable::hot_to_r(input$cmpListCtrl) else NULL})
-                            
-    ##                         nr<-nrow(cdf)
-    ##                         if (!is.null(nr)) {
-    ##                             if (is.na(nr)) nr<-0
-    ##                         } else nr<-0
-
-    ##                         if (length(sets)>0 && nr>0) {
-
-    ##                             doneSets<-sets[sapply(sets,isGenDone)]
-    ##                             if (length(doneSets)>0) {
-    ##                                 fnFullTab<-input$confFileTabProcInp
-    ##                                 fnBaseTab<-input$confFileTabBase
-    ##                                 fnOpen<-""
-    ##                                 fnOpen<-if (file.exists(fnFullTab)) fnFullTab else fnBaseTab
-    ##                                 fullFTab<-read.csv(file=fnOpen,
-    ##                                                    comment.char = '',
-    ##                                                    stringsAsFactors = F)
-
-    ##                                 doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
-    ##                                 if (nrow(doneFTab)>0) {
-    ##                                     fnTmp<-ppInpFt()
-    ##                                     write.csv(file=fnTmp,
-    ##                                               x=doneFTab,
-    ##                                               row.names=F)
-    ##                                     message("fnTmp: ",fnTmp)
-    ##                                     cmpdL<-rhandsontable::hot_to_r(input$cmpListCtrl)
-
-    ##                                     maxId<-do.call(max,sapply(doneSets,idsFromFiles))
-    ##                                     intTresh<-as.numeric(input$intTresh)
-    ##                                     noiseFac<-as.numeric(input$noiseFac)
-    ##                                     rtDelta<-as.numeric(input$rtDelta)
-    ##                                     ## dr<-file.path(dirname(fnCand),sets)
-    ##                                     preProc(fnFileTab=fnTmp,
-    ##                                             lCmpdList=maxId,
-    ##                                             fnDest=fnTmp,
-    ##                                             intTresh=intTresh,
-    ##                                             noiseFac=noiseFac,
-    ##                                             rtDelta=rtDelta)
-    ##                                     ppFnTab<-read.csv(file=fnTmp,
-    ##                                                       comment.char = '',
-    ##                                                       stringsAsFactors = F)
-
-    ##                                     extNms<-names(ppFnTab)
-    ##                                     basNms<-names(fullFTab)
-    ##                                     diffNms<-setdiff(extNms,basNms)
-    ##                                     nrf<-nrow(fullFTab)
-    ##                                     for (nm in diffNms) {
-    ##                                         z<-logical(length=nrf)
-    ##                                         z<-T
-    ##                                         fullFTab[[nm]]<-z
-    ##                                     }
-    ##                                     fullFTab[fullFTab$set %in% doneSets,]<-ppFnTab
-    ##                                     write.csv(file=fnFullTab,
-    ##                                               x=fullFTab,
-    ##                                               row.names=F)
-    ##                                     file.copy(fnFullTab,input$confResFileTab,overwrite=T)
-                                        
-                                        
-    ##                                 }
-    ##                             }
-    ##                         }
-    ##     })
-
-    ##     shiny::observeEvent(input$presSelSet,{
-    ##         sets<-getSets()
-    ##         if (length(sets)>0 && !is.na(sets)) {
-    ##             cmpdL<-getCmpdL()
-    ##             setID<-getSetId()
-    ##             if (nrow(cmpdL)>0 && nrow(setID)>0) {
-    ##                 ids<-setID$ID[setID$set %in% sets[[1]]]
-    ##                 entries<-mkCmpdDrop(ids,cmpdL)
-    ##                 ch<-as.list(1:length(ids))
-    ##                 names(ch)<-entries
-    ##                 shiny::updateSelectInput(session=session,
-    ##                                          "presSelCmpd",
-    ##                                          choices=ch,
-    ##                                          selected = 1)
-    ##                 rvConf$currIDSet<-ids
-    ##                 rvConf$currSet<-sets[[1]]
-    ##             }
-    ##         }
-    ##     })
-
-    ##     shiny::observeEvent(input$presSelCmpd,{
-    ##         pos<-input$presSelCmpd
-    ##         rvConf$currIDSel<-as.numeric(pos)
-    ##     })
-
-    ##     shiny::observeEvent(input$presPrev,{
-    ##         len<-length(rvConf$currIDSet)
-    ##         x<-rvConf$currIDSel-1
-    ##         if (x>0) rvConf$currIDSel<-x
-    ##     })
-
-    ##     shiny::observeEvent(input$presNext,{
-    ##         len<-length(rvConf$currIDSet)
-    ##         x<-rvConf$currIDSel+1
-    ##         if (x<=len) rvConf$currIDSel<-x
-    ##     })
-
-    ##     shiny::observeEvent(rvConf$fnFT,{
-    ##         fn<-rvConf$fnFT
-    ##         if (!is.null(fn)) {
-    ##             rvConf$fTab<-read.csv(file=fn,
-    ##                                   comment.char = '',
-    ##                                   stringsAsFactors = F)
-    ##         }
-    ##     })
-
-    ##     shiny::observeEvent(rvConf$currIDSel,{
-    ##         ids<-rvConf$currIDSet
-    ##         if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
-    ##     })
 
         
         
