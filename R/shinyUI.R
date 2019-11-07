@@ -1126,6 +1126,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                                     fullFTab<-read.csv(file=fnOpen,
                                                        comment.char = '',
                                                        stringsAsFactors = F)
+                                    
+                                    fullFTab<-addMzToFileTbl(fullFTab,rvCmpList$df)
+                                    
 
                                     doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
                                     if (nrow(doneFTab)>0) {
@@ -1161,10 +1164,14 @@ shinyScreenApp <- function(projDir=getwd()) {
                                             fullFTab[[nm]]<-z
                                         }
                                         fullFTab[fullFTab$set %in% doneSets,]<-ppFnTab
+                                        
                                         write.csv(file=fnFullTab,
                                                   x=fullFTab,
                                                   row.names=F)
+                                        
                                         file.copy(fnFullTab,input$confResFileTab,overwrite=T)
+
+                                        message("Finished preprocessing.")
                                         
                                         
                                     }
