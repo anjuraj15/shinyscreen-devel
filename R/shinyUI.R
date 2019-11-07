@@ -855,6 +855,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         update_tags_mzMLtab<-shiny::reactive({
+            
             tags<-getTags()
             tagCol<-rvConf$mzMLtab$tag
             if (length(levels(tagCol))==0) rvConf$mzMLtab$tag<-factor(tagCol)
@@ -900,7 +901,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 ##         rvConf[[nm]]<-sav$rvConf[[nm]]
                 ##     }
 
-
                 shiny::updateTextInput(session=session,
                                        inputId="impGenRMBInp",
                                        value=sav$input$impGenRMBInp)
@@ -922,6 +922,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                 shiny::updateTextInput(session=session,
                                        inputId="confResFileTab",
                                        value=sav$input$confResFileTab)
+
+                rvConf$mzMLtab<-sav$rvConf$mzMLtab
+
+
                     
                 
             }
@@ -1015,7 +1019,93 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
+        shiny::observeEvent(input$mzMLtabCtrl,{
+            ## input$cmpListCtrl
+            ## input$setIdTabCtrl
+            shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
+            
+        })
+
+
         ## ***** Observe *****
+        shiny::observe({
+            fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
+            paths<-fchoice[["datapath"]]
+            isolate({
+                for (pt in paths) {
+                    rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt)
+                }
+        
+                })
+        })
+
+        shiny::observe({
+            shiny::updateSelectInput(session=session,
+                                     inputId="presSelCmpd",
+                                     selected=rvConf$currIDSel)
+        })
+
+
+        shiny::observe({
+            shiny::invalidateLater(100,
+                                   session=session)
+            output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
+                
+                sets<-getSets()
+                genState<-sapply(sets,isGenDone)
+                df<-if (!is.null(sets)) {data.frame(set=sets,
+                                                    generated=genState,
+                                                    stringsAsFactors=F)
+                    } else {data.frame(sets=character(),
+                                       generated=logical(),
+                                       stringsAsFactors=F)} 
+                
+                rhandsontable::rhandsontable(df,
+                                             rowHeaders=NULL,
+                                             readOnly=T,
+                                             stretchH="all")
+                
+            })
+        })
+    
+        shiny::observe({
+            shiny::invalidateLater(100,
+                                   session=session)
+            fnFT<-if (file.exists(input$confResFileTab)) input$confResFileTab else NULL
+            rvConf$fnFT<-fnFT
+              
+        })
+    
+
+        shiny::observe({
+            sets<-getSets()
+            if (length(sets)>0 && !is.na(sets)) {
+                shiny::updateSelectInput(session=session,
+                                         "presSelSet",
+                                         choices=sets,
+                                         selected=sets[[1]])
+            }
+        })
+
+
+        shiny::observe({
+            i<-rvConf$currID
+            spectProps<-rvConf$spectProps
+            set<-input$presSelSet
+            if (!is.na(i) && length(spectProps)>0) {
+                QANAMES<-rvConf$QANAMES
+                sdf <- queryFileTable(df=rvConf$fTab,set=set,id=i)
+                for (t in sdf$tag) {
+                    sprop <- rvConf$spectProps[[t]]
+                    sel <- as.logical(sdf[sdf$tag %in% t,QANAMES])
+                    choices <- QANAMES[sel]
+                    names(choices) <- QANAMES[sel]
+                    shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
+                }
+            }
+        })
+
+
 
 
         ## ***** Render *****
@@ -1029,25 +1119,15 @@ shinyScreenApp <- function(projDir=getwd()) {
             rhandsontable::rhandsontable(df,stretchH="all")
         })
 
-    ##     shiny::observe({
-    ##         input$mzMLB
+        output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
+            rvConf$mzMLtab
+            update_tags_mzMLtab()
+            update_sets_mzMLtab()
+                if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
+        })
 
-    ##         fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
-    ##         paths<-fchoice[["datapath"]]
-    ##         isolate({
-    ##             for (pt in paths) {
-    ##                 rvConf$mzMLtab<-extd_mzMLtab(rvConf$mzMLtab,pt)
-    ##             }
 
-    ##         })
-    ##     })
 
-    ##     shiny::observeEvent(input$mzMLtabCtrl,{
-    ##         input$cmpListCtrl
-    ##         input$setIdTabCtrl
-    ##         shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
-            
-    ##     })
 
 
     ##     shiny::observeEvent(input$cmpListCtrl,{
@@ -1127,12 +1207,7 @@ shinyScreenApp <- function(projDir=getwd()) {
     ##             }}
     ##     })
         
-    ##     output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-    ##         rvConf$mzMLtab
-    ##         update_tags_mzMLtab()
-    ##         update_sets_mzMLtab()
-    ##         if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
-    ##     })
+
 
     ##     shiny::observeEvent(input$genRunPPB,{
     ##                         shiny::isolate({
@@ -1252,11 +1327,6 @@ shinyScreenApp <- function(projDir=getwd()) {
     ##         if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
     ##     })
 
-    ##     shiny::observe({
-    ##         shiny::updateSelectInput(session=session,
-    ##                                  inputId="presSelCmpd",
-    ##                                  selected=rvConf$currIDSel)
-    ##     })
         
         
 
@@ -1295,64 +1365,6 @@ shinyScreenApp <- function(projDir=getwd()) {
     ##     ##     plot_id(i,rtrange=rtrange, log=input$yaxis)
     ##     ## })
         
-    ##     shiny::observe({
-    ##         shiny::invalidateLater(100,
-    ##                                session=session)
-    ##         output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
-                                
-    ##             sets<-getSets()
-    ##             genState<-sapply(sets,isGenDone)
-    ##             df<-if (!is.null(sets)) {data.frame(set=sets,
-    ##                                                 generated=genState,
-    ##                                                 stringsAsFactors=F)
-    ##                 } else {data.frame(sets=character(),
-    ##                                    generated=logical(),
-    ##                                    stringsAsFactors=F)} 
-                
-    ##             rhandsontable::rhandsontable(df,
-    ##                                          rowHeaders=NULL,
-    ##                                          readOnly=T,
-    ##                                          stretchH="all")
-                
-    ##         })
-    ##     })
-    
-    ## shiny::observe({
-    ##     shiny::invalidateLater(100,
-    ##                            session=session)
-    ##     fnFT<-if (file.exists(input$confResFileTab)) input$confResFileTab else NULL
-    ##     rvConf$fnFT<-fnFT
-              
-    ## })
-    
-
-    ##     shiny::observe({
-    ##         sets<-getSets()
-    ##         if (length(sets)>0 && !is.na(sets)) {
-    ##             shiny::updateSelectInput(session=session,
-    ##                                      "presSelSet",
-    ##                                      choices=sets,
-    ##                                      selected=sets[[1]])
-    ##         }
-    ##     })
-
-
-    ##     shiny::observe({
-    ##         i<-rvConf$currID
-    ##         spectProps<-rvConf$spectProps
-    ##         set<-input$presSelSet
-    ##         if (!is.na(i) && length(spectProps)>0) {
-    ##             QANAMES<-rvConf$QANAMES
-    ##             sdf <- queryFileTable(df=rvConf$fTab,set=set,id=i)
-    ##             for (t in sdf$tag) {
-    ##                 sprop <- rvConf$spectProps[[t]]
-    ##                 sel <- as.logical(sdf[sdf$tag %in% t,QANAMES])
-    ##                 choices <- QANAMES[sel]
-    ##                 names(choices) <- QANAMES[sel]
-    ##                 shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
-    ##             }
-    ##         }
-    ##     })
 
     ##     shiny::observeEvent(input$submitQA,{
     ##         res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
