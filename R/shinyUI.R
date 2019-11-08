@@ -1195,28 +1195,32 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(rvConf$currSet,{
             set<-rvConf$currSet
             fTab<-rvConf$fTab
+            ids<-rvConf$currIDSet
             message("set:",set)
             message("n ftab:",nrow(fTab))
             if (!is.na(set) && length(fTab)>0) {
-                message("000000")
                 tags<-rvConf$tags
-                message("1111111")
                 iSet<-which(set==fTab$set)
-                sfTab<-fTab$set[iSet]
+                sfTab<-fTab[iSet,]
+                message("sfTab<")
+                str(sfTab)
+                message("sfTab>")
                 tags<-levels(factor(sfTab$tag))
                 iTag<- match(tags,sfTab$tag)
-                message("AAAAA")
+                message("iTag<")
+                message(str(iTag))
+                message("iTag>")
                 wd<-sfTab$wd[iTag]
-                preID<-sfTab$ID[iTag]
-
+                message("wd<")
+                message(str(wd))
+                message("wd>")
+                preID<-ids #sfTab$ID[iTag]
                 cmpL<-rvCmpList$df
                 iCmpL<-match(preID,cmpL$ID)
-                message("BBBB")
                 smiles<-cmpL$SMILES[iCmpL]
-                mz<-cmpL$mz[iCmpl]
+                mz<-cmpL$mz[iCmpL]
                 names(smiles)<-as.character(preID)
                 names(mz)<-as.character(preID)
-                message("CCCCC")
                 ## Get the basenames of eic files.
                 eics <- list.files(path=wd[[1]],patt=".*eic.csv")
                 eicsPref <- sapply(strsplit(eics,split="\\."),function(x) x[[1]])
@@ -1224,9 +1228,20 @@ shinyScreenApp <- function(projDir=getwd()) {
                 maybekids <- sapply(eicsPref,function(x) {paste(x,'.kids.csv',sep='')})
                 names(eics) <- eicsID
                 names(maybekids) <- eicsID
-                message("CCCCC")
-                plot_id <- function (i,rtrange=NULL,log=input$yaxis) plot_id_aux(i=as.character(i),wd=wd,eics=eics,maybekids=maybekids,mass=mz[[as.character(i)]],smile=smiles[[as.character(i)]],tags=tags,log=log,rtrange=rtrange,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
-                message("DDDDD")
+                plot_id <- function (i,rtrange=NULL,log=input$yaxis) {
+                    i=as.character(i)
+                    message("plot id:",i)
+                    message("<mz")
+                    message(str(names(mz)))
+                    message("mz>")
+                    message("<smiles")
+                    message(str(names(smiles)))
+                    message("smiles>")
+                    mz=mz[[i]]
+                    smile<-smiles[[i]]
+
+                    plot_id_aux(i,wd=wd,eics=eics,maybekids=maybekids,mass=mz,smile=smile,tags=tags,log=log,rtrange=rtrange,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
+                    }
                 rvPres$plot_id<-plot_id
             }
         })
@@ -1403,9 +1418,9 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         output$chromGram <- renderPlot(
         {
-            message("TADAAA")
             plot_id<-rvPres$plot_id
-            i=rvConf$currIDSel
+            i=rvConf$currID
+            message("plot i:",i)
             rtrange <- c(input$min_val,input$max_val)
             if (!is.null(plot_id)) {
                 message("Tirii")
