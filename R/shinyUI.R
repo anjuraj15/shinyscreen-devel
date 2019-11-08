@@ -1202,14 +1202,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                 tags<-rvConf$tags
                 iSet<-which(set==fTab$set)
                 sfTab<-fTab[iSet,]
-                message("sfTab<")
-                str(sfTab)
-                message("sfTab>")
                 tags<-levels(factor(sfTab$tag))
                 iTag<- match(tags,sfTab$tag)
-                message("iTag<")
-                message(str(iTag))
-                message("iTag>")
                 wd<-sfTab$wd[iTag]
                 message("wd<")
                 message(str(wd))
@@ -1230,13 +1224,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 names(maybekids) <- eicsID
                 plot_id <- function (i,rtrange=NULL,log=input$yaxis) {
                     i=as.character(i)
-                    message("plot id:",i)
-                    message("<mz")
-                    message(str(names(mz)))
-                    message("mz>")
-                    message("<smiles")
-                    message(str(names(smiles)))
-                    message("smiles>")
                     mz=mz[[i]]
                     smile<-smiles[[i]]
 
@@ -1295,7 +1282,32 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
+        shiny::observeEvent(input$saveplot,
+        {
+            i=rvConf$currID
+            pfn <-input$plotname
+            if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
+            fn <- sprintf(pfn,i)
+            rtrange <- c(input$min_val,input$max_val)
+            pdf(file=fn, width=12, height=8)
+            rvPres$plot_id(i,rtrange=rtrange, log=input$yaxis)
+            dev.off()
+            message("Plotting compound ", i," to ",fn," done.")
+        })
 
+        shiny::observeEvent(input$saveallplots,
+        {
+            i=rvConf$currID
+            pfn <-input$plotname
+            if (is.na(pfn)) pfn <- "plotall.pdf"
+            fn <- sprintf(pfn,i)
+            pdf(file=fn, width=12, height=8)
+            for (i in rvConf$currIDSet) {
+                rvPres$plot_id(i,log=input$yaxis)
+                message("Plotting compound ", i," done.")
+            }
+            dev.off()
+        })
         ## ***** Observe *****
         shiny::observe({
             fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
@@ -1420,10 +1432,8 @@ shinyScreenApp <- function(projDir=getwd()) {
         {
             plot_id<-rvPres$plot_id
             i=rvConf$currID
-            message("plot i:",i)
             rtrange <- c(input$min_val,input$max_val)
             if (!is.null(plot_id)) {
-                message("Tirii")
                 plot_id(i,rtrange=rtrange, log=input$yaxis)
             }
         })
