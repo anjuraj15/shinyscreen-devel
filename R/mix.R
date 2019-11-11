@@ -5,10 +5,10 @@ FN_PP_OUT_PREF<-"PP.filetable"
 FN_FTAB<-"ftable.csv"
 FN_CMP_L<-"compounds.csv"
 
-MODEMAP=list(pH="MpHp_mass",
-             mH="MmHm_mass",
-             pNH4="MpNH4_mass",
-             pNa="MpNa_mass")
+MODEMAP<-list(pH="MpHp_mass",
+              mH="MmHm_mass",
+              pNH4="MpNH4_mass",
+              pNa="MpNa_mass")
 
 DEFAULT_RT_RANGE=c(NA,NA)
 
@@ -76,16 +76,18 @@ importCmpList<-function(fn) {
 }
 
 getMzFromCmpL<-function(id,mode,cmpL) {
-    ind<-which(cmpL$ID %in% id)
+    ind<-match(id,cmpL$ID)
     mz<-cmpL$mz[[ind]]
     smiles<-cmpL$SMILES[[ind]]
     res<-if (!is.na(mz)) {
              mz
          } else if (nchar(smiles)>0)
          {
-             RChemMass::getSuspectFormulaMass(smiles)[[MODEMAP[[mode]]]]
+             mde<-as.character(mode)
+             wh<-MODEMAP[[mde]]
+             RChemMass::getSuspectFormulaMass(smiles)[[wh]]
          } else stop("Both SMILES and mz fields, for ID ",id,", found empty in the compound list. Aborting.")
-
+    res
 }
 
 ##' Create directories without drama.
@@ -460,8 +462,6 @@ RMB_EIC_prescreen_df_old1 <- function (wd, RMB_mode, FileList, cmpd_list,
         msms_found[n_spec] <- FALSE
         msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
                                                                       p = TRUE))
-
-        message("here?")
 
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
@@ -1051,7 +1051,9 @@ addCmpLColsToFileTbl<-function(ft,cmpL) {
     for (ir in 1:nR) {
         id<-ft[ir,"ID"]
         mode<-ft[ir,"mode"]
+#        message("** pre mzCol;id: ",id,"ir: ",ir,"mode: ",mode)
         mzCol[[ir]]<- getMzFromCmpL(id,mode,cmpL)
+#        message("++ post mzCol;id: ",id,"ir: ",ir,"mode: ",mode)
         cmI<-which(id==cmpL$ID)
         nm<-cmpL$Name[[cmI]]
         nmCol[[ir]]<- if (!is.na(nm)) nm else ""

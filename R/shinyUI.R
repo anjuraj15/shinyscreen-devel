@@ -1040,7 +1040,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(input$genFileTabB,{
             fn<-input$confFileTabBase
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
-                message("Saving file table to",fn)
                 files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
                 setId<-rvSetId$df
                 cmpL<-rvCmpList$df
