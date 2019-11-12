@@ -108,22 +108,8 @@ mkUI <- function() {
     cmpListBox<-shinydashboard::box(title="Compound list",
                                     rhandsontable::rHandsontableOutput("cmpListCtrl"),
                                     width=NULL)
-
-    cmpListState <- shinydashboard::box(title="Compound list state",
-                                        shiny::h5("These two buttons save and restore locally processed compound list, the origin of which is the imported compound list (see Config tab)."),
-                                        shinyFiles::shinySaveButton("saveCmpListB",
-                                                                    "Save",
-                                                                    title="Save",
-                                                                    filename = FN_CMP_L,
-                                                                    "csv"),
-                                        shinyFiles::shinyFilesButton("restoreCmpListB",
-                                                                     label="Restore",
-                                                                     multiple=F,
-                                                                     title="Restore"),
-                                        width=NULL)
     
-    cmpListLayout <- shiny::fluidRow(shiny::column(cmpListState,
-                                                   cmpListBox,
+    cmpListLayout <- shiny::fluidRow(shiny::column(cmpListBox,
                                                    width = 12))
 
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
@@ -136,34 +122,12 @@ mkUI <- function() {
                                   rhandsontable::rHandsontableOutput("setIdTabCtrl"),
                                   width = NULL)
 
-    setIdBoxState<-shinydashboard::box(title="Compound list state",
-                                     shinyFiles::shinySaveButton("saveSetIdB",
-                                                                 "Save",
-                                                                 title="Save",
-                                                                 filename = "compound_sets.csv",
-                                                                 "csv"),
-                                     shinyFiles::shinyFilesButton("restoreSetIdB",
-                                                                  label="Restore",
-                                                                  multiple=F,
-                                                                  title="Restore"),
-                                     width=NULL)
-
-    setIdLayout<-shiny::fluidRow(shiny::column(setIdBoxState,
-                                               setIdBox,
+    setIdLayout<-shiny::fluidRow(shiny::column(setIdBox,
                                                width = 12))
 
     setIdTab<-shinydashboard::tabItem(tabName="setId",
                                       shiny::h5("This is an editable view of the id/set list."),
                                       setIdLayout)
-
-    ## ***** Generate Prescreen Data *****
-
-##     genBox<-shinydashboard::box(title="Produce file table",
-##                                 shiny::actionButton(inputId="genRunB",
-##                                                     label="Run!",
-##                                                     icon=shiny::icon("bomb")),
-## ,
-##                                 width=NULL)
 
     genBoxParam1<-shinydashboard::box(title="Parameters of the run",
                                       shiny::textInput("genNoProc",
@@ -515,12 +479,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         shinyFiles::shinyFileSave(input, 'saveConfB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'restoreConfB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'mzMLB',roots=volumes)
-
-        shinyFiles::shinyFileSave(input, 'saveCmpListB',roots=wdroot)
-        shinyFiles::shinyFileChoose(input, 'restoreCmpListB',roots=projDir)
-
-        shinyFiles::shinyFileSave(input, 'saveSetIdB',roots=wdroot)
-        shinyFiles::shinyFileChoose(input, 'restoreSetIdB',roots=wdroot)
 
         ## ***** reactive function definitions *****
         
