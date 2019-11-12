@@ -47,7 +47,7 @@ readCmpList<-function(fn) {
 
 importCmpList<-function(fn) {
     df<-readCmpList(fn)
-    dfNm<-names(df)
+    dfNm<-colnames(df)
     nRow<-nrow(df)
 
     naCol<-rep(NA,nRow)
@@ -55,7 +55,9 @@ importCmpList<-function(fn) {
     if (! "CAS" %in% dfNm) df$CAS<-naCol
     if (! "Name" %in% dfNm) df$Name<-blankCol
     if (! "RT" %in% dfNm) df$RT<-naCol
-    if (! ("mz" %in% dfNm || "SMILES" %in% dfNm)) stop("Either `mz', or `SMILES' columns must be present in the compound list.")
+    mzIn=as.logical(match("mz",dfNm,nomatch=F))
+    SMILESIn=as.logical(match("SMILES",dfNm,nomatch=F))
+    if (! (mzIn || SMILESIn)) stop("Either `mz', or `SMILES' columns must be present in the compound list.")
 
     if (! ("mz" %in% dfNm)) df$mz<-naCol
     if (! ("SMILES" %in% dfNm)) df$SMILES<-blankCol
