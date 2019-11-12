@@ -64,14 +64,6 @@ mkUI <- function() {
                                                                   multiple=F,
                                                                   title="Restore"),
                                      width=NULL)
-    
-    ## confFileTab<-shinydashboard::box(title="File table generation settings",
-    ##                                  shinyFiles::shinySaveButton("confFileTabB",
-    ##                                                              "Basic file table.",
-    ##                                                              "Basic file table.",
-    ##                                                              filename = FN_FTAB_BASE,
-    ##                                                              "csv"),
-    ##                                  width=NULL)
 
     confPP<-shinydashboard::box(title="Preprocessing settings",
                                 shiny::textInput("confFileTabBase",
@@ -90,8 +82,11 @@ mkUI <- function() {
                                       shinyFiles::shinyFilesButton("mzMLB",
                                                                    label="Select mzML files",
                                                                    title="Select mzML files",
-                                                                   icon=shiny::icon("files"),
+                                                                   icon=shiny::icon("files-o"),
                                                                    multiple=T),
+                                      shiny::actionButton("mzMLtabSubm",
+                                                          label="Submit mzML list.",
+                                                          icon=shiny::icon("check")),
                                       rhandsontable::rHandsontableOutput("mzMLtabCtrl"),
                                       width=NULL)
 
