@@ -92,6 +92,12 @@ getMzFromCmpL<-function(id,mode,cmpL) {
     res
 }
 
+getSMILESFromCmpL<-function(id,cmpL) {
+    ind<-match(id,cmpL$ID)
+    smiles<-cmpL$SMILES[[ind]]
+    smiles
+}
+
 ##' Create directories without drama.
 ##'
 ##' Create directories without drama.

@@ -627,6 +627,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             mode<-rvConf$mzMLtab
             dfSet<-rvSetId$df
             dfSet$mz<-rep(NA,nR)
+            dfSet$SMILES<-rep(NA,nR)
             cmpL<-getCmpL()
             for (s in sets) {
                 md<-setMode[[s]]
@@ -634,6 +635,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 for (i in ind) {
                     id<-dfSet[i,"ID"]
                     dfSet[i,"mz"]<-getMzFromCmpL(id,md,cmpL)
+                    dfSet[i,"SMILES"]<-getSMILESFromCmpL(id,cmpL)
                 }
             }
             ## rvSetId$df<-dfSet
