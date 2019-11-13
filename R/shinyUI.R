@@ -84,7 +84,7 @@ mkUI <- function() {
                                                                    title="Select mzML files",
                                                                    icon=shiny::icon("files-o"),
                                                                    multiple=T),
-                                      shiny::actionButton("mzMLtabSubm",
+                                      shiny::actionButton("mzMLtabSubmB",
                                                           label="Submit mzML list.",
                                                           icon=shiny::icon("check")),
                                       rhandsontable::rHandsontableOutput("mzMLtabCtrl"),
@@ -450,6 +450,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         impCmpListFn="",
                                         impSetIdFn="",
                                         impGenRMBFn="",
+                                        fnLocSetId=FN_LOC_SETID,
                                         fnFTBase="",
                                         tagProp="",
                                         setProp="",
@@ -490,7 +491,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             levels(rvSetId$df$set)
         })
 
-        getCmpdL<-shiny::reactive({
+        getCmpL<-shiny::reactive({
             rvCmpList$df #rhandsontable::hot_to_r(input$cmpListCtrl)
         })
 
@@ -613,6 +614,37 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
+
+        shiny::observeEvent(input$mzMLtabSubmB,{
+            mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
+            rvConf$mzMLtab<-mzML
+
+            ## Fill out mz in sets
+            sets<-getSets()
+            setMode<-mzML$mode[match(sets,mzML$set)]
+            names(setMode)<-sets
+            nR<-nrow(rvSetId$df)
+            mode<-rvConf$mzMLtab
+            dfSet<-rvSetId$df
+            dfSet$mz<-rep(NA,nR)
+            cmpL<-getCmpL()
+            for (s in sets) {
+                md<-setMode[[s]]
+                ind<-which(dfSet$set==s)
+                for (i in ind) {
+                    id<-dfSet[i,"ID"]
+                    dfSet[i,"mz"]<-getMzFromCmpL(id,md,cmpL)
+                }
+            }
+            ## rvSetId$df<-dfSet
+            fn<-rvConf$fnLocSetId
+            write.csv(file=fn,
+                      row.names=F,
+                      x=dfSet)
+            message("New set id table written to: ",fn)
+            rvConf$impSetIdFn<-fn
+        })
+
         shiny::observeEvent(input$impGenRMBB,{
             fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impGenRMBB)
             fn<-fnobj[["datapath"]]
@@ -662,6 +694,18 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvSetId$df<-readSetId(fn)
                 message("Done importing compound sets from: ",fn)
             }
+            df<-rvSetId$df
+            if (length(df)>0 && !is.na(df) && nrow(df)>0) {
+                shiny::updateSelectInput(session=session,
+                                         inputId="genSetSelInp",
+                                         choices=levels(df$set))
+            }
+            shiny::isolate({
+                message("Changing the inpSetIdFn to: ",fn, " in isolation.")
+                shiny::updateTextInput(session=session,
+                                       inputId="impSetIdInp",
+                                       value=fn)
+            })
         })
 
         shiny::observeEvent(rvConf$mzMLtab,{
@@ -670,24 +714,25 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
-        shiny::observeEvent(input$mzMLtabCtrl,{
-            ## input$cmpListCtrl
-            ## input$setIdTabCtrl
-            rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
-            ## shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
+        ## shiny::observeEvent(input$mzMLtabCtrl,{
+        ##     ## input$cmpListCtrl
+        ##     ## input$setIdTabCtrl
+        ##     rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
+        ##     ## shiny::isolate({rvConf$mzMLtab<-rhandsontable::hot_to_r(input$mzMLtabCtrl)})
             
-        })
+        ## })
 
         shiny::observeEvent(input$cmpListCtrl,{
             df<-rhandsontable::hot_to_r(input$cmpListCtrl)
         })
 
         shiny::observeEvent(input$setIdTabCtrl,{
-            df<-rhandsontable::hot_to_r(input$setIdTabCtrl)
-            rvSetId$df<-df
-            shiny::updateSelectInput(session=session,
-                                     inputId="genSetSelInp",
-                                     choices=levels(df$set))})
+            ## df<-rhandsontable::hot_to_r(input$setIdTabCtrl)
+            ## rvSetId$df<-df
+            ## shiny::updateSelectInput(session=session,
+            ##                          inputId="genSetSelInp",
+            ##                          choices=levels(df$set))
+        })
 
 
 
@@ -760,6 +805,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                 }
                 gc()
             }})
+
+        ### STOPPED HERE
         
 
 
@@ -832,7 +879,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(input$presSelSet,{
             sets<-getSets()
             if (length(sets)>0 && !is.na(sets)) {
-                cmpdL<-getCmpdL()
+                cmpdL<-getCmpL()
                 setID<-getSetId()
                 if (nrow(cmpdL)>0 && nrow(setID)>0) {
                     set<-input$presSelSet
@@ -871,9 +918,18 @@ shinyScreenApp <- function(projDir=getwd()) {
                 cmpL<-rvCmpList$df
                 iCmpL<-match(preID,cmpL$ID)
                 smiles<-cmpL$SMILES[iCmpL]
-                mz<-cmpL$mz[iCmpL]
+                mz<-1:length(preID)
                 names(smiles)<-as.character(preID)
                 names(mz)<-as.character(preID)
+
+                for (nm in names(smiles)) {
+                    i<-as.integer(nm)
+                    w<-match(i,sfTab$ID)
+                    mz[[nm]]<-sfTab$mz[w]
+                }
+                message("mz <")
+                message(str(mz))
+                message("mz >")
                 ## Get the basenames of eic files.
                 eics <- list.files(path=wd[[1]],patt=".*eic.csv")
                 eicsPref <- sapply(strsplit(eics,split="\\."),function(x) x[[1]])
@@ -885,6 +941,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                     i=as.character(i)
                     mz=mz[[i]]
                     smile<-smiles[[i]]
+                    message("i:",i)
+                    message("mz:",mz)
+                    message("smile:",smile)
 
                     plot_id_aux(i,wd=wd,eics=eics,maybekids=maybekids,mass=mz,smile=smile,tags=tags,log=log,rtrange=rtrange,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
                     }
@@ -1024,6 +1083,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                                          "presSelSet",
                                          choices=sets,
                                          selected=sets[[1]])
+
+                message("upd sel worked")
             }
         })
 
@@ -1033,6 +1094,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             spectProps<-rvConf$spectProps
             set<-input$presSelSet
             if (!is.na(i) && length(spectProps)>0) {
+                message("updating checkboxes")
                 QANAMES<-rvConf$QANAMES
                 sdf <- queryFileTable(df=rvConf$fTab,set=set,id=i)
                 for (t in sdf$tag) {
@@ -1041,6 +1103,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     choices <- QANAMES[sel]
                     names(choices) <- QANAMES[sel]
                     shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
+                    message("updating checkboxes done")
                 }
             }
         })
@@ -1067,6 +1130,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         output$nvPanel<-shiny::renderUI({
+            message("Rendering panel started")
             ft<-rvConf$fTab
             set<-input$presSelSet
             if (nchar(set)>0 && !is.null(ft)) {
@@ -1084,6 +1148,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                     )})
         
                 do.call(shiny::navlistPanel, tabPanelList)
+                message("done rendering panel")
             } else NULL
         })
 
