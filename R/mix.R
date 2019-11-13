@@ -955,8 +955,6 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
                                                                            c(0,1)
     cols <- RColorBrewer::brewer.pal(n=length(dfs),name=pal)
     lgnd <- Map(function(k,v) paste(k,"= ",formatC(v,format="f",digits=rt_digits),sep=''),symbs,rt_max)
-    message("loc E")
-
    
     layout(matrix(c(3,3,4,4,1,2), 3, 2, byrow = TRUE))
     ## par(mar=c(1,2,1,4))
@@ -964,13 +962,10 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
     struc_yr <- c(0,100)
 
     par(mar=c(1,LEFT_MARGIN,3,4))
-    message("loc preplot")
     
     plot(1,1,type="n",xlab="",ylab="",xlim=struc_xr,ylim=struc_yr,xaxt="n",yaxt="n",asp=1,axes = FALSE)
-    message("prerender")
     if (!emptyfield(smile))
         rendersmiles2(smile,coords=c(struc_xr[1],struc_yr[1],struc_xr[2],struc_yr[2]))
-    message("postrender")
     col_eng <- c(0,100)
     peak_int <- c(0,100)
     par(mar=c(1,6,3,1))
@@ -980,17 +975,13 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
     
     cols_kids <- cols[indkids]
     lgnd_kids <- Map(function(k,v) paste(k,"= ",tryCatch(formatC(v,digits=rt_digits,format="f"),error=function(e) "NA"),sep=''),symbs_kids,rt_near_kids)
-    message("post legends kids")
     if (length(lgnd_kids)>0) legend(x=linfo$rect$left-14*linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=1.5)
 
 
     arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,LEFT_MARGIN,3,0),log=log,intTresh=1e4)
-    message("mass:",mass,"l mass:",length(mass),"digits:",m_digits)
     mass<- if (!is.na(mass)) mass else "NA" 
     title(main=paste("ID:",i,"Ion m:",formatC(mass,digits=m_digits,format="f")))
-    message("post title")
     for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
-    message("loc F")
     mtext("intensity",side = 2,adj=0.2,cex=1.3,line=7)
     ## Plot eic across the directory set.
     for (n in 1:length(dfs)) {
