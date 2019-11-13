@@ -764,10 +764,11 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         shiny::observeEvent(input$genRunPPB,{
+            message("Starting preprocessing.")
             
             shiny::isolate({
                 sets<-getSets()
-                cdf<-if (!is.null(input$cmpListCtrl)) rhandsontable::hot_to_r(input$cmpListCtrl) else NULL})
+                cdf<-if (!is.null(rvCmpList$df)) rvCmpList$df else NULL})
             
             nr<-nrow(cdf)
             if (!is.null(nr)) {
@@ -792,7 +793,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                   row.names=F)
                         message("fnTmp: ",fnTmp)
                         cmpdL<-rvCmpList$df
-                        maxId<-do.call(max,sapply(doneSets,idsFromFiles))
+                        maxId<-do.call(max,as.list(sapply(doneSets,idsFromFiles)))
                         intTresh<-as.numeric(input$intTresh)
                         noiseFac<-as.numeric(input$noiseFac)
                         rtDelta<-as.numeric(input$rtDelta)
@@ -850,6 +851,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         shiny::observeEvent(rvConf$currSet,{
+            message("In curr set")
             set<-rvConf$currSet
             fTab<-rvConf$fTab
             ids<-rvConf$currIDSet
