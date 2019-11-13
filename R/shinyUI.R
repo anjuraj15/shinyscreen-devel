@@ -751,7 +751,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             fn<-input$confFileTabBase
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
                 message("Generating basic file table in file ",fn)
-                ## files<-adornmzMLTab(rhandsontable::hot_to_r(input$mzMLtabCtrl),projDir=rvConf$projDir)
                 files<-adornmzMLTab(rvConf$mzMLtab,projDir=rvConf$projDir)
                 setId<-rvSetId$df
                 cmpL<-rvCmpList$df
