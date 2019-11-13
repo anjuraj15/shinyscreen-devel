@@ -501,7 +501,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         update_tags_mzMLtab<-shiny::reactive({
-            
+            input$tagsInp
             tags<-getTags()
             tagCol<-rvConf$mzMLtab$tag
             if (length(levels(tagCol))==0) rvConf$mzMLtab$tag<-factor(tagCol)
@@ -587,19 +587,14 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (!is.na(set) && hasMz) {
                 setID<-setID[setID$set %in% set,]
                 ids<-setID$ID[set %in% setID$set]
-                message("St. 2")
                 entries<-mkCmpdDrop(set,setID)
                 ch<-as.list(1:length(ids))
                 names(ch)<-entries
-                message("St. 3")
                 shiny::updateSelectInput(session=session,
                                          "presSelCmpd",
                                          choices=ch,
                                          selected = 1)
-                message("St. 4")
                 rvConf$currIDSet<-ids
-
-                message("Done here")
 
             }
         })
@@ -653,12 +648,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         ## ***** Observe Event *****
-
-        shiny::observeEvent(input$restoreConfB,{
-            message("Restore event observed.")
-            restoreConf()
-            message("Restore event finished.")
-        })
 
         shiny::observeEvent(input$saveConfB,{
             saveConf()
@@ -756,35 +745,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvConf$impSetIdFn<-fn
                 message("rvConf$impSetIdFn is changed to:",fn)
             }
-        })
-        
-        shiny::observeEvent(rvConf$impSetIdFn,
-        {
-            fn<-rvConf$impSetIdFn
-            if (file.exists(fn)) {
-                message("Importing compound sets from:",fn)
-                rvSetId$df<-readSetId(fn)
-                message("Done importing compound sets from: ",fn)
-            }
-            df<-rvSetId$df
-            if (length(df)>0 && !is.na(df) && nrow(df)>0) {
-                shiny::updateSelectInput(session=session,
-                                         inputId="genSetSelInp",
-                                         choices=levels(df$set))
-            }
-            shiny::isolate({
-                message("Changing the inpSetIdFn to: ",fn, " in isolation.")
-                shiny::updateTextInput(session=session,
-                                       inputId="impSetIdInp",
-                                       value=fn)
-            })
-        })
-
-        shiny::observeEvent(rvConf$mzMLtab,{
-            message("mzMLtab?")
-            update_sets_mzMLtab()
-            update_tags_mzMLtab()
-            message("mzMLtab!")
         })
 
         shiny::observeEvent(input$genFileTabB,{
@@ -1055,9 +1015,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 for (t in sdf$tag) {
                     sprop <- rvConf$spectProps[[t]]
                     sdfSel<-sdf[sdf$tag %in% t,QANAMES]
-                    message("sdfSel <")
-                    message(str(sdfSel))
-                    message("sdfSel >")
                     sel <- as.logical(sdfSel)
                     choices <- QANAMES[sel]
                     names(choices) <- QANAMES[sel]
@@ -1086,7 +1043,45 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         })
 
+        shiny::observe({
+            input$restoreConfB
+            message("Restore event observed.")
+            restoreConf()
+            message("Restore event finished.")
+        })
 
+        ## shiny::observe({
+        ##     rvConf$tags<-getTags()
+        ## })
+
+        shiny::observe({
+            message("Update tags and sets.")
+            update_sets_mzMLtab()
+            update_tags_mzMLtab()
+            message("Done updating tags and sets.")
+        })
+
+        shiny::observe(
+        {
+            fn<-rvConf$impSetIdFn
+            if (file.exists(fn)) {
+                message("Importing compound sets from:",fn)
+                rvSetId$df<-readSetId(fn)
+                message("Done importing compound sets from: ",fn)
+            }
+            df<-rvSetId$df
+            if (length(df)>0 && !is.na(df) && nrow(df)>0) {
+                shiny::updateSelectInput(session=session,
+                                         inputId="genSetSelInp",
+                                         choices=levels(df$set))
+            }
+            shiny::isolate({
+                message("Changing the inpSetIdFn to: ",fn, " in isolation.")
+                shiny::updateTextInput(session=session,
+                                       inputId="impSetIdInp",
+                                       value=fn)
+            })
+        })
 
 
 
@@ -1104,10 +1099,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-            rvConf$mzMLtab
-            update_tags_mzMLtab()
-            update_sets_mzMLtab()
-                if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
+            if (nrow(rvConf$mzMLtab) !=0) rhandsontable::rhandsontable(rvConf$mzMLtab,stretchH="all") else NULL
         })
 
         output$nvPanel<-shiny::renderUI({
