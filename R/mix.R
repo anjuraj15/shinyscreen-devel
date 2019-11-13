@@ -670,7 +670,13 @@ preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_cand
     getWidth <- function(maxid) {log10(maxid)+1}
     ids <- as.numeric(levels(factor(ftable$ID)))
     id_field_width <- getWidth(lCmpdList)
-    fn_out<- function(id,suff) {paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')}
+    fn_out<- function(id,suff,wd) {
+        patt<-paste("^0*",id,suff,".csv$",sep='')
+        ## paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')
+        res<-list.files(path=wd,pattern=patt,full.names=T)
+        if (length(res)>0) res else character(0)
+
+    }
     
     ## For loop through dataframe called file to set thresholds.
     ftable[c("MS1","MS2","Alignment","AboveNoise")] <- T
@@ -697,16 +703,15 @@ preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_cand
         wd <- ftable$wd[ind]
         id <- ftable$ID[ind]
         odir=file.path(wd)
-        fn_eic <- file.path(wd,fn_out(id,".eic"))
+        fn_eic <- fn_out(id,".eic",wd)
         eic <- NULL
         maxInt <- NULL
-        if (!file.exists(fn_eic)) {
-            warning("File ",fn_eic,"does not exist. Skipping.")
+        if (length(fn_eic)==0) {
+            warning("No file for id",id,"does not exist. Skipping.")
             next
         }
         eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F,comment.char='')
         maxInt <- max(eic$intensity)
-        
         ##If MS1 does not exist, set entry to F.
         if (maxInt < intTresh) {
             ftable[ind,"MS1"] <- F
@@ -730,8 +735,8 @@ preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_cand
     
 
         ## MS2 checks.
-        fn_kids <- file.path(wd,fn_out(id,".kids"))
-        if (!file.exists(fn_kids)) {
+        fn_kids <- fn_out(id,".kids",wd)
+        if (length(fn_kids)==0) {
             ftable[ind,"MS2"] <- F
             ftable[ind,"Alignment"] <- F
         } else {
@@ -1050,12 +1055,11 @@ addCmpLColsToFileTbl<-function(ft,cmpL) {
     nR<-nrow(ft)
     mzCol<-rep(NA,nR)
     nmCol<-rep("",nR)
+    
     for (ir in 1:nR) {
         id<-ft[ir,"ID"]
         mode<-ft[ir,"mode"]
-#        message("** pre mzCol;id: ",id,"ir: ",ir,"mode: ",mode)
         mzCol[[ir]]<- getMzFromCmpL(id,mode,cmpL)
-#        message("++ post mzCol;id: ",id,"ir: ",ir,"mode: ",mode)
         cmI<-which(id==cmpL$ID)
         nm<-cmpL$Name[[cmI]]
         nmCol[[ir]]<- if (!is.na(nm)) nm else ""
