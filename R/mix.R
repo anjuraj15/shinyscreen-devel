@@ -718,7 +718,8 @@ preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_cand
         eic <- NULL
         maxInt <- NULL
         if (length(fn_eic)==0) {
-            warning("No file for id",id,"does not exist. Skipping.")
+            message("wd: ",wd,"fn_eic: ",fn_eic)
+            warning("No file for id ",id," . Skipping.")
             next
         }
         eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F,comment.char='')
