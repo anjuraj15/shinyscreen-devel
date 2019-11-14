@@ -42,6 +42,12 @@ file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
              na.strings=c("","NA"))
 }
 
+isThingFile<-function(fn) {
+    if (length(fn)>0 && is.character(fn)) {
+        file.exists(fn)
+    } else F
+}
+
 ## ***** End helper functions *****
 ppInpFt<-function() {
     tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
