@@ -21,6 +21,28 @@ RT_DIGITS=2
 M_DIGITS=4
 PAL="Dark2"
 
+REST_TXT_INP<-c("impGenRMBInp",
+                "impCmpListInp",
+                "impSetIdInp",
+                "tagsInp",
+                "confFileTabBase",
+                "confFileTabProcInp",
+                "confResFileTab")
+
+## ***** Helper Functions *****
+tab2file<-function(tab,file,...) {
+    write.csv(x=tab,file=file,...)
+}
+
+file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
+    read.csv(file=file,
+             header=T,
+             stringsAsFactors=stringsAsFactors,
+             comment.char=comment.char,
+             na.strings=c("","NA"))
+}
+
+## ***** End helper functions *****
 ppInpFt<-function() {
     tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
 }
