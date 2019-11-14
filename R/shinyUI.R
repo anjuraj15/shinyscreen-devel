@@ -439,6 +439,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         q
     }
 
+    getSetMode <- function(set,mzMLtab) {
+        sdf<-mzMLtab[which(mzMLtab$set %in% set),]
+        levels(factor(sdf$mode))
+    }
+
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
@@ -683,10 +688,10 @@ shinyScreenApp <- function(projDir=getwd()) {
             setMode<-mzML$mode[match(sets,mzML$set)]
             names(setMode)<-sets
             nR<-nrow(rvSetId$df)
-            mode<-rvConf$mzMLtab
             dfSet<-rvSetId$df
             dfSet$mz<-rep(NA,nR)
             dfSet$SMILES<-rep(NA,nR)
+            dfSet$Name<-rep(NA,nR)
             cmpL<-getCmpL()
             for (s in sets) {
                 md<-setMode[[s]]
@@ -695,6 +700,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     id<-dfSet[i,"ID"]
                     dfSet[i,"mz"]<-getMzFromCmpL(id,md,cmpL)
                     dfSet[i,"SMILES"]<-getSMILESFromCmpL(id,cmpL)
+                    dfSet[i,"Name"]<-getColFromCmpL(id,"Name",cmpL)
                 }
             }
             ## rvSetId$df<-dfSet
