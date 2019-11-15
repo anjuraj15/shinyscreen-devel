@@ -21,9 +21,10 @@ RT_DIGITS=2
 M_DIGITS=4
 PAL="Dark2"
 
-REST_TXT_INP<-c("impGenRMBInp",
-                "impCmpListInp",
-                "impSetIdInp",
+REST_TXT_INP<-c("fnStgsRMB",
+                "fnCmpL",
+                "fnSusL",
+                "fnSetId",
                 "tagsInp",
                 "confFileTabBase",
                 "confFileTabProcInp",

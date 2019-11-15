@@ -15,14 +15,17 @@ mkUI <- function() {
                             collapsible=F,...)}
     
     confImport <- shinydashboard::box(title="Import",
-                                      shiny::h5("There are two tables that need to be supplied before prescreening starts. One is the compound list, its format being the same like the one for the RMassBank (fields: ID,Name,SMILES,RT,CAS,mz,Level). Another is the compound set table (fields: ID,set). Once those tables are imported, they can further be modified as copies inside the project dir. Shinyscreen will never modify any initial (meta)data. If set field of the compound set table is NA, then that file is in a set of its own. The table format should be CSV with `,' as delimiter and any strings that possibly contain commas should be protected. LibreOffice Calc is helpful when it is needed to convert CSVs from one format to another, as well as protecting strings with quotes. "),
+                                      shiny::h5("There are up to three tables that need to be supplied before prescreening starts. There are two compound lists, one for targets, containing at least ID and SMILES columns. If column Name is present, it will also be used. The second is the suspect list with columns ID, mz and mode. Consider ID to be a tag of a particular SMILES (for targets), or a mz/mode-combination (for suspects). The final list is the set ID list which classifies IDs into different sets. Every set consists of unique IDs. The columns of this list are ID and set. Shinyscreen will never modify any initial (meta)data. The table format should be CSV with `,' as delimiter and any strings that possibly contain commas should be protected. LibreOffice Calc is helpful when it is needed to convert CSVs from one format to another, as well as protecting strings with quotes. "),
                                       shiny::textInput("fnCmpL",
-                                                       "Imported compound list.",
+                                                       "Target list (ID, SMILES).",
+                                                       value=""),
+                                      shiny::textInput("fnSusL",
+                                                       "Suspect list (mz and mode)",
                                                        value=""),
                                       shiny::textInput("fnSetId",
-                                                       "Compound set table.",
+                                                       "Set table.",
                                                        value=""),
-                                      shiny::textInput("impGenRMBInp",
+                                      shiny::textInput("fnStgsRMB",
                                                        "RMassBank settings.",
                                                        value=""),
                                       shinyFiles::shinyFilesButton("impCmpListB",
@@ -43,7 +46,7 @@ mkUI <- function() {
                                       width=NULL)
 
     confmzMLTags <- shinydashboard::box(title="Sets and Tags",
-                                        shiny::h5("Shinyscreen uses two properties, tags and sets, to categorise mzML data. Tags are properties of individual files. For example, if a single file represents a collection of spectra acquired at a specific collision energy, that energy could be used as a tag. Tags are used to differentiate the spectra in a chromatogram. Sets are collections of tagged files and are read from the compound set table. Each set is going to be screened for a designated collection of masses."),
+                                        shiny::h5("Shinyscreen uses two properties, tags and sets, to categorise mzML data. Tags are properties of individual files. For example, if a single file represents a collection of spectra acquired at a specific collision energy, that energy could be used as a tag. Tags are used to differentiate the spectra in a chromatogram."),
                                         shiny::textInput("tagPropInp",
                                                          "What is a tag? (example: collision energy; can be left empty.)",
                                                          value=""),
@@ -373,19 +376,19 @@ shinyScreenApp <- function(projDir=getwd()) {
     
     extd_mzMLtab<-function(ft,fn,sets,tags) {
         modeLvl<- c("select",names(MODEMAP))
-        message(modeLvl)
         res<- if (is.null(ft)) {
                   data.frame(Files=fn,
                              mode=factor(modeLvl[[1]],levels=modeLvl),
                              set=factor(sets[[1]],levels=sets),
-                             tag=factor(tags[[1]]),levels=tags)
+                             tag=factor(tags[[1]],levels=tags),
+                             stringsAsFactors=F)
             
               } else {
                   nR<-nrow(ft)
                   ft[nR+1,]<-c(Files=fn,
-                               mode=mode[[1]],
-                               set=set[[1]],
-                               tag=tag[[1]])
+                               mode=modeLvl[[1]],
+                               set=sets[[1]],
+                               tag=tags[[1]])
                   ft
               }
         res
@@ -553,7 +556,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 sav$input$setsInp<-input$setsInp
                 sav$input$fnCmpL<-input$fnCmpL
                 sav$input$fnSetId<-input$fnSetId
-                sav$input$impGenRMBInp<-input$impGenRMBInp
+                sav$input$fnStgsRMB<-input$fnStgsRMB
                 sav$tab<-rvTab
                 saveRDS(object=sav,file=fn)
                 }
@@ -721,7 +724,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##     fn<-fnobj[["datapath"]]
         ##     if (length(fn)>0 && !is.na(fn)) {
         ##         shiny::updateTextInput(session=session,
-        ##                                inputId="impGenRMBInp",
+        ##                                inputId="fnStgsRMB",
         ##                                value=fn)
         ##     }})
 
@@ -762,6 +765,11 @@ shinyScreenApp <- function(projDir=getwd()) {
             ## })
         })
 
+        shiny::observeEvent(input$mzMLB,
+        {
+            rvTab$mzML<-getMzMLFiles()
+        })
+
         
 
         ## shiny::observeEvent(input$genFileTabB,{
@@ -781,7 +789,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         ## })
 
         ## shiny::observeEvent(input$genRunB,{
-        ##     FnRMB<-input$impGenRMBInp
+        ##     FnRMB<-input$fnStgsRMB
         ##     nProc<-as.integer(input$genNoProc)
         ##     fnTab<-rvConf$fnFTBase
         ##     sets<-input$genSetSelInp
@@ -795,7 +803,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##         for (s in sets) {
         ##             message("***** BEGIN set ",s, " *****")
         ##             fnCmpdList<-input$fnCmpL
-        ##             fnStgs<-input$impGenRMBInp
+        ##             fnStgs<-input$fnStgsRMB
         ##             intTresh<-as.numeric(input$intTresh)
         ##             noiseFac<-as.numeric(input$noiseFac)
         ##             rtDelta<-as.numeric(input$rtDelta)
@@ -962,16 +970,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         ## ***** Observe *****
 
         #rvTab$mzML<-getMzMLFiles()
-        shiny::observe(
-        {
-            rvTab$setId
-            sets<-getSets()
-            tags<-getTags()
-            message("Here near mzMLB")
-            message("sets mode:",mode(sets))
-            message(str(sets))
-            rvTab$mzML<-getMzMLFiles()
-        })
+
 
         ## shiny::observe({
         ##     rvConf$currIDSel
@@ -1084,9 +1083,9 @@ shinyScreenApp <- function(projDir=getwd()) {
             rhandsontable::rhandsontable(df,stretchH="all")
         })
 
-        ## output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-        ##     if (nrow(rvTab$mzML) !=0) rhandsontable::rhandsontable(rvTab$mzML,stretchH="all") else NULL
-        ## })
+        output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
+            rhandsontable::rhandsontable(rvTab$mzML,stretchH="all")
+        })
 
         ## output$nvPanel<-shiny::renderUI({
         ##     message("Rendering panel started")
