@@ -22,7 +22,7 @@ M_DIGITS=4
 PAL="Dark2"
 
 REST_TXT_INP<-c("fnStgsRMB",
-                "fnCmpL",
+                "fnTgtL",
                 "fnSusL",
                 "fnSetId",
                 "tagsInp",

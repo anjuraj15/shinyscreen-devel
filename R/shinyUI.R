@@ -16,7 +16,7 @@ mkUI <- function() {
     
     confImport <- shinydashboard::box(title="Import",
                                       shiny::h5("There are up to three tables that need to be supplied before prescreening starts. There are two compound lists, one for targets, containing at least ID and SMILES columns. If column Name is present, it will also be used. The second is the suspect list with columns ID, mz and mode. Consider ID to be a tag of a particular SMILES (for targets), or a mz/mode-combination (for suspects). The final list is the set ID list which classifies IDs into different sets. Every set consists of unique IDs. The columns of this list are ID and set. Shinyscreen will never modify any initial (meta)data. The table format should be CSV with `,' as delimiter and any strings that possibly contain commas should be protected. LibreOffice Calc is helpful when it is needed to convert CSVs from one format to another, as well as protecting strings with quotes. "),
-                                      shiny::textInput("fnCmpL",
+                                      shiny::textInput("fnTgtL",
                                                        "Target list (ID, SMILES).",
                                                        value=""),
                                       shiny::textInput("fnSusL",
@@ -28,7 +28,7 @@ mkUI <- function() {
                                       shiny::textInput("fnStgsRMB",
                                                        "RMassBank settings.",
                                                        value=""),
-                                      shinyFiles::shinyFilesButton("impCmpListB",
+                                      shinyFiles::shinyFilesButton("impTgtListB",
                                                                    label="Import compound list.",
                                                                    title="",
                                                                    icon=shiny::icon("file"),
@@ -46,7 +46,7 @@ mkUI <- function() {
                                       width=NULL)
 
     confmzMLTags <- shinydashboard::box(title="Sets and Tags",
-                                        shiny::h5("Shinyscreen uses two properties, tags and sets, to categorise mzML data. Tags are properties of individual files. For example, if a single file represents a collection of spectra acquired at a specific collision energy, that energy could be used as a tag. Tags are used to differentiate the spectra in a chromatogram."),
+                                        shiny::h5("Sets and tags."),
                                         shiny::textInput("tagPropInp",
                                                          "What is a tag? (example: collision energy; can be left empty.)",
                                                          value=""),
@@ -479,7 +479,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         ## ***** shinyFiles observers *****
         wdroot<-c(wd=projDir)
-        shinyFiles::shinyFileChoose(input, 'impCmpListB',roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'impTgtListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impGenRMBB',roots=volumes)
         
@@ -554,7 +554,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                })
                 sav$input$tagsInp<-input$tagsInp
                 sav$input$setsInp<-input$setsInp
-                sav$input$fnCmpL<-input$fnCmpL
+                sav$input$fnTgtL<-input$fnTgtL
                 sav$input$fnSetId<-input$fnSetId
                 sav$input$fnStgsRMB<-input$fnStgsRMB
                 sav$tab<-rvTab
@@ -674,12 +674,12 @@ shinyScreenApp <- function(projDir=getwd()) {
             }})
 
 
-        shiny::observeEvent(input$impCmpListB,{
-            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impCmpListB)
+        shiny::observeEvent(input$impTgtListB,{
+            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impTgtListB)
             fn<-fnobj[["datapath"]]
             if (length(fn)>0 && !is.na(fn)) {
                 shiny::updateTextInput(session=session,
-                                       inputId="fnCmpL",
+                                       inputId="fnTgtL",
                                        value=fn)
             }})
 
@@ -728,9 +728,9 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##                                value=fn)
         ##     }})
 
-        shiny::observeEvent(input$fnCmpL,
+        shiny::observeEvent(input$fnTgtL,
         {
-            fn<-input$fnCmpL
+            fn<-input$fnTgtL
             if (isThingFile(fn)) {
                 message("Importing compound list from:",fn)
                 df<-file2tab(file=fn)
@@ -802,7 +802,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         ##         for (s in sets) {
         ##             message("***** BEGIN set ",s, " *****")
-        ##             fnCmpdList<-input$fnCmpL
+        ##             fnCmpdList<-input$fnTgtL
         ##             fnStgs<-input$fnStgsRMB
         ##             intTresh<-as.numeric(input$intTresh)
         ##             noiseFac<-as.numeric(input$noiseFac)
