@@ -676,12 +676,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             restoreConf()
             message("Restore event finished.")
         })
-
-
-        ## shiny::observeEvent(input$tagsInp,
-        ## {
-        ##     rvConf$allTags<-getTags()
-        ## })
         
         shiny::observeEvent(input$impSetIdB,{
             fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impSetIdB)
@@ -750,9 +744,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(input$mzMLtabSubmB,{
                 mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
                 rvTab$mzML<-mzML
-                message("mzML:")
-                message( str(rvTab$mzML))
-                message("-------")
                 sets<-getSets()
                 for (s in sets) {
                     message("modes for s ",s,"are:")
@@ -1116,9 +1107,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-            message("Updated mzML")
-            message(str(rvTab$mzML))
-            message("------")
             rhandsontable::rhandsontable(rvTab$mzML,stretchH="all")
         })
 
