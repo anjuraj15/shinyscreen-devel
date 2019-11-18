@@ -352,7 +352,7 @@ shinyScreenApp <- function(projDir=getwd()) {
     message("projDir=",projDir)
     modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
-    volumes <- c(project=".",
+    volumes <- c(project=projDir,
                  home="~",
                  shinyFiles::getVolumes())
 
