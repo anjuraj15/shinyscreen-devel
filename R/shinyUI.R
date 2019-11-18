@@ -29,12 +29,17 @@ mkUI <- function() {
                                                        "RMassBank settings.",
                                                        value=""),
                                       shinyFiles::shinyFilesButton("impTgtListB",
-                                                                   label="Import compound list.",
+                                                                   label="Import targets.",
+                                                                   title="",
+                                                                   icon=shiny::icon("file"),
+                                                                   multiple=F),
+                                      shinyFiles::shinyFilesButton("impSusListB",
+                                                                   label="Import suspects.",
                                                                    title="",
                                                                    icon=shiny::icon("file"),
                                                                    multiple=F),
                                       shinyFiles::shinyFilesButton("impSetIdB",
-                                                                   label="Import compound set table.",
+                                                                   label="Import set ID table.",
                                                                    title="",
                                                                    icon=shiny::icon("file"),
                                                                    multiple=T),
@@ -347,7 +352,9 @@ shinyScreenApp <- function(projDir=getwd()) {
     message("projDir=",projDir)
     modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
-    volumes <- shinyFiles::getVolumes()
+    volumes <- c(project=".",
+                 home="~",
+                 shinyFiles::getVolumes())
 
     mk_mzMLtab<-function() {
         modeLvl<- c("pH","pNa","pM",
@@ -480,6 +487,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         ## ***** shinyFiles observers *****
         wdroot<-c(wd=projDir)
         shinyFiles::shinyFileChoose(input, 'impTgtListB',roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'impSusListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impGenRMBB',roots=volumes)
         
