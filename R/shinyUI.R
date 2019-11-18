@@ -478,7 +478,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                           mzML=NULL, # files (File), sets (set) and mode (mode)
                           tgt=NULL, # ids(ID),SMILES(SMILES) and names (Name)
                           setId=NULL, # ids(ID), sets (set)
-                          mzMode=NULL,  #ids (ID),masses(mz) and modes(mode)
+                          comp=NULL,  # everything, except file info
                           mtr=NULL)     #master table (everything combined)
         rvPres<-shiny::reactiveValues(cex=CEX,
                                       rt_digits=RT_DIGITS,
@@ -745,11 +745,26 @@ shinyScreenApp <- function(projDir=getwd()) {
                 mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
                 rvTab$mzML<-mzML
                 sets<-getSets()
+                nRow<-0
+                setId<-getSetId()
                 for (s in sets) {
-                    message("modes for s ",s,"are:")
-                    message(str(getSetMode(s,mzML)))
-                    message("-------")
+                    sMode<-getSetMode(s,mzML)
+                    n<-length(sMode)
+                    nRow<-nRow+n*length(which(setId$set %in% s))
+                    
                 }
+                message("calculated nRow: ",nRow)
+                compTab<-data.frame(
+                    ID=rep(0,nRow),
+                    mz=rep(0.0,nRow),
+                    mode=rep("",nRow),
+                    tag=rep("",nRow),
+                    set=rep("",nRow),
+                    Name=rep("",nRow),
+                    SMILES=rep("",nRow),
+                    stringsAsFactors=F)
+
+                rvTab$comp<-compTab
         })
 
         shiny::observeEvent(input$fnTgtL,
