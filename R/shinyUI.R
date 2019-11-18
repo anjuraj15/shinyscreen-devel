@@ -477,6 +477,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         rvTab<-shiny::reactiveValues(
                           mzML=NULL, # files (File), sets (set) and mode (mode)
                           tgt=NULL, # ids(ID),SMILES(SMILES) and names (Name)
+                          unk=NULL, # ids(ID),mz
                           setId=NULL, # ids(ID), sets (set)
                           comp=NULL,  # everything, except file info
                           mtr=NULL)     #master table (everything combined)
@@ -696,6 +697,15 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
+        shiny::observeEvent(input$impUnkListB,{
+            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impUnkListB)
+            fn<-fnobj[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                shiny::updateTextInput(session=session,
+                                       inputId="fnUnkL",
+                                       value=fn)
+            }})
+
 
         ## shiny::observeEvent(input$mzMLtabSubmB,{
         ##     mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
@@ -771,10 +781,23 @@ shinyScreenApp <- function(projDir=getwd()) {
         {
             fn<-input$fnTgtL
             if (isThingFile(fn)) {
-                message("Importing compound list from:",fn)
+                message("Importing targets list from:",fn)
                 df<-file2tab(file=fn)
                 rvTab$tgt<-df
-                message("Done importing compound list from: ",fn)
+                message("Done importing targets list from: ",fn)
+
+            }
+        })
+
+
+        shiny::observeEvent(input$fnUnkL,
+        {
+            fn<-input$fnUnkL
+            if (isThingFile(fn)) {
+                message("Importing unknowns list from:",fn)
+                df<-file2tab(file=fn)
+                rvTab$unk<-df
+                message("Done importing unknowns list from: ",fn)
 
             }
         })
