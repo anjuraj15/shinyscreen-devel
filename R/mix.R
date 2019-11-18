@@ -23,7 +23,7 @@ PAL="Dark2"
 
 REST_TXT_INP<-c("fnStgsRMB",
                 "fnTgtL",
-                "fnSusL",
+                "fnUnkL",
                 "fnSetId",
                 "tagsInp",
                 "confFileTabBase",
@@ -621,88 +621,6 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
     
     write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
 }
-
-preProcLai <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,ms1_intTresh=1e5,ms2_intTresh=1e4,MS1peakWi=0.3) {
-
-    ## read in .csv file as file
-    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F,comment.char='')
-    
-    getWidth <- function(maxid) {log10(maxid)+1}
-    ids <- as.numeric(levels(factor(ftable$ID)))
-		      
-		      ##is MS1 intensity high enough?)
-    id_field_width <- getWidth(max(ids))
-    fn_out<- function(id,suff) {paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')}
-
-    ## for loop through dataframe called file to set tresholds
-    ftable[c("MS1","MS2","Alignment","MS1Intensity","AboveNoise","MS2Intensity","MS1peakWidth")] <- T
-    ftable$Comments <- ""
-    for (ind in 1:nrow(ftable)) {
-        wd <- ftable$wd[ind]
-        id <- ftable$ID[ind]
-        odir=file.path(wd)
-        fn_eic <- file.path(wd,fn_out(id,".eic"))
-        eic <- NULL
-        maxInt <- NULL
-        eicExists <- T
-
-	##does MS1 exist?
-        if(!file.exists(fn_eic)) { 
-            ftable[ind,"MS1"] = FALSE
-            eicExists <- F
-        }
-        else {
-            eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F,comment.char='')
-            maxInt <- max(eic$intensity)
-
-	    ##is MS1 intensity high enough?
-            if (maxInt < ms1_intTresh) {
-                ftable[ind,"MS1Intensity"] = FALSE
-            }
-            ##Detect noisy signal. This is a naive implementation, so careful.
-            mInt <- mean(eic$intensity)
-            if (maxInt < noiseFac*mInt) ftable[ind,"AboveNoise"] <- F
-
-	    ##Is MS1 peak a proper peak, or just a spike? Check peakwidth.
-	    MS1peakWi
-
-        }
-
-	#####MS2 checks
-        fn_kids <- file.path(wd,fn_out(id,".kids"))
-
-	##does MS2 exist? Regardless of quality/alignment.
-        if(!file.exists(fn_kids)) {
-            ftable[ind,"MS2"] = FALSE
-	    ftable[ind,"MS2Intensity"] = NA #moot
-	    ftable[ind,"Alignment"] = NA #moot
-        } else {
-        ## Detect RT shifts. Naive implementation, so careful.
-            if (eicExists) {  ################WHY THIS IF CONDITIONAL?? If MS2 exists, then eic MUST exist, no? Seems redundant.
-		    ##Is MS2 intensity high enough?
-		    ms2maxInt <- max(msms@intensity)
-		    if (ms2maxInt > ms2_intTresh){
-			    rtInd <- match(maxInt,eic$intensity) #returns position of first match in eic$intensity
-                	    rtMax <- eic$rt[rtInd] #fetch the rtmax value (RT with highest int;seconds)  using above index
-                	    msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F,comment.char='')
-                	    whc <- msms$rt > rtMax - rtDelta #T/F vector: are RT vals of ms2 above rtMax within Delta? Good peaks=TRUE;rt must be retentionTime!!!
-                	    whc <- whc < rtMax + rtDelta #T/F vector: are RT vals of ms2 above rtMax within Delta?
-		#Overwrites whc! In any case, cannot use this as both must be T to give final whc of T (i.e. fall within the window).
-                	    ints <- msms$intensity[whc] #builds ints vector with intensities which fall in window
-                	    if (! any(ints>0)) ftable[ind,"Alignment"] = FALSE #if none of ints larger than 0, Alignment <-F 
-		    } else {
-			ftable[ind,"MS2Intensity"] = FALSE
-		    	ftable[ind,"Alignment"] = NA #neither T or F, the MS2 was not of decent intensity in first place, alignment moot. 
-		}   
-	    }
-        }
-    }
-
-    ## get a csv outfile
-    write.csv(ftable, file = fnDest,row.names=F)
-
-}
-
 
 preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
     ## read in .csv file as file

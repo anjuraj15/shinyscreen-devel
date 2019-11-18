@@ -15,12 +15,12 @@ mkUI <- function() {
                             collapsible=F,...)}
     
     confImport <- shinydashboard::box(title="Import",
-                                      shiny::h5("There are up to three tables that need to be supplied before prescreening starts. There are two compound lists, one for targets, containing at least ID and SMILES columns. If column Name is present, it will also be used. The second is the suspect list with columns ID, mz and mode. Consider ID to be a tag of a particular SMILES (for targets), or a mz/mode-combination (for suspects). The final list is the set ID list which classifies IDs into different sets. Every set consists of unique IDs. The columns of this list are ID and set. Shinyscreen will never modify any initial (meta)data. The table format should be CSV with `,' as delimiter and any strings that possibly contain commas should be protected. LibreOffice Calc is helpful when it is needed to convert CSVs from one format to another, as well as protecting strings with quotes. "),
+                                      shiny::h5("There are up to three tables that need to be supplied before prescreening starts. There are two compound lists, one for targets, containing at least ID and SMILES columns. If column Name is present, it will also be used. The second is the suspect list with columns ID, mz and mode. Consider ID to be a tag of a particular SMILES (for targets), or a mz/mode-combination (for unknowns). The final list is the set ID list which classifies IDs into different sets. Every set consists of unique IDs. The columns of this list are ID and set. Shinyscreen will never modify any initial (meta)data. The table format should be CSV with `,' as delimiter and any strings that possibly contain commas should be protected. LibreOffice Calc is helpful when it is needed to convert CSVs from one format to another, as well as protecting strings with quotes. "),
                                       shiny::textInput("fnTgtL",
                                                        "Target list (ID, SMILES).",
                                                        value=""),
-                                      shiny::textInput("fnSusL",
-                                                       "Suspect list (mz and mode)",
+                                      shiny::textInput("fnUnkL",
+                                                       "Unknows list (mz and mode)",
                                                        value=""),
                                       shiny::textInput("fnSetId",
                                                        "Set table.",
@@ -33,8 +33,8 @@ mkUI <- function() {
                                                                    title="",
                                                                    icon=shiny::icon("file"),
                                                                    multiple=F),
-                                      shinyFiles::shinyFilesButton("impSusListB",
-                                                                   label="Import suspects.",
+                                      shinyFiles::shinyFilesButton("impUnkListB",
+                                                                   label="Import unknowns.",
                                                                    title="",
                                                                    icon=shiny::icon("file"),
                                                                    multiple=F),
@@ -454,24 +454,26 @@ shinyScreenApp <- function(projDir=getwd()) {
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
-        rvConf <- shiny::reactiveValues(tags=list(),
-                                        sets=list(),
-                                        spectProps=list(),
-                                        QANAMES=QANAMES,
-                                        MODEMAP=MODEMAP,
-                                        REST_TXT_INP=REST_TXT_INP,
-                                        impGenRMBFn="",
-                                        fnLocSetId=FN_LOC_SETID,
-                                        fnFTBase="",
-                                        tagProp="",
-                                        setProp="",
-                                        mode=modeLvl,
-                                        projDir=projDir,
-                                        currSet=NA,
-                                        currIDSel=1,
-                                        currIDSet=list(),
-                                        currID=NA,
-                                        fnFT=NULL)
+        rvConf <- shiny::reactiveValues(
+                             allTags=list(),
+                             tags=list(),
+                             sets=list(),
+                             spectProps=list(),
+                             QANAMES=QANAMES,
+                             MODEMAP=MODEMAP,
+                             REST_TXT_INP=REST_TXT_INP,
+                             impGenRMBFn="",
+                             fnLocSetId=FN_LOC_SETID,
+                             fnFTBase="",
+                             tagProp="",
+                             setProp="",
+                             mode=modeLvl,
+                             projDir=projDir,
+                             currSet=NA,
+                             currIDSel=1,
+                             currIDSet=list(),
+                             currID=NA,
+                             fnFT=NULL)
         rvTab<-shiny::reactiveValues(
                           mzML=NULL, # files (File), sets (set) and mode (mode)
                           tgt=NULL, # ids(ID),SMILES(SMILES) and names (Name)
@@ -487,7 +489,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         ## ***** shinyFiles observers *****
         wdroot<-c(wd=projDir)
         shinyFiles::shinyFileChoose(input, 'impTgtListB',roots=volumes)
-        shinyFiles::shinyFileChoose(input, 'impSusListB',roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'impUnkListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impGenRMBB',roots=volumes)
         
@@ -510,8 +512,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         {
             sets<-getSets()
             tags<-getTags()
-            message("button clicked!")
-            message(str(sets))
             
             fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
             paths<-fchoice[["datapath"]]
@@ -563,9 +563,15 @@ shinyScreenApp <- function(projDir=getwd()) {
                 sav$input$tagsInp<-input$tagsInp
                 sav$input$setsInp<-input$setsInp
                 sav$input$fnTgtL<-input$fnTgtL
+                sav$input$fnUnkL<-input$fnUnkL
                 sav$input$fnSetId<-input$fnSetId
                 sav$input$fnStgsRMB<-input$fnStgsRMB
-                sav$tab<-rvTab
+                sav$tab<-list()
+                for (nm in names(rvTab)) {
+                    df<-rvTab[[nm]]
+                    sav$tab[[nm]]<-df
+                }
+                
                 saveRDS(object=sav,file=fn)
                 }
         })
@@ -586,7 +592,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvConf$fnFTBase<-sav$rvConf$fnFTBase
                 rvConf$fnFT<-sav$rvConf$fnFT
                 for (nm in names(rvTab)) {
-                    rvTab[[nm]]<-sav$rvTab[[nm]]
+                    rvTab[[nm]]<-sav$tab[[nm]]
                 }
             }
         })
@@ -672,6 +678,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
+        ## shiny::observeEvent(input$tagsInp,
+        ## {
+        ##     rvConf$allTags<-getTags()
+        ## })
+        
         shiny::observeEvent(input$impSetIdB,{
             fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impSetIdB)
             fn<-fnobj[["datapath"]]
@@ -736,6 +747,20 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##                                value=fn)
         ##     }})
 
+        shiny::observeEvent(input$mzMLtabSubmB,{
+                mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
+                rvTab$mzML<-mzML
+                message("mzML:")
+                message( str(rvTab$mzML))
+                message("-------")
+                sets<-getSets()
+                for (s in sets) {
+                    message("modes for s ",s,"are:")
+                    message(str(getSetMode(s,mzML)))
+                    message("-------")
+                }
+        })
+
         shiny::observeEvent(input$fnTgtL,
         {
             fn<-input$fnTgtL
@@ -756,7 +781,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvTab$setId<-file2tab(file=fn,
                                       colClasses=c(set="factor"))
                 rvTab$setId$set<-factor(rvTab$setId$set)
-                message(str(rvTab$setId))
                 message("Done importing compound sets from: ",fn)
             }
             ## df<-rvTab$setId
@@ -1092,6 +1116,9 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
+            message("Updated mzML")
+            message(str(rvTab$mzML))
+            message("------")
             rhandsontable::rhandsontable(rvTab$mzML,stretchH="all")
         })
 
