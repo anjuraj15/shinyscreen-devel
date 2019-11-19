@@ -536,6 +536,24 @@ shinyScreenApp <- function(projDir=getwd()) {
             rvTab$setId #rhandsontable::hot_to_r(input$setIdCtrl)
         })
 
+        getMzML<-shiny::reactive({
+            rvTab$mzML
+        })
+
+        getComp<-shiny::reactive({
+            rvTab$comp
+        })
+
+        getTgt<-shiny::reactive({
+            rvTab$tgt
+        })
+
+        getUnk<-shiny::reactive({
+            rvTab$unk
+        })
+
+        
+
         update_tags_mzMLtab<-shiny::reactive({
             input$tagsInp
             tags<-getTags()
