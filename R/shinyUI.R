@@ -467,6 +467,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              fnFTBase="",
                              tagProp="",
                              setProp="",
+                             fnComp=FN_COMP_TAB,
                              mode=modeLvl,
                              projDir=projDir,
                              currSet=NA,
@@ -1038,10 +1039,18 @@ shinyScreenApp <- function(projDir=getwd()) {
             cond<-! (is.null(tgt) || is.null(unk)) &&
                 ! is.null(setId) &&
                 ! is.null(mzML)
+
+            shiny::isolate({
+                message("null tgt?:",is.null(tgt))
+                message("null tgt?:",is.null(unk))
+                message("null tgt?:",is.null(mzML))
+                message("null tgt?:",is.null(setId))
+                message("cond:",cond)
+            })
             
             if (cond) {
 
-                
+                message("Begin generation of comp table.")
 
                 idTgt<-tgt$ID
                 idUnk<-unk$ID
@@ -1072,7 +1081,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     mz=rep(0.0,nRow),
                     mode=rep("",nRow),
                     set=rep("",nRow),
-                    orig=rep("",nRow),
+                    orig=rep("known",nRow),
                     Name=rep("",nRow),
                     SMILES=rep("",nRow),
                     stringsAsFactors=F)
@@ -1085,26 +1094,60 @@ shinyScreenApp <- function(projDir=getwd()) {
                             compTgt[i,"ID"]<-id
                             compTgt[i,"mode"]<-m
                             compTgt[i,"set"]<-s
-                            compTgt[i,"orig"]<-"known"
                             compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
-                            message("EE")
-                            compTgt[i,"SMILES"]<-getColFromCmpL("SMILES",id,tgt)
-                            compTgt[i,"Name"]<-getColFromCmpL("Name",id,tgt)
-                            message("FF")
+                            sm<-getColFromCmpL(id,"SMILES",tgt)
+                            nm<-getColFromCmpL(id,"Name",tgt)
+                            compTgt[i,"SMILES"]<-sm
+                            compTgt[i,"Name"]<-nm
+                            i<-i+1
                         }
                         
                     }
                 }
 
+                message("Generation of comp table: knowns done.")
                 ## unknows
-                
-                message("calculated nRow: ",nRow)
-                
-                
+                setIdUnk<-setId[setId$orig=="unknown",]
+                sets<-levels(factor(setIdUnk$set))
+                nRow<-0
+                for (s in sets) {
+                    sMode<-getSetMode(s,mzML)
+                    n<-length(sMode)
+                    if (n>1) stop("Set of unknowns ",s,"has more than one mode. Sets of unknowns cannot have more than one mode.")
 
-                
+                    nRow<-nRow+length(which(setIdUnk$set %in% s))
+                    
+                }
 
-                rvTab$comp<-compTab
+                compUnk<-data.frame(
+                    ID=rep(0,nRow),
+                    mz=rep(0.0,nRow),
+                    mode=rep("",nRow),
+                    set=rep("",nRow),
+                    orig=rep("unknown",nRow),
+                    Name=rep("",nRow),
+                    SMILES=rep("",nRow),
+                    stringsAsFactors=F)
+
+                i<-1
+                for (s in sets) {
+                    m<-getSetMode(s,mzML)
+                    for (id in setIdUnk[setIdUnk$set %in% s,"ID"]) {
+                        compUnk[i,"ID"]<-id
+                        compUnk[i,"mode"]<-m
+                        compUnk[i,"set"]<-s
+                        compUnk[i,"mz"]<-getColFromCmpL(id,"mz",unk)
+                        nm<-getColFromCmpL(id,"Name",unk)
+                        compUnk[i,"Name"]<-nm
+                        i<-i+1
+                    }
+                    
+                }
+                message("Generation of comp table: unknowns done.")
+                df<-rbind(compTgt,compUnk,stringsAsFactors=F)
+                rvTab$comp<-df
+                tab2file(df,rvConf$fnComp)
+                message("Generation of comp table finished.")
                 
             }
             

@@ -5,6 +5,7 @@ FN_PP_OUT_PREF<-"PP.filetable"
 FN_FTAB<-"ftable.csv"
 FN_CMP_L<-"compounds.csv"
 FN_LOC_SETID <-"setid.csv"
+FN_COMP_TAB<-"comprehensive.csv"
 MODEMAP<-list(pH="MpHp_mass",
               mH="MmHm_mass",
               pNH4="MpNH4_mass",
@@ -32,7 +33,7 @@ REST_TXT_INP<-c("fnStgsRMB",
 
 ## ***** Helper Functions *****
 tab2file<-function(tab,file,...) {
-    write.csv(x=tab,file=file,...)
+    write.csv(x=tab,file=file,row.names=F,...)
 }
 
 file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
@@ -40,7 +41,7 @@ file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
              header=T,
              stringsAsFactors=stringsAsFactors,
              comment.char=comment.char,
-             na.strings=c("","NA"))
+             na.strings=c("","NA"),...)
 }
 
 isThingFile<-function(fn) {
