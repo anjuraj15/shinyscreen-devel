@@ -420,7 +420,8 @@ shinyScreenApp <- function(projDir=getwd()) {
         wh<-which(setTab$set %in% set)
         ids<-setTab$ID[wh]
         mz<-setTab$mz[wh]
-        entries<-base::Map(function(i,m) paste(i,'; ','mz: ',m,sep=''),ids,mz)
+        md<-setTab$mode[wh]
+        entries<-base::Map(function(i,m) paste(i,'; ','mz: ',m,';','mode:',md,sep=''),ids,mz,md)
         entries
     }
 
@@ -621,11 +622,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         currSetMkCmpMenu<-shiny::reactive({
             set<-rvConf$currSet
             setID<-getSetId()
-            hasMz<-"mz" %in% colnames(setID)
-            if (!is.na(set) && hasMz) {
-                setID<-setID[setID$set %in% set,]
-                ids<-setID$ID[set %in% setID$set]
-                entries<-mkCmpdDrop(set,setID)
+            comp<-getComp()
+            if (!is.na(set) && !is.null(comp)) {
+                comp<-comp[comp$set %in% set,]
+                ids<-comp$ID[set %in% comp$set]
+                entries<-mkCmpdDrop(set,comp)
                 ch<-as.list(1:length(ids))
                 names(ch)<-entries
                 shiny::updateSelectInput(session=session,
@@ -641,23 +642,21 @@ shinyScreenApp <- function(projDir=getwd()) {
             fTab<-rvTab$mtr
 
             if (!is.na(set) && length(fTab)>0) {
-                setId<-getSetId()
-                hasMz<-"mz" %in% colnames(setId)
-                if (hasMz) {
-                    setIdIds<-setId[,"ID"]
-                    setIdSMILES<-setId[,"SMILES"]
-                    setIdMz<-setId[,"mz"]
+                comp<-getComp()
+                if (!is.null(comp)) {
+                    compIds<-comp[,"ID"]
+                    compSMILES<-comp[,"SMILES"]
+                    compMz<-comp[,"mz"]
                     tags<-rvConf$tags
                     iSet<-which(set==fTab$set)
                     sfTab<-fTab[iSet,]
                     tags<-levels(factor(sfTab$tag))
                     iTag<- match(tags,sfTab$tag)
                     wd<-sfTab$wd[iTag]
-                    cmpL<-rvTab$tgt
                     
-                    preID<-setIdIds
-                    smiles<-setIdSMILES
-                    mz<-setIdMz
+                    preID<-compIds
+                    smiles<-compSMILES
+                    mz<-compMz
                     names(smiles)<-as.character(preID)
                     names(mz)<-as.character(preID)
                     ## Get the basenames of eic files.
@@ -913,22 +912,22 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
-        ## shiny::observeEvent(input$presSelCmpd,{
-        ##     pos<-input$presSelCmpd
-        ##     rvConf$currIDSel<-as.numeric(pos)
-        ## })
+        shiny::observeEvent(input$presSelCmpd,{
+            pos<-input$presSelCmpd
+            rvConf$currIDSel<-as.numeric(pos)
+        })
 
-        ## shiny::observeEvent(input$presPrev,{
-        ##     len<-length(rvConf$currIDSet)
-        ##     x<-rvConf$currIDSel-1
-        ##     if (x>0) rvConf$currIDSel<-x
-        ## })
+        shiny::observeEvent(input$presPrev,{
+            len<-length(rvConf$currIDSet)
+            x<-rvConf$currIDSel-1
+            if (x>0) rvConf$currIDSel<-x
+        })
 
-        ## shiny::observeEvent(input$presNext,{
-        ##     len<-length(rvConf$currIDSet)
-        ##     x<-rvConf$currIDSel+1
-        ##     if (x<=len) rvConf$currIDSel<-x
-        ## })
+        shiny::observeEvent(input$presNext,{
+            len<-length(rvConf$currIDSet)
+            x<-rvConf$currIDSel+1
+            if (x<=len) rvConf$currIDSel<-x
+        })
 
         shiny::observeEvent(rvConf$fnFT,{
             fn<-rvConf$fnFT
@@ -939,55 +938,55 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
         
-        ## shiny::observeEvent(rvConf$currIDSel,{
-        ##     ids<-rvConf$currIDSet
-        ##     if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
-        ## })
+        shiny::observeEvent(rvConf$currIDSel,{
+            ids<-rvConf$currIDSet
+            if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
+        })
 
 
-        ## shiny::observeEvent(input$submitQA,{
-        ##     res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
-        ##     names(res) <- rvConf$tags
-        ##     rvTab$mtr <- updateFileTable(df=rvTab$mtr,
-        ##                                    set=input$presSelSet,
-        ##                                    id=rvConf$currID,
-        ##                                    linput=res)
-        ## })
+        shiny::observeEvent(input$submitQA,{
+            res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
+            names(res) <- rvConf$tags
+            rvTab$mtr <- updateFileTable(df=rvTab$mtr,
+                                           set=input$presSelSet,
+                                           id=rvConf$currID,
+                                           linput=res)
+        })
         
-        ## shiny::observeEvent(input$savefiletable,
-        ## {
-        ##     fn<-input$fn_ftable
-        ##     message("Writing current file table to ",fn)
-        ##     write.csv(file=fn,x=rvTab$mtr,row.names = F)
-        ## })
+        shiny::observeEvent(input$savefiletable,
+        {
+            fn<-input$fn_ftable
+            message("Writing current file table to ",fn)
+            write.csv(file=fn,x=rvTab$mtr,row.names = F)
+        })
 
 
-        ## shiny::observeEvent(input$saveplot,
-        ## {
-        ##     i=rvConf$currID
-        ##     pfn <-input$plotname
-        ##     if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
-        ##     fn <- sprintf(pfn,i)
-        ##     rtrange <- c(input$min_val,input$max_val)
-        ##     pdf(file=fn, width=12, height=8)
-        ##     rvPres$plot_id(i,rtrange=rtrange, log=input$yaxis)
-        ##     dev.off()
-        ##     message("Plotting compound ", i," to ",fn," done.")
-        ## })
+        shiny::observeEvent(input$saveplot,
+        {
+            i=rvConf$currID
+            pfn <-input$plotname
+            if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
+            fn <- sprintf(pfn,i)
+            rtrange <- c(input$min_val,input$max_val)
+            pdf(file=fn, width=12, height=8)
+            rvPres$plot_id(i,rtrange=rtrange, log=input$yaxis)
+            dev.off()
+            message("Plotting compound ", i," to ",fn," done.")
+        })
 
-        ## shiny::observeEvent(input$saveallplots,
-        ## {
-        ##     i=rvConf$currID
-        ##     pfn <-input$plotname
-        ##     if (is.na(pfn)) pfn <- "plotall.pdf"
-        ##     fn <- sprintf(pfn,i)
-        ##     pdf(file=fn, width=12, height=8)
-        ##     for (i in rvConf$currIDSet) {
-        ##         rvPres$plot_id(i,log=input$yaxis)
-        ##         message("Plotting compound ", i," done.")
-        ##     }
-        ##     dev.off()
-        ## })
+        shiny::observeEvent(input$saveallplots,
+        {
+            i=rvConf$currID
+            pfn <-input$plotname
+            if (is.na(pfn)) pfn <- "plotall.pdf"
+            fn <- sprintf(pfn,i)
+            pdf(file=fn, width=12, height=8)
+            for (i in rvConf$currIDSet) {
+                rvPres$plot_id(i,log=input$yaxis)
+                message("Plotting compound ", i," done.")
+            }
+            dev.off()
+        })
 
         
         ## ***** Observe *****
@@ -1112,12 +1111,12 @@ shinyScreenApp <- function(projDir=getwd()) {
         #rvTab$mzML<-getMzMLFiles()
 
 
-        ## shiny::observe({
-        ##     rvConf$currIDSel
-        ##     shiny::updateSelectInput(session=session,
-        ##                              inputId="presSelCmpd",
-        ##                              selected=rvConf$currIDSel)
-        ## })
+        shiny::observe({
+            rvConf$currIDSel
+            shiny::updateSelectInput(session=session,
+                                     inputId="presSelCmpd",
+                                     selected=rvConf$currIDSel)
+        })
         shiny::observe({
             shiny::invalidateLater(100,
                                    session=session)
@@ -1147,58 +1146,59 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
     
 
-        ## shiny::observe({
-        ##     sets<-getSets()
-        ##     if (length(sets)>0 && !is.na(sets)) {
-        ##         message("Bef upd inputs")
-        ##         shiny::updateSelectInput(session=session,
-        ##                                  "presSelSet",
-        ##                                  choices=sets,
-        ##                                  selected=sets[[1]])
-        ##         message("upd sel worked")
-        ##     }
-        ## })
+        shiny::observe({
+            sets<-getSets()
+            if (length(sets)>0 && !is.na(sets)) {
+                message("Bef upd inputs")
+                shiny::updateSelectInput(session=session,
+                                         "presSelSet",
+                                         choices=sets,
+                                         selected=sets[[1]])
+                message("upd sel worked")
+            }
+        })
 
 
-        ## shiny::observe({
-        ##     i<-rvConf$currID
-        ##     spectProps<-rvConf$spectProps
-        ##     set<-input$presSelSet
-        ##     if (!is.na(i) && length(spectProps)>0) {
-        ##         message("Updating QA checkboxes.")
-        ##         QANAMES<-rvConf$QANAMES
-        ##         sdf <- queryFileTable(df=rvTab$mtr,set=set,id=i)
-        ##         sdf$tag<-as.character(sdf$tag)
-        ##         for (t in sdf$tag) {
-        ##             sprop <- rvConf$spectProps[[t]]
-        ##             sdfSel<-sdf[sdf$tag %in% t,QANAMES]
-        ##             sel <- as.logical(sdfSel)
-        ##             choices <- QANAMES[sel]
-        ##             names(choices) <- QANAMES[sel]
-        ##             shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
-        ##         }
-        ##         message("Updating QA checkboxes done.")
+        shiny::observe({
+            i<-rvConf$currID
+            spectProps<-rvConf$spectProps
+            set<-input$presSelSet
+            if (!is.na(i) && length(spectProps)>0) {
+                message("Updating QA checkboxes.")
+                QANAMES<-rvConf$QANAMES
+                sdf <- queryFileTable(df=rvTab$mtr,set=set,id=i)
+                sdf$tag<-as.character(sdf$tag)
+                for (t in sdf$tag) {
+                    sprop <- rvConf$spectProps[[t]]
+                    sdfSel<-sdf[sdf$tag %in% t,QANAMES]
+                    sel <- as.logical(sdfSel)
+                    choices <- QANAMES[sel]
+                    names(choices) <- QANAMES[sel]
+                    shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
+                }
+                message("Updating QA checkboxes done.")
 
-        ##     }
-        ## })
+            }
+        })
 
-        ## shiny::observe({
-        ##     sets<-getSets()
-        ##     set<-input$presSelSet
-        ##     if (!nchar(set)==0) {
-        ##         cmpdL<-getCmpL()
-        ##         setID<-getSetId()
-        ##         rvConf$currSet<-set
-        ##     }
-        ## })
+        shiny::observe({
+            sets<-getSets()
+            set<-input$presSelSet
+            if (!nchar(set)==0) {
+                ## cmpdL<-getCmpL()
+                ## setID<-getSetId()
+                rvConf$currSet<-set
+            }
+        })
 
-        ## shiny::observe({
-        ##     message("currSet START")
-        ##     currSetMkCmpMenu()
-        ##     currSetPreCalc()
-        ##     message("currSet END")
+        shiny::observe({
+            message("currSet START")
+            currSetMkCmpMenu()
+            message("And here?")
+            currSetPreCalc()
+            message("currSet END")
 
-        ## })
+        })
 
         ## ## shiny::observe({
         ## ##     rvConf$tags<-getTags()
@@ -1227,28 +1227,28 @@ shinyScreenApp <- function(projDir=getwd()) {
             rhandsontable::rhandsontable(rvTab$mzML,stretchH="all")
         })
 
-        ## output$nvPanel<-shiny::renderUI({
-        ##     message("Rendering panel started")
-        ##     ft<-rvTab$mtr
-        ##     set<-input$presSelSet
-        ##     if (nchar(set)>0 && !is.null(ft)) {
-        ##         QANms<-rvConf$QANAMES
-        ##         names(QANms)<-QANms
-        ##         tags<-levels(factor(ft[ft$set==set,]$tag))
-        ##         rvConf$tags<-tags
-        ##         spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
-        ##         rvConf$spectProps<-spectProps
-        ##         tabPanelList <- lapply(tags, function(tag) {
-        ##             shiny::tabPanel(tag, shiny::checkboxGroupInput(spectProps[[tag]], "Quality Control",
-        ##                                                            QANms),
-        ##                             shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
-        ##                             shiny::verbatimTextOutput(paste("value",tag,sep=""))
-        ##                             )})
+        output$nvPanel<-shiny::renderUI({
+            message("Rendering panel started")
+            ft<-rvTab$mtr
+            set<-input$presSelSet
+            if (nchar(set)>0 && !is.null(ft)) {
+                QANms<-rvConf$QANAMES
+                names(QANms)<-QANms
+                tags<-levels(factor(ft[ft$set==set,]$tag))
+                rvConf$tags<-tags
+                spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
+                rvConf$spectProps<-spectProps
+                tabPanelList <- lapply(tags, function(tag) {
+                    shiny::tabPanel(tag, shiny::checkboxGroupInput(spectProps[[tag]], "Quality Control",
+                                                                   QANms),
+                                    shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
+                                    shiny::verbatimTextOutput(paste("value",tag,sep=""))
+                                    )})
         
-        ##         do.call(shiny::navlistPanel, tabPanelList)
-        ##         message("done rendering panel")
-        ##     } else NULL
-        ## })
+                do.call(shiny::navlistPanel, tabPanelList)
+                message("done rendering panel")
+            } else NULL
+        })
 
         ## output$chromGram <- renderPlot(
         ## {
