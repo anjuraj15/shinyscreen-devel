@@ -637,15 +637,13 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
     write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
 }
 
-preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
+preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
     ## read in .csv file as file
     ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F,comment.char='')
     getWidth <- function(maxid) {log10(maxid)+1}
     ids <- as.numeric(levels(factor(ftable$ID)))
-    id_field_width <- getWidth(lCmpdList)
     fn_out<- function(id,suff,wd) {
         patt<-paste("^0*",id,suff,".csv$",sep='')
-        ## paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')
         res<-list.files(path=wd,pattern=patt,full.names=T)
         if (length(res)>0) res else character(0)
 

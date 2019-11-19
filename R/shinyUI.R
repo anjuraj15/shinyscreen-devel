@@ -850,71 +850,68 @@ shinyScreenApp <- function(projDir=getwd()) {
                 gc()
             }})
 
-        ## shiny::observeEvent(input$genRunPPB,{
-        ##     message("Starting preprocessing.")
-            
-        ##     shiny::isolate({
-        ##         sets<-getSets()
-        ##         cdf<-if (!is.null(rvTab$tgt)) rvTab$tgt else NULL})
-            
-        ##     nr<-nrow(cdf)
-        ##     if (!is.null(nr)) {
-        ##         if (is.na(nr)) nr<-0
-        ##     } else nr<-0
-        ##     if (length(sets)>0 && nr>0) {
-        ##         doneSets<-sets[sapply(sets,isGenDone)]
-        ##         if (length(doneSets)>0) {
-        ##             fnFullTab<-input$confFileTabProcInp
-        ##             fnBaseTab<-input$confFileTabBase
-        ##             fnOpen<-""
-        ##             fnOpen<-if (isThingFile(fnFullTab)) fnFullTab else fnBaseTab
-        ##             fullFTab<-read.csv(file=fnOpen,
-        ##                                comment.char = '',
-        ##                                stringsAsFactors = F)
+        shiny::observeEvent(input$genRunPPB,{
+            message("Starting preprocessing.")
 
-        ##                             doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
-        ##             if (nrow(doneFTab)>0) {
-        ##                 fnTmp<-ppInpFt()
-        ##                 write.csv(file=fnTmp,
-        ##                           x=doneFTab,
-        ##                           row.names=F)
-        ##                 message("fnTmp: ",fnTmp)
-        ##                 cmpdL<-rvTab$tgt
-        ##                 maxId<-do.call(max,as.list(sapply(doneSets,idsFromFiles)))
-        ##                 intTresh<-as.numeric(input$intTresh)
-        ##                 noiseFac<-as.numeric(input$noiseFac)
-        ##                 rtDelta<-as.numeric(input$rtDelta)
-        ##                 ## dr<-file.path(dirname(fnCand),sets)
-        ##                 preProc(fnFileTab=fnTmp,
-        ##                         lCmpdList=maxId,
-        ##                         fnDest=fnTmp,
-        ##                         intTresh=intTresh,
-        ##                         noiseFac=noiseFac,
-        ##                         rtDelta=rtDelta)
-        ##                 ppFnTab<-read.csv(file=fnTmp,
-        ##                                   comment.char = '',
-        ##                                   stringsAsFactors = F)
-        ##                 extNms<-names(ppFnTab)
-        ##                 basNms<-names(fullFTab)
-        ##                 diffNms<-setdiff(extNms,basNms)
-        ##                 nrf<-nrow(fullFTab)
-        ##                 for (nm in diffNms) {
-        ##                     z<-logical(length=nrf)
-        ##                     z<-T
-        ##                     fullFTab[[nm]]<-z
-        ##                 }
-        ##                 fullFTab[fullFTab$set %in% doneSets,]<-ppFnTab
-        ##                 write.csv(file=fnFullTab,
-        ##                           x=fullFTab,
-        ##                           row.names=F)
-        ##                 file.copy(fnFullTab,input$confResFileTab,overwrite=T)
-        ##                 message("Finished preprocessing.")
+            sets<-getSets()
+            comp<-rvTab$comp
+            
+            nr<-nrow(comp)
+            if (!is.null(nr)) {
+                if (is.na(nr)) nr<-0
+            } else nr<-0
+            if (length(sets)>0 && nr>0) {
+                doneSets<-sets[sapply(sets,isGenDone)]
+                message("done sets: ",doneSets)
+                if (length(doneSets)>0) {
+                    fnFullTab<-input$confFileTabProcInp
+                    fnBaseTab<-input$confFileTabBase
+                    fnOpen<-""
+                    fnOpen<-if (isThingFile(fnFullTab)) fnFullTab else fnBaseTab
+                    fullFTab<-read.csv(file=fnOpen,
+                                       comment.char = '',
+                                       stringsAsFactors = F)
+
+                                    doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
+                    if (nrow(doneFTab)>0) {
+                        fnTmp<-ppInpFt()
+                        write.csv(file=fnTmp,
+                                  x=doneFTab,
+                                  row.names=F)
+                        message("fnTmp: ",fnTmp)
+                        comp<-rvTab$comp
+                        intTresh<-as.numeric(input$intTresh)
+                        noiseFac<-as.numeric(input$noiseFac)
+                        rtDelta<-as.numeric(input$rtDelta)
+                        preProc(fnFileTab=fnTmp,
+                                fnDest=fnTmp,
+                                intTresh=intTresh,
+                                noiseFac=noiseFac,
+                                rtDelta=rtDelta)
+                        ppFnTab<-read.csv(file=fnTmp,
+                                          comment.char = '',
+                                          stringsAsFactors = F)
+                        extNms<-names(ppFnTab)
+                        basNms<-names(fullFTab)
+                        diffNms<-setdiff(extNms,basNms)
+                        nrf<-nrow(fullFTab)
+                        for (nm in diffNms) {
+                            z<-logical(length=nrf)
+                            z<-T
+                            fullFTab[[nm]]<-z
+                        }
+                        fullFTab[fullFTab$set %in% doneSets,]<-ppFnTab
+                        write.csv(file=fnFullTab,
+                                  x=fullFTab,
+                                  row.names=F)
+                        file.copy(fnFullTab,input$confResFileTab,overwrite=T)
+                        message("Finished preprocessing.")
                                         
                                         
-        ##             }
-        ##         }
-        ##     }
-        ## })
+                    }
+                }
+            }
+        })
 
         ## shiny::observeEvent(input$presSelCmpd,{
         ##     pos<-input$presSelCmpd
@@ -933,15 +930,15 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##     if (x<=len) rvConf$currIDSel<-x
         ## })
 
-        ## shiny::observeEvent(rvConf$fnFT,{
-        ##     fn<-rvConf$fnFT
-        ##     if (!is.null(fn) && isThingFile(fn)) {
-        ##         rvTab$mtr<-read.csv(file=fn,
-        ##                               comment.char = '',
-        ##                               stringsAsFactors = F)
-        ##     }
-        ## })
-
+        shiny::observeEvent(rvConf$fnFT,{
+            fn<-rvConf$fnFT
+            if (!is.null(fn) && isThingFile(fn)) {
+                rvTab$mtr<-read.csv(file=fn,
+                                    comment.char = '',
+                                    stringsAsFactors = F)
+            }
+        })
+        
         ## shiny::observeEvent(rvConf$currIDSel,{
         ##     ids<-rvConf$currIDSet
         ##     if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
@@ -1121,25 +1118,25 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##                              inputId="presSelCmpd",
         ##                              selected=rvConf$currIDSel)
         ## })
-        ## shiny::observe({
-        ##     shiny::invalidateLater(100,
-        ##                            session=session)
-        ##     output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
-        ##         sets<-getSets()
-        ##         genState<-sapply(sets,isGenDone)
-        ##         df<-if (!is.null(sets)) {data.frame(set=sets,
-        ##                                             generated=genState,
-        ##                                             stringsAsFactors=F)
-        ##             } else {data.frame(sets=character(),
-        ##                                generated=logical(),
-        ##                                stringsAsFactors=F)} 
-        ##         rhandsontable::rhandsontable(df,
-        ##                                      rowHeaders=NULL,
-        ##                                      readOnly=T,
-        ##                                      stretchH="all")
+        shiny::observe({
+            shiny::invalidateLater(100,
+                                   session=session)
+            output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
+                sets<-getSets()
+                genState<-sapply(sets,isGenDone)
+                df<-if (!is.null(sets)) {data.frame(set=sets,
+                                                    generated=genState,
+                                                    stringsAsFactors=F)
+                    } else {data.frame(sets=character(),
+                                       generated=logical(),
+                                       stringsAsFactors=F)} 
+                rhandsontable::rhandsontable(df,
+                                             rowHeaders=NULL,
+                                             readOnly=T,
+                                             stretchH="all")
                 
-        ##     })
-        ## })
+            })
+        })
     
         shiny::observe({
             shiny::invalidateLater(100,
