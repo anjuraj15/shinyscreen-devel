@@ -974,7 +974,7 @@ adornmzMLTab<-function(df,projDir=getwd()) {
     df
 }
 
-genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
+genSuprFileTbl <- function(fileTbl,compTab,destFn="ftable.csv") {
     genOneFileTbl <- function(id,fileTbl) {
         n <- nrow(fileTbl)
         K <- length(id)
@@ -991,29 +991,45 @@ genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
         bdf <- cbind(bdf,data.frame(ID=longid))
         bdf
     }
-    sets <- levels(factor(IDSet$set))
+    sets <- levels(factor(compTab$set))
     setTbl <- lapply(sets,function (s) {
-        sl1<-IDSet$set %in% s
+        sl1<-compTab$set %in% s
         sl2<-fileTbl$set==s
         if (!any(sl2)) stop("Set",s,"does not select anything in the currently processed files.")
-        genOneFileTbl(IDSet[sl1,]$ID,fileTbl[sl2,])
+        genOneFileTbl(compTab[sl1,]$ID,fileTbl[sl2,])
 
     })
     allTbl <- do.call(rbind,setTbl)
     allTbl 
 }
 
-addCmpLColsToFileTbl<-function(ft,cmpL) {
+getEntryFromComp<-function(entry,id,set,mode,compTab) {
+    ind <- which(compTab$ID %in% id &
+                 compTab$set %in% set &
+                 compTab$mode %in% mode)
+
+    res<- if (length(ind)==1) compTab[ind,entry] else {
+                                                     if (length(ind)>1) {
+                                                         stop("Nonunique entry selection in comprehensive table.")
+                                                     } else {
+                                                         stop("Entries not found for id ", id,"set ",set, "and mode ", mode, " .")
+                                                     } 
+                                                 }
+    res
+        
+}
+addCompColsToFileTbl<-function(ft,compTab) {
     nR<-nrow(ft)
     mzCol<-rep(NA,nR)
     nmCol<-rep("",nR)
     
     for (ir in 1:nR) {
         id<-ft[ir,"ID"]
-        mode<-ft[ir,"mode"]
-        mzCol[[ir]]<- getMzFromCmpL(id,mode,cmpL)
-        cmI<-which(id==cmpL$ID)
-        nm<-cmpL$Name[[cmI]]
+        set<-ft[ir,"set"]
+        m<-ft[ir,"mode"]
+        entries<-getEntryFromComp(c("mz","Name"),id,set,m,compTab)
+        mzCol[[ir]]<-  entries[[1]]
+        nm<-entries[[2]]
         nmCol[[ir]]<- if (!is.na(nm)) nm else ""
     }
     ft$mz<-mzCol

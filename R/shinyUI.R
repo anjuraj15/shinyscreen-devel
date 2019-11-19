@@ -725,50 +725,14 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
-
-        ## shiny::observeEvent(input$mzMLtabSubmB,{
-        ##     mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
-        ##     rvTab$mzML<-mzML
-
-        ##     ## Fill out mz in sets
-        ##     sets<-getSets()
-        ##     nR<-nrow(rvTab$setId)
-        ##     dfSet<-rvTab$setId
-        ##     dfSet$mz<-rep(NA,nR)
-        ##     dfSet$SMILES<-rep(NA,nR)
-        ##     dfSet$Name<-rep(NA,nR)
-        ##     cmpL<-getCmpL()
-        ##     for (s in sets) {
-        ##         setMode<-getSetMode(s,mzML)
-
-        ##         for md in setMode {
-        ##             md<-setMode[[s]]
-        ##             ind<-which(dfSet$set==s)
-        ##             for (i in ind) {
-        ##                 id<-dfSet[i,"ID"]
-        ##                 dfSet[i,"mz"]<-getMzFromCmpL(id,md,cmpL)
-        ##                 dfSet[i,"SMILES"]<-getSMILESFromCmpL(id,cmpL)
-        ##                 dfSet[i,"Name"]<-getColFromCmpL(id,"Name",cmpL)
-        ##             }
-        ##         } #TODO
-        ##     }
-        ##    ## rvTab$setId<-dfSet
-        ##     fn<-rvConf$fnLocSetId
-        ##     write.csv(file=fn,
-        ##               row.names=F,
-        ##               x=dfSet)
-        ##     message("New set id table written to: ",fn)
-        ##     input$fnSetId<-fn #REPLACEMENT CAUSED BUG:)
-        ## })
-
-        ## shiny::observeEvent(input$impGenRMBB,{
-        ##     fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impGenRMBB)
-        ##     fn<-fnobj[["datapath"]]
-        ##     if (length(fn)>0 && !is.na(fn)) {
-        ##         shiny::updateTextInput(session=session,
-        ##                                inputId="fnStgsRMB",
-        ##                                value=fn)
-        ##     }})
+        shiny::observeEvent(input$impGenRMBB,{
+            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impGenRMBB)
+            fn<-fnobj[["datapath"]]
+            if (length(fn)>0 && !is.na(fn)) {
+                shiny::updateTextInput(session=session,
+                                       inputId="fnStgsRMB",
+                                       value=fn)
+            }})
 
         shiny::observeEvent(input$mzMLtabSubmB,{
                 mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
@@ -810,12 +774,12 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvTab$setId$set<-factor(rvTab$setId$set)
                 message("Done importing compound sets from: ",fn)
             }
-            ## df<-rvTab$setId
-            ## if (length(df)>0 && !is.na(df) && nrow(df)>0) {
-            ##     shiny::updateSelectInput(session=session,
-            ##                              inputId="genSetSelInp",
-            ##                              choices=levels(df$set))
-            ## }
+            df<-rvTab$setId
+            if (length(df)>0 && !is.na(df) && nrow(df)>0) {
+                shiny::updateSelectInput(session=session,
+                                         inputId="genSetSelInp",
+                                         choices=levels(df$set))
+            }
             ## shiny::isolate({
             ##     message("Changing the inpSetIdFn to: ",fn, " in isolation.")
             ##     shiny::updateTextInput(session=session,
@@ -831,21 +795,24 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         
 
-        ## shiny::observeEvent(input$genFileTabB,{
-        ##     fn<-input$confFileTabBase
-        ##     if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
-        ##         message("Generating basic file table in file ",fn)
-        ##         files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
-        ##         setId<-rvTab$setId
-        ##         cmpL<-rvTab$tgt
-        ##         df<-genSuprFileTbl(files,setId,destFn=fn)
-        ##         df<-addCmpLColsToFileTbl(df,cmpL)
-        ##         write.csv(x=df,file=fn,row.names=F)
-        ##         rvConf$fnFTBase<-fn
-        ##         message("Done generating basic file table in file ",fn)
-        ##     }
+        shiny::observeEvent(input$genFileTabB,{
+            fn<-input$confFileTabBase
+            if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
+                message("Generating basic file table in file ",fn)
+                files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
+                ## setId<-rvTab$setId
+                ## cmpL<-rvTab$tgt
+                comp<-rvTab$comp
+                df<-genSuprFileTbl(files,comp,destFn=fn)
+                df<-addCompColsToFileTbl(df,comp)
+                df$mode<-as.character(df$mode)
+                ## browser()
+                tab2file(tab=df,file=fn)
+                rvConf$fnFTBase<-fn
+                message("Done generating basic file table in file ",fn)
+            }
 
-        ## })
+        })
 
         ## shiny::observeEvent(input$genRunB,{
         ##     FnRMB<-input$fnStgsRMB
