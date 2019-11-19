@@ -800,13 +800,10 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
                 message("Generating basic file table in file ",fn)
                 files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
-                ## setId<-rvTab$setId
-                ## cmpL<-rvTab$tgt
                 comp<-rvTab$comp
                 df<-genSuprFileTbl(files,comp,destFn=fn)
                 df<-addCompColsToFileTbl(df,comp)
                 df$mode<-as.character(df$mode)
-                ## browser()
                 tab2file(tab=df,file=fn)
                 rvConf$fnFTBase<-fn
                 message("Done generating basic file table in file ",fn)
@@ -814,43 +811,44 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         })
 
-        ## shiny::observeEvent(input$genRunB,{
-        ##     FnRMB<-input$fnStgsRMB
-        ##     nProc<-as.integer(input$genNoProc)
-        ##     fnTab<-rvConf$fnFTBase
-        ##     sets<-input$genSetSelInp
-        ##     message("Selected sets:")
-        ##     message(str(sets))
-        ##     message("Number of processes:",nProc)
-        ##     message("RMassBank settings file:",FnRMB)
-        ##     message("File table:",fnTab)
-        ##     if (length(fnTab)>0) {
+        shiny::observeEvent(input$genRunB,{
+            FnRMB<-input$fnStgsRMB
+            nProc<-as.integer(input$genNoProc)
+            fnTab<-rvConf$fnFTBase
+            sets<-input$genSetSelInp
+            message("Selected sets:")
+            message(str(sets))
+            message("Number of processes:",nProc)
+            message("RMassBank settings file:",FnRMB)
+            message("File table:",fnTab)
+            if (length(fnTab)>0) {
 
-        ##         for (s in sets) {
-        ##             message("***** BEGIN set ",s, " *****")
-        ##             fnCmpdList<-input$fnTgtL
-        ##             fnStgs<-input$fnStgsRMB
-        ##             intTresh<-as.numeric(input$intTresh)
-        ##             noiseFac<-as.numeric(input$noiseFac)
-        ##             rtDelta<-as.numeric(input$rtDelta)
-        ##             ppmLimFine<-as.numeric(input$ppmLimFine)
-        ##             dest<-rvConf$projDir
-        ##             eicLim<-as.numeric(input$eicLim)
-        ##             gc()
-        ##             gen(fnFileTab=fnTab,
-        ##                 fnCmpdList=fnCmpdList,
-        ##                 fnStgs=fnStgs,
-        ##                 dest=dest,
-        ##                 proc=nProc,
-        ##                 intTresh=intTresh,
-        ##                 noiseFac=noiseFac,
-        ##                 rtDelta=rtDelta,
-        ##                 ppmLimFine=ppmLimFine,
-        ##                 eicLim=eicLim)
-        ##             message("***** END set ",s, " *****")
-        ##         }
-        ##         gc()
-        ##     }})
+                fTab<-file2tab(file=fnTab)
+                for (s in sets) {
+                    message("***** BEGIN set ",s, " *****")
+                    fnCmpdList<-input$fnTgtL
+                    fnStgs<-FnRMB
+                    intTresh<-as.numeric(input$intTresh)
+                    noiseFac<-as.numeric(input$noiseFac)
+                    rtDelta<-as.numeric(input$rtDelta)
+                    ppmLimFine<-as.numeric(input$ppmLimFine)
+                    dest<-rvConf$projDir
+                    eicLim<-as.numeric(input$eicLim)
+                    gc()
+                    gen(fTab=fTab[fTab$set==s,],
+                        fnCmpdList=fnCmpdList,
+                        fnStgs=fnStgs,
+                        dest=dest,
+                        proc=nProc,
+                        intTresh=intTresh,
+                        noiseFac=noiseFac,
+                        rtDelta=rtDelta,
+                        ppmLimFine=ppmLimFine,
+                        eicLim=eicLim)
+                    message("***** END set ",s, " *****")
+                }
+                gc()
+            }})
 
         ## shiny::observeEvent(input$genRunPPB,{
         ##     message("Starting preprocessing.")
@@ -1006,14 +1004,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             cond<-! (is.null(tgt) || is.null(unk)) &&
                 ! is.null(setId) &&
                 ! is.null(mzML)
-
-            shiny::isolate({
-                message("null tgt?:",is.null(tgt))
-                message("null tgt?:",is.null(unk))
-                message("null tgt?:",is.null(mzML))
-                message("null tgt?:",is.null(setId))
-                message("cond:",cond)
-            })
             
             if (cond) {
 
@@ -1151,13 +1141,13 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##     })
         ## })
     
-        ## shiny::observe({
-        ##     shiny::invalidateLater(100,
-        ##                            session=session)
-        ##     fnFT<-if (isThingFile(input$confResFileTab)) input$confResFileTab else NULL
-        ##     rvConf$fnFT<-fnFT
+        shiny::observe({
+            shiny::invalidateLater(100,
+                                   session=session)
+            fnFT<-if (isThingFile(input$confResFileTab)) input$confResFileTab else NULL
+            rvConf$fnFT<-fnFT
               
-        ## })
+        })
     
 
         ## shiny::observe({
