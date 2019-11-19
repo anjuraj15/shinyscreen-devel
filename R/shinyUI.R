@@ -772,27 +772,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(input$mzMLtabSubmB,{
                 mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
                 rvTab$mzML<-mzML
-                sets<-getSets()
-                nRow<-0
-                setId<-getSetId()
-                for (s in sets) {
-                    sMode<-getSetMode(s,mzML)
-                    n<-length(sMode)
-                    nRow<-nRow+n*length(which(setId$set %in% s))
-                    
-                }
-                message("calculated nRow: ",nRow)
-                compTab<-data.frame(
-                    ID=rep(0,nRow),
-                    mz=rep(0.0,nRow),
-                    mode=rep("",nRow),
-                    tag=rep("",nRow),
-                    set=rep("",nRow),
-                    Name=rep("",nRow),
-                    SMILES=rep("",nRow),
-                    stringsAsFactors=F)
-
-                rvTab$comp<-compTab
         })
 
         shiny::observeEvent(input$fnTgtL,
@@ -1046,8 +1025,48 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##     }
         ##     dev.off()
         ## })
+
+        
         ## ***** Observe *****
 
+        shiny::observe({
+            setId<-getSetId()
+            mzML<-getMzML()
+            unk<-getUnk()
+            tgt<-getTgt()
+
+            if (! (is.null(tgt) || is.null(unk)) &&
+                ! is.null(setId) &&
+                ! is.null(mzML)) {
+
+                sets<-getSets()
+                nRow<-0
+                setId<-getSetId()
+                for (s in sets) {
+                    sMode<-getSetMode(s,mzML)
+                    n<-length(sMode)
+                    nRow<-nRow+n*length(which(setId$set %in% s))
+                    
+                }
+                message("calculated nRow: ",nRow)
+                compTab<-data.frame(
+                    ID=rep(0,nRow),
+                    mz=rep(0.0,nRow),
+                    mode=rep("",nRow),
+                    tag=rep("",nRow),
+                    set=rep("",nRow),
+                    Name=rep("",nRow),
+                    SMILES=rep("",nRow),
+                    stringsAsFactors=F)
+
+                rvTab$comp<-compTab
+                
+            }
+            
+                
+        })
+       
+        
         #rvTab$mzML<-getMzMLFiles()
 
 
