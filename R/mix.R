@@ -110,7 +110,7 @@ getMzFromCmpL<-function(id,mode,cmpL) {
     ind<-match(id,cmpL$ID)
     mz<-cmpL$mz[[ind]]
     smiles<-cmpL$SMILES[[ind]]
-    res<-if (!is.na(mz)) {
+    res<-if (!is.null(mz) && !is.na(mz)) {
              mz
          } else if (nchar(smiles)>0)
          {

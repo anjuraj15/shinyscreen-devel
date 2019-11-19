@@ -1035,29 +1035,74 @@ shinyScreenApp <- function(projDir=getwd()) {
             unk<-getUnk()
             tgt<-getTgt()
 
-            if (! (is.null(tgt) || is.null(unk)) &&
+            cond<-! (is.null(tgt) || is.null(unk)) &&
                 ! is.null(setId) &&
-                ! is.null(mzML)) {
+                ! is.null(mzML)
+            
+            if (cond) {
 
-                sets<-getSets()
+                
+
+                idTgt<-tgt$ID
+                idUnk<-unk$ID
+
+                if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
+                setId$orig<-rep("",nrow(setId))
+                lTgt<-setId$ID %in% idTgt
+                iTgt<-which(lTgt)
+                iUnk<-which(!lTgt)
+                setId[iTgt,"orig"]<-"known"
+                setId[iUnk,"orig"]<-"unknown"
+                rvTab$setId<-setId ## !!!
+
+                
+                ## knowns
+                setIdTgt<-setId[setId$orig=="known",]
+                sets<-levels(factor(setIdTgt$set))
                 nRow<-0
-                setId<-getSetId()
                 for (s in sets) {
                     sMode<-getSetMode(s,mzML)
                     n<-length(sMode)
-                    nRow<-nRow+n*length(which(setId$set %in% s))
+                    nRow<-nRow+n*length(which(setIdTgt$set %in% s))
                     
                 }
-                message("calculated nRow: ",nRow)
-                compTab<-data.frame(
+
+                compTgt<-data.frame(
                     ID=rep(0,nRow),
                     mz=rep(0.0,nRow),
                     mode=rep("",nRow),
-                    tag=rep("",nRow),
                     set=rep("",nRow),
+                    orig=rep("",nRow),
                     Name=rep("",nRow),
                     SMILES=rep("",nRow),
                     stringsAsFactors=F)
+
+                i<-1
+                for (s in sets) {
+                    sMode<-getSetMode(s,mzML)
+                    for (m in sMode) {
+                        for (id in setIdTgt[setIdTgt$set %in% s,"ID"]) {
+                            compTgt[i,"ID"]<-id
+                            compTgt[i,"mode"]<-m
+                            compTgt[i,"set"]<-s
+                            compTgt[i,"orig"]<-"known"
+                            compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
+                            message("EE")
+                            compTgt[i,"SMILES"]<-getColFromCmpL("SMILES",id,tgt)
+                            compTgt[i,"Name"]<-getColFromCmpL("Name",id,tgt)
+                            message("FF")
+                        }
+                        
+                    }
+                }
+
+                ## unknows
+                
+                message("calculated nRow: ",nRow)
+                
+                
+
+                
 
                 rvTab$comp<-compTab
                 
