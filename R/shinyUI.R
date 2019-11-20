@@ -834,7 +834,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             fnTab<-rvConf$fnFTBase
             sets<-input$genSetSelInp
             message("Selected sets:")
-            message(str(sets))
             message("Number of processes:",nProc)
             message("RMassBank settings file:",FnRMB)
             message("File table:",fnTab)
