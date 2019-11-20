@@ -5,6 +5,7 @@ FN_PP_OUT_PREF<-"PP.filetable"
 FN_FTAB<-"ftable.csv"
 FN_CMP_L<-"compounds.csv"
 FN_LOC_SETID <-"setid.csv"
+FN_COMP_TAB<-"comprehensive.csv"
 MODEMAP<-list(pH="MpHp_mass",
               mH="MmHm_mass",
               pNH4="MpNH4_mass",
@@ -21,6 +22,35 @@ RT_DIGITS=2
 M_DIGITS=4
 PAL="Dark2"
 
+REST_TXT_INP<-c("fnStgsRMB",
+                "fnTgtL",
+                "fnUnkL",
+                "fnSetId",
+                "tagsInp",
+                "confFileTabBase",
+                "confFileTabProcInp",
+                "confResFileTab")
+
+## ***** Helper Functions *****
+tab2file<-function(tab,file,...) {
+    write.csv(x=tab,file=file,row.names=F,...)
+}
+
+file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
+    read.csv(file=file,
+             header=T,
+             stringsAsFactors=stringsAsFactors,
+             comment.char=comment.char,
+             na.strings=c("","NA"),...)
+}
+
+isThingFile<-function(fn) {
+    if (length(fn)>0 && is.character(fn)) {
+        file.exists(fn)
+    } else F
+}
+
+## ***** End helper functions *****
 ppInpFt<-function() {
     tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
 }
@@ -81,7 +111,7 @@ getMzFromCmpL<-function(id,mode,cmpL) {
     ind<-match(id,cmpL$ID)
     mz<-cmpL$mz[[ind]]
     smiles<-cmpL$SMILES[[ind]]
-    res<-if (!is.na(mz)) {
+    res<-if (!is.null(mz) && !is.na(mz)) {
              mz
          } else if (nchar(smiles)>0)
          {
@@ -314,11 +344,10 @@ gen_ftable_old <- function(fn_data,wd,n_cmpd) {
     f(fn_data,wd)
 }
 
-gen_ftable <- function(id,fnData,wd,name,mz) {
-    n <- length(id)
-    files <- rep(fnData,n)
-    df <- data.frame(Files=files,ID=id,wd=wd,mz=mz,Name=name,stringsAsFactors=F)
-    write.csv(x=df,file=get_ftable_fn(wd))
+gen_ftable <- function(fTab,file) {
+    df<-fTab[fTab$Files %in% file,]
+    wd<-unique(df$wd)
+    tab2file(tab=df,file=get_ftable_fn(wd))
 }
 
 gen_fn_stgs <- function(fn_inp,fn) {
@@ -521,46 +550,58 @@ RMB_EIC_prescreen_df_old1 <- function (wd, RMB_mode, FileList, cmpd_list,
 
 RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
                                   ppm_limit_fine = 10, EIC_limit = 0.001) {
-    n_spec <- 0
-    cmpd_RT_maxI <- ""
-    msms_found <- ""
-    rts <- 0
-    max_I_prec <- ""
-    cmpd_RT_maxI_min <- ""
-    file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
-    ncmpd <- length(levels(factor(file_list$ID))) #nrow(cmpd_info)
+
+
+    file_list <- file2tab(file=FileList)
+    file_list<-file_list[file_list$wd %in% wd,]
+    ncmpd <- max(file_list$ID) # length(levels(factor(file_list$ID))) #nrow(cmpd_info)
     odir=wd
     fid <- file_list$ID
+    tag<-unique(file_list$tag)
+    modes<-unique(file_list$mode)
+    message("how many modes? ",length(modes))
+    fnProg<-file.path(wd,"progress.log")
+    unlink(fnProg,force=T)
+    cat("i","total\n",sep=",",file=fnProg)
     ## cmpind <- which(cmpd_info$ID %in% fid)
     get_width <- function(maxid) {log10(maxid)+1}
     id_field_width <- get_width(ncmpd)
-
     fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
-    f <- mzR::openMSfile(file_list$Files[1])
-    for (i in 1:length(file_list$ID)) {
-        cpdID <- file_list$ID[i]
-        n_spec <- n_spec + 1
-        mz<-file_list$mz[i]
-        ## smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
-        ## mz<-if (!is.na(smiles)) {
-        ##         mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
-        ##     } else {
-        ##         mzCol[[i]]  ## TODOR REMOVE mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
-        ##     }
-        ## TODOR REMOVED if (is.na(mzCol[[i]])) mzCol[[i]] <- mz ## infer from findMz.
+    f <- mzR::openMSfile(file_list$Files[[1]])
+    total<-nrow(file_list)
+    n_spec <- 0
+    cmpd_RT_maxI <- rep(0.0,total)
+    msms_found <- rep(F,total)
+    rts <- rep(0.0,total)
+    max_I_prec <- rep(0.0,total)
+    cmpd_RT_maxI_min <- rep(0.0,total)
+    tellme<-function(i,point) NULL ##message(">>> tag: ", tag, "i: ",i,"point: ", point)
+    for (i in 1:total) {
+        tellme(i,"A1")
+        cpdID <- file_list$ID[[i]]
+        n_spec <- i
+        mz<-file_list$mz[[i]]
+        tellme(i,"A2")
+
+        tellme(i,"B1")
         eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
-        msms_found[n_spec] <- FALSE
-        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
-                                                                      p = TRUE))
+        tellme(i,"B2")
 
+        tellme(i,"C1")
+        msms_found[i] <- FALSE
+        theppm<-RMassBank::ppm(mz, ppm_limit_fine,p = TRUE)
+        tellme(i,paste("C1 mz:",mz))
+        tellme(i,paste("C1 ppm:",theppm))
+        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, theppm)
         max_I_prec_index <- which.max(eic$intensity)
-        cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
-        max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
-        cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60 ## conversion to minutes
+        cmpd_RT_maxI[i] <- eic[max_I_prec_index, 1]
+        max_I_prec[i] <- eic[max_I_prec_index, 2]
+        cmpd_RT_maxI_min[i] <- as.numeric(cmpd_RT_maxI[i])/60 ## conversion to minutes
+        tellme(i,"C2")
 
+        tellme(i,"D1")
         if (length(eic$rt)>0) eic$rt <- eic$rt/60 ## conversion to minutes
-
-        write.csv(x=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"),row.names=F)
+        tab2file(tab=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"))
         bindKids <- function(kids)
             do.call(rbind,lapply(kids,function (kid)
                 c(rt=kid@rt,intensity=max(kid@intensity))))
@@ -569,121 +610,40 @@ RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
         bindSpec <- function(specLst) {
             do.call(rbind,lapply(specLst,function (sp) bindKids(sp@children)))
         }
-        
+        tellme(i,"D2")
+        tellme(i,"E1")
         found <- which(vapply(msms,function(sp) sp@found,FUN.VALUE=F))
         msmsExst <- msms[found]
-
         if (length(found)>0) {
-            msms_found[n_spec] <- T
+            msms_found[i] <- T
             msmsTab <- as.data.frame(bindSpec(msmsExst),stringsAsFactors=F)
             names(msmsTab) <- c("rt","intensity")
-            if (nrow(msmsTab)>0) {
+            if (length(msmsTab)>0 && nrow(msmsTab)>0) {
                 msmsTab$rt <- msmsTab$rt/60 ## conversion to minutes
-                write.csv(x=msmsTab,file=fn_out(cpdID,".kids"),row.names=F)
+                tab2file(tab=msmsTab,file=fn_out(cpdID,".kids"))
             }
         }
+        tellme(i,"E2")
 
-        rts[i] <- (cmpd_RT_maxI[n_spec])
+        tellme(i,"F1")
+        rts[i] <- cmpd_RT_maxI[i]
+        cat(i,total,"\n",file=fnProg,append=T,sep=",")
+        tellme(i,"F2")
     }
     mzR::close(f)
     rtwiDf <- data.frame(ID=file_list$ID, mz=file_list$mz, Name=file_list$Name, 
                          cmpd_RT_maxI=cmpd_RT_maxI, cmpd_RT_maxI_min=cmpd_RT_maxI_min,
                          max_I_prec=max_I_prec, msms_found=msms_found,stringsAsFactors=F)
-    
     write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
 }
 
-preProcLai <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,ms1_intTresh=1e5,ms2_intTresh=1e4,MS1peakWi=0.3) {
-
-    ## read in .csv file as file
-    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F,comment.char='')
-    
-    getWidth <- function(maxid) {log10(maxid)+1}
-    ids <- as.numeric(levels(factor(ftable$ID)))
-		      
-		      ##is MS1 intensity high enough?)
-    id_field_width <- getWidth(max(ids))
-    fn_out<- function(id,suff) {paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')}
-
-    ## for loop through dataframe called file to set tresholds
-    ftable[c("MS1","MS2","Alignment","MS1Intensity","AboveNoise","MS2Intensity","MS1peakWidth")] <- T
-    ftable$Comments <- ""
-    for (ind in 1:nrow(ftable)) {
-        wd <- ftable$wd[ind]
-        id <- ftable$ID[ind]
-        odir=file.path(wd)
-        fn_eic <- file.path(wd,fn_out(id,".eic"))
-        eic <- NULL
-        maxInt <- NULL
-        eicExists <- T
-
-	##does MS1 exist?
-        if(!file.exists(fn_eic)) { 
-            ftable[ind,"MS1"] = FALSE
-            eicExists <- F
-        }
-        else {
-            eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F,comment.char='')
-            maxInt <- max(eic$intensity)
-
-	    ##is MS1 intensity high enough?
-            if (maxInt < ms1_intTresh) {
-                ftable[ind,"MS1Intensity"] = FALSE
-            }
-            ##Detect noisy signal. This is a naive implementation, so careful.
-            mInt <- mean(eic$intensity)
-            if (maxInt < noiseFac*mInt) ftable[ind,"AboveNoise"] <- F
-
-	    ##Is MS1 peak a proper peak, or just a spike? Check peakwidth.
-	    MS1peakWi
-
-        }
-
-	#####MS2 checks
-        fn_kids <- file.path(wd,fn_out(id,".kids"))
-
-	##does MS2 exist? Regardless of quality/alignment.
-        if(!file.exists(fn_kids)) {
-            ftable[ind,"MS2"] = FALSE
-	    ftable[ind,"MS2Intensity"] = NA #moot
-	    ftable[ind,"Alignment"] = NA #moot
-        } else {
-        ## Detect RT shifts. Naive implementation, so careful.
-            if (eicExists) {  ################WHY THIS IF CONDITIONAL?? If MS2 exists, then eic MUST exist, no? Seems redundant.
-		    ##Is MS2 intensity high enough?
-		    ms2maxInt <- max(msms@intensity)
-		    if (ms2maxInt > ms2_intTresh){
-			    rtInd <- match(maxInt,eic$intensity) #returns position of first match in eic$intensity
-                	    rtMax <- eic$rt[rtInd] #fetch the rtmax value (RT with highest int;seconds)  using above index
-                	    msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F,comment.char='')
-                	    whc <- msms$rt > rtMax - rtDelta #T/F vector: are RT vals of ms2 above rtMax within Delta? Good peaks=TRUE;rt must be retentionTime!!!
-                	    whc <- whc < rtMax + rtDelta #T/F vector: are RT vals of ms2 above rtMax within Delta?
-		#Overwrites whc! In any case, cannot use this as both must be T to give final whc of T (i.e. fall within the window).
-                	    ints <- msms$intensity[whc] #builds ints vector with intensities which fall in window
-                	    if (! any(ints>0)) ftable[ind,"Alignment"] = FALSE #if none of ints larger than 0, Alignment <-F 
-		    } else {
-			ftable[ind,"MS2Intensity"] = FALSE
-		    	ftable[ind,"Alignment"] = NA #neither T or F, the MS2 was not of decent intensity in first place, alignment moot. 
-		}   
-	    }
-        }
-    }
-
-    ## get a csv outfile
-    write.csv(ftable, file = fnDest,row.names=F)
-
-}
-
-
-preProc <- function (fnFileTab,lCmpdList,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
+preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
     ## read in .csv file as file
     ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F,comment.char='')
     getWidth <- function(maxid) {log10(maxid)+1}
     ids <- as.numeric(levels(factor(ftable$ID)))
-    id_field_width <- getWidth(lCmpdList)
     fn_out<- function(id,suff,wd) {
         patt<-paste("^0*",id,suff,".csv$",sep='')
-        ## paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep='')
         res<-list.files(path=wd,pattern=patt,full.names=T)
         if (length(res)>0) res else character(0)
 
@@ -1026,46 +986,88 @@ adornmzMLTab<-function(df,projDir=getwd()) {
     df
 }
 
-genSuprFileTbl <- function(fileTbl,IDSet,destFn="ftable.csv") {
-    genOneFileTbl <- function(id,fileTbl) {
-        n <- nrow(fileTbl)
-        K <- length(id)
-        longid <- rep(id,n)
-        cols <- lapply(names(fileTbl),function(cn) rep("",n*K))
-        names(cols) <- names(fileTbl)
-        bdf <- as.data.frame(cols,stringsAsFactors = F)
-        rows <- lapply(1:n*K,function(x) NA)
-        for (j in 1:n) {
-            for (i in 1:K)
-                rows[[(j-1)*K+i]] <- fileTbl[j,]
-        }
-        bdf <- as.data.frame(do.call(rbind,rows),stringsAsFactors = F)
-        bdf <- cbind(bdf,data.frame(ID=longid))
-        bdf
-    }
-    sets <- levels(factor(IDSet$set))
-    setTbl <- lapply(sets,function (s) {
-        sl1<-IDSet$set %in% s
-        sl2<-fileTbl$set==s
-        if (!any(sl2)) stop("Set",s,"does not select anything in the currently processed files.")
-        genOneFileTbl(IDSet[sl1,]$ID,fileTbl[sl2,])
+## genSuprFileTblOld <- function(fileTbl,compTab) {
+##     genOneFileTbl <- function(id,fileTbl) {
+##         n <- nrow(fileTbl)
+##         K <- length(id)
+##         longid <- rep(id,n)
+##         cols <- lapply(names(fileTbl),function(cn) rep("",n*K))
+##         names(cols) <- names(fileTbl)
+##         bdf <- as.data.frame(cols,stringsAsFactors = F)
+##         rows <- lapply(1:n*K,function(x) NA)
+##         for (j in 1:n) {
+##             for (i in 1:K)
+##                 rows[[(j-1)*K+i]] <- fileTbl[j,]
+##         }
+##         bdf <- as.data.frame(do.call(rbind,rows),stringsAsFactors = F)
+##         bdf <- cbind(bdf,data.frame(ID=longid))
+##         bdf
+##     }
+##     sets <- levels(factor(compTab$set))
+##     setTbl <- lapply(sets,function (s) {
+##         sl1<-compTab$set %in% s
+##         sl2<-fileTbl$set==s
+##         if (!any(sl2)) stop("Set",s,"does not select anything in the currently processed files.")
+##         genOneFileTbl(compTab[sl1,]$ID,fileTbl[sl2,])
 
+##     })
+##     allTbl <- do.call(rbind,setTbl)
+##     allTbl 
+## }
+
+genSuprFileTab <- function(fileTab,compTab) {
+    genOne<-function(ids,fn) {
+
+        K<-length(ids)
+        fTabRow<-fileTab[fileTab$Files == fn,]
+        cols<-lapply(names(fileTab),function(n) rep(fTabRow[[n]],K))
+        names(cols)<-NULL
+        cols<-c(cols,list(ids))
+        names(cols)<-c(names(fileTab),"ID")
+        df<-as.data.frame(cols,stringsAsFactors = F)
+        df
+    }
+    
+    tabs<-lapply(fileTab$Files,function(fn)
+    {
+        wh<-which(fileTab$Files==fn)
+        set<-fileTab$set[[wh]]
+        md<-fileTab$mode[[wh]]
+        ids<-compTab$ID[(compTab$set %in% set) & (compTab$mode %in% md)]
+        genOne(ids,fn)
+        
     })
-    allTbl <- do.call(rbind,setTbl)
-    allTbl 
+    res<-do.call(rbind,tabs)
+    res
 }
 
-addCmpLColsToFileTbl<-function(ft,cmpL) {
+getEntryFromComp<-function(entry,id,set,mode,compTab) {
+    ind <- which(compTab$ID %in% id &
+                 compTab$set %in% set &
+                 compTab$mode %in% mode)
+
+    res<- if (length(ind)==1) compTab[ind,entry] else {
+                                                     if (length(ind)>1) {
+                                                         stop("Nonunique entry selection in comprehensive table.")
+                                                     } else {
+                                                         stop("Entries not found for id ", id,"set ",set, "and mode ", mode, " .")
+                                                     } 
+                                                 }
+    res
+        
+}
+addCompColsToFileTbl<-function(ft,compTab) {
     nR<-nrow(ft)
     mzCol<-rep(NA,nR)
     nmCol<-rep("",nR)
     
     for (ir in 1:nR) {
         id<-ft[ir,"ID"]
-        mode<-ft[ir,"mode"]
-        mzCol[[ir]]<- getMzFromCmpL(id,mode,cmpL)
-        cmI<-which(id==cmpL$ID)
-        nm<-cmpL$Name[[cmI]]
+        set<-ft[ir,"set"]
+        m<-ft[ir,"mode"]
+        entries<-getEntryFromComp(c("mz","Name"),id,set,m,compTab)
+        mzCol[[ir]]<-  entries[[1]]
+        nm<-entries[[2]]
         nmCol[[ir]]<- if (!is.na(nm)) nm else ""
     }
     ft$mz<-mzCol

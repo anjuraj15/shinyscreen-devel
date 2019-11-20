@@ -56,8 +56,7 @@ presc.do<-function(fnTab,fnStgs,fnCmpdList,dest=".",proc=F,fnLog='prescreen.log'
     
     unlink(fnLog)
     RMassBank::loadRmbSettings(fnStgs)
-    RMassBank::loadList(fnCmpdList,check=F)
-
+    ## RMassBank::loadList(fnCmpdList,check=F)
     fread <- function(fnData,fnStgs) {
         idc <- which(fnTab$Files %in% fnData)
         wd <- fnTab$wd[idc[[1]]]
@@ -69,46 +68,45 @@ presc.do<-function(fnTab,fnStgs,fnCmpdList,dest=".",proc=F,fnLog='prescreen.log'
         nms<-fnTab$Name[idc]
         mode<-fnTab$mode[idc[[1]]]
         gen_presc_d(wd)
+        unsetGenDone(wd)
         RMassBank::loadRmbSettings(fnStgs)
-        RMassBank::loadList(fnCmpdList,check=F)
+        ## RMassBank::loadList(fnCmpdList,check=F)
         message("started: ",wd)
-        gen_ftable(id=id,fnData=fnData,wd=wd,mz=mz,name=nms)
+        
+        gen_ftable(fTab=fnTab,file=fnData)
         fn_ftable <- get_ftable_fn(wd)
         RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode,FileList=fn_ftable,
                              ...)
         message("finished: ",wd)
+        setGenDone(wd)
         T
     }
 
 
-    unsetGenDone(dest)
     if (proc>1) {
         cl<-parallel::makeCluster(spec=proc,type='PSOCK',outfile=fnLog)
         parallel::clusterEvalQ(cl,library(shinyscreen))
-        parallel::clusterExport(cl,c("fnTab","fnCmpdList"),envir=environment())
+        parallel::clusterExport(cl,c("fnTab","fnCmpdList","setGenDone","unsetGenDone"),envir=environment())
         parallel::clusterMap(cl,fread,levels(factor(fnTab$Files)),fnStgs)
         parallel::stopCluster(cl)
     } else {
         message("SERIAL")
         Map(fread,levels(factor(fnTab$Files)),fnStgs)
     }
-
-    setGenDone(dest)
 }
 
 impCmpdList <- function(fnSrc,fnDest=file.path(".",basename(fnSrc))) {
     gen_cmpd_l(src_fn=fnSrc,dest_fn=fnDest)
 }
 
-gen<-function(fnFileTab,fnCmpdList,fnStgs,fnDestFileTable=attch(stripext(fnFiletable),"_candidate.csv"),dest=".",fnLog='prescreen.log',proc=1,intTresh=1e5,noiseFac=3,rtDelta=0.5,ppmLimFine=10,eicLim=1e-3) {
+gen<-function(fTab,fnCmpdList,fnStgs,fnDestFileTable=attch(stripext(fnFileTab),"_candidate.csv"),dest=".",fnLog='prescreen.log',proc=1,intTresh=1e5,noiseFac=3,rtDelta=0.5,ppmLimFine=10,eicLim=1e-3) {
     message("*** Started to generate prescreen data ...")
 
     ## Read in the file table.
-    fnTab <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F, comment.char='')
-
+    ## fnTab <- file2tab(file=fnFileTab)
 
     ## Do the prescreen.
-    presc.do(fnTab=fnTab,fnStgs = fnStgs,fnCmpdList=fnCmpdList,dest=dest,ppm_limit_fine=ppmLimFine,EIC_limit=eicLim,proc=proc,fnLog=fnLog)
+    presc.do(fnTab=fTab,fnStgs = fnStgs,fnCmpdList=fnCmpdList,dest=dest,ppm_limit_fine=ppmLimFine,EIC_limit=eicLim,proc=proc,fnLog=fnLog)
     message("*** ... done generating prescreen data.")
 }
 
