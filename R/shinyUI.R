@@ -727,8 +727,8 @@ shinyScreenApp <- function(projDir=getwd()) {
             }})
 
         shiny::observeEvent(input$mzMLtabSubmB,{
-                mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
-                rvTab$mzML<-mzML
+                ## rvTab$mzMLwork<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
+                rvTab$mzML<-rvTab$mzMLwork
                 rvConf$flMzMLSub<-T
         })
 
@@ -784,9 +784,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(input$mzMLB,
         {
             rvConf$flMzMLSub<-F
-            rvTab$mzML<-getMzMLFiles()
+            rvTab$mzMLwork<-getMzMLFiles()
 
         })
+
+        shiny::observeEvent(input)
 
         ## shiny::observeEvent(rvTab$tmpMzML,
         ## {
@@ -1249,7 +1251,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-            rhandsontable::rhandsontable(rvTab$mzML,stretchH="all")
+            rhandsontable::rhandsontable(rvTab$mzMLwork,stretchH="all")
         })
 
         output$nvPanel<-shiny::renderUI({
