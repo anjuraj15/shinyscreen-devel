@@ -421,7 +421,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         ids<-setTab$ID[wh]
         mz<-setTab$mz[wh]
         md<-setTab$mode[wh]
-        entries<-base::Map(function(i,m) paste(i,'; ','mz: ',m,';','mode:',md,sep=''),ids,mz,md)
+        entries<-base::Map(function(i,m,x) paste(i,'; ','mz: ',m,';','mode:',x,sep=''),ids,mz,md)
         entries
     }
 
@@ -1195,8 +1195,8 @@ shinyScreenApp <- function(projDir=getwd()) {
             message("currSet START")
             currSetMkCmpMenu()
             message("And here?")
-            currSetPreCalc()
-            message("currSet END")
+            ## currSetPreCalc()
+            ## message("currSet END")
 
         })
 
