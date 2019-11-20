@@ -238,6 +238,10 @@ mkUI <- function() {
                                                              "Set",
                                                              choices="",
                                                              multiple=F),
+                                          shiny::selectInput("presSelMode",
+                                                             "Mode",
+                                                             choices="",
+                                                             multiple=F),
                                           shiny::actionButton("presPrev",
                                                               "Previous compound.",
                                                               icon = shiny::icon("backward")),
@@ -425,8 +429,10 @@ shinyScreenApp <- function(projDir=getwd()) {
         entries
     }
 
-    queryFileTable <- function(df,set,id) {
-        df[(df$ID %in% id) & (df$set %in% set),]
+    queryFileTable <- function(df,set,mode,id) {
+        sdf<-df[df$set %in% set,]
+        msdf<-sdf[sdf$mode %in% mode,]
+        msdf[msdf$ID %in% id,]
     }
 
 
@@ -472,6 +478,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              mode=modeLvl,
                              projDir=projDir,
                              currSet=NA,
+                             currMode=NA,
                              currIDSel=1,
                              currIDSet=list(),
                              currID=NA,
@@ -800,7 +807,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 message("Generating basic file table in file ",fn)
                 files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
                 comp<-rvTab$comp
-                df<-genSuprFileTbl(files,comp,destFn=fn)
+                df<-genSuprFileTab(files,comp)
                 df<-addCompColsToFileTbl(df,comp)
                 df$mode<-as.character(df$mode)
                 tab2file(tab=df,file=fn)
@@ -988,6 +995,12 @@ shinyScreenApp <- function(projDir=getwd()) {
             dev.off()
         })
 
+
+        shiny::observeEvent(input$presSelMode,
+        {
+            
+            if (!is.na(rvConf$currSet)) rvConf$currMode<-input$presSelMode})
+
         
         ## ***** Observe *****
 
@@ -1158,15 +1171,31 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
+        shiny::observe(
+        {
+            comp<-getComp()
+            currSet<-rvConf$currSet
+            mzML<-getMzML()
+            if (!(is.na(currSet) || is.null(comp))) {
+                mds<-levels(factor(mzML$mode[mzML$set %in% currSet]))
+                rvConf$currMode<-mds[[1]]
+                shiny::updateSelectInput(session=session,
+                                         "presSelMode",
+                                         choices=mds,
+                                         selected=mds[[1]])
+            }
+        })
+
 
         shiny::observe({
             i<-rvConf$currID
             spectProps<-rvConf$spectProps
             set<-input$presSelSet
-            if (!is.na(i) && length(spectProps)>0) {
+            md<-input$presSelMode
+            if (!is.na(i) && length(spectProps)>0 && !is.na(md)) {
                 message("Updating QA checkboxes.")
                 QANAMES<-rvConf$QANAMES
-                sdf <- queryFileTable(df=rvTab$mtr,set=set,id=i)
+                sdf <- queryFileTable(df=rvTab$mtr,set=set,mode=md,id=i)
                 sdf$tag<-as.character(sdf$tag)
                 for (t in sdf$tag) {
                     sprop <- rvConf$spectProps[[t]]

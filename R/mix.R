@@ -986,33 +986,59 @@ adornmzMLTab<-function(df,projDir=getwd()) {
     df
 }
 
-genSuprFileTbl <- function(fileTbl,compTab,destFn="ftable.csv") {
-    genOneFileTbl <- function(id,fileTbl) {
-        n <- nrow(fileTbl)
-        K <- length(id)
-        longid <- rep(id,n)
-        cols <- lapply(names(fileTbl),function(cn) rep("",n*K))
-        names(cols) <- names(fileTbl)
-        bdf <- as.data.frame(cols,stringsAsFactors = F)
-        rows <- lapply(1:n*K,function(x) NA)
-        for (j in 1:n) {
-            for (i in 1:K)
-                rows[[(j-1)*K+i]] <- fileTbl[j,]
-        }
-        bdf <- as.data.frame(do.call(rbind,rows),stringsAsFactors = F)
-        bdf <- cbind(bdf,data.frame(ID=longid))
-        bdf
-    }
-    sets <- levels(factor(compTab$set))
-    setTbl <- lapply(sets,function (s) {
-        sl1<-compTab$set %in% s
-        sl2<-fileTbl$set==s
-        if (!any(sl2)) stop("Set",s,"does not select anything in the currently processed files.")
-        genOneFileTbl(compTab[sl1,]$ID,fileTbl[sl2,])
+## genSuprFileTblOld <- function(fileTbl,compTab) {
+##     genOneFileTbl <- function(id,fileTbl) {
+##         n <- nrow(fileTbl)
+##         K <- length(id)
+##         longid <- rep(id,n)
+##         cols <- lapply(names(fileTbl),function(cn) rep("",n*K))
+##         names(cols) <- names(fileTbl)
+##         bdf <- as.data.frame(cols,stringsAsFactors = F)
+##         rows <- lapply(1:n*K,function(x) NA)
+##         for (j in 1:n) {
+##             for (i in 1:K)
+##                 rows[[(j-1)*K+i]] <- fileTbl[j,]
+##         }
+##         bdf <- as.data.frame(do.call(rbind,rows),stringsAsFactors = F)
+##         bdf <- cbind(bdf,data.frame(ID=longid))
+##         bdf
+##     }
+##     sets <- levels(factor(compTab$set))
+##     setTbl <- lapply(sets,function (s) {
+##         sl1<-compTab$set %in% s
+##         sl2<-fileTbl$set==s
+##         if (!any(sl2)) stop("Set",s,"does not select anything in the currently processed files.")
+##         genOneFileTbl(compTab[sl1,]$ID,fileTbl[sl2,])
 
+##     })
+##     allTbl <- do.call(rbind,setTbl)
+##     allTbl 
+## }
+
+genSuprFileTab <- function(fileTab,compTab) {
+    genOne<-function(ids,fn) {
+
+        K<-length(ids)
+        fTabRow<-fileTab[fileTab$Files == fn,]
+        cols<-lapply(names(fileTab),function(n) rep(fTabRow[[n]],K))
+        names(cols)<-NULL
+        cols<-c(cols,list(ids))
+        names(cols)<-c(names(fileTab),"ID")
+        df<-as.data.frame(cols,stringsAsFactors = F)
+        df
+    }
+    
+    tabs<-lapply(fileTab$Files,function(fn)
+    {
+        wh<-which(fileTab$Files==fn)
+        set<-fileTab$set[[wh]]
+        md<-fileTab$mode[[wh]]
+        ids<-compTab$ID[(compTab$set %in% set) & (compTab$mode %in% md)]
+        genOne(ids,fn)
+        
     })
-    allTbl <- do.call(rbind,setTbl)
-    allTbl 
+    res<-do.call(rbind,tabs)
+    res
 }
 
 getEntryFromComp<-function(entry,id,set,mode,compTab) {
