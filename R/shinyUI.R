@@ -650,16 +650,17 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
         currSetPreCalc<-shiny::reactive({
             set<-rvConf$currSet
+            md<-rvConf$currMode
             fTab<-rvTab$mtr
 
-            if (!is.na(set) && length(fTab)>0) {
+            if (!is.na(set) && !is.na(md) && length(fTab)>0) {
                 comp<-getComp()
                 if (!is.null(comp)) {
                     compIds<-comp[,"ID"]
                     compSMILES<-comp[,"SMILES"]
                     compMz<-comp[,"mz"]
                     tags<-rvConf$tags
-                    iSet<-which(set==fTab$set)
+                    iSet<-which(set==fTab$set & md==fTab$mode)
                     sfTab<-fTab[iSet,]
                     tags<-levels(factor(sfTab$tag))
                     iTag<- match(tags,sfTab$tag)
@@ -681,9 +682,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                         i=as.character(i)
                         mz=mz[[i]]
                         smile<-smiles[[i]]
-                        message("i:",i)
-                        message("mz:",mz)
-                        message("smile:",smile)
                         
                         plot_id_aux(i,wd=wd,eics=eics,maybekids=maybekids,mass=mz,smile=smile,tags=tags,log=log,rtrange=rtrange,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
                     }
