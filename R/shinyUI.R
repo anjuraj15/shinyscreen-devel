@@ -482,7 +482,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                              currIDSel=1,
                              currIDSet=list(),
                              currID=NA,
-                             fnFT=NULL)
+                             fnFT=NULL,
+                             flMzMLSub=F)
         rvTab<-shiny::reactiveValues(
                           mzML=NULL, # files (File), sets (set) and mode (mode)
                           tgt=NULL, # ids(ID),SMILES(SMILES) and names (Name)
@@ -745,6 +746,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(input$mzMLtabSubmB,{
                 mzML<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
                 rvTab$mzML<-mzML
+                rvConf$flMzMLSub<-T
         })
 
         shiny::observeEvent(input$fnTgtL,
@@ -798,8 +800,15 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observeEvent(input$mzMLB,
         {
+            rvConf$flMzMLSub<-F
             rvTab$mzML<-getMzMLFiles()
+
         })
+
+        ## shiny::observeEvent(rvTab$tmpMzML,
+        ## {
+            
+        ## })
 
         
 
@@ -1011,10 +1020,11 @@ shinyScreenApp <- function(projDir=getwd()) {
             mzML<-getMzML()
             unk<-getUnk()
             tgt<-getTgt()
-
-            cond<-! (is.null(tgt) || is.null(unk)) &&
+            isSubm<-rvConf$flMzMLSub
+            cond<-! (is.null(tgt) && is.null(unk)) &&
                 ! is.null(setId) &&
-                ! is.null(mzML)
+                ! is.null(mzML) &&
+                isSubm
             
             if (cond) {
 
