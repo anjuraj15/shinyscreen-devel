@@ -20,7 +20,7 @@ mkUI <- function() {
                                                        "Target list (ID, SMILES).",
                                                        value=""),
                                       shiny::textInput("fnUnkL",
-                                                       "Unknows list (mz and mode)",
+                                                       "Unknows list (mz and ID)",
                                                        value=""),
                                       shiny::textInput("fnSetId",
                                                        "Set table.",
