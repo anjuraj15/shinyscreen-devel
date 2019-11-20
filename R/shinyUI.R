@@ -436,12 +436,13 @@ shinyScreenApp <- function(projDir=getwd()) {
     }
 
 
-    updateFileTable <- function(df,set,id,linput) {
+    updateFileTable <- function(df,set,mode,id,linput) {
         for (tag in names(linput)) {
             entries <- names(linput[[tag]])
-            cond <- (df$ID %in% id) & (df$tag == tag) & (df$set %in% set)
+            cond <- (df$ID %in% id) & (df$tag == tag) & (df$mode %in% mode) & (df$set %in% set)
+            wh<-which(cond)
 
-            df[cond,entries] <- linput[[tag]]
+            df[wh,entries] <- linput[[tag]]
         }
         df
     }
@@ -965,9 +966,10 @@ shinyScreenApp <- function(projDir=getwd()) {
             res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
             names(res) <- rvConf$tags
             rvTab$mtr <- updateFileTable(df=rvTab$mtr,
-                                           set=input$presSelSet,
-                                           id=rvConf$currID,
-                                           linput=res)
+                                         set=rvConf$currSet,
+                                         mode=rvConf$currMode,
+                                         id=rvConf$currID,
+                                         linput=res)
         })
         
         shiny::observeEvent(input$savefiletable,
