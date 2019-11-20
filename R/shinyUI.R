@@ -1195,8 +1195,8 @@ shinyScreenApp <- function(projDir=getwd()) {
             message("currSet START")
             currSetMkCmpMenu()
             message("And here?")
-            ## currSetPreCalc()
-            ## message("currSet END")
+            currSetPreCalc()
+            message("currSet END")
 
         })
 
