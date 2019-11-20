@@ -487,6 +487,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              flMzMLSub=F)
         rvTab<-shiny::reactiveValues(
                           mzML=NULL, # files (File), sets (set) and mode (mode)
+                          mzMLwork=NULL,
                           tgt=NULL, # ids(ID),SMILES(SMILES) and names (Name)
                           unk=NULL, # ids(ID),mz
                           setId=NULL, # ids(ID), sets (set)
@@ -563,24 +564,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             rvTab$unk
         })
 
-        
-
-        update_tags_mzMLtab<-shiny::reactive({
-            input$tagsInp
-            tags<-getTags()
-            tagCol<-rvTab$mzML$tag
-            if (length(levels(tagCol))==0) rvTab$mzML$tag<-factor(tagCol)
-            rvTab$mzML$tag<-factor(tagCol,levels=tags)
-        })
-
-        update_sets_mzMLtab<-shiny::reactive({
-            sets<-getSets()
-            setCol<-rvTab$mzML$set
-            if (length(levels(setCol))==0) rvTab$mzML$set<-factor(setCol)
-            rvTab$mzML$set<-factor(setCol,levels=sets)
-        })
-
-        saveConf<-reactive({
+        saveconf<-reactive({
             fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 message("Saving config to",fn)
