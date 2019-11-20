@@ -356,9 +356,10 @@ shinyScreenApp <- function(projDir=getwd()) {
     message("projDir=",projDir)
     modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
+    vols<-shinyFiles::getVolumes()
     volumes <- c(project=projDir,
                  home="~",
-                 shinyFiles::getVolumes())
+                 vols())
 
     mk_mzMLtab<-function() {
         modeLvl<- c("pH","pNa","pM",
