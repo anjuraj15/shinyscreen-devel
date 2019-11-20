@@ -1275,21 +1275,20 @@ shinyScreenApp <- function(projDir=getwd()) {
                                     shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
                                     shiny::verbatimTextOutput(paste("value",tag,sep=""))
                                     )})
-        
-                do.call(shiny::navlistPanel, tabPanelList)
                 message("done rendering panel")
+                do.call(shiny::navlistPanel, tabPanelList)
             } else NULL
         })
 
-        ## output$chromGram <- renderPlot(
-        ## {
-        ##     plot_id<-rvPres$plot_id
-        ##     i=rvConf$currID
-        ##     rtrange <- c(input$min_val,input$max_val)
-        ##     if (!is.null(plot_id)) {
-        ##         plot_id(i,rtrange=rtrange, log=input$yaxis)
-        ##     }
-        ## })
+        output$chromGram <- renderPlot(
+        {
+            plot_id<-rvPres$plot_id
+            i=rvConf$currID
+            rtrange <- c(input$min_val,input$max_val)
+            if (!is.null(plot_id)) {
+                plot_id(i,rtrange=rtrange, log=input$yaxis)
+            }
+        })
 
         
         session$onSessionEnded(function () stopApp())
