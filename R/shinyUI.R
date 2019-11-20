@@ -424,8 +424,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         wh<-which(setTab$set %in% set)
         ids<-setTab$ID[wh]
         mz<-setTab$mz[wh]
-        md<-setTab$mode[wh]
-        entries<-base::Map(function(i,m,x) paste(i,'; ','mz: ',m,';','mode:',x,sep=''),ids,mz,md)
+        entries<-base::Map(function(i,m,x) paste(i,'; ','mz: ',m,sep=''),ids,mz)
         entries
     }
 
@@ -628,11 +627,13 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         currSetMkCmpMenu<-shiny::reactive({
             set<-rvConf$currSet
+            md<-rvConf$currMode
             setID<-getSetId()
             comp<-getComp()
-            if (!is.na(set) && !is.null(comp)) {
+            if (!is.na(set) && !is.null(comp) && !is.na(md)) {
                 comp<-comp[comp$set %in% set,]
-                ids<-comp$ID[set %in% comp$set]
+                comp<-comp[comp$mode %in% md,]
+                ids<-comp$ID #[set %in% comp$set]
                 entries<-mkCmpdDrop(set,comp)
                 ch<-as.list(1:length(ids))
                 names(ch)<-entries
@@ -1200,6 +1201,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 for (t in sdf$tag) {
                     sprop <- rvConf$spectProps[[t]]
                     sdfSel<-sdf[sdf$tag %in% t,QANAMES]
+                    ## browser()
                     sel <- as.logical(sdfSel)
                     choices <- QANAMES[sel]
                     names(choices) <- QANAMES[sel]
