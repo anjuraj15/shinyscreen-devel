@@ -487,7 +487,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              flMzMLSub=F)
         rvTab<-shiny::reactiveValues(
                           mzML=NULL, # files (File), sets (set) and mode (mode)
-                          mzMLwork=NULL,
+                          mzMLWork=NULL,
                           tgt=NULL, # ids(ID),SMILES(SMILES) and names (Name)
                           unk=NULL, # ids(ID),mz
                           setId=NULL, # ids(ID), sets (set)
@@ -521,6 +521,14 @@ shinyScreenApp <- function(projDir=getwd()) {
             levels(rvTab$setId$set)
         })
 
+        getAvailSets<-shiny::reactive({
+            sets<-as.character(rvTab$mzML$set)
+            res<-if (!is.null(sets)) {
+                     if (!anyNA(sets)) levels(factor(sets)) else NULL
+                 } else NULL
+            res
+        })
+
         getMzMLFiles<-shiny::eventReactive(input$mzMLB,
         {
             sets<-getSets()
@@ -528,7 +536,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             
             fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
             paths<-fchoice[["datapath"]]
-            df<-rvTab$mzML
+            df<-rvTab$mzMLWork
             res<- if (length(sets)>0) {
                       for (pt in paths) df<-extd_mzMLtab(df,pt,sets,tags)
                       df
@@ -564,7 +572,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             rvTab$unk
         })
 
-        saveconf<-reactive({
+        saveConf<-reactive({
             fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 message("Saving config to",fn)
@@ -607,6 +615,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvConf$fnFT<-sav$rvConf$fnFT
                 for (nm in names(rvTab)) {
                     rvTab[[nm]]<-sav$tab[[nm]]
+                }
+                if (!is.null(rvTab$mzML$set)) {
+                    levels(rvTab$mzML$set)<-factor(rvTab$mzML$set)
                 }
             }
         })
@@ -675,8 +686,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
-
-
         ## ***** Observe Event *****
 
         shiny::observeEvent(input$saveConfB,{
@@ -727,9 +736,25 @@ shinyScreenApp <- function(projDir=getwd()) {
             }})
 
         shiny::observeEvent(input$mzMLtabSubmB,{
-                ## rvTab$mzMLwork<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
-                rvTab$mzML<-rvTab$mzMLwork
-                rvConf$flMzMLSub<-T
+            rvTab$mzML<-rvTab$mzMLWork
+            sets<-factor(rvTab$mzML$set)
+            rvTab$mzML$set<-sets #reduce levels to only those
+                                        #sets actually defined on
+                                        #data.
+            rvConf$flMzMLSub<-T
+
+            shiny::updateSelectInput(session=session,
+                                     inputId="genSetSelInp",
+                                     choices=levels(sets))
+        })
+
+        shiny::observeEvent(input$mzMLtabCtrl,
+        {
+
+            df<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
+            rvTab$mzMLWork<-df
+
+
         })
 
         shiny::observeEvent(input$fnTgtL,
@@ -768,33 +793,14 @@ shinyScreenApp <- function(projDir=getwd()) {
                 message("Done importing compound sets from: ",fn)
             }
             df<-rvTab$setId
-            if (length(df)>0 && !is.na(df) && nrow(df)>0) {
-                shiny::updateSelectInput(session=session,
-                                         inputId="genSetSelInp",
-                                         choices=levels(df$set))
-            }
-            ## shiny::isolate({
-            ##     message("Changing the inpSetIdFn to: ",fn, " in isolation.")
-            ##     shiny::updateTextInput(session=session,
-            ##                            inputId="fnSetId",
-            ##                            value=fn)
-            ## })
         })
 
         shiny::observeEvent(input$mzMLB,
         {
             rvConf$flMzMLSub<-F
-            rvTab$mzMLwork<-getMzMLFiles()
+            rvTab$mzMLWork<-getMzMLFiles()
 
         })
-
-        shiny::observeEvent(input)
-
-        ## shiny::observeEvent(rvTab$tmpMzML,
-        ## {
-            
-        ## })
-
         
 
         shiny::observeEvent(input$genFileTabB,{
@@ -915,8 +921,10 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         shiny::observeEvent(input$presSelCmpd,{
+
             pos<-input$presSelCmpd
             rvConf$currIDSel<-as.numeric(pos)
+
         })
 
         shiny::observeEvent(input$presPrev,{
@@ -932,12 +940,14 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         shiny::observeEvent(rvConf$fnFT,{
+
             fn<-rvConf$fnFT
             if (!is.null(fn) && isThingFile(fn)) {
                 rvTab$mtr<-read.csv(file=fn,
                                     comment.char = '',
                                     stringsAsFactors = F)
             }
+
         })
         
         shiny::observeEvent(rvConf$currIDSel,{
@@ -947,6 +957,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         shiny::observeEvent(input$submitQA,{
+
             res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
             names(res) <- rvConf$tags
             rvTab$mtr <- updateFileTable(df=rvTab$mtr,
@@ -954,6 +965,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                          mode=rvConf$currMode,
                                          id=rvConf$currID,
                                          linput=res)
+
         })
         
         shiny::observeEvent(input$savefiletable,
@@ -994,13 +1006,16 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observeEvent(input$presSelMode,
         {
-            
-            if (!is.na(rvConf$currSet)) rvConf$currMode<-input$presSelMode})
+
+            if (!is.na(rvConf$currSet)) rvConf$currMode<-input$presSelMode
+
+        })
 
         
         ## ***** Observe *****
 
         shiny::observe({
+
             setId<-getSetId()
             mzML<-getMzML()
             unk<-getUnk()
@@ -1012,12 +1027,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                 isSubm
             
             if (cond) {
-
                 message("Begin generation of comp table.")
-
+                availSets<-getAvailSets()
                 idTgt<-tgt$ID
                 idUnk<-unk$ID
 
+                if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
+                
                 if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
                 setId$orig<-rep("",nrow(setId))
                 lTgt<-setId$ID %in% idTgt
@@ -1027,10 +1043,14 @@ shinyScreenApp <- function(projDir=getwd()) {
                 setId[iUnk,"orig"]<-"unknown"
                 rvTab$setId<-setId ## !!!
 
+
                 
                 ## knowns
                 setIdTgt<-setId[setId$orig=="known",]
                 sets<-levels(factor(setIdTgt$set))
+                sets<-intersect(availSets,sets) #Make sure we only
+                                                #consider sets defined
+                                                #on the data files.
                 nRow<-0
                 for (s in sets) {
                     sMode<-getSetMode(s,mzML)
@@ -1072,6 +1092,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                 ## unknows
                 setIdUnk<-setId[setId$orig=="unknown",]
                 sets<-levels(factor(setIdUnk$set))
+                sets<-intersect(availSets,sets)
+                
                 nRow<-0
                 for (s in sets) {
                     sMode<-getSetMode(s,mzML)
@@ -1114,7 +1136,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 
             }
             
-                
+
         })
        
         
@@ -1122,10 +1144,12 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         shiny::observe({
+
             rvConf$currIDSel
             shiny::updateSelectInput(session=session,
                                      inputId="presSelCmpd",
                                      selected=rvConf$currIDSel)
+
         })
         shiny::observe({
             shiny::invalidateLater(100,
@@ -1152,24 +1176,25 @@ shinyScreenApp <- function(projDir=getwd()) {
                                    session=session)
             fnFT<-if (isThingFile(input$confResFileTab)) input$confResFileTab else NULL
             rvConf$fnFT<-fnFT
-              
         })
     
 
         shiny::observe({
-            sets<-getSets()
+
+            sets<-getAvailSets()
             if (length(sets)>0 && !is.na(sets)) {
-                message("Bef upd inputs")
                 shiny::updateSelectInput(session=session,
                                          "presSelSet",
                                          choices=sets,
                                          selected=sets[[1]])
-                message("upd sel worked")
             }
+
         })
 
         shiny::observe(
         {
+            rvTab$mzML
+
             comp<-getComp()
             currSet<-rvConf$currSet
             mzML<-getMzML()
@@ -1181,62 +1206,49 @@ shinyScreenApp <- function(projDir=getwd()) {
                                          choices=mds,
                                          selected=mds[[1]])
             }
+
         })
 
 
         shiny::observe({
+
             i<-rvConf$currID
             spectProps<-rvConf$spectProps
             set<-input$presSelSet
             md<-input$presSelMode
             if (!is.na(i) && length(spectProps)>0 && !is.na(md)) {
-                message("Updating QA checkboxes.")
                 QANAMES<-rvConf$QANAMES
                 sdf <- queryFileTable(df=rvTab$mtr,set=set,mode=md,id=i)
                 sdf$tag<-as.character(sdf$tag)
                 for (t in sdf$tag) {
                     sprop <- rvConf$spectProps[[t]]
                     sdfSel<-sdf[sdf$tag %in% t,QANAMES]
-                    ## browser()
                     sel <- as.logical(sdfSel)
                     choices <- QANAMES[sel]
                     names(choices) <- QANAMES[sel]
                     shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
                 }
-                message("Updating QA checkboxes done.")
 
             }
+
         })
 
         shiny::observe({
-            sets<-getSets()
+
             set<-input$presSelSet
             if (!nchar(set)==0) {
                 ## cmpdL<-getCmpL()
                 ## setID<-getSetId()
                 rvConf$currSet<-set
             }
+
         })
 
         shiny::observe({
-            message("currSet START")
             currSetMkCmpMenu()
-            message("And here?")
             currSetPreCalc()
-            message("currSet END")
-
         })
 
-        ## ## shiny::observe({
-        ## ##     rvConf$tags<-getTags()
-        ## ## })
-
-        ## shiny::observe({
-        ##     message("Update tags and sets.")
-        ##     update_sets_mzMLtab()
-        ##     update_tags_mzMLtab()
-        ##     message("Done updating tags and sets.")
-        ## })
 
 
         ## ***** Render *****
@@ -1251,7 +1263,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-            rhandsontable::rhandsontable(rvTab$mzMLwork,stretchH="all")
+            rhandsontable::rhandsontable(rvTab$mzMLWork,stretchH="all")
         })
 
         output$nvPanel<-shiny::renderUI({
