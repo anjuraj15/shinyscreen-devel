@@ -518,10 +518,13 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         getSetIdSets<-shiny::reactive({
+            ## Returns all sets defined in a setid table.
             levels(rvTab$setId$set)
         })
 
         getSets<-shiny::reactive({
+            ## Returns only the sets set for the mzML files. This
+            ## takes precedense over the sets in setid table.
             sets<-as.character(rvTab$mzML$set)
             res<-if (!is.null(sets)) {
                      if (!anyNA(sets)) levels(factor(sets)) else NULL
@@ -651,6 +654,8 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (!is.na(set) && !is.na(md) && length(fTab)>0) {
                 comp<-getComp()
                 if (!is.null(comp)) {
+                    comp<-comp[comp$set %in% set,]
+                    comp<-comp[comp$mode %in% md,]
                     compIds<-comp[,"ID"]
                     compSMILES<-comp[,"SMILES"]
                     compMz<-comp[,"mz"]
