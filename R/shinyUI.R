@@ -517,11 +517,11 @@ shinyScreenApp <- function(projDir=getwd()) {
             as.list(c(x,"unspecified"))
         })
 
-        getSets<-shiny::reactive({
+        getSetIdSets<-shiny::reactive({
             levels(rvTab$setId$set)
         })
 
-        getAvailSets<-shiny::reactive({
+        getSets<-shiny::reactive({
             sets<-as.character(rvTab$mzML$set)
             res<-if (!is.null(sets)) {
                      if (!anyNA(sets)) levels(factor(sets)) else NULL
@@ -531,7 +531,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         getMzMLFiles<-shiny::eventReactive(input$mzMLB,
         {
-            sets<-getSets()
+            sets<-getSetIdSets()
             tags<-getTags()
             
             fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
@@ -1028,7 +1028,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             
             if (cond) {
                 message("Begin generation of comp table.")
-                availSets<-getAvailSets()
+                availSets<-getSets()
                 idTgt<-tgt$ID
                 idUnk<-unk$ID
 
@@ -1181,7 +1181,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observe({
 
-            sets<-getAvailSets()
+            sets<-getSets()
             if (length(sets)>0 && !is.na(sets)) {
                 shiny::updateSelectInput(session=session,
                                          "presSelSet",
