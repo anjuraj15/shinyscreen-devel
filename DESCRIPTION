@@ -43,6 +43,7 @@ Imports:
     parallel,
     yaml,
     mzR,
+    MSnbase,
     RColorBrewer,
     curl,
     shiny,
