@@ -34,7 +34,7 @@ Roxygen: list(markdown = TRUE)
 Collate:
     'base.R'
     'mix.R'
-    'extract.R'
+    'extraction.R'
     'run.R'
     'shinyUI.R'
 Depends:
