@@ -31,26 +31,7 @@ REST_TXT_INP<-c("fnStgsRMB",
                 "confFileTabProcInp",
                 "confResFileTab")
 
-## ***** Helper Functions *****
-tab2file<-function(tab,file,...) {
-    write.csv(x=tab,file=file,row.names=F,...)
-}
 
-file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
-    read.csv(file=file,
-             header=T,
-             stringsAsFactors=stringsAsFactors,
-             comment.char=comment.char,
-             na.strings=c("","NA"),...)
-}
-
-isThingFile<-function(fn) {
-    if (length(fn)>0 && is.character(fn)) {
-        file.exists(fn)
-    } else F
-}
-
-## ***** End helper functions *****
 ppInpFt<-function() {
     tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
 }
@@ -547,23 +528,7 @@ RMB_EIC_prescreen_df_old1 <- function (wd, RMB_mode, FileList, cmpd_list,
     write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
 }
 
-##' Extracts data from mzML files.
-##'
-##' @title Data Extraction from mzML Files
-##' @param fTab File table with Files,ID,wd,Name and mz
-##'     columns. Column Files, as well as wd must have all rows
-##'     identical.
-##' 
-##' @param extr_fun Extraction function from the backend.
-##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
-##' @param limFinePPM Tolerance given in PPM used to associate input
-##'     masses with what the instrument assigned as precutsors to MS2.
-##' @param bufferMode Either "onDisk", or "inMemory". Only relevant
-##'     for MSnbase backend.
-##' @return Nothing useful.
-##' @author Todor Kondić
-extract<-function(fTab,extr_fun,limEIC,limFinePPM,bufferMode) {
-}
+
 
 preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
     ## read in .csv file as file
