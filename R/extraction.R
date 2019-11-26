@@ -148,11 +148,11 @@ write_ms2_spec<-function(ms2Spec,dir=".") {
     }
 }
 
-extr_msnb <-function(file,destDir,mz,limEIC,limFinePPM,mode="inMemory") {
+extr_msnb <-function(file,wd,mz,limEIC,limFinePPM,mode="inMemory") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
-    ## destDir - Top-level directory where the results should be deposited.
+    ## wd - Top-level directory where the results should be deposited.
     ## mz - A named vector of precursor masses for which to scan the
     ## file. The names can be RMassBank IDs.
     ## limEIC - Absolute mz tolerance used to extract precursor EICs.
@@ -170,7 +170,7 @@ extr_msnb <-function(file,destDir,mz,limEIC,limFinePPM,mode="inMemory") {
     message("Extracting precursor EICs. Please wait.")
     mzRng<-gen_mz_range(mz,limit=LIM_EIC)
     eicMS1<-gen_ms1_chrom(ms1,mzRng)
-    write_eic(eicMS1,dir=destDir)
+    write_eic(eicMS1,dir=wd)
     message("Extracting precursor EICs finished.")
 
     ## Extract MS2 spectra.
@@ -182,65 +182,41 @@ extr_msnb <-function(file,destDir,mz,limEIC,limFinePPM,mode="inMemory") {
     eicMS2<-gen_ms2_chrom(ms2Spec)
     message("Extracting MS2 spectra finished.")
     write_eic(eicMS2,suff="kids.csv")
-    specDir<-file.path(destDir,"ms2_spectra")
+    specDir<-file.path(wd,"ms2_spectra")
     dir.create(specDir,showWarnings = F)
     write_ms2_spec(ms2Spec,dir=specDir)
     message("Done with ", file)
 
 }
 
-extr_rmb <- function (wd, RMB_mode, FileList,
-                                  ppm_limit_fine = 10, EIC_limit = 0.001) {
-
-
-    file_list <- file2tab(file=FileList)
-    file_list<-file_list[file_list$wd %in% wd,]
-    ncmpd <- max(file_list$ID) # length(levels(factor(file_list$ID))) #nrow(cmpd_info)
-    odir=wd
-    fid <- file_list$ID
-    tag<-unique(file_list$tag)
-    modes<-unique(file_list$mode)
-    message("how many modes? ",length(modes))
+extr_rmb <- function (file,wd, mz, limEIC, limFinePPM) {
+    ID<-as.numeric(names(mz))
+    maxid <- max(ID)
+    id_field_width <- as.integer(log10(maxid)+1)
+    fn_out<- function(id,suff) {file.path(wd,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
     fnProg<-file.path(wd,"progress.log")
     unlink(fnProg,force=T)
     cat("i","total\n",sep=",",file=fnProg)
-    ## cmpind <- which(cmpd_info$ID %in% fid)
-    get_width <- function(maxid) {log10(maxid)+1}
-    id_field_width <- get_width(ncmpd)
-    fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
-    f <- mzR::openMSfile(file_list$Files[[1]])
-    total<-nrow(file_list)
+    f <- mzR::openMSfile(file)
+    total<-length(ID)
     n_spec <- 0
     cmpd_RT_maxI <- rep(0.0,total)
     msms_found <- rep(F,total)
     rts <- rep(0.0,total)
     max_I_prec <- rep(0.0,total)
     cmpd_RT_maxI_min <- rep(0.0,total)
-    tellme<-function(i,point) NULL ##message(">>> tag: ", tag, "i: ",i,"point: ", point)
     for (i in 1:total) {
-        tellme(i,"A1")
-        cpdID <- file_list$ID[[i]]
+        cpdID <- ID[[i]]
         n_spec <- i
-        mz<-file_list$mz[[i]]
-        tellme(i,"A2")
-
-        tellme(i,"B1")
-        eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
-        tellme(i,"B2")
-
-        tellme(i,"C1")
+        mz<-mz[[i]]
+        eic <- RMassBank::findEIC(f, mz, limit = limEIC)
         msms_found[i] <- FALSE
-        theppm<-RMassBank::ppm(mz, ppm_limit_fine,p = TRUE)
-        tellme(i,paste("C1 mz:",mz))
-        tellme(i,paste("C1 ppm:",theppm))
+        theppm<-RMassBank::ppm(mz, limFinePPM,p = TRUE)
         msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, theppm)
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[i] <- eic[max_I_prec_index, 1]
         max_I_prec[i] <- eic[max_I_prec_index, 2]
         cmpd_RT_maxI_min[i] <- as.numeric(cmpd_RT_maxI[i])/60 ## conversion to minutes
-        tellme(i,"C2")
-
-        tellme(i,"D1")
         if (length(eic$rt)>0) eic$rt <- eic$rt/60 ## conversion to minutes
         tab2file(tab=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"))
         bindKids <- function(kids)
@@ -251,8 +227,6 @@ extr_rmb <- function (wd, RMB_mode, FileList,
         bindSpec <- function(specLst) {
             do.call(rbind,lapply(specLst,function (sp) bindKids(sp@children)))
         }
-        tellme(i,"D2")
-        tellme(i,"E1")
         found <- which(vapply(msms,function(sp) sp@found,FUN.VALUE=F))
         msmsExst <- msms[found]
         if (length(found)>0) {
@@ -264,17 +238,39 @@ extr_rmb <- function (wd, RMB_mode, FileList,
                 tab2file(tab=msmsTab,file=fn_out(cpdID,".kids"))
             }
         }
-        tellme(i,"E2")
-
-        tellme(i,"F1")
         rts[i] <- cmpd_RT_maxI[i]
         cat(i,total,"\n",file=fnProg,append=T,sep=",")
-        tellme(i,"F2")
     }
     mzR::close(f)
     rtwiDf <- data.frame(ID=file_list$ID, mz=file_list$mz, Name=file_list$Name, 
                          cmpd_RT_maxI=cmpd_RT_maxI, cmpd_RT_maxI_min=cmpd_RT_maxI_min,
                          max_I_prec=max_I_prec, msms_found=msms_found,stringsAsFactors=F)
-    write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
+    write.csv(rtwiDf, file = file.path(wd,"RTs_wI.csv"), row.names = F)
 }
 
+##' Extracts data from mzML files.
+##'
+##' @title Data Extraction from mzML Files
+##' @param fTab File table with Files,ID,wd,Name and mz
+##'     columns. Column Files, as well as wd must have all rows
+##'     identical.
+##' 
+##' @param extr_fun Extraction function from the backend.
+##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
+##' @param limFinePPM Tolerance given in PPM used to associate input
+##'     masses with what the instrument assigned as precutsors to MS2.
+##' @return Nothing useful.
+##' @author Todor Kondić
+extract<-function(fTab,extr_fun,limEIC,limFinePPM) {
+    fnData<-fTab$Files[[1]]
+    wd<-fTab$wd[[1]]
+    ID<-fTab$ID
+    mz<-fTab$mz
+    names(mz)<-ID
+    extr_fun(file=fnData,
+             destDir=".",
+             mz=mz,
+             limEIC=limEIC,
+             limFinePPM=limFinePPM)
+    
+}
