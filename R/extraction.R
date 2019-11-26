@@ -254,7 +254,6 @@ extr_rmb <- function (file,wd, mz, limEIC, limFinePPM) {
 ##' @param fTab File table with Files,ID,wd,Name and mz
 ##'     columns. Column Files, as well as wd must have all rows
 ##'     identical.
-##' 
 ##' @param extr_fun Extraction function from the backend.
 ##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
 ##' @param limFinePPM Tolerance given in PPM used to associate input
@@ -267,8 +266,9 @@ extract<-function(fTab,extr_fun,limEIC,limFinePPM) {
     ID<-fTab$ID
     mz<-fTab$mz
     names(mz)<-ID
+    dir.create(wd,showWarnings=F)
     extr_fun(file=fnData,
-             destDir=".",
+             wd=wd,
              mz=mz,
              limEIC=limEIC,
              limFinePPM=limFinePPM)

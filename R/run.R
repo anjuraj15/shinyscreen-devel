@@ -42,71 +42,43 @@ attch<-function(...) paste(...,sep='')
 ##' Do the prescreening.
 ##'
 ##' @title Prescreening on bunch of files.
-##' @param fn_data The mzML files. Basis for the out directory name
-##'     generation.
-##' @param fn_cmpd_l The compound list.
-##' @param mode RMB mode.
-##' @param dest Destination directory.
+##' @param fTab File table with Files,ID,wd,Name and mz
+##'     columns. Column Files, as well as wd must have all rows
+##'     identical.
+##' @param extr_fun Extraction function from the backend. 
+##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
+##' @param limFinePPM Tolerance given in PPM used to associate input
+##'     masses with what the instrument assigned as precutsors to MS2.
 ##' @param proc Amount of processors, or FALSE. 
-##' @param fn_cmpd_list The compound list CSV.
+##' @param fnLog For parallel execution, dump messages there.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-presc.do<-function(fnTab,fnStgs,fnCmpdList,dest=".",proc=F,fnLog='prescreen.log',...) {
-    
+gen<-function(fTab,extr_fun=extr_msnb,limEIC,limFinePPM,proc=F,fnLog='prescreen.log') {
+    message("*** Started to generate prescreen data ...")
     unlink(fnLog)
-    RMassBank::loadRmbSettings(fnStgs)
-    ## RMassBank::loadList(fnCmpdList,check=F)
-    fread <- function(fnData,fnStgs) {
-        idc <- which(fnTab$Files %in% fnData)
-        wd <- fnTab$wd[idc[[1]]]
-        
-        
-        id <- fnTab$ID[idc]
-
-        mz <- fnTab$mz[idc]
-        nms<-fnTab$Name[idc]
-        mode<-fnTab$mode[idc[[1]]]
-        gen_presc_d(wd)
-        unsetGenDone(wd)
-        RMassBank::loadRmbSettings(fnStgs)
-        ## RMassBank::loadList(fnCmpdList,check=F)
-        message("started: ",wd)
-        
-        gen_ftable(fTab=fnTab,file=fnData)
-        fn_ftable <- get_ftable_fn(wd)
-        RMB_EIC_prescreen_df(wd=wd,RMB_mode=mode,FileList=fn_ftable,
-                             ...)
-        message("finished: ",wd)
-        setGenDone(wd)
-        T
+    fread<-function(fTab) {extract(fTab,
+                                   extr_fun=extr_fun,
+                                   limEIC=limEIC,
+                                   limFinePPM=limFinePPm)
+                                   
+                           return(T)
     }
 
 
+    fns<-unique(fTab$Files)
+    fTabs<-lapply(fns,function(fn) fTab[fTab$Files==fn,])
     if (proc>1) {
         cl<-parallel::makeCluster(spec=proc,type='PSOCK',outfile=fnLog)
         parallel::clusterEvalQ(cl,library(shinyscreen))
-        parallel::clusterExport(cl,c("fnTab","fnCmpdList","setGenDone","unsetGenDone"),envir=environment())
-        parallel::clusterMap(cl,fread,levels(factor(fnTab$Files)),fnStgs)
+        ## parallel::clusterExport(cl,c("extract"),envir=environment())
+        res<-parallel::clusterMap(cl,fread,fTabs)
         parallel::stopCluster(cl)
+        res
     } else {
-        message("SERIAL")
-        Map(fread,levels(factor(fnTab$Files)),fnStgs)
+
+        lapply(fread,fTabs)
     }
-}
-
-impCmpdList <- function(fnSrc,fnDest=file.path(".",basename(fnSrc))) {
-    gen_cmpd_l(src_fn=fnSrc,dest_fn=fnDest)
-}
-
-gen<-function(fTab,fnCmpdList,fnStgs,fnDestFileTable=attch(stripext(fnFileTab),"_candidate.csv"),dest=".",fnLog='prescreen.log',proc=1,intTresh=1e5,noiseFac=3,rtDelta=0.5,ppmLimFine=10,eicLim=1e-3) {
-    message("*** Started to generate prescreen data ...")
-
-    ## Read in the file table.
-    ## fnTab <- file2tab(file=fnFileTab)
-
-    ## Do the prescreen.
-    presc.do(fnTab=fTab,fnStgs = fnStgs,fnCmpdList=fnCmpdList,dest=dest,ppm_limit_fine=ppmLimFine,EIC_limit=eicLim,proc=proc,fnLog=fnLog)
     message("*** ... done generating prescreen data.")
 }
 
