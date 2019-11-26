@@ -598,6 +598,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 }
                 
                 saveRDS(object=sav,file=fn)
+                message("Saving config finished.")
                 }
         })
 
@@ -748,18 +749,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         #data.
             rvConf$flMzMLSub<-T
 
-            shiny::updateSelectInput(session=session,
-                                     inputId="genSetSelInp",
-                                     choices=levels(sets))
+
         })
 
         shiny::observeEvent(input$mzMLtabCtrl,
         {
-
             df<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
             rvTab$mzMLWork<-df
-
-
         })
 
         shiny::observeEvent(input$fnTgtL,
@@ -1200,6 +1196,12 @@ shinyScreenApp <- function(projDir=getwd()) {
             comp<-getComp()
             currSet<-rvConf$currSet
             mzML<-getMzML()
+            sets<-getSets()
+            if (length(sets)>0) {
+                shiny::updateSelectInput(session=session,
+                                         inputId="genSetSelInp",
+                                         choices=sets)
+            }
             if (!(is.na(currSet) || is.null(comp))) {
                 mds<-levels(factor(mzML$mode[mzML$set %in% currSet]))
                 rvConf$currMode<-mds[[1]]
@@ -1207,7 +1209,12 @@ shinyScreenApp <- function(projDir=getwd()) {
                                          "presSelMode",
                                          choices=mds,
                                          selected=mds[[1]])
+                
+
             }
+
+
+            
 
         })
 
