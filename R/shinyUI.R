@@ -585,12 +585,17 @@ shinyScreenApp <- function(projDir=getwd()) {
                 shiny::isolate(for (nm in names(rvConf)) {
                                    sav$rvConf[[nm]]<-rvConf[[nm]]
                                })
-                sav$input$tagsInp<-input$tagsInp
-                sav$input$setsInp<-input$setsInp
-                sav$input$fnTgtL<-input$fnTgtL
-                sav$input$fnUnkL<-input$fnUnkL
-                sav$input$fnSetId<-input$fnSetId
-                sav$input$fnStgsRMB<-input$fnStgsRMB
+
+                for (nm in rvConf$REST_TXT_INP) {
+                    ## sav$input$tagsInp<-input$tagsInp
+                    ## sav$input$setsInp<-input$setsInp
+                    ## sav$input$fnTgtL<-input$fnTgtL
+                    ## sav$input$fnUnkL<-input$fnUnkL
+                    ## sav$input$fnSetId<-input$fnSetId
+                    ## sav$input$fnStgsRMB<-input$fnStgsRMB
+                    sav$input[[nm]]<-input[[nm]]
+                    
+                }
                 sav$tab<-list()
                 for (nm in names(rvTab)) {
                     df<-rvTab[[nm]]
@@ -615,7 +620,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                            inputId=nm,
                                            value=sav$input[[nm]])
                 }
-                rvConf$fnFTBase<-sav$rvConf$fnFTBase
+                ## rvConf$fnFTBase<-sav$rvConf$fnFTBase
                 rvConf$fnFT<-sav$rvConf$fnFT
                 for (nm in names(rvTab)) {
                     rvTab[[nm]]<-sav$tab[[nm]]
@@ -803,7 +808,10 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         })
         
-
+        shiny::observeEvent(input$confFileTabBase,
+        {
+            rvConf$fnFTBase<-input$confFileTabBase
+        })
         shiny::observeEvent(input$genFileTabB,{
             fn<-input$confFileTabBase
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
@@ -814,7 +822,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 df<-addCompColsToFileTbl(df,comp)
                 df$mode<-as.character(df$mode)
                 tab2file(tab=df,file=fn)
-                rvConf$fnFTBase<-fn
+            
                 message("Done generating basic file table in file ",fn)
             }
 
