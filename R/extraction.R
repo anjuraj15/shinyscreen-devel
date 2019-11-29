@@ -38,19 +38,23 @@ filt_ms2_by_prcs_old<-function(pre,preMZRng) {
     res
 }
 
-filt_ms2_by_prcs <- function(pre,preMZRng) {
+filt_ms2_by_prcs <- function(ms2,mz,limCoarse) {
+    ppmMzRange<-gen_mz_range(mz,limit=limCoarse)
+    pre<-MSnbase::precursorMz(ms2)
     nR<-length(pre)
     df<-data.frame(sn=integer(nR),
                    ID=character(nR),
+                   OK=logical(nR),
                    stringsAsFactors=F)
+    df$OK<-T #TODO Introduced for testing, be careful.
 
     offD<-0
-    names<-dimnames(preMZRng)[[1]]
-    for (rM in 1:nrow(preMZRng)) {
-        m1<-preMZRng[rM,1]
-        m2<-preMZRng[rM,2]
+    nms<-dimnames(ppmMzRange)[[1]]
+    for (rM in 1:nrow(ppmMzRange)) {
+        m1<-ppmMzRange[rM,1]
+        m2<-ppmMzRange[rM,2]
         ind <- which((pre > m1) & (pre < m2))
-        nm<-names[[rM]]
+        nm<-nms[[rM]]
         rng<-seq.int(offD+1,offD+length(ind),length.out=length(ind))
         df[rng,"sn"]<-ind
         df[rng,"ID"]<-nm
@@ -175,7 +179,8 @@ gen_ms2_chrom<-function(ms2Spec) {
 }
 
 
-gen_ms1_chrom<-function(raw,mzRng) {
+gen_ms1_chrom<-function(raw,mz,limEIC) {
+    mzRng<-gen_mz_range(mz,limit=limEIC)
     ids<-dimnames(mzRng)[[1]]
     x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0)
 
@@ -207,7 +212,7 @@ id_fn_ext<-function(width,id) {
     formatC(as.numeric(id),width=width,flag=0)
 }
 
-write_eic<-function(eic,suff="eic.csv",dir=".",width=get_ext_width(max(as.numeric(eic)))) {
+write_eic<-function(eic,suff="eic.csv",dir=".",width=get_ext_width(max(as.numeric(names(eic))))) {
     Map(function (e,n) {
         if (length(e)>0) {
             fn<-file.path(dir,paste(id_fn_ext(width,n),suff,sep="."))
@@ -259,28 +264,25 @@ extr_msnb <-function(file,wd,mz,limEIC,limCoarse=0.5, limFinePPM,mode="inMemory"
 
     ## EICs for precursors.
     message("Extracting precursor EICs. Please wait.")
-    mzRng<-gen_mz_range(mz,limit=limEIC)
-    eicMS1<-gen_ms1_chrom(ms1,mzRng)
+    eicMS1<-gen_ms1_chrom(raw=ms1,mz=mz,limEIC=limEIC)
     write_eic(eicMS1,dir=wd)
     message("Extracting precursor EICs finished.")
 
     ## Extract MS2 spectra.
     message("Extracting MS2 spectra.")
-    ppmMzRange<-gen_mz_range(mz,limit=limCoarse)
-    pre<-MSnbase::precursorMz(ms2)
-    idxMS2<-filt_ms2_by_prcs(pre,ppmMzRange)
-    message("Resampling MS2 spectra.")
-    idxMS2<-add_ms2_prcs_scans(ms2,idxMS2)
-    prsc<-pick_unique_precScans(idxMS2)
-    vprsc<-verif_prec_fine(preSc=prsc,ms1=ms1,mz=mz,limFinePPM = limFinePPM)
-    idxMS2<-refn_ms2_by_prec(idxMS2=idxMS2,preFine=vprsc)
-    message("Resampling MS2 spectra finished.")
+    idxMS2<-filt_ms2_by_prcs(ms2=ms2,mz=mz,limCoarse=limCoarse)
+    ## message("Resampling MS2 spectra.")
+    ## idxMS2<-add_ms2_prcs_scans(ms2,idxMS2)
+    ## prsc<-pick_unique_precScans(idxMS2)
+    ## vprsc<-verif_prec_fine(preSc=prsc,ms1=ms1,mz=mz,limFinePPM = limFinePPM)
+    ## idxMS2<-refn_ms2_by_prec(idxMS2=idxMS2,preFine=vprsc)
+    ## message("Resampling MS2 spectra finished.")
     
 
     ms2Spec<-grab_ms2_spec(idxMS2,ms2)
     eicMS2<-gen_ms2_chrom(ms2Spec)
     message("Extracting MS2 spectra finished.")
-    write_eic(eicMS2,dir=wd,suff="kids.csv",width=get_ext_width(max(as.numeric(eicMS1))))
+    write_eic(eicMS2,dir=wd,suff="kids.csv",width=get_ext_width(max(as.numeric(names(eicMS1)))))
     specDir<-file.path(wd,"ms2_spectra")
     dir.create(specDir,showWarnings = F)
     write_ms2_spec(ms2Spec,dir=specDir)
