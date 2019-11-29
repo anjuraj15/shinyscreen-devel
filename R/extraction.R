@@ -9,10 +9,8 @@ acq_mz<-function(tabFn) {
     df<-read.csv(tabFn,
                  stringsAsFactors=F,
                  comment.char='')
-    x<-unique(as.numeric(df$mz))
-    inds<-match(x,as.numeric(df$mz))
-    id<-df$ID[inds]
-    names(x)<-id
+    x<-as.numeric(df$mz)
+    names(x)<-df$ID
     x
 }
 
@@ -28,33 +26,127 @@ gen_mz_range<-function(mz,limit) {
     mat
 }
 
-filt_ms2_by_prcs<-function(pre,pre_mz_rng) {
-    apply(pre_mz_rng,1,function(rng) {
+filt_ms2_by_prcs_old<-function(pre,preMZRng) {
+    res<-apply(preMZRng,1,function(rng) {
         m1<-rng[[1]]
         m2<-rng[[2]]
         ind <- which((pre > rng[[1]]) & (pre < rng[[2]]))
         ind
     })
+
+    names(res)<-dimnames(preMZRng)[[1]]
+    res
 }
 
+filt_ms2_by_prcs <- function(pre,preMZRng) {
+    nR<-length(pre)
+    df<-data.frame(sn=integer(nR),
+                   ID=character(nR),
+                   stringsAsFactors=F)
+
+    offD<-0
+    names<-dimnames(preMZRng)[[1]]
+    for (rM in 1:nrow(preMZRng)) {
+        m1<-preMZRng[rM,1]
+        m2<-preMZRng[rM,2]
+        ind <- which((pre > m1) & (pre < m2))
+        nm<-names[[rM]]
+        rng<-seq.int(offD+1,offD+length(ind),length.out=length(ind))
+        df[rng,"sn"]<-ind
+        df[rng,"ID"]<-nm
+        offD<- offD + length(ind)
+    }
+    df[1:offD,]
+}
+
+add_ms2_prcs_scans<-function(ms2,idx) {
+
+    df<-idx
+    df$prec_scan<-integer(nrow(idx))
+    for (i in 1:nrow(df)) {
+        sn<-df$sn[[i]]
+        df$prec_scan[[i]]<-MSnbase::precScanNum(ms2[[sn]])
+    }
+    ## sn<-as.integer(df$sn)
+    ## df$prec_scan[]<-MSnbase::precScanNum(ms2[sn])
+    ## 
+    ## This errors with: msLevel for signature "NULL" for a specific
+    ## compound. However, the above approach is cool.
+    df
+}
+
+pick_unique_precScans<-function(idx) {
+    ps<-unique(idx$prec_scan)
+    mind<-match(ps,idx$prec_scan)
+    ids<-idx[mind,"ID"]
+    data.frame(prec_scan=idx$prec_scan[mind],ID=ids,stringsAsFactors=F)
+    
+}
+
+
+verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
+    mzRng<-gen_mz_range(mz,limit=ppm2dev(mz,limFinePPM))
+    df<-preSc
+    df$mz<-mz[as.character(df$ID)]
+    mz1<-mzRng[as.character(df$ID),1]
+    mz2<-mzRng[as.character(df$ID),2]
+
+    df$OK<-logical(nrow(df))
+    df$preMz<-numeric(nrow(df))
+    acqN<-MSnbase::acquisitionNum(ms1)
+    wh<-which(acqN %in% df$prec_scan)
+    specMz<-MSnbase::mz(ms1[wh])
+
+
+    for (i in 1:nrow(df)) {
+        spec<-specMz[[i]]
+        wh<-(spec > mz1[[i]] ) & ( spec < mz2[[i]])
+        df$OK[[i]]<- any(wh)
+        ind<-which(wh)
+        df$preMz[[i]]<- if (length(ind)>0) spec[ind[[1]]] else 0
+    }
+
+    df
+}
+
+refn_ms2_by_prec<-function(idxMS2,preFine) {
+    pf<-preFine[preFine$OK,]
+    idxMS2$OK<-logical(nrow(idxMS2))
+
+    for (n in 1:nrow(idxMS2)) {
+        scan<-idxMS2$prec_scan[[n]]
+        id2<-idxMS2$ID[[n]]
+        ppf<-pf[pf$ID==id2,]
+        inPF<- ppf$prec_scan %in% scan
+        iPF<-which(inPF)
+        idxMS2$OK[[n]]<-any(inPF)
+    }
+
+    idxMS2
+}
+
+
 grab_ms2_spec<-function(idx,raw) {
-    lapply(idx,function (id) {
-        if (length(id)>0) {
-            spec<-raw[id]
-            rts<-MSnbase::rtime(spec)
-            lmz<-MSnbase::mz(spec)
-            lI<-MSnbase::intensity(spec)
-            rts<-rts/60.
-            names(lmz)<-NULL
-            names(lI)<-NULL
-            Map(function (mz,I,rt) {
-                mat<-matrix(data=0.0,ncol=length(mz),nrow=2,dimnames=list(c("mz","intensity")))
-                mat["mz",]<-as.numeric(mz)
-                mat["intensity",]<-as.numeric(I)
-                list(rt=rt,spec=mat)
-            },lmz,lI,rts)
-        } else list()
+    idx<-idx[idx$OK,]
+    IDs<-unique(idx$ID)
+    res<-lapply(IDs,function (id) {
+        sn<-idx$sn[idx$ID==id]
+        spec<-raw[sn]
+        rts<-MSnbase::rtime(spec)
+        lmz<-MSnbase::mz(spec)
+        lI<-MSnbase::intensity(spec)
+        rts<-rts/60.
+        names(lmz)<-NULL
+        names(lI)<-NULL
+        Map(function (mz,I,rt) {
+            mat<-matrix(data=0.0,ncol=length(mz),nrow=2,dimnames=list(c("mz","intensity")))
+            mat["mz",]<-as.numeric(mz)
+            mat["intensity",]<-as.numeric(I)
+            list(rt=rt,spec=mat)
+        },lmz,lI,rts)
     })
+    names(res)<-IDs
+    res
 }
                
 
@@ -85,7 +177,7 @@ gen_ms2_chrom<-function(ms2Spec) {
 
 gen_ms1_chrom<-function(raw,mzRng) {
     ids<-dimnames(mzRng)[[1]]
-    x<-chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0)
+    x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0)
 
     res<-lapply(x,function (xx) {
         rt<-MSnbase::rtime(xx)/60.
@@ -115,8 +207,7 @@ id_fn_ext<-function(width,id) {
     formatC(as.numeric(id),width=width,flag=0)
 }
 
-write_eic<-function(eic,suff="eic.csv",dir=".") {
-    width=get_ext_width(max(as.numeric(names(eic))))
+write_eic<-function(eic,suff="eic.csv",dir=".",width=get_ext_width(max(as.numeric(eic)))) {
     Map(function (e,n) {
         if (length(e)>0) {
             fn<-file.path(dir,paste(id_fn_ext(width,n),suff,sep="."))
@@ -148,7 +239,7 @@ write_ms2_spec<-function(ms2Spec,dir=".") {
     }
 }
 
-extr_msnb <-function(file,wd,mz,limEIC,limFinePPM,mode="inMemory") {
+extr_msnb <-function(file,wd,mz,limEIC,limCoarse=0.5, limFinePPM,mode="inMemory") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
@@ -168,20 +259,28 @@ extr_msnb <-function(file,wd,mz,limEIC,limFinePPM,mode="inMemory") {
 
     ## EICs for precursors.
     message("Extracting precursor EICs. Please wait.")
-    mzRng<-gen_mz_range(mz,limit=LIM_EIC)
+    mzRng<-gen_mz_range(mz,limit=limEIC)
     eicMS1<-gen_ms1_chrom(ms1,mzRng)
     write_eic(eicMS1,dir=wd)
     message("Extracting precursor EICs finished.")
 
     ## Extract MS2 spectra.
     message("Extracting MS2 spectra.")
-    ppmMzRange<-gen_mz_range(mz,limit=ppm2dev(mz,LIM_PPM_FINE))
+    ppmMzRange<-gen_mz_range(mz,limit=limCoarse)
     pre<-MSnbase::precursorMz(ms2)
     idxMS2<-filt_ms2_by_prcs(pre,ppmMzRange)
+    message("Resampling MS2 spectra.")
+    idxMS2<-add_ms2_prcs_scans(ms2,idxMS2)
+    prsc<-pick_unique_precScans(idxMS2)
+    vprsc<-verif_prec_fine(preSc=prsc,ms1=ms1,mz=mz,limFinePPM = limFinePPM)
+    idxMS2<-refn_ms2_by_prec(idxMS2=idxMS2,preFine=vprsc)
+    message("Resampling MS2 spectra finished.")
+    
+
     ms2Spec<-grab_ms2_spec(idxMS2,ms2)
     eicMS2<-gen_ms2_chrom(ms2Spec)
     message("Extracting MS2 spectra finished.")
-    write_eic(eicMS2,suff="kids.csv")
+    write_eic(eicMS2,dir=wd,suff="kids.csv",width=get_ext_width(max(as.numeric(eicMS1))))
     specDir<-file.path(wd,"ms2_spectra")
     dir.create(specDir,showWarnings = F)
     write_ms2_spec(ms2Spec,dir=specDir)
@@ -189,7 +288,7 @@ extr_msnb <-function(file,wd,mz,limEIC,limFinePPM,mode="inMemory") {
 
 }
 
-extr_rmb <- function (file,wd, mz, limEIC, limFinePPM) {
+extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM) {
     ID<-as.numeric(names(mz))
     maxid <- max(ID)
     id_field_width <- as.integer(log10(maxid)+1)
@@ -212,7 +311,7 @@ extr_rmb <- function (file,wd, mz, limEIC, limFinePPM) {
         eic <- RMassBank::findEIC(f, mz, limit = limEIC)
         msms_found[i] <- FALSE
         theppm<-RMassBank::ppm(mz, limFinePPM,p = TRUE)
-        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, theppm)
+        msms <- RMassBank::findMsMsHR.mass(f, mz, limCoarse, theppm)
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[i] <- eic[max_I_prec_index, 1]
         max_I_prec[i] <- eic[max_I_prec_index, 2]

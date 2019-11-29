@@ -57,12 +57,13 @@ attch<-function(...) paste(...,sep='')
 gen<-function(fTab,extr_fun=extr_msnb,limEIC,limFinePPM,proc=F,fnLog='prescreen.log') {
     message("*** Started to generate prescreen data ...")
     unlink(fnLog)
-    fread<-function(fTab) {extract(fTab,
-                                   extr_fun=extr_fun,
-                                   limEIC=limEIC,
-                                   limFinePPM=limFinePPm)
-                                   
-                           return(T)
+    fread<-function(fTab) {
+        extract(fTab=fTab,
+                extr_fun=extr_fun,
+                limEIC=limEIC,
+                limFinePPM=limFinePPM)
+        
+        return(T)
     }
 
 
@@ -72,12 +73,11 @@ gen<-function(fTab,extr_fun=extr_msnb,limEIC,limFinePPM,proc=F,fnLog='prescreen.
         cl<-parallel::makeCluster(spec=proc,type='PSOCK',outfile=fnLog)
         parallel::clusterEvalQ(cl,library(shinyscreen))
         ## parallel::clusterExport(cl,c("extract"),envir=environment())
-        res<-parallel::clusterMap(cl,fread,fTabs)
+        res<-parallel::parLapply(cl,fTabs,fread)
         parallel::stopCluster(cl)
         res
     } else {
-
-        lapply(fread,fTabs)
+        lapply(fTabs,fread)
     }
     message("*** ... done generating prescreen data.")
 }
