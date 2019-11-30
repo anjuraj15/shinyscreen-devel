@@ -10,7 +10,7 @@ acq_mz<-function(tabFn) {
                  stringsAsFactors=F,
                  comment.char='')
     x<-as.numeric(df$mz)
-    names(x)<-df$ID
+    names(x)<-as.character(df$ID)
     x
 }
 
@@ -20,7 +20,7 @@ ppm2dev<-function(m,ppm) 1e-6*ppm*m
 
 
 gen_mz_range<-function(mz,limit) {
-    mat<-matrix(data=numeric(1),nrow=length(mz),ncol=2,dimnames=list(names(mz)))
+    mat<-matrix(data=numeric(1),nrow=length(mz),ncol=2,dimnames=list(as.character(names(mz))))
     mat[,1]<-mz-limit
     mat[,2]<-mz+limit
     mat
@@ -43,13 +43,14 @@ filt_ms2_by_prcs <- function(ms2,mz,limCoarse) {
     pre<-MSnbase::precursorMz(ms2)
     nR<-length(pre)
     df<-data.frame(sn=integer(nR),
+                   prec_scan=integer(nR),
                    ID=character(nR),
                    OK=logical(nR),
                    stringsAsFactors=F)
     df$OK<-T #TODO Introduced for testing, be careful.
 
     offD<-0
-    nms<-dimnames(ppmMzRange)[[1]]
+    nms<-as.character(dimnames(ppmMzRange)[[1]])
     for (rM in 1:nrow(ppmMzRange)) {
         m1<-ppmMzRange[rM,1]
         m2<-ppmMzRange[rM,2]
@@ -60,7 +61,13 @@ filt_ms2_by_prcs <- function(ms2,mz,limCoarse) {
         df[rng,"ID"]<-nm
         offD<- offD + length(ind)
     }
-    df[1:offD,]
+    res <- df[1:offD,]
+    for (i in 1:nrow(res)) {
+        sn<-res$sn[[i]]
+        res$prec_scan[[i]]<-MSnbase::precScanNum(ms2[[sn]])
+    }
+    res
+
 }
 
 add_ms2_prcs_scans<-function(ms2,idx) {
@@ -82,7 +89,7 @@ add_ms2_prcs_scans<-function(ms2,idx) {
 pick_unique_precScans<-function(idx) {
     ps<-unique(idx$prec_scan)
     mind<-match(ps,idx$prec_scan)
-    ids<-idx[mind,"ID"]
+    ids<-idx$ID[mind]
     data.frame(prec_scan=idx$prec_scan[mind],ID=ids,stringsAsFactors=F)
     
 }
@@ -90,6 +97,9 @@ pick_unique_precScans<-function(idx) {
 
 verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
     mzRng<-gen_mz_range(mz,limit=ppm2dev(mz,limFinePPM))
+    for (n in 1:nrow(mzRng)) {
+        message("dm: ",1e6*(mzRng[n,2]-mzRng[n,1])/mz[n]/2.,"; mz:",mz[[n]],";ID= ",names(mz)[[n]])
+    }
     df<-preSc
     df$mz<-mz[as.character(df$ID)]
     mz1<-mzRng[as.character(df$ID),1]
@@ -109,20 +119,20 @@ verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
         ind<-which(wh)
         df$preMz[[i]]<- if (length(ind)>0) spec[ind[[1]]] else 0
     }
-
+    tab2file(tab=df,file="prec.fine.csv")
     df
 }
 
 refn_ms2_by_prec<-function(idxMS2,preFine) {
     pf<-preFine[preFine$OK,]
+    pf$ID<-as.character(pf$ID)
     idxMS2$OK<-logical(nrow(idxMS2))
-
+    idxMS2$ID<-as.character(idxMS2$ID)
     for (n in 1:nrow(idxMS2)) {
         scan<-idxMS2$prec_scan[[n]]
         id2<-idxMS2$ID[[n]]
         ppf<-pf[pf$ID==id2,]
         inPF<- ppf$prec_scan %in% scan
-        iPF<-which(inPF)
         idxMS2$OK[[n]]<-any(inPF)
     }
 
@@ -271,12 +281,12 @@ extr_msnb <-function(file,wd,mz,limEIC,limCoarse=0.5, limFinePPM,mode="inMemory"
     ## Extract MS2 spectra.
     message("Extracting MS2 spectra.")
     idxMS2<-filt_ms2_by_prcs(ms2=ms2,mz=mz,limCoarse=limCoarse)
-    ## message("Resampling MS2 spectra.")
-    ## idxMS2<-add_ms2_prcs_scans(ms2,idxMS2)
-    ## prsc<-pick_unique_precScans(idxMS2)
-    ## vprsc<-verif_prec_fine(preSc=prsc,ms1=ms1,mz=mz,limFinePPM = limFinePPM)
-    ## idxMS2<-refn_ms2_by_prec(idxMS2=idxMS2,preFine=vprsc)
-    ## message("Resampling MS2 spectra finished.")
+    message("Resampling MS2 spectra.")
+    # idxMS2<-add_ms2_prcs_scans(ms2,idxMS2)
+    prsc<-pick_unique_precScans(idxMS2)
+    vprsc<-verif_prec_fine(preSc=prsc,ms1=ms1,mz=mz,limFinePPM = limFinePPM)
+    idxMS2<-refn_ms2_by_prec(idxMS2=idxMS2,preFine=vprsc)
+    message("Resampling MS2 spectra finished.")
     
 
     ms2Spec<-grab_ms2_spec(idxMS2,ms2)
