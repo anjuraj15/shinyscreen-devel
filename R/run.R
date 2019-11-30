@@ -54,14 +54,15 @@ attch<-function(...) paste(...,sep='')
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-gen<-function(fTab,extr_fun=extr_msnb,limEIC,limFinePPM,proc=F,fnLog='prescreen.log') {
+gen<-function(fTab,limEIC,limFinePPM,proc=F,fnLog='prescreen.log',extr_fun=extr_msnb) {
     message("*** Started to generate prescreen data ...")
     unlink(fnLog)
     fread<-function(fTab) {
         extract(fTab=fTab,
                 extr_fun=extr_fun,
                 limEIC=limEIC,
-                limFinePPM=limFinePPM)
+                limFinePPM=limFinePPM,
+                limCoarse=0.5)
         
         return(T)
     }

@@ -97,9 +97,6 @@ pick_unique_precScans<-function(idx) {
 
 verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
     mzRng<-gen_mz_range(mz,limit=ppm2dev(mz,limFinePPM))
-    for (n in 1:nrow(mzRng)) {
-        message("dm: ",1e6*(mzRng[n,2]-mzRng[n,1])/mz[n]/2.,"; mz:",mz[[n]],";ID= ",names(mz)[[n]])
-    }
     df<-preSc
     df$mz<-mz[as.character(df$ID)]
     mz1<-mzRng[as.character(df$ID),1]
@@ -107,19 +104,24 @@ verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
 
     df$OK<-logical(nrow(df))
     df$preMz<-numeric(nrow(df))
-    acqN<-MSnbase::acquisitionNum(ms1)
-    wh<-which(acqN %in% df$prec_scan)
-    specMz<-MSnbase::mz(ms1[wh])
-
-
+    df$mz1<-mz1
+    df$mz2<-mz2
+    ord<-order(df$prec_scan)
+    df<-df[ord,]
+    fms1<-MSnbase::filterAcquisitionNum(ms1,df$prec_scan)
+    acqN<-MSnbase::acquisitionNum(fms1)
+    specMz<-lapply(1:length(fms1),function (l) {
+        sp<-fms1[[l]]
+        an<-MSnbase::acquisitionNum(sp)
+        ps<-df$prec_scan[[l]]
+        MSnbase::filterMz(sp,c(df$mz1[[l]],df$mz2[[l]]))
+    })
     for (i in 1:nrow(df)) {
-        spec<-specMz[[i]]
-        wh<-(spec > mz1[[i]] ) & ( spec < mz2[[i]])
-        df$OK[[i]]<- any(wh)
-        ind<-which(wh)
-        df$preMz[[i]]<- if (length(ind)>0) spec[ind[[1]]] else 0
+        spec<-MSnbase::mz(specMz[[i]])
+        lspec<-length(spec)
+        df$OK[[i]]<- lspec>0
+        df$preMz[[i]]<- if (lspec>0) spec[[1]] else 0
     }
-    tab2file(tab=df,file="prec.fine.csv")
     df
 }
 
@@ -254,7 +256,7 @@ write_ms2_spec<-function(ms2Spec,dir=".") {
     }
 }
 
-extr_msnb <-function(file,wd,mz,limEIC,limCoarse=0.5, limFinePPM,mode="inMemory") {
+extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,mode="inMemory") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
@@ -368,10 +370,12 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM) {
 ##' @param extr_fun Extraction function from the backend.
 ##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
 ##' @param limFinePPM Tolerance given in PPM used to associate input
-##'     masses with what the instrument assigned as precutsors to MS2.
+##'     masses with what the instrument assigned as precursors to MS2.
+##' @param limCoarse Absolute tolerance for preliminary association of
+##'     precursors (from precursorMZ), to MS2 spectra.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
-extract<-function(fTab,extr_fun,limEIC,limFinePPM) {
+extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse) {
     fnData<-fTab$Files[[1]]
     wd<-fTab$wd[[1]]
     ID<-fTab$ID
@@ -382,6 +386,7 @@ extract<-function(fTab,extr_fun,limEIC,limFinePPM) {
              wd=wd,
              mz=mz,
              limEIC=limEIC,
-             limFinePPM=limFinePPM)
+             limFinePPM=limFinePPM,
+             limCoarse=limCoarse)
     
 }
