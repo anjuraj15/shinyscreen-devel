@@ -154,7 +154,7 @@ mkUI <- function() {
                                                        label="Signal-to-noise ratio.",
                                                        value=3),
                                       shiny::textInput("rtDelta",
-                                                       label="Retention time Δ",
+                                                       label="Retention time detla",
                                                        value=0.5),
                                       width=NULL)
     
