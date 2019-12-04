@@ -340,10 +340,11 @@ mkUI <- function() {
     header <- shinydashboard::dashboardHeader(title=headerText)
     
     sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(confSideItem,
-                                                                            compListSideItem,
-                                                                            setIdSideItem,
                                                                             genSideItem,
-                                                                            presSideItem))
+                                                                            presSideItem,
+                                                                            shiny::hr(),
+                                                                            compListSideItem,
+                                                                            setIdSideItem))
 
 
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
