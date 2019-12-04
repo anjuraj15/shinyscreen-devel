@@ -1,6 +1,17 @@
-
 #+TITLE: The Shinyscreen Package
-
 
 * Usage
   UNDER CONSTRUCTION
+* Contribute
+** GUI Style Guide
+*** Colour Scheme
+    - LCSB colours?
+*** Boxes
+    - All boxes should have statuses. Shinydashboard defines
+      ~primary~, ~success~, ~info~, ~warning~ and ~danger~.
+    - Words in titles should be capitalised, except for /a/, /of/ et simile.
+*** Usage Flow
+    The UI should feel sequential to the user, unless the actions that
+    are being performed need continuous feedback, or
+    refinement. Encapsulate things that rarely, or never change into
+    steps that can be executed and then forgotten about.
