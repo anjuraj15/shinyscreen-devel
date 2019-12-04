@@ -1,3 +1,17 @@
+prim_box<-function(...) {shinydashboard::box(...,
+                                             status="primary",
+                                             solidHeader=T)}
+good_box<-function(...) {shinydashboard::box(...,
+                                             status="success",
+                                             solidHeader=T)}
+err_box<-function(...) {shinydashboard::box(...,
+                                            status="danger",
+                                            solidHeader=T)}
+
+inact_box<-function(...) {shinydashboard::box(...,
+                                            status="danger",
+                                            solidHeader=T)}
+
 mkUI <- function() {
     browseFile <- function(title,
                            buttonName,
@@ -7,96 +21,82 @@ mkUI <- function() {
                            icon="file",
                            description=NULL,
                            ...) {
-        shinydashboard::box(title=title,
-                            shiny::h5(description),
-
-,
-                            solidHeader=T,
-                            collapsible=F,...)}
+        prim_box(title=title,
+                 shiny::h5(description),
+                 collapsible=F,...)}
     
-    confImport <- shinydashboard::box(title="Import",
-                                      shiny::h5("There are up to three tables that need to be supplied before prescreening starts. There are two compound lists, one for targets, containing at least ID and SMILES columns. If column Name is present, it will also be used. The second is the suspect list with columns ID, mz and mode. Consider ID to be a tag of a particular SMILES (for targets), or a mz/mode-combination (for unknowns). The final list is the set ID list which classifies IDs into different sets. Every set consists of unique IDs. The columns of this list are ID and set. Shinyscreen will never modify any initial (meta)data. The table format should be CSV with `,' as delimiter and any strings that possibly contain commas should be protected. LibreOffice Calc is helpful when it is needed to convert CSVs from one format to another, as well as protecting strings with quotes. "),
-                                      shiny::textInput("fnTgtL",
-                                                       "Target list (ID, SMILES).",
-                                                       value=""),
-                                      shiny::textInput("fnUnkL",
-                                                       "Unknows list (mz and ID)",
-                                                       value=""),
-                                      shiny::textInput("fnSetId",
-                                                       "Set table.",
-                                                       value=""),
-                                      shiny::textInput("fnStgsRMB",
-                                                       "RMassBank settings.",
-                                                       value=""),
-                                      shinyFiles::shinyFilesButton("impTgtListB",
-                                                                   label="Import targets.",
-                                                                   title="",
-                                                                   icon=shiny::icon("file"),
-                                                                   multiple=F),
-                                      shinyFiles::shinyFilesButton("impUnkListB",
-                                                                   label="Import unknowns.",
-                                                                   title="",
-                                                                   icon=shiny::icon("file"),
-                                                                   multiple=F),
-                                      shinyFiles::shinyFilesButton("impSetIdB",
-                                                                   label="Import set ID table.",
-                                                                   title="",
-                                                                   icon=shiny::icon("file"),
-                                                                   multiple=T),
-                                      shinyFiles::shinyFilesButton("impGenRMBB",
-                                                                   label="Import RMassBank settings.",
-                                                                   title="",
-                                                                   icon=shiny::icon("file"),
-                                                                   multiple=F),
-                                      width=NULL)
+    confImport <- prim_box(title="Import",
+                           shiny::textInput("fnTgtL",
+                                            "Knowns list. Required columns: ID and SMILES. Optional column: Name. Remember to quote SMILES and Name entries!",
+                                            value=""),
+                           shiny::textInput("fnUnkL",
+                                            "Unknows list. Required columns: ID and mz.",
+                                            value=""),
+                           shiny::textInput("fnSetId",
+                                            "Set table.",
+                                            value=""),
+                           shinyFiles::shinyFilesButton("impTgtListB",
+                                                        label="Import targets.",
+                                                        title="",
+                                                        icon=shiny::icon("file"),
+                                                        multiple=F),
+                           shinyFiles::shinyFilesButton("impUnkListB",
+                                                        label="Import unknowns.",
+                                                        title="",
+                                                        icon=shiny::icon("file"),
+                                                        multiple=F),
+                           shinyFiles::shinyFilesButton("impSetIdB",
+                                                        label="Import set ID table.",
+                                                        title="",
+                                                        icon=shiny::icon("file"),
+                                                        multiple=T),
+                           width=NULL)
 
-    confmzMLTags <- shinydashboard::box(title="Sets and Tags",
-                                        shiny::h5("Sets and tags."),
-                                        shiny::textInput("tagPropInp",
-                                                         "What is a tag? (example: collision energy; can be left empty.)",
-                                                         value=""),
-                                        shiny::textInput("tagsInp",
-                                                         "Comma-delimited list of tag types",
-                                                         value=""),
-                                        width=NULL)
+    confmzMLTags <- prim_box(title="Sets and Tags",
+                             shiny::textInput("tagPropInp",
+                                              "What is a tag? (example: collision energy; can be left empty.)",
+                                              value=""),
+                             shiny::textInput("tagsInp",
+                                              "Comma-delimited list of tag types.",
+                                              value=""),
+                             width=NULL)
 
-    confState <- shinydashboard::box(title="Configuration state",
-                                     shiny::h5("Saves and restores current configuration."),
-                                     shinyFiles::shinySaveButton("saveConfB",
-                                                                 "Save configuration",
-                                                                 title="Save",
-                                                                 filename = "conf-state.rds",
-                                                                 "rds"),
-                                     shinyFiles::shinyFilesButton("restoreConfB",
-                                                                  label="Restore configuration",
-                                                                  multiple=F,
-                                                                  title="Restore"),
-                                     width=NULL)
+    confState <- prim_box(title="Configuration State",
+                          shinyFiles::shinySaveButton("saveConfB",
+                                                      "Save configuration",
+                                                      title="Save",
+                                                      filename = "conf-state.rds",
+                                                      "rds"),
+                          shinyFiles::shinyFilesButton("restoreConfB",
+                                                       label="Restore configuration",
+                                                       multiple=F,
+                                                       title="Restore"),
+                          width=NULL)
 
-    confPP<-shinydashboard::box(title="Preprocessing settings",
-                                shiny::textInput("confFileTabBase",
-                                                 "Basic file table.",
-                                                 value=FN_FTAB_BASE),
-                                shiny::textInput("confFileTabProcInp",
-                                                 "Preprocessed file table.",
-                                                 value=FN_FTAB_PP),
-                                shiny::textInput("confResFileTab",
-                                                 "Resulting file table.",
-                                                 value=FN_FTAB),
-                                width=NULL)
+    confPP<-prim_box(title="Output File Tables",
+                     shiny::textInput("confFileTabBase",
+                                      "Basic file table.",
+                                      value=FN_FTAB_BASE),
+                     shiny::textInput("confFileTabProcInp",
+                                      "Preprocessed file table.",
+                                      value=FN_FTAB_PP),
+                     shiny::textInput("confResFileTab",
+                                      "Resulting file table.",
+                                      value=FN_FTAB),
+                     width=NULL)
     
-    confmzMLtab <-shinydashboard::box(title="mzML file table",
-                                      shiny::h5("Use this file table to assign adduct modes and tags to the data files."),
-                                      shinyFiles::shinyFilesButton("mzMLB",
-                                                                   label="Select mzML files",
-                                                                   title="Select mzML files",
-                                                                   icon=shiny::icon("files-o"),
-                                                                   multiple=T),
-                                      shiny::actionButton("mzMLtabSubmB",
-                                                          label="Submit mzML list.",
-                                                          icon=shiny::icon("check")),
-                                      rhandsontable::rHandsontableOutput("mzMLtabCtrl"),
-                                      width=NULL)
+    confmzMLtab <-prim_box(title="Raw Files in mzML Format",
+                           shiny::h5("Use this file table to assign adduct modes and tags to the data files."),
+                           shinyFiles::shinyFilesButton("mzMLB",
+                                                        label="Select mzML files",
+                                                        title="Select mzML files",
+                                                        icon=shiny::icon("files-o"),
+                                                        multiple=T),
+                           shiny::actionButton("mzMLtabSubmB",
+                                               label="Submit mzML list.",
+                                               icon=shiny::icon("check")),
+                           rhandsontable::rHandsontableOutput("mzMLtabCtrl"),
+                           width=NULL)
 
     
     confLayout <- shiny::fluidRow(shiny::column(confImport,
@@ -109,88 +109,90 @@ mkUI <- function() {
 
 
     confTab <- shinydashboard::tabItem(tabName="config",
+                                       shiny::h2(GUI_TAB_TITLE[["conf"]]),
                                        confLayout)
 
     ## ***** Compound List Tab *****
 
-    cmpListBox<-shinydashboard::box(title="Compound list",
-                                    rhandsontable::rHandsontableOutput("tgtCtrl"),
-                                    width=NULL)
+    cmpListBox<-prim_box(title="Compound List",
+                         rhandsontable::rHandsontableOutput("tgtCtrl"),
+                         width=NULL)
     
     cmpListLayout <- shiny::fluidRow(shiny::column(cmpListBox,
                                                    width = 12))
 
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
-                                          shiny::h5("This is an editable view of the compound list."),
                                           cmpListLayout)
 
     ## ***** Sets of compounds *****
 
-    setIdBox<-shinydashboard::box(title="Compound sets",
-                                  rhandsontable::rHandsontableOutput("setIdCtrl"),
-                                  width = NULL)
+    setIdBox<-prim_box(title="Compound Sets",
+                       rhandsontable::rHandsontableOutput("setIdCtrl"),
+                       width = NULL)
 
     setIdLayout<-shiny::fluidRow(shiny::column(setIdBox,
                                                width = 12))
 
     setIdTab<-shinydashboard::tabItem(tabName="setId",
-                                      shiny::h5("This is an editable view of the id/set list."),
                                       setIdLayout)
 
-    genBoxParam1<-shinydashboard::box(title="Parameters of the run",
-                                      shiny::textInput("genNoProc",
-                                                      label="Number of processes.",
-                                                      value=1),
-                                      shiny::textInput("ppmLimFine",
-                                                       label="ppm limit fine",
-                                                       value=10),
-                                      shiny::textInput("eicLim",
-                                                       label="EIC limit.",
-                                                       value=1e-3),
-                                      shiny::textInput("intTresh",
-                                                       label="Intensity threshold.",
-                                                       value=1e5),
-                                      shiny::textInput("noiseFac",
-                                                       label="Signal-to-noise ratio.",
-                                                       value=3),
-                                      shiny::textInput("rtDelta",
-                                                       label="Retention time detla",
-                                                       value=0.5),
-                                      width=NULL)
+    genBoxExtract<-prim_box(title="Extract Spectra",
+                            shiny::textInput("genNoProc",
+                                             label="Number of processes.",
+                                             value=1),
+                            shiny::textInput("ppmLimFine",
+                                             label="Precursor mz tolerance (relative [ppm]).",
+                                             value=10),
+                            shiny::textInput("eicLim",
+                                             label="EIC mz tolerance (absolute).",
+                                             value=1e-3),
+                            shiny::selectInput("genSetSelInp",
+                                               label="Select set(s).",
+                                               choices="",
+                                               multiple=T),
+                            shiny::actionButton(inputId="genRunB",
+                                                label="Run!",
+                                                icon=shiny::icon("bomb")),
+                            width=NULL)
     
-    genBoxParam2<-shinydashboard::box(title=NULL,
-                                      shiny::selectInput("genSetSelInp",
-                                                         label="Select set(s).",
-                                                         choices="",
-                                                         multiple=T),
-                                      shiny::actionButton(inputId="genRunB",
-                                                          label="Run!",
-                                                          icon=shiny::icon("bomb")),
-                                      width=NULL)
-    genBoxProcessed<-shinydashboard::box(title="Processed sets",
-                                         shiny::actionButton(inputId="genFileTabB",
-                                                             label="Generate file table.",
-                                                             icon=shiny::icon("save")),
-                                         shiny::actionButton(inputId="genRunPPB",
-                                                             label="Preprocess!",
-                                                             icon=shiny::icon("bomb")),
-                                         rhandsontable::rHandsontableOutput("genTabProcCtrl"),
-                                         width=NULL)
+    genBoxAutoQA<-prim_box(title="Automatic Quality Control",
+                           shiny::textInput("intTresh",
+                                            label="Intensity threshold.",
+                                            value=1e5),
+                           shiny::textInput("noiseFac",
+                                            label="Signal-to-noise ratio.",
+                                            value=3),
+                           shiny::textInput("rtDelta",
+                                            label="Retention time tolerance (minutes).",
+                                            value=0.5),
+                           shiny::actionButton(inputId="genRunPPB",
+                                               label="Preprocess!",
+                                               icon=shiny::icon("bomb")),
+                           width=NULL)
+
+    genBoxGenFT<-prim_box(title="Prepare for Data Extraction",
+                          shiny::actionButton(inputId="genFileTabB",
+                                              label="Prepare.",
+                                              icon=shiny::icon("save")),
+                          width=NULL)
+    
+    genBoxProcessed<-prim_box(title="Processed Sets",
+                              rhandsontable::rHandsontableOutput("genTabProcCtrl"),
+                              width=NULL)
     
     genTab<-shinydashboard::tabItem(tabName = "gen",
-                                    shiny::h5("Prepare for prescreening."),
-                                    shiny::fluidRow(shiny::column(genBoxProcessed,
-                                                                  width=4)),
-                                    shiny::fluidRow(shiny::column(genBoxParam1,width=4)),
-                                    shiny::fluidRow(shiny::column(genBoxParam2,width=4)))
+                                    shiny::h2(GUI_TAB_TITLE[["gen"]]),
+                                    shiny::fluidRow(shiny::column(genBoxGenFT,
+                                                                  genBoxExtract,
+                                                                  width=4),
+                                                    shiny::column(genBoxProcessed,
+                                                                  genBoxAutoQA,width=4)))
 
     ## ***** Prescreening *****
 
 
 
     ## Prescreening elements
-    preshead <- shinydashboard::dashboardHeader(title = "Prescreening")
-    
     presCompInfo <- shiny::fluidRow(shinydashboard::box(title = "MS Prescreening",
                                                         width = 7,
                                                         height = "80px",
@@ -296,7 +298,7 @@ mkUI <- function() {
                                       presPlotParBox)
     
     presTab <- shinydashboard::tabItem(tabName = "prescreen",
-                                       shiny::h2("Prescreening"),
+                                       shiny::h2(GUI_TAB_TITLE[["pres"]]),
                                        presCompInfo,
                                        presPlotWidget)
 
@@ -310,7 +312,7 @@ mkUI <- function() {
 
     
 
-    confSideItem <- shinydashboard::menuItem(text="Config",
+    confSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["conf"]],
                                              tabName="config",
                                              icon=shiny::icon("user-cog"))
     
@@ -319,24 +321,26 @@ mkUI <- function() {
                                                  icon=shiny::icon("table"))
 
     setIdSideItem <- shinydashboard::menuItem(text="Compound sets",
-                                                 tabName="setId",
+                                              tabName="setId",
                                               icon=shiny::icon("table"))
 
-    genSideItem <- shinydashboard::menuItem(text="Generate prescreen data",
-                                                 tabName="gen",
-                                                 icon=shiny::icon("cogs"))
+    genSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["gen"]],
+                                            tabName="gen",
+                                            icon=shiny::icon("cogs"))
 
-    presSideItem <- shinydashboard::menuItem(text="Prescreening",
+    presSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["pres"]],
                                              tabName="prescreen",
                                              icon=shiny::icon("chart-bar"))
     
     header <- shinydashboard::dashboardHeader(title=headerText)
     
     sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(confSideItem,
-                                                                            compListSideItem,
-                                                                            setIdSideItem,
                                                                             genSideItem,
-                                                                            presSideItem))
+                                                                            presSideItem,
+                                                                            shiny::hr(),
+                                                                            shiny::h5("Outputs"),
+                                                                            compListSideItem,
+                                                                            setIdSideItem))
 
 
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
@@ -363,7 +367,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
     mk_mzMLtab<-function() {
         modeLvl<- c("pH","pNa","pM",
-                "mH","mFA")
+                    "mH","mFA")
         res<-data.frame(Files=character(),
                         mode=factor(levels=modeLvl),
                         set=factor(),
@@ -394,7 +398,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              set=factor(sets[[1]],levels=sets),
                              tag=factor(tags[[1]],levels=tags),
                              stringsAsFactors=F)
-            
+                  
               } else {
                   nR<-nrow(ft)
                   ft[nR+1,]<-c(Files=fn,
@@ -470,7 +474,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                              QANAMES=QANAMES,
                              MODEMAP=MODEMAP,
                              REST_TXT_INP=REST_TXT_INP,
-                             impGenRMBFn="",
                              fnLocSetId=FN_LOC_SETID,
                              fnFTBase="",
                              tagProp="",
@@ -504,7 +507,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         shinyFiles::shinyFileChoose(input, 'impTgtListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impUnkListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
-        shinyFiles::shinyFileChoose(input, 'impGenRMBB',roots=volumes)
         
         shinyFiles::shinyFileSave(input, 'saveConfB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'restoreConfB',roots=wdroot)
@@ -529,7 +531,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             res<-if (!is.null(sets)) {
                      if (!anyNA(sets)) levels(factor(sets)) else NULL
                  } else NULL
-            res
+                 res
         })
 
         getMzMLFiles<-shiny::eventReactive(input$mzMLB,
@@ -548,7 +550,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                       NULL
                   }
             res
-                
+            
         })
 
         getCmpL<-shiny::reactive({
@@ -592,7 +594,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                     ## sav$input$fnTgtL<-input$fnTgtL
                     ## sav$input$fnUnkL<-input$fnUnkL
                     ## sav$input$fnSetId<-input$fnSetId
-                    ## sav$input$fnStgsRMB<-input$fnStgsRMB
                     sav$input[[nm]]<-input[[nm]]
                     
                 }
@@ -604,7 +605,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 
                 saveRDS(object=sav,file=fn)
                 message("Saving config finished.")
-                }
+            }
         })
 
         restoreConf<-reactive({
@@ -737,15 +738,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
-        shiny::observeEvent(input$impGenRMBB,{
-            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impGenRMBB)
-            fn<-fnobj[["datapath"]]
-            if (length(fn)>0 && !is.na(fn)) {
-                shiny::updateTextInput(session=session,
-                                       inputId="fnStgsRMB",
-                                       value=fn)
-            }})
-
         shiny::observeEvent(input$mzMLtabSubmB,{
             rvTab$mzML<-rvTab$mzMLWork
             sets<-factor(rvTab$mzML$set)
@@ -822,20 +814,18 @@ shinyScreenApp <- function(projDir=getwd()) {
                 df<-addCompColsToFileTbl(df,comp)
                 df$mode<-as.character(df$mode)
                 tab2file(tab=df,file=fn)
-            
+                
                 message("Done generating basic file table in file ",fn)
             }
 
         })
 
         shiny::observeEvent(input$genRunB,{
-            FnRMB<-input$fnStgsRMB
             nProc<-as.integer(input$genNoProc)
             fnTab<-rvConf$fnFTBase
             sets<-input$genSetSelInp
             message("Selected sets:")
             message("Number of processes:",nProc)
-            message("RMassBank settings file:",FnRMB)
             message("File table:",fnTab)
             if (length(fnTab)>0) {
 
@@ -843,7 +833,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
                     ## fnCmpdList<-input$fnTgtL
-                    ## fnStgs<-FnRMB
                     intTresh<-as.numeric(input$intTresh)
                     noiseFac<-as.numeric(input$noiseFac)
                     rtDelta<-as.numeric(input$rtDelta)
@@ -885,7 +874,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        comment.char = '',
                                        stringsAsFactors = F)
 
-                                    doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
+                    doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
                     if (nrow(doneFTab)>0) {
                         fnTmp<-ppInpFt()
                         write.csv(file=fnTmp,
@@ -919,8 +908,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                                   row.names=F)
                         file.copy(fnFullTab,input$confResFileTab,overwrite=T)
                         message("Finished preprocessing.")
-                                        
-                                        
+                        
+                        
                     }
                 }
             }
@@ -1031,122 +1020,122 @@ shinyScreenApp <- function(projDir=getwd()) {
                 ! is.null(setId) &&
                 ! is.null(mzML) &&
                 isSubm
-            
-            if (cond) {
-                message("Begin generation of comp table.")
-                availSets<-getSets()
-                idTgt<-tgt$ID
-                idUnk<-unk$ID
-
-                if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
                 
-                if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
-                setId$orig<-rep("",nrow(setId))
-                lTgt<-setId$ID %in% idTgt
-                iTgt<-which(lTgt)
-                iUnk<-which(!lTgt)
-                setId[iTgt,"orig"]<-"known"
-                setId[iUnk,"orig"]<-"unknown"
-                rvTab$setId<-setId ## !!!
+                if (cond) {
+                    message("Begin generation of comp table.")
+                    availSets<-getSets()
+                    idTgt<-tgt$ID
+                    idUnk<-unk$ID
 
-
-                
-                ## knowns
-                setIdTgt<-setId[setId$orig=="known",]
-                sets<-levels(factor(setIdTgt$set))
-                sets<-intersect(availSets,sets) #Make sure we only
-                                                #consider sets defined
-                                                #on the data files.
-                nRow<-0
-                for (s in sets) {
-                    sMode<-getSetMode(s,mzML)
-                    n<-length(sMode)
-                    nRow<-nRow+n*length(which(setIdTgt$set %in% s))
+                    if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
                     
-                }
+                    if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
+                    setId$orig<-rep("",nrow(setId))
+                    lTgt<-setId$ID %in% idTgt
+                    iTgt<-which(lTgt)
+                    iUnk<-which(!lTgt)
+                    setId[iTgt,"orig"]<-"known"
+                    setId[iUnk,"orig"]<-"unknown"
+                    rvTab$setId<-setId ## !!!
 
-                compTgt<-data.frame(
-                    ID=rep(0,nRow),
-                    mz=rep(0.0,nRow),
-                    mode=rep("",nRow),
-                    set=rep("",nRow),
-                    orig=rep("known",nRow),
-                    Name=rep("",nRow),
-                    SMILES=rep("",nRow),
-                    stringsAsFactors=F)
 
-                i<-1
-                for (s in sets) {
-                    sMode<-getSetMode(s,mzML)
-                    for (m in sMode) {
-                        for (id in setIdTgt[setIdTgt$set %in% s,"ID"]) {
-                            compTgt[i,"ID"]<-id
-                            compTgt[i,"mode"]<-m
-                            compTgt[i,"set"]<-s
-                            compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
-                            sm<-getColFromCmpL(id,"SMILES",tgt)
-                            nm<-getColFromCmpL(id,"Name",tgt)
-                            compTgt[i,"SMILES"]<-sm
-                            compTgt[i,"Name"]<-nm
+                    
+                    ## knowns
+                    setIdTgt<-setId[setId$orig=="known",]
+                    sets<-levels(factor(setIdTgt$set))
+                    sets<-intersect(availSets,sets) #Make sure we only
+                                        #consider sets defined
+                                        #on the data files.
+                    nRow<-0
+                    for (s in sets) {
+                        sMode<-getSetMode(s,mzML)
+                        n<-length(sMode)
+                        nRow<-nRow+n*length(which(setIdTgt$set %in% s))
+                        
+                    }
+
+                    compTgt<-data.frame(
+                        ID=rep(0,nRow),
+                        mz=rep(0.0,nRow),
+                        mode=rep("",nRow),
+                        set=rep("",nRow),
+                        orig=rep("known",nRow),
+                        Name=rep("",nRow),
+                        SMILES=rep("",nRow),
+                        stringsAsFactors=F)
+
+                    i<-1
+                    for (s in sets) {
+                        sMode<-getSetMode(s,mzML)
+                        for (m in sMode) {
+                            for (id in setIdTgt[setIdTgt$set %in% s,"ID"]) {
+                                compTgt[i,"ID"]<-id
+                                compTgt[i,"mode"]<-m
+                                compTgt[i,"set"]<-s
+                                compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
+                                sm<-getColFromCmpL(id,"SMILES",tgt)
+                                nm<-getColFromCmpL(id,"Name",tgt)
+                                compTgt[i,"SMILES"]<-sm
+                                compTgt[i,"Name"]<-nm
+                                i<-i+1
+                            }
+                            
+                        }
+                    }
+
+                    message("Generation of comp table: knowns done.")
+                    ## unknows
+                    setIdUnk<-setId[setId$orig=="unknown",]
+                    sets<-levels(factor(setIdUnk$set))
+                    sets<-intersect(availSets,sets)
+                    
+                    nRow<-0
+                    for (s in sets) {
+                        sMode<-getSetMode(s,mzML)
+                        n<-length(sMode)
+                        if (n>1) stop("Set of unknowns ",s,"has more than one mode. Sets of unknowns cannot have more than one mode.")
+
+                        nRow<-nRow+length(which(setIdUnk$set %in% s))
+                        
+                    }
+
+                    compUnk<-data.frame(
+                        ID=rep(0,nRow),
+                        mz=rep(0.0,nRow),
+                        mode=rep("",nRow),
+                        set=rep("",nRow),
+                        orig=rep("unknown",nRow),
+                        Name=rep("",nRow),
+                        SMILES=rep("",nRow),
+                        stringsAsFactors=F)
+
+                    i<-1
+                    for (s in sets) {
+                        m<-getSetMode(s,mzML)
+                        for (id in setIdUnk[setIdUnk$set %in% s,"ID"]) {
+                            compUnk[i,"ID"]<-id
+                            compUnk[i,"mode"]<-m
+                            compUnk[i,"set"]<-s
+                            compUnk[i,"mz"]<-getColFromCmpL(id,"mz",unk)
+                            nm<-getColFromCmpL(id,"Name",unk)
+                            compUnk[i,"Name"]<-nm
                             i<-i+1
                         }
                         
                     }
-                }
-
-                message("Generation of comp table: knowns done.")
-                ## unknows
-                setIdUnk<-setId[setId$orig=="unknown",]
-                sets<-levels(factor(setIdUnk$set))
-                sets<-intersect(availSets,sets)
-                
-                nRow<-0
-                for (s in sets) {
-                    sMode<-getSetMode(s,mzML)
-                    n<-length(sMode)
-                    if (n>1) stop("Set of unknowns ",s,"has more than one mode. Sets of unknowns cannot have more than one mode.")
-
-                    nRow<-nRow+length(which(setIdUnk$set %in% s))
+                    message("Generation of comp table: unknowns done.")
+                    df<-rbind(compTgt,compUnk,stringsAsFactors=F)
+                    rvTab$comp<-df
+                    tab2file(df,rvConf$fnComp)
+                    message("Generation of comp table finished.")
                     
                 }
-
-                compUnk<-data.frame(
-                    ID=rep(0,nRow),
-                    mz=rep(0.0,nRow),
-                    mode=rep("",nRow),
-                    set=rep("",nRow),
-                    orig=rep("unknown",nRow),
-                    Name=rep("",nRow),
-                    SMILES=rep("",nRow),
-                    stringsAsFactors=F)
-
-                i<-1
-                for (s in sets) {
-                    m<-getSetMode(s,mzML)
-                    for (id in setIdUnk[setIdUnk$set %in% s,"ID"]) {
-                        compUnk[i,"ID"]<-id
-                        compUnk[i,"mode"]<-m
-                        compUnk[i,"set"]<-s
-                        compUnk[i,"mz"]<-getColFromCmpL(id,"mz",unk)
-                        nm<-getColFromCmpL(id,"Name",unk)
-                        compUnk[i,"Name"]<-nm
-                        i<-i+1
-                    }
-                    
-                }
-                message("Generation of comp table: unknowns done.")
-                df<-rbind(compTgt,compUnk,stringsAsFactors=F)
-                rvTab$comp<-df
-                tab2file(df,rvConf$fnComp)
-                message("Generation of comp table finished.")
                 
-            }
-            
 
         })
-       
         
-        #rvTab$mzML<-getMzMLFiles()
+        
+                                        #rvTab$mzML<-getMzMLFiles()
 
 
         shiny::observe({
@@ -1176,14 +1165,14 @@ shinyScreenApp <- function(projDir=getwd()) {
                 
             })
         })
-    
+        
         shiny::observe({
             shiny::invalidateLater(100,
                                    session=session)
             fnFT<-if (isThingFile(input$confResFileTab)) input$confResFileTab else NULL
             rvConf$fnFT<-fnFT
         })
-    
+        
 
         shiny::observe({
 

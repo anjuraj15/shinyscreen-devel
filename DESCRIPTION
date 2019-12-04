@@ -32,6 +32,7 @@ LazyData: true
 RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)
 Collate:
+    'resources.R'
     'base.R'
     'mix.R'
     'extraction.R'
