@@ -154,7 +154,7 @@ mkUI <- function() {
                                                        label="Signal-to-noise ratio.",
                                                        value=3),
                                       shiny::textInput("rtDelta",
-                                                       label="Retention time Δ",
+                                                       label="Retention time detla",
                                                        value=0.5),
                                       width=NULL)
     
@@ -585,12 +585,17 @@ shinyScreenApp <- function(projDir=getwd()) {
                 shiny::isolate(for (nm in names(rvConf)) {
                                    sav$rvConf[[nm]]<-rvConf[[nm]]
                                })
-                sav$input$tagsInp<-input$tagsInp
-                sav$input$setsInp<-input$setsInp
-                sav$input$fnTgtL<-input$fnTgtL
-                sav$input$fnUnkL<-input$fnUnkL
-                sav$input$fnSetId<-input$fnSetId
-                sav$input$fnStgsRMB<-input$fnStgsRMB
+
+                for (nm in rvConf$REST_TXT_INP) {
+                    ## sav$input$tagsInp<-input$tagsInp
+                    ## sav$input$setsInp<-input$setsInp
+                    ## sav$input$fnTgtL<-input$fnTgtL
+                    ## sav$input$fnUnkL<-input$fnUnkL
+                    ## sav$input$fnSetId<-input$fnSetId
+                    ## sav$input$fnStgsRMB<-input$fnStgsRMB
+                    sav$input[[nm]]<-input[[nm]]
+                    
+                }
                 sav$tab<-list()
                 for (nm in names(rvTab)) {
                     df<-rvTab[[nm]]
@@ -598,6 +603,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 }
                 
                 saveRDS(object=sav,file=fn)
+                message("Saving config finished.")
                 }
         })
 
@@ -614,7 +620,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                            inputId=nm,
                                            value=sav$input[[nm]])
                 }
-                rvConf$fnFTBase<-sav$rvConf$fnFTBase
+                ## rvConf$fnFTBase<-sav$rvConf$fnFTBase
                 rvConf$fnFT<-sav$rvConf$fnFT
                 for (nm in names(rvTab)) {
                     rvTab[[nm]]<-sav$tab[[nm]]
@@ -748,18 +754,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         #data.
             rvConf$flMzMLSub<-T
 
-            shiny::updateSelectInput(session=session,
-                                     inputId="genSetSelInp",
-                                     choices=levels(sets))
+
         })
 
         shiny::observeEvent(input$mzMLtabCtrl,
         {
-
             df<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
             rvTab$mzMLWork<-df
-
-
         })
 
         shiny::observeEvent(input$fnTgtL,
@@ -807,7 +808,10 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         })
         
-
+        shiny::observeEvent(input$confFileTabBase,
+        {
+            rvConf$fnFTBase<-input$confFileTabBase
+        })
         shiny::observeEvent(input$genFileTabB,{
             fn<-input$confFileTabBase
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
@@ -818,7 +822,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 df<-addCompColsToFileTbl(df,comp)
                 df$mode<-as.character(df$mode)
                 tab2file(tab=df,file=fn)
-                rvConf$fnFTBase<-fn
+            
                 message("Done generating basic file table in file ",fn)
             }
 
@@ -838,25 +842,22 @@ shinyScreenApp <- function(projDir=getwd()) {
                 fTab<-file2tab(file=fnTab)
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
-                    fnCmpdList<-input$fnTgtL
-                    fnStgs<-FnRMB
+                    ## fnCmpdList<-input$fnTgtL
+                    ## fnStgs<-FnRMB
                     intTresh<-as.numeric(input$intTresh)
                     noiseFac<-as.numeric(input$noiseFac)
                     rtDelta<-as.numeric(input$rtDelta)
-                    ppmLimFine<-as.numeric(input$ppmLimFine)
+                    limFinePPM<-as.numeric(input$ppmLimFine)
+                    limEIC<-as.numeric(input$eicLim)
                     dest<-rvConf$projDir
-                    eicLim<-as.numeric(input$eicLim)
                     gc()
+                    dir.create(s,showWarnings=F)
+                    unsetGenDone(s)
                     gen(fTab=fTab[fTab$set==s,],
-                        fnCmpdList=fnCmpdList,
-                        fnStgs=fnStgs,
-                        dest=dest,
                         proc=nProc,
-                        intTresh=intTresh,
-                        noiseFac=noiseFac,
-                        rtDelta=rtDelta,
-                        ppmLimFine=ppmLimFine,
-                        eicLim=eicLim)
+                        limFinePPM=limFinePPM,
+                        limEIC=limEIC)
+                    setGenDone(s)
                     message("***** END set ",s, " *****")
                 }
                 gc()
@@ -1203,6 +1204,12 @@ shinyScreenApp <- function(projDir=getwd()) {
             comp<-getComp()
             currSet<-rvConf$currSet
             mzML<-getMzML()
+            sets<-getSets()
+            if (length(sets)>0) {
+                shiny::updateSelectInput(session=session,
+                                         inputId="genSetSelInp",
+                                         choices=sets)
+            }
             if (!(is.na(currSet) || is.null(comp))) {
                 mds<-levels(factor(mzML$mode[mzML$set %in% currSet]))
                 rvConf$currMode<-mds[[1]]
@@ -1210,7 +1217,12 @@ shinyScreenApp <- function(projDir=getwd()) {
                                          "presSelMode",
                                          choices=mds,
                                          selected=mds[[1]])
+                
+
             }
+
+
+            
 
         })
 

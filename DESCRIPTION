@@ -32,9 +32,11 @@ LazyData: true
 RoxygenNote: 6.1.1
 Roxygen: list(markdown = TRUE)
 Collate:
+    'base.R'
     'mix.R'
-    'shinyUI.R'
+    'extraction.R'
     'run.R'
+    'shinyUI.R'
 Depends:
     RMassBank,
     RChemMass
@@ -43,6 +45,7 @@ Imports:
     parallel,
     yaml,
     mzR,
+    MSnbase,
     RColorBrewer,
     curl,
     shiny,

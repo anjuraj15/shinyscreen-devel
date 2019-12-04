@@ -31,26 +31,7 @@ REST_TXT_INP<-c("fnStgsRMB",
                 "confFileTabProcInp",
                 "confResFileTab")
 
-## ***** Helper Functions *****
-tab2file<-function(tab,file,...) {
-    write.csv(x=tab,file=file,row.names=F,...)
-}
 
-file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
-    read.csv(file=file,
-             header=T,
-             stringsAsFactors=stringsAsFactors,
-             comment.char=comment.char,
-             na.strings=c("","NA"),...)
-}
-
-isThingFile<-function(fn) {
-    if (length(fn)>0 && is.character(fn)) {
-        file.exists(fn)
-    } else F
-}
-
-## ***** End helper functions *****
 ppInpFt<-function() {
     tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
 }
@@ -548,94 +529,6 @@ RMB_EIC_prescreen_df_old1 <- function (wd, RMB_mode, FileList, cmpd_list,
 }
 
 
-RMB_EIC_prescreen_df <- function (wd, RMB_mode, FileList,
-                                  ppm_limit_fine = 10, EIC_limit = 0.001) {
-
-
-    file_list <- file2tab(file=FileList)
-    file_list<-file_list[file_list$wd %in% wd,]
-    ncmpd <- max(file_list$ID) # length(levels(factor(file_list$ID))) #nrow(cmpd_info)
-    odir=wd
-    fid <- file_list$ID
-    tag<-unique(file_list$tag)
-    modes<-unique(file_list$mode)
-    message("how many modes? ",length(modes))
-    fnProg<-file.path(wd,"progress.log")
-    unlink(fnProg,force=T)
-    cat("i","total\n",sep=",",file=fnProg)
-    ## cmpind <- which(cmpd_info$ID %in% fid)
-    get_width <- function(maxid) {log10(maxid)+1}
-    id_field_width <- get_width(ncmpd)
-    fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
-    f <- mzR::openMSfile(file_list$Files[[1]])
-    total<-nrow(file_list)
-    n_spec <- 0
-    cmpd_RT_maxI <- rep(0.0,total)
-    msms_found <- rep(F,total)
-    rts <- rep(0.0,total)
-    max_I_prec <- rep(0.0,total)
-    cmpd_RT_maxI_min <- rep(0.0,total)
-    tellme<-function(i,point) NULL ##message(">>> tag: ", tag, "i: ",i,"point: ", point)
-    for (i in 1:total) {
-        tellme(i,"A1")
-        cpdID <- file_list$ID[[i]]
-        n_spec <- i
-        mz<-file_list$mz[[i]]
-        tellme(i,"A2")
-
-        tellme(i,"B1")
-        eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
-        tellme(i,"B2")
-
-        tellme(i,"C1")
-        msms_found[i] <- FALSE
-        theppm<-RMassBank::ppm(mz, ppm_limit_fine,p = TRUE)
-        tellme(i,paste("C1 mz:",mz))
-        tellme(i,paste("C1 ppm:",theppm))
-        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, theppm)
-        max_I_prec_index <- which.max(eic$intensity)
-        cmpd_RT_maxI[i] <- eic[max_I_prec_index, 1]
-        max_I_prec[i] <- eic[max_I_prec_index, 2]
-        cmpd_RT_maxI_min[i] <- as.numeric(cmpd_RT_maxI[i])/60 ## conversion to minutes
-        tellme(i,"C2")
-
-        tellme(i,"D1")
-        if (length(eic$rt)>0) eic$rt <- eic$rt/60 ## conversion to minutes
-        tab2file(tab=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"))
-        bindKids <- function(kids)
-            do.call(rbind,lapply(kids,function (kid)
-                c(rt=kid@rt,intensity=max(kid@intensity))))
-
-        
-        bindSpec <- function(specLst) {
-            do.call(rbind,lapply(specLst,function (sp) bindKids(sp@children)))
-        }
-        tellme(i,"D2")
-        tellme(i,"E1")
-        found <- which(vapply(msms,function(sp) sp@found,FUN.VALUE=F))
-        msmsExst <- msms[found]
-        if (length(found)>0) {
-            msms_found[i] <- T
-            msmsTab <- as.data.frame(bindSpec(msmsExst),stringsAsFactors=F)
-            names(msmsTab) <- c("rt","intensity")
-            if (length(msmsTab)>0 && nrow(msmsTab)>0) {
-                msmsTab$rt <- msmsTab$rt/60 ## conversion to minutes
-                tab2file(tab=msmsTab,file=fn_out(cpdID,".kids"))
-            }
-        }
-        tellme(i,"E2")
-
-        tellme(i,"F1")
-        rts[i] <- cmpd_RT_maxI[i]
-        cat(i,total,"\n",file=fnProg,append=T,sep=",")
-        tellme(i,"F2")
-    }
-    mzR::close(f)
-    rtwiDf <- data.frame(ID=file_list$ID, mz=file_list$mz, Name=file_list$Name, 
-                         cmpd_RT_maxI=cmpd_RT_maxI, cmpd_RT_maxI_min=cmpd_RT_maxI_min,
-                         max_I_prec=max_I_prec, msms_found=msms_found,stringsAsFactors=F)
-    write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
-}
 
 preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
     ## read in .csv file as file
