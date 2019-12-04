@@ -22,7 +22,6 @@ mkUI <- function() {
                  collapsible=F,...)}
     
     confImport <- prim_box(title="Import",
-                           shiny::h5("There are up to three tables that need to be supplied before prescreening starts. There are two compound lists, one for targets, containing at least ID and SMILES columns. If column Name is present, it will also be used. The second is the suspect list with columns ID, mz and mode. Consider ID to be a tag of a particular SMILES (for targets), or a mz/mode-combination (for unknowns). The final list is the set ID list which classifies IDs into different sets. Every set consists of unique IDs. The columns of this list are ID and set. Shinyscreen will never modify any initial (meta)data. The table format should be CSV with `,' as delimiter and any strings that possibly contain commas should be protected. LibreOffice Calc is helpful when it is needed to convert CSVs from one format to another, as well as protecting strings with quotes. "),
                            shiny::textInput("fnTgtL",
                                             "Target list (ID, SMILES).",
                                             value=""),
@@ -31,9 +30,6 @@ mkUI <- function() {
                                             value=""),
                            shiny::textInput("fnSetId",
                                             "Set table.",
-                                            value=""),
-                           shiny::textInput("fnStgsRMB",
-                                            "RMassBank settings.",
                                             value=""),
                            shinyFiles::shinyFilesButton("impTgtListB",
                                                         label="Import targets.",
@@ -50,11 +46,6 @@ mkUI <- function() {
                                                         title="",
                                                         icon=shiny::icon("file"),
                                                         multiple=T),
-                           shinyFiles::shinyFilesButton("impGenRMBB",
-                                                        label="Import RMassBank settings.",
-                                                        title="",
-                                                        icon=shiny::icon("file"),
-                                                        multiple=F),
                            width=NULL)
 
     confmzMLTags <- prim_box(title="Sets and Tags",
@@ -343,6 +334,7 @@ mkUI <- function() {
                                                                             genSideItem,
                                                                             presSideItem,
                                                                             shiny::hr(),
+                                                                            shiny::h5("Outputs"),
                                                                             compListSideItem,
                                                                             setIdSideItem))
 
@@ -478,7 +470,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                              QANAMES=QANAMES,
                              MODEMAP=MODEMAP,
                              REST_TXT_INP=REST_TXT_INP,
-                             impGenRMBFn="",
                              fnLocSetId=FN_LOC_SETID,
                              fnFTBase="",
                              tagProp="",
@@ -512,7 +503,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         shinyFiles::shinyFileChoose(input, 'impTgtListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impUnkListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
-        shinyFiles::shinyFileChoose(input, 'impGenRMBB',roots=volumes)
         
         shinyFiles::shinyFileSave(input, 'saveConfB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'restoreConfB',roots=wdroot)
@@ -600,7 +590,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                     ## sav$input$fnTgtL<-input$fnTgtL
                     ## sav$input$fnUnkL<-input$fnUnkL
                     ## sav$input$fnSetId<-input$fnSetId
-                    ## sav$input$fnStgsRMB<-input$fnStgsRMB
                     sav$input[[nm]]<-input[[nm]]
                     
                 }
@@ -745,15 +734,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
-        shiny::observeEvent(input$impGenRMBB,{
-            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impGenRMBB)
-            fn<-fnobj[["datapath"]]
-            if (length(fn)>0 && !is.na(fn)) {
-                shiny::updateTextInput(session=session,
-                                       inputId="fnStgsRMB",
-                                       value=fn)
-            }})
-
         shiny::observeEvent(input$mzMLtabSubmB,{
             rvTab$mzML<-rvTab$mzMLWork
             sets<-factor(rvTab$mzML$set)
@@ -837,13 +817,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         shiny::observeEvent(input$genRunB,{
-            FnRMB<-input$fnStgsRMB
             nProc<-as.integer(input$genNoProc)
             fnTab<-rvConf$fnFTBase
             sets<-input$genSetSelInp
             message("Selected sets:")
             message("Number of processes:",nProc)
-            message("RMassBank settings file:",FnRMB)
             message("File table:",fnTab)
             if (length(fnTab)>0) {
 
@@ -851,7 +829,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
                     ## fnCmpdList<-input$fnTgtL
-                    ## fnStgs<-FnRMB
                     intTresh<-as.numeric(input$intTresh)
                     noiseFac<-as.numeric(input$noiseFac)
                     rtDelta<-as.numeric(input$rtDelta)

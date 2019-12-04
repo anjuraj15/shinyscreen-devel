@@ -1,37 +1,3 @@
-## Constants
-FN_FTAB_BASE<-"ftable.base.csv"
-FN_FTAB_PP<-"ftable.pp.csv"
-FN_PP_OUT_PREF<-"PP.filetable"
-FN_FTAB<-"ftable.csv"
-FN_CMP_L<-"compounds.csv"
-FN_LOC_SETID <-"setid.csv"
-FN_COMP_TAB<-"comprehensive.csv"
-MODEMAP<-list(pH="MpHp_mass",
-              mH="MmHm_mass",
-              pNH4="MpNH4_mass",
-              pNa="MpNa_mass")
-
-DEFAULT_RT_RANGE=c(NA,NA)
-
-QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
-PLOT_DEF_TAGS<-NA
-PLOT_DEF_SET<-NA
-
-CEX<-0.75
-RT_DIGITS=2
-M_DIGITS=4
-PAL="Dark2"
-
-REST_TXT_INP<-c("fnStgsRMB",
-                "fnTgtL",
-                "fnUnkL",
-                "fnSetId",
-                "tagsInp",
-                "confFileTabBase",
-                "confFileTabProcInp",
-                "confResFileTab")
-
-
 ppInpFt<-function() {
     tempfile(pattern=FN_PP_OUT_PREF,fileext=".csv")
 }
@@ -129,51 +95,6 @@ no_drama_mkdir<-function(path) {
     f(path)
 }
 
-##' Produce the Rmb Settings file
-##'
-##' Produce the Rmb Settings file based on the customisation file in
-##' YAML format.
-##'
-##' @title Generate RMassBank settings file.
-##' @param sett_alist The named list of settings that are different
-##'     from the RMassBank defaults.
-##' @param file The name of the YAML specification that will be merged
-##'     with the template Rmb settings file.
-##' @return NULL
-mk_sett_file<-function(sett_alist,file) {
-    tmp<-tempfile()
-    RMassBank::RmbSettingsTemplate(tmp)
-    sett<-yaml::yaml.load_file(tmp)
-    for (nm in names(sett_alist)) {
-        sett[[nm]]<-sett_alist[[nm]]
-    }
-    yaml::write_yaml(x=sett,file=file)
-    NULL
-}
-
-##' Combine the RMB settings files
-##' 
-##' Combine RMB settings with different collisional energies into one
-##' settings file with multiple collisional energy entries.
-##' 
-##' @title Combine RMB Settings With Different Collisional Energies
-##' @param sett_fns A list of settings files.
-##' @param fname The name of the combined file.
-##' @return fname
-##' @author Todor Kondić
-mk_combine_file<-function(sett_fns,fname) {
-    all_settings <- lapply(sett_fns,yaml::yaml.load_file)
-    comb_settings <- all_settings[[1]]
-    
-    for (n in 1:length(all_settings)) {
-        comb_settings$spectraList[[n]] <- all_settings[[n]]$spectraList[[1]]
-    }
-
-    yaml::write_yaml(x=comb_settings,fname)
-    fname
-}
-
-
 fn_data2wd <- function(fn_data,dest) {
     
     f <- Vectorize(function(fn_data) {
@@ -194,24 +115,11 @@ get_cmpd_l_fn <- function(wd) {
     fv(wd)
 }
 
-get_stgs_fn <- function(wd) {
-    f <- function(wd) file.path(wd,"settings.ini")
-    fv <- Vectorize(f,vectorize.args=c("wd"))
-    fv(wd)
-}
-
 get_ftable_fn <- function(wd) {
     f <- function(wd) file.path(wd,"ftable.csv")
     fv <- Vectorize(f,vectorize.args=c("wd"))
     fv(wd)
 }
-
-get_inp_stgs_fn<- function(fn_data) {
-    f <- Vectorize(function(fn_data) {
-        bnm <- stripext(fn_data)
-        fn <- paste(bnm,".ini",sep='')},
-        vectorize.args="fn_data")
-    f(fn_data)}
 
 get_info_dir <- function(wd) {
     file.path(wd,"info")
@@ -275,20 +183,6 @@ gen_cmpd_l<-function(src_fn,dest_fn) {
     length(nms)
 }
 
-##' Generates settings file and loads it.
-##'
-##' @title Generate and Load the RMassBank Settings File
-##' @param stgs Settings named list, or a settings filename.
-##' @param wd Directory under which results are archived.
-##' @return result of RMassBank::loadRmbSettings
-##' @author Todor Kondić
-gen_stgs_and_load <- function(stgs,wd) {
-    stgs<-if (is.character(stgs)) yaml::yaml.load_file(stgs) else stgs
-    sfn<-get_stgs_fn(wd)
-    mk_sett_file(stgs,sfn)
-    RMassBank::loadRmbSettings(sfn)
-}
-
 ##' Generates the RMassBank compound list and loads it.
 ##'
 ##' @title Generate and Load the RMassBank Compound List
@@ -305,58 +199,22 @@ gen_cmpdl_and_load <- function(wd,fn_cmpdl) {
     list(fn_cmpdl=fn_comp,n=n_cmpd)
 }
 
-##' Generates file table.
-##'
-##' 
-##' @title Generate and Load the RMassBank Settings File
-##' @param fn_data The mzML filename.
-##' @param wd Directory under which results are archived.
-##' @param n_cmpd Number of compounds.
-##' @return File path of the file table.
-##' @author Todor Kondić
-gen_ftable_old <- function(fn_data,wd,n_cmpd) {
-    f <- Vectorize(function(fn_data,wd) {
-        df_table<-data.frame(Files=rep(fn_data,n_cmpd),ID=1:n_cmpd)
-        fn_table<-get_ftable_fn(wd)
-        write.csv(x=df_table,file=fn_table,row.names=F)
-        fn_table
-    }, vectorize.args=c("fn_data","wd"))
-
-    f(fn_data,wd)
-}
-
 gen_ftable <- function(fTab,file) {
     df<-fTab[fTab$Files %in% file,]
     wd<-unique(df$wd)
     tab2file(tab=df,file=get_ftable_fn(wd))
 }
 
-gen_fn_stgs <- function(fn_inp,fn) {
-    f <- Vectorize(function(fn_inp,fn) {
-        stgs <- yaml::yaml.load_file(fn_inp)
-        mk_sett_file(stgs,fn)
-        fn}, vectorize.args=c("fn_inp","fn"))
-
-    f(fn_inp,fn)
-}
-
 conf <- function(fn_data,fn_cmpd_l,dest) {
     no_drama_mkdir(dest)
     wd <- fn_data2wd(fn_data,dest)
     no_drama_mkdir(wd)
-    fn_inp_stgs <- get_inp_stgs_fn(fn_data)
-    fn_stgs <- get_stgs_fn(wd)
     fn_out_cmpd_l <- get_cmpd_l_fn(wd)
-
-    gen_fn_stgs(fn_inp_stgs,fn_stgs)
     n_cmpd <- gen_cmpd_l(fn_cmpd_l,fn_out_cmpd_l)
     gen_ftable(fn_data,wd,n_cmpd)
 }
 
 reconf <- function(wd) {## Load the settings.
-    fn_stgs <- get_stgs_fn(wd)
-    RMassBank::loadRmbSettings(fn_stgs)
-    
     ## Load the compound list.
     fn_cmpd_l <- get_cmpd_l_fn(wd)
     RMassBank::loadList(fn_cmpd_l)
