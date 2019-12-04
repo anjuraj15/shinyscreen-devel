@@ -1,10 +1,14 @@
 prim_box<-function(...) {shinydashboard::box(...,
                                              status="primary",
                                              solidHeader=T)}
-good_box<-function(...) {shinydahsboard::box(...,
+good_box<-function(...) {shinydashboard::box(...,
                                              status="success",
                                              solidHeader=T)}
-err_box<-function(...) {shinydahsboard::box(...,
+err_box<-function(...) {shinydashboard::box(...,
+                                            status="danger",
+                                            solidHeader=T)}
+
+inact_box<-function(...) {shinydashboard::box(...,
                                             status="danger",
                                             solidHeader=T)}
 
@@ -107,6 +111,7 @@ mkUI <- function() {
 
 
     confTab <- shinydashboard::tabItem(tabName="config",
+                                       shiny::h2(GUI_TAB_TITLE[["conf"]]),
                                        confLayout)
 
     ## ***** Compound List Tab *****
@@ -135,16 +140,26 @@ mkUI <- function() {
                                       shiny::h5("This is an editable view of the id/set list."),
                                       setIdLayout)
 
-    genBoxParam1<-prim_box(title="Parameters of the run",
-                           shiny::textInput("genNoProc",
-                                            label="Number of processes.",
-                                            value=1),
-                           shiny::textInput("ppmLimFine",
-                                            label="ppm limit fine",
-                                            value=10),
-                           shiny::textInput("eicLim",
-                                            label="EIC limit.",
-                                            value=1e-3),
+    genBoxExtract<-prim_box(title="Extract Spectra",
+                            shiny::textInput("genNoProc",
+                                             label="Number of processes.",
+                                             value=1),
+                            shiny::textInput("ppmLimFine",
+                                             label="Precursor mz tolerance (relative [ppm]).",
+                                             value=10),
+                            shiny::textInput("eicLim",
+                                             label="EIC mz tolerance (absolute).",
+                                             value=1e-3),
+                            shiny::selectInput("genSetSelInp",
+                                               label="Select set(s).",
+                                               choices="",
+                                               multiple=T),
+                            shiny::actionButton(inputId="genRunB",
+                                                label="Run!",
+                                                icon=shiny::icon("bomb")),
+                            width=NULL)
+    
+    genBoxAutoQA<-prim_box(title="Automatic Quality Control",
                            shiny::textInput("intTresh",
                                             label="Intensity threshold.",
                                             value=1e5),
@@ -152,43 +167,36 @@ mkUI <- function() {
                                             label="Signal-to-noise ratio.",
                                             value=3),
                            shiny::textInput("rtDelta",
-                                            label="Retention time detla",
+                                            label="Retention time tolerance (minutes).",
                                             value=0.5),
-                           width=NULL)
-    
-    genBoxParam2<-prim_box(title=NULL,
-                           shiny::selectInput("genSetSelInp",
-                                              label="Select set(s).",
-                                              choices="",
-                                              multiple=T),
-                           shiny::actionButton(inputId="genRunB",
-                                               label="Run!",
+                           shiny::actionButton(inputId="genRunPPB",
+                                               label="Preprocess!",
                                                icon=shiny::icon("bomb")),
                            width=NULL)
-    genBoxProcessed<-prim_box(title="Processed sets",
-                              shiny::actionButton(inputId="genFileTabB",
-                                                  label="Generate file table.",
-                                                  icon=shiny::icon("save")),
-                              shiny::actionButton(inputId="genRunPPB",
-                                                  label="Preprocess!",
-                                                  icon=shiny::icon("bomb")),
+
+    genBoxGenFT<-prim_box(title="Prepare for Data Extraction",
+                          shiny::actionButton(inputId="genFileTabB",
+                                              label="Prepare.",
+                                              icon=shiny::icon("save")),
+                          width=NULL)
+    
+    genBoxProcessed<-prim_box(title="Processed Sets",
                               rhandsontable::rHandsontableOutput("genTabProcCtrl"),
                               width=NULL)
     
     genTab<-shinydashboard::tabItem(tabName = "gen",
-                                    shiny::h5("Prepare for prescreening."),
-                                    shiny::fluidRow(shiny::column(genBoxProcessed,
-                                                                  width=4)),
-                                    shiny::fluidRow(shiny::column(genBoxParam1,width=4)),
-                                    shiny::fluidRow(shiny::column(genBoxParam2,width=4)))
+                                    shiny::h2(GUI_TAB_TITLE[["gen"]]),
+                                    shiny::fluidRow(shiny::column(genBoxGenFT,
+                                                                  genBoxExtract,
+                                                                  width=4),
+                                                    shiny::column(genBoxProcessed,
+                                                                  genBoxAutoQA,width=4)))
 
     ## ***** Prescreening *****
 
 
 
     ## Prescreening elements
-    preshead <- shinydashboard::dashboardHeader(title = "Prescreening")
-    
     presCompInfo <- shiny::fluidRow(shinydashboard::box(title = "MS Prescreening",
                                                         width = 7,
                                                         height = "80px",
@@ -294,7 +302,7 @@ mkUI <- function() {
                                       presPlotParBox)
     
     presTab <- shinydashboard::tabItem(tabName = "prescreen",
-                                       shiny::h2("Prescreening"),
+                                       shiny::h2(GUI_TAB_TITLE[["pres"]]),
                                        presCompInfo,
                                        presPlotWidget)
 
@@ -308,7 +316,7 @@ mkUI <- function() {
 
     
 
-    confSideItem <- shinydashboard::menuItem(text="Config",
+    confSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["conf"]],
                                              tabName="config",
                                              icon=shiny::icon("user-cog"))
     
@@ -320,11 +328,11 @@ mkUI <- function() {
                                               tabName="setId",
                                               icon=shiny::icon("table"))
 
-    genSideItem <- shinydashboard::menuItem(text="Generate prescreen data",
+    genSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["gen"]],
                                             tabName="gen",
                                             icon=shiny::icon("cogs"))
 
-    presSideItem <- shinydashboard::menuItem(text="Prescreening",
+    presSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["pres"]],
                                              tabName="prescreen",
                                              icon=shiny::icon("chart-bar"))
     

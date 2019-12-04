@@ -29,3 +29,12 @@ REST_TXT_INP<-c("fnTgtL",
                 "confFileTabBase",
                 "confFileTabProcInp",
                 "confResFileTab")
+
+
+GUI_TAB_TITLE<-c(conf="Config",
+                 gen="Spectra Extraction and Automatic QA",
+                 pres="Prescreening")
+
+
+GUI_SIDE_TITLE<-GUI_TAB_TITLE
+GUI_SIDE_TITLE[["gen"]]<-"Spectra Extraction"
