@@ -27,10 +27,10 @@ mkUI <- function() {
     
     confImport <- prim_box(title="Import",
                            shiny::textInput("fnTgtL",
-                                            "Target list (ID, SMILES).",
+                                            "Knowns list. Required columns: ID and SMILES. Optional column: Name. Remember to quote SMILES and Name entries!",
                                             value=""),
                            shiny::textInput("fnUnkL",
-                                            "Unknows list (mz and ID)",
+                                            "Unknows list. Required columns: ID and mz.",
                                             value=""),
                            shiny::textInput("fnSetId",
                                             "Set table.",
@@ -53,17 +53,15 @@ mkUI <- function() {
                            width=NULL)
 
     confmzMLTags <- prim_box(title="Sets and Tags",
-                             shiny::h5("Sets and tags."),
                              shiny::textInput("tagPropInp",
                                               "What is a tag? (example: collision energy; can be left empty.)",
                                               value=""),
                              shiny::textInput("tagsInp",
-                                              "Comma-delimited list of tag types",
+                                              "Comma-delimited list of tag types.",
                                               value=""),
                              width=NULL)
 
-    confState <- prim_box(title="Configuration state",
-                          shiny::h5("Saves and restores current configuration."),
+    confState <- prim_box(title="Configuration State",
                           shinyFiles::shinySaveButton("saveConfB",
                                                       "Save configuration",
                                                       title="Save",
@@ -75,7 +73,7 @@ mkUI <- function() {
                                                        title="Restore"),
                           width=NULL)
 
-    confPP<-prim_box(title="Preprocessing settings",
+    confPP<-prim_box(title="Output File Tables",
                      shiny::textInput("confFileTabBase",
                                       "Basic file table.",
                                       value=FN_FTAB_BASE),
@@ -87,7 +85,7 @@ mkUI <- function() {
                                       value=FN_FTAB),
                      width=NULL)
     
-    confmzMLtab <-prim_box(title="mzML file table",
+    confmzMLtab <-prim_box(title="Raw Files in mzML Format",
                            shiny::h5("Use this file table to assign adduct modes and tags to the data files."),
                            shinyFiles::shinyFilesButton("mzMLB",
                                                         label="Select mzML files",
@@ -116,7 +114,7 @@ mkUI <- function() {
 
     ## ***** Compound List Tab *****
 
-    cmpListBox<-prim_box(title="Compound list",
+    cmpListBox<-prim_box(title="Compound List",
                          rhandsontable::rHandsontableOutput("tgtCtrl"),
                          width=NULL)
     
@@ -124,12 +122,11 @@ mkUI <- function() {
                                                    width = 12))
 
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
-                                          shiny::h5("This is an editable view of the compound list."),
                                           cmpListLayout)
 
     ## ***** Sets of compounds *****
 
-    setIdBox<-prim_box(title="Compound sets",
+    setIdBox<-prim_box(title="Compound Sets",
                        rhandsontable::rHandsontableOutput("setIdCtrl"),
                        width = NULL)
 
@@ -137,7 +134,6 @@ mkUI <- function() {
                                                width = 12))
 
     setIdTab<-shinydashboard::tabItem(tabName="setId",
-                                      shiny::h5("This is an editable view of the id/set list."),
                                       setIdLayout)
 
     genBoxExtract<-prim_box(title="Extract Spectra",
