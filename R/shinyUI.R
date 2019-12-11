@@ -833,14 +833,16 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (length(fnTab)>0) {
 
                 fTab<-file2tab(file=fnTab)
+                intTresh<-as.numeric(input$intTresh)
+                noiseFac<-as.numeric(input$noiseFac)
+                rtDelta<-as.numeric(input$rtDelta)
+                limFinePPM<-as.numeric(input$ppmLimFine)
+                limEIC<-as.numeric(input$eicLim)
+                rtDelta<-as.numeric(input$rtDeltaWin)
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
                     ## fnCmpdList<-input$fnTgtL
-                    intTresh<-as.numeric(input$intTresh)
-                    noiseFac<-as.numeric(input$noiseFac)
-                    rtDelta<-as.numeric(input$rtDelta)
-                    limFinePPM<-as.numeric(input$ppmLimFine)
-                    limEIC<-as.numeric(input$eicLim)
+
                     dest<-rvConf$projDir
                     gc()
                     dir.create(s,showWarnings=F)
@@ -848,7 +850,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                     gen(fTab=fTab[fTab$set==s,],
                         proc=nProc,
                         limFinePPM=limFinePPM,
-                        limEIC=limEIC)
+                        limEIC=limEIC,
+                        rtDelta=rtDelta)
                     setGenDone(s)
                     message("***** END set ",s, " *****")
                 }
