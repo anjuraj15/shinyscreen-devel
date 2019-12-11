@@ -27,14 +27,13 @@ gen_mz_range<-function(mz,delta) {
 }
 
 gen_rt_range<-function(rt,delta) {
-
-    if (!is.null(rt)) {
-        mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2,dimnames=list(as.character(names(rt))))
-        mat[,1]<-rt - delta
-        mat[,2]<-rt + delta
-        mat
-    } else NULL
-
+    mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2,dimnames=list(as.character(names(rt))))
+    nna<-!is.na(rt)
+    mat[nna,1]<-(rt - delta)*60
+    mat[nna,2]<-(rt + delta)*60
+    mat[!nna,1]<--Inf
+    mat[!nna,2]<-Inf
+    mat
 }
 
 filt_ms2_by_prcs_old<-function(pre,preMZRng) {
@@ -399,7 +398,7 @@ extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,rtDelta) {
     wd<-fTab$wd[[1]]
     ID<-fTab$ID
     mz<-fTab$mz
-    rt<-fTab$RT
+    rt<-fTab$rt
     names(mz)<-ID
     if (!is.null(rt)) names(rt)<-ID
     dir.create(wd,showWarnings=F)

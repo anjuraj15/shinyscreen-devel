@@ -777,7 +777,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (isThingFile(fn)) {
                 message("Importing unknowns list from:",fn)
                 df<-file2tab(file=fn)
-                rvTab$unk<-df
+                rvTab$unk<-vald_comp_tab(df,fn,checkSMILES=F,checkMz=T)
                 message("Done importing unknowns list from: ",fn)
 
             }
@@ -812,7 +812,9 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
                 message("Generating basic file table in file ",fn)
                 files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
-                comp<-rvTab$comp
+                comp<-file2tab(rvConf$fnComp) ## TODO: Why is
+                                              ## rvTab$comp not
+                                              ## properly updated?
                 df<-genSuprFileTab(files,comp)
                 df<-addCompColsToFileTbl(df,comp)
                 df$mode<-as.character(df$mode)
@@ -1063,6 +1065,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     compTgt<-data.frame(
                         ID=rep(0,nRow),
                         mz=rep(0.0,nRow),
+                        rt=rep(NA,nRow),
                         mode=rep("",nRow),
                         set=rep("",nRow),
                         orig=rep("known",nRow),
@@ -1081,8 +1084,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                                 compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
                                 sm<-getColFromCmpL(id,"SMILES",tgt)
                                 nm<-getColFromCmpL(id,"Name",tgt)
+                                rt<-getColFromCmpL(id,"rt",tgt)
                                 compTgt[i,"SMILES"]<-sm
                                 compTgt[i,"Name"]<-nm
+                                compTgt[i,"rt"]<-rt
                                 i<-i+1
                             }
                             
@@ -1108,6 +1113,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     compUnk<-data.frame(
                         ID=rep(0,nRow),
                         mz=rep(0.0,nRow),
+                        rt=rep(NA,nRow),
                         mode=rep("",nRow),
                         set=rep("",nRow),
                         orig=rep("unknown",nRow),
@@ -1124,7 +1130,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                             compUnk[i,"set"]<-s
                             compUnk[i,"mz"]<-getColFromCmpL(id,"mz",unk)
                             nm<-getColFromCmpL(id,"Name",unk)
+                            rt<-getColFromCmpL(id,"rt",unk)
                             compUnk[i,"Name"]<-nm
+                            compUnk[i,"rt"]<-rt
                             i<-i+1
                         }
                         

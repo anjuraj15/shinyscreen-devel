@@ -784,7 +784,8 @@ genSuprFileTab <- function(fileTab,compTab) {
         wh<-which(fileTab$Files==fn)
         set<-fileTab$set[[wh]]
         md<-fileTab$mode[[wh]]
-        ids<-compTab$ID[(compTab$set %in% set) & (compTab$mode %in% md)]
+        sel<-(compTab$set %in% set) & (compTab$mode %in% md)
+        ids<-compTab$ID[sel]
         genOne(ids,fn)
         
     })
