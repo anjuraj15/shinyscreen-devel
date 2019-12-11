@@ -19,19 +19,19 @@ ppm2dev<-function(m,ppm) 1e-6*ppm*m
 
 
 
-gen_mz_range<-function(mz,limit) {
+gen_mz_range<-function(mz,delta) {
     mat<-matrix(data=numeric(1),nrow=length(mz),ncol=2,dimnames=list(as.character(names(mz))))
-    mat[,1]<-mz-limit
-    mat[,2]<-mz+limit
+    mat[,1]<-mz - delta
+    mat[,2]<-mz + delta
     mat
 }
 
-gen_rt_range<-function(rt,tol) {
+gen_rt_range<-function(rt,delta) {
 
     if (!is.null(rt)) {
         mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2,dimnames=list(as.character(names(rt))))
-        mat[,1]<-rt-tol
-        mat[,2]<-rt+tol
+        mat[,1]<-rt - delta
+        mat[,2]<-rt + delta
         mat
     } else NULL
 
@@ -50,7 +50,7 @@ filt_ms2_by_prcs_old<-function(pre,preMZRng) {
 }
 
 filt_ms2_by_prcs <- function(ms2,mz,limCoarse) {
-    ppmMzRange<-gen_mz_range(mz,limit=limCoarse)
+    ppmMzRange<-gen_mz_range(mz,delta=limCoarse)
     pre<-MSnbase::precursorMz(ms2)
     nR<-length(pre)
     df<-data.frame(sn=integer(nR),
@@ -107,7 +107,7 @@ pick_unique_precScans<-function(idx) {
 
 
 verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
-    mzRng<-gen_mz_range(mz,limit=ppm2dev(mz,limFinePPM))
+    mzRng<-gen_mz_range(mz,delta=ppm2dev(mz,limFinePPM))
     df<-preSc
     df$mz<-mz[as.character(df$ID)]
     mz1<-mzRng[as.character(df$ID),1]
