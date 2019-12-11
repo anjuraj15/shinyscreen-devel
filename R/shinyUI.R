@@ -762,10 +762,10 @@ shinyScreenApp <- function(projDir=getwd()) {
         {
             fn<-input$fnTgtL
             if (isThingFile(fn)) {
-                message("Importing targets list from:",fn)
+                message("Importing knowns/suspects from:",fn)
                 df<-file2tab(file=fn)
-                rvTab$tgt<-df
-                message("Done importing targets list from: ",fn)
+                rvTab$tgt<-vald_comp_tab(df,fn,checkSMILES=T,checkNames=T)
+                message("Done knowns/suspects from: ",fn)
 
             }
         })
