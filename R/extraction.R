@@ -202,10 +202,12 @@ gen_ms2_chrom<-function(ms2Spec) {
 }
 
 
-gen_ms1_chrom<-function(raw,mz,limEIC) {
-    mzRng<-gen_mz_range(mz,limit=limEIC)
+gen_ms1_chrom<-function(raw,mz,limEIC,rt=NULL,rtDelta=NULL) {
+    mzRng<-gen_mz_range(mz,delta=limEIC)
+    rtRng<-gen_rt_range(rt,delta=rtDelta)
     ids<-dimnames(mzRng)[[1]]
-    x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0)
+    
+    x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0,rt=rtRng)
 
     res<-lapply(x,function (xx) {
         rt<-MSnbase::rtime(xx)/60.
@@ -267,13 +269,18 @@ write_ms2_spec<-function(ms2Spec,dir=".") {
     }
 }
 
-extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,mode="inMemory") {
+extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta=NULL,mode="inMemory") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
     ## wd - Top-level directory where the results should be deposited.
     ## mz - A named vector of precursor masses for which to scan the
     ## file. The names can be RMassBank IDs.
+    ## rt - A named vector of length 1, or same as mz, giving the retention
+    ## times in minutes. The names should be the same as for mz.
+    ## rtDelta - A vector of length 1, or same as mz, giving the
+    ## half-width of the time window in which the peak for the
+    ## corresponding mz is supposed to be.
     ## limEIC - Absolute mz tolerance used to extract precursor EICs.
     ## limFinePPM - Tolerance given in PPM used to associate input
     ## masses with what the instrument assigned as precursors to MS2
@@ -287,7 +294,7 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,mode="inMemory"
 
     ## EICs for precursors.
     message("Extracting precursor EICs. Please wait.")
-    eicMS1<-gen_ms1_chrom(raw=ms1,mz=mz,limEIC=limEIC)
+    eicMS1<-gen_ms1_chrom(raw=ms1,mz=mz,limEIC=limEIC,rt=rt,rtDelta=rtDelta)
     write_eic(eicMS1,dir=wd)
     message("Extracting precursor EICs finished.")
 
@@ -313,7 +320,7 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,mode="inMemory"
 
 }
 
-extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM) {
+extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtDelta=NULL) {
     ID<-as.numeric(names(mz))
     maxid <- max(ID)
     id_field_width <- as.integer(log10(maxid)+1)
