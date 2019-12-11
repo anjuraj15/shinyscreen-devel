@@ -382,7 +382,7 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtD
 ##' Extracts data from mzML files.
 ##'
 ##' @title Data Extraction from mzML Files
-##' @param fTab File table with Files,ID,wd,Name and mz
+##' @param fTab File table with Files,ID,wd,Name,mz and RT
 ##'     columns. Column Files, as well as wd must have all rows
 ##'     identical.
 ##' @param extr_fun Extraction function from the backend.
@@ -391,18 +391,23 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtD
 ##'     masses with what the instrument assigned as precursors to MS2.
 ##' @param limCoarse Absolute tolerance for preliminary association of
 ##'     precursors (from precursorMZ), to MS2 spectra.
+##' @param rtDelta The half-width of the retention time window.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
-extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse) {
+extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,rtDelta) {
     fnData<-fTab$Files[[1]]
     wd<-fTab$wd[[1]]
     ID<-fTab$ID
     mz<-fTab$mz
+    rt<-fTab$RT
     names(mz)<-ID
+    if (!is.null(rt)) names(rt)<-ID
     dir.create(wd,showWarnings=F)
     extr_fun(file=fnData,
              wd=wd,
              mz=mz,
+             rt=rt,
+             rtDelta=rtDelta,
              limEIC=limEIC,
              limFinePPM=limFinePPM,
              limCoarse=limCoarse)
