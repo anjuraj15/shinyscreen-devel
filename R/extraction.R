@@ -26,6 +26,17 @@ gen_mz_range<-function(mz,limit) {
     mat
 }
 
+gen_rt_range<-function(rt,tol) {
+
+    if (!is.null(rt)) {
+        mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2,dimnames=list(as.character(names(rt))))
+        mat[,1]<-rt-tol
+        mat[,2]<-rt+tol
+        mat
+    } else NULL
+
+}
+
 filt_ms2_by_prcs_old<-function(pre,preMZRng) {
     res<-apply(preMZRng,1,function(rng) {
         m1<-rng[[1]]
