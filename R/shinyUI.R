@@ -1034,14 +1034,14 @@ shinyScreenApp <- function(projDir=getwd()) {
                     availSets<-getSets()
                     idTgt<-tgt$ID
                     idUnk<-unk$ID
-
                     if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
                     
                     if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
                     setId$orig<-rep("",nrow(setId))
                     lTgt<-setId$ID %in% idTgt
+                    lUnk<-setId$ID %in% idUnk
                     iTgt<-which(lTgt)
-                    iUnk<-which(!lTgt)
+                    iUnk<-which(lUnk)
                     setId[iTgt,"orig"]<-"known"
                     setId[iUnk,"orig"]<-"unknown"
                     rvTab$setId<-setId ## !!!
