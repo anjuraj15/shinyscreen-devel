@@ -28,11 +28,13 @@ gen_mz_range<-function(mz,delta) {
 
 gen_rt_range<-function(rt,delta) {
     mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2,dimnames=list(as.character(names(rt))))
-    nna<-!is.na(rt)
-    mat[nna,1]<-(rt - delta)*60
-    mat[nna,2]<-(rt + delta)*60
-    mat[!nna,1]<--Inf
-    mat[!nna,2]<-Inf
+    rV<-which(!is.na(rt))
+    rNA<-which(is.na(rt))
+    inna<-which(is.na(rt))
+    mat[rV,1]<-(rt[rV] - delta)*60
+    mat[rV,2]<-(rt[rV] + delta)*60
+    mat[rNA,1]<--Inf
+    mat[rNA,2]<-Inf
     mat
 }
 
@@ -205,7 +207,6 @@ gen_ms1_chrom<-function(raw,mz,limEIC,rt=NULL,rtDelta=NULL) {
     mzRng<-gen_mz_range(mz,delta=limEIC)
     rtRng<-gen_rt_range(rt,delta=rtDelta)
     ids<-dimnames(mzRng)[[1]]
-    
     x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0,rt=rtRng)
 
     res<-lapply(x,function (xx) {
