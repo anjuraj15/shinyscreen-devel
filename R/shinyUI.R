@@ -146,6 +146,9 @@ mkUI <- function() {
                             shiny::textInput("eicLim",
                                              label="EIC mz tolerance (absolute).",
                                              value=1e-3),
+                            shiny::textInput("rtDeltaWin",
+                                             label="Retention time tolerance (minutes).",
+                                             value=0.5),
                             shiny::selectInput("genSetSelInp",
                                                label="Select set(s).",
                                                choices="",
@@ -163,7 +166,7 @@ mkUI <- function() {
                                             label="Signal-to-noise ratio.",
                                             value=3),
                            shiny::textInput("rtDelta",
-                                            label="Retention time tolerance (minutes).",
+                                            label="Retention time shift tolerance (minutes).",
                                             value=0.5),
                            shiny::actionButton(inputId="genRunPPB",
                                                label="Preprocess!",
@@ -759,10 +762,10 @@ shinyScreenApp <- function(projDir=getwd()) {
         {
             fn<-input$fnTgtL
             if (isThingFile(fn)) {
-                message("Importing targets list from:",fn)
+                message("Importing knowns/suspects from:",fn)
                 df<-file2tab(file=fn)
-                rvTab$tgt<-df
-                message("Done importing targets list from: ",fn)
+                rvTab$tgt<-vald_comp_tab(df,fn,checkSMILES=T,checkNames=T)
+                message("Done knowns/suspects from: ",fn)
 
             }
         })
@@ -774,7 +777,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (isThingFile(fn)) {
                 message("Importing unknowns list from:",fn)
                 df<-file2tab(file=fn)
-                rvTab$unk<-df
+                rvTab$unk<-vald_comp_tab(df,fn,checkSMILES=F,checkMz=T)
                 message("Done importing unknowns list from: ",fn)
 
             }
@@ -809,7 +812,9 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
                 message("Generating basic file table in file ",fn)
                 files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
-                comp<-rvTab$comp
+                comp<-file2tab(rvConf$fnComp) ## TODO: Why is
+                                              ## rvTab$comp not
+                                              ## properly updated?
                 df<-genSuprFileTab(files,comp)
                 df<-addCompColsToFileTbl(df,comp)
                 df$mode<-as.character(df$mode)
@@ -830,14 +835,16 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (length(fnTab)>0) {
 
                 fTab<-file2tab(file=fnTab)
+                intTresh<-as.numeric(input$intTresh)
+                noiseFac<-as.numeric(input$noiseFac)
+                rtDelta<-as.numeric(input$rtDelta)
+                limFinePPM<-as.numeric(input$ppmLimFine)
+                limEIC<-as.numeric(input$eicLim)
+                rtDelta<-as.numeric(input$rtDeltaWin)
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
                     ## fnCmpdList<-input$fnTgtL
-                    intTresh<-as.numeric(input$intTresh)
-                    noiseFac<-as.numeric(input$noiseFac)
-                    rtDelta<-as.numeric(input$rtDelta)
-                    limFinePPM<-as.numeric(input$ppmLimFine)
-                    limEIC<-as.numeric(input$eicLim)
+
                     dest<-rvConf$projDir
                     gc()
                     dir.create(s,showWarnings=F)
@@ -845,7 +852,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                     gen(fTab=fTab[fTab$set==s,],
                         proc=nProc,
                         limFinePPM=limFinePPM,
-                        limEIC=limEIC)
+                        limEIC=limEIC,
+                        rtDelta=rtDelta)
                     setGenDone(s)
                     message("***** END set ",s, " *****")
                 }
@@ -1026,14 +1034,14 @@ shinyScreenApp <- function(projDir=getwd()) {
                     availSets<-getSets()
                     idTgt<-tgt$ID
                     idUnk<-unk$ID
-
                     if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
                     
                     if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
                     setId$orig<-rep("",nrow(setId))
                     lTgt<-setId$ID %in% idTgt
+                    lUnk<-setId$ID %in% idUnk
                     iTgt<-which(lTgt)
-                    iUnk<-which(!lTgt)
+                    iUnk<-which(lUnk)
                     setId[iTgt,"orig"]<-"known"
                     setId[iUnk,"orig"]<-"unknown"
                     rvTab$setId<-setId ## !!!
@@ -1057,6 +1065,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     compTgt<-data.frame(
                         ID=rep(0,nRow),
                         mz=rep(0.0,nRow),
+                        rt=rep(NA,nRow),
                         mode=rep("",nRow),
                         set=rep("",nRow),
                         orig=rep("known",nRow),
@@ -1075,8 +1084,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                                 compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
                                 sm<-getColFromCmpL(id,"SMILES",tgt)
                                 nm<-getColFromCmpL(id,"Name",tgt)
+                                rt<-getColFromCmpL(id,"rt",tgt)
                                 compTgt[i,"SMILES"]<-sm
                                 compTgt[i,"Name"]<-nm
+                                compTgt[i,"rt"]<-rt
                                 i<-i+1
                             }
                             
@@ -1102,6 +1113,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     compUnk<-data.frame(
                         ID=rep(0,nRow),
                         mz=rep(0.0,nRow),
+                        rt=rep(NA,nRow),
                         mode=rep("",nRow),
                         set=rep("",nRow),
                         orig=rep("unknown",nRow),
@@ -1118,7 +1130,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                             compUnk[i,"set"]<-s
                             compUnk[i,"mz"]<-getColFromCmpL(id,"mz",unk)
                             nm<-getColFromCmpL(id,"Name",unk)
+                            rt<-getColFromCmpL(id,"rt",unk)
                             compUnk[i,"Name"]<-nm
+                            compUnk[i,"rt"]<-rt
                             i<-i+1
                         }
                         

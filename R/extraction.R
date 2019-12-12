@@ -19,10 +19,22 @@ ppm2dev<-function(m,ppm) 1e-6*ppm*m
 
 
 
-gen_mz_range<-function(mz,limit) {
+gen_mz_range<-function(mz,delta) {
     mat<-matrix(data=numeric(1),nrow=length(mz),ncol=2,dimnames=list(as.character(names(mz))))
-    mat[,1]<-mz-limit
-    mat[,2]<-mz+limit
+    mat[,1]<-mz - delta
+    mat[,2]<-mz + delta
+    mat
+}
+
+gen_rt_range<-function(rt,delta) {
+    mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2,dimnames=list(as.character(names(rt))))
+    rV<-which(!is.na(rt))
+    rNA<-which(is.na(rt))
+    inna<-which(is.na(rt))
+    mat[rV,1]<-(rt[rV] - delta)*60
+    mat[rV,2]<-(rt[rV] + delta)*60
+    mat[rNA,1]<--Inf
+    mat[rNA,2]<-Inf
     mat
 }
 
@@ -39,7 +51,7 @@ filt_ms2_by_prcs_old<-function(pre,preMZRng) {
 }
 
 filt_ms2_by_prcs <- function(ms2,mz,limCoarse) {
-    ppmMzRange<-gen_mz_range(mz,limit=limCoarse)
+    ppmMzRange<-gen_mz_range(mz,delta=limCoarse)
     pre<-MSnbase::precursorMz(ms2)
     nR<-length(pre)
     df<-data.frame(sn=integer(nR),
@@ -96,7 +108,7 @@ pick_unique_precScans<-function(idx) {
 
 
 verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
-    mzRng<-gen_mz_range(mz,limit=ppm2dev(mz,limFinePPM))
+    mzRng<-gen_mz_range(mz,delta=ppm2dev(mz,limFinePPM))
     df<-preSc
     df$mz<-mz[as.character(df$ID)]
     mz1<-mzRng[as.character(df$ID),1]
@@ -191,10 +203,11 @@ gen_ms2_chrom<-function(ms2Spec) {
 }
 
 
-gen_ms1_chrom<-function(raw,mz,limEIC) {
-    mzRng<-gen_mz_range(mz,limit=limEIC)
+gen_ms1_chrom<-function(raw,mz,limEIC,rt=NULL,rtDelta=NULL) {
+    mzRng<-gen_mz_range(mz,delta=limEIC)
+    rtRng<-gen_rt_range(rt,delta=rtDelta)
     ids<-dimnames(mzRng)[[1]]
-    x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0)
+    x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0,rt=rtRng)
 
     res<-lapply(x,function (xx) {
         rt<-MSnbase::rtime(xx)/60.
@@ -256,13 +269,18 @@ write_ms2_spec<-function(ms2Spec,dir=".") {
     }
 }
 
-extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,mode="inMemory") {
+extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta=NULL,mode="inMemory") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
     ## wd - Top-level directory where the results should be deposited.
     ## mz - A named vector of precursor masses for which to scan the
     ## file. The names can be RMassBank IDs.
+    ## rt - A named vector of length 1, or same as mz, giving the retention
+    ## times in minutes. The names should be the same as for mz.
+    ## rtDelta - A vector of length 1, or same as mz, giving the
+    ## half-width of the time window in which the peak for the
+    ## corresponding mz is supposed to be.
     ## limEIC - Absolute mz tolerance used to extract precursor EICs.
     ## limFinePPM - Tolerance given in PPM used to associate input
     ## masses with what the instrument assigned as precursors to MS2
@@ -276,7 +294,7 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,mode="inMemory"
 
     ## EICs for precursors.
     message("Extracting precursor EICs. Please wait.")
-    eicMS1<-gen_ms1_chrom(raw=ms1,mz=mz,limEIC=limEIC)
+    eicMS1<-gen_ms1_chrom(raw=ms1,mz=mz,limEIC=limEIC,rt=rt,rtDelta=rtDelta)
     write_eic(eicMS1,dir=wd)
     message("Extracting precursor EICs finished.")
 
@@ -302,7 +320,7 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,mode="inMemory"
 
 }
 
-extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM) {
+extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtDelta=NULL) {
     ID<-as.numeric(names(mz))
     maxid <- max(ID)
     id_field_width <- as.integer(log10(maxid)+1)
@@ -364,7 +382,7 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM) {
 ##' Extracts data from mzML files.
 ##'
 ##' @title Data Extraction from mzML Files
-##' @param fTab File table with Files,ID,wd,Name and mz
+##' @param fTab File table with Files,ID,wd,Name,mz and RT
 ##'     columns. Column Files, as well as wd must have all rows
 ##'     identical.
 ##' @param extr_fun Extraction function from the backend.
@@ -373,18 +391,23 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM) {
 ##'     masses with what the instrument assigned as precursors to MS2.
 ##' @param limCoarse Absolute tolerance for preliminary association of
 ##'     precursors (from precursorMZ), to MS2 spectra.
+##' @param rtDelta The half-width of the retention time window.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
-extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse) {
+extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,rtDelta) {
     fnData<-fTab$Files[[1]]
     wd<-fTab$wd[[1]]
     ID<-fTab$ID
     mz<-fTab$mz
+    rt<-fTab$rt
     names(mz)<-ID
+    if (!is.null(rt)) names(rt)<-ID
     dir.create(wd,showWarnings=F)
     extr_fun(file=fnData,
              wd=wd,
              mz=mz,
+             rt=rt,
+             rtDelta=rtDelta,
              limEIC=limEIC,
              limFinePPM=limFinePPM,
              limCoarse=limCoarse)

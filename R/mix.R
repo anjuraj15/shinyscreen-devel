@@ -784,7 +784,8 @@ genSuprFileTab <- function(fileTab,compTab) {
         wh<-which(fileTab$Files==fn)
         set<-fileTab$set[[wh]]
         md<-fileTab$mode[[wh]]
-        ids<-compTab$ID[(compTab$set %in% set) & (compTab$mode %in% md)]
+        sel<-(compTab$set %in% set) & (compTab$mode %in% md)
+        ids<-compTab$ID[sel]
         genOne(ids,fn)
         
     })
@@ -805,23 +806,83 @@ getEntryFromComp<-function(entry,id,set,mode,compTab) {
                                                      } 
                                                  }
     res
+    names(res)<-entry
+    res
         
 }
 addCompColsToFileTbl<-function(ft,compTab) {
     nR<-nrow(ft)
     mzCol<-rep(NA,nR)
     nmCol<-rep("",nR)
+    rtCol<-rep(NA,nR)
     
     for (ir in 1:nR) {
         id<-ft[ir,"ID"]
         set<-ft[ir,"set"]
         m<-ft[ir,"mode"]
-        entries<-getEntryFromComp(c("mz","Name"),id,set,m,compTab)
-        mzCol[[ir]]<-  entries[[1]]
-        nm<-entries[[2]]
+        entries<-getEntryFromComp(c("mz","Name","rt"),id,set,m,compTab)
+        mzCol[[ir]]<-  entries[["mz"]]
+        nm<-entries[["Name"]]
         nmCol[[ir]]<- if (!is.na(nm)) nm else ""
+        rtCol[[ir]]<- entries[["rt"]]
     }
     ft$mz<-mzCol
     ft$Name<-nmCol
+    ft$rt<-rtCol
     ft
+}
+
+
+vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
+    ## Fields.
+    if (is.null(df$ID)) stop("Column ID missing in ",ndf," .")
+    if (checkMz && is.null(df$mz)) stop("Column mz missing in ", ndf, " .")
+    if (checkSMILES && is.null(df$SMILES)) stop("Column SMILES missing in", ndf, " .")
+    
+    if (checkNames && is.null(df$Name)) warning("Column Name missing in ", ndf," , continuing without.")
+    if (is.null(df$RT) && is.null(df$rt)) {
+        warning("Column RT (alternatively, rt) missing in ", ndf, ", continuing without.")
+    } else {
+        if (is.null(df$rt)) {
+            df$rt<-df$RT
+            df$RT<-NULL
+        }
+    }
+
+    ## Missing IDs?
+    ind<-which(is.na(df$ID))
+    if (length(ind)>0) {
+        for (i in ind) {
+            warning("ID missing at row: ",i," .")
+        }
+        stop("Missing IDs found.")
+    }
+    
+    ## Unique IDs?
+    luids<-length(unique(df$ID))
+    if (length(df$ID) > luids) stop("Duplicate IDs in ", ndf, " are not allowed.")
+
+    ## Missing SMILES?
+    if (checkSMILES) {
+        ind<-which(is.na(df$SMILES))
+        if (length(ind)>0) {
+            for (i in ind) {
+                warning("SMILES missing at row: ",i, "; ID: ",df$ID[[i]]," .")
+            }
+            stop("Missing SMILES found.")
+        }
+    }
+
+    ## Missing mz?
+    if (checkMz) {
+        ind<-which(is.na(df$mz))
+        if (length(ind)>0) {
+            for (i in ind) {
+                warning("mz missing at row: ",i, "; ID: ",df$ID[[i]]," .")
+            }
+            stop("Missing mz-s found.")
+        }
+    }
+
+    df
 }
