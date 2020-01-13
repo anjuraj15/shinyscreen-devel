@@ -403,7 +403,7 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta
 
 }
 
-extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta=NULL,mode="inMemory") {
+extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta=NULL,mode="onDisk") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
@@ -438,9 +438,10 @@ extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDe
     message("Extracting precursor EICs. Please wait.")
     eicMS1<-gen_ms1_chrom_ht(raw=ms1,mz=mz,limEIC=limEIC,rt=rt,rtDelta=rtDelta)
     message("Extracting precursor EICs finished.")
+    
 
-
-    list(ms2=fms2,cGram=eicMS1)
+    x<-list(eic=eicMS1,ms2=fms2)
+    saveRDS(object=x,file=file.path(wd,FN_SPEC))
 
 }
 

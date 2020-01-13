@@ -6,6 +6,7 @@ FN_FTAB<-"ftable.csv"
 FN_CMP_L<-"compounds.csv"
 FN_LOC_SETID <-"setid.csv"
 FN_COMP_TAB<-"comprehensive.csv"
+FN_SPEC<-"specdata.rds"
 MODEMAP<-list(pH="MpHp_mass",
               mH="MmHm_mass",
               pNH4="MpNH4_mass",

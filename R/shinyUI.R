@@ -159,7 +159,7 @@ mkUI <- function() {
                             width=NULL)
     
     genBoxAutoQA<-prim_box(title="Automatic Quality Control",
-                           shiny::textInput("intTresh",
+                           shiny::textInput("intThresh",
                                             label="Intensity threshold.",
                                             value=1e5),
                            shiny::textInput("noiseFac",
@@ -835,7 +835,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (length(fnTab)>0) {
 
                 fTab<-file2tab(file=fnTab)
-                intTresh<-as.numeric(input$intTresh)
+                intThresh<-as.numeric(input$intThresh)
                 noiseFac<-as.numeric(input$noiseFac)
                 rtDelta<-as.numeric(input$rtDelta)
                 limFinePPM<-as.numeric(input$ppmLimFine)
@@ -890,12 +890,12 @@ shinyScreenApp <- function(projDir=getwd()) {
                                   row.names=F)
                         message("fnTmp: ",fnTmp)
                         comp<-rvTab$comp
-                        intTresh<-as.numeric(input$intTresh)
+                        intThresh<-as.numeric(input$intThresh)
                         noiseFac<-as.numeric(input$noiseFac)
                         rtDelta<-as.numeric(input$rtDelta)
                         preProc(fnFileTab=fnTmp,
                                 fnDest=fnTmp,
-                                intTresh=intTresh,
+                                intThresh=intThresh,
                                 noiseFac=noiseFac,
                                 rtDelta=rtDelta)
                         ppFnTab<-read.csv(file=fnTmp,
