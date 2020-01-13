@@ -503,6 +503,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                       rt_digits=RT_DIGITS,
                                       m_digits=M_DIGITS,
                                       pal=PAL,
+                                      data=NULL,
                                       plot_id=NULL)
 
         ## ***** shinyFiles observers *****
@@ -949,6 +950,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvTab$mtr<-read.csv(file=fn,
                                     comment.char = '',
                                     stringsAsFactors = F)
+                rvPres$data<-lapply(unique(rvTab$mtr$wd),function (w) readRDS(file.path(w,FN_SPEC)))
+                names(rvPres$data)<-unique(rvTab$mtr$wd)
             }
 
         })

@@ -150,7 +150,7 @@ filt_ms2<-function(ms1,ms2,mz,limCoarse,limFinePPM) {
         fData(x)[,"rtm"]<-MSnbase::rtime(x)/60.
         fData(x)[,"maxI"]<-sapply(MSnbase::intensity(x),max)
         x})
-    names(res)<-uids
+    names(res)<-id2name(uids)
     res
 }
 

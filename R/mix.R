@@ -423,7 +423,6 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
     ## with the corresponding ID will not be there.
  
     for (ind in 1:nrow(ftable)) {
-        message("ind:",ind,"of ",nrow(ftable))
         wd <- ftable$wd[ind]
         id <- ftable$ID[ind]
         ## odir=file.path(wd)
@@ -463,13 +462,14 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
     
 
         ## MS2 checks.
-        ms2<-allData$ms2
+        ms2<-allData[[wd]]$ms2
         ms2nids<-names(ms2)
         mInt<-mean(eic$intensity)
         if (! (nid %in% ms2nids)) {
             ftable[ind,"MS2"] <- F
             ftable[ind,"Alignment"] <- F
         } else {
+            message("Here for ",nid)
             sp<-ms2[[nid]]
             ## Alignment still makes sense to be checked?
             if (ftable[ind,"Alignment"]) {
