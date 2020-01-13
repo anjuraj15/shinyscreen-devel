@@ -661,7 +661,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             set<-rvConf$currSet
             md<-rvConf$currMode
             fTab<-rvTab$mtr
-
             if (!is.na(set) && !is.na(md) && length(fTab)>0) {
                 comp<-getComp()
                 if (!is.null(comp)) {
@@ -676,25 +675,20 @@ shinyScreenApp <- function(projDir=getwd()) {
                     tags<-levels(factor(sfTab$tag))
                     iTag<- match(tags,sfTab$tag)
                     wd<-sfTab$wd[iTag]
-                    
+                    pData<-lapply(wd,function (w) readRDS(file.path(w,FN_SPEC)))
+                    names(pData)<-tags
                     preID<-compIds
                     smiles<-compSMILES
                     mz<-compMz
-                    names(smiles)<-as.character(preID)
-                    names(mz)<-as.character(preID)
-                    ## Get the basenames of eic files.
-                    eics <- list.files(path=wd[[1]],patt=".*eic.csv")
-                    eicsPref <- sapply(strsplit(eics,split="\\."),function(x) x[[1]])
-                    eicsID <- as.integer(eicsPref)
-                    maybekids <- sapply(eicsPref,function(x) {paste(x,'.kids.csv',sep='')})
-                    names(eics) <- eicsID
-                    names(maybekids) <- eicsID
+                    names(smiles)<-id2name(preID)
+                    names(mz)<-id2name(preID)
+                    theme<-ggplot2::theme_minimal
                     plot_id <- function (i,rtrange=NULL,log=input$yaxis) {
-                        i=as.character(i)
+                        i=id2name(i)
                         mz=mz[[i]]
                         smile<-smiles[[i]]
                         
-                        plot_id_aux(i,wd=wd,eics=eics,maybekids=maybekids,mass=mz,smile=smile,tags=tags,log=log,rtrange=rtrange,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
+                        plot_id_msn(i,data=pData,mass=mz,smile=smile,tags=tags,logYAxis=log,rtrange=rtrange,theme=theme,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
                     }
                     rvPres$plot_id<-plot_id
                 }
@@ -950,8 +944,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvTab$mtr<-read.csv(file=fn,
                                     comment.char = '',
                                     stringsAsFactors = F)
-                rvPres$data<-lapply(unique(rvTab$mtr$wd),function (w) readRDS(file.path(w,FN_SPEC)))
-                names(rvPres$data)<-unique(rvTab$mtr$wd)
             }
 
         })

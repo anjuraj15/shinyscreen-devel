@@ -469,7 +469,6 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
             ftable[ind,"MS2"] <- F
             ftable[ind,"Alignment"] <- F
         } else {
-            message("Here for ",nid)
             sp<-ms2[[nid]]
             ## Alignment still makes sense to be checked?
             if (ftable[ind,"Alignment"]) {
@@ -733,7 +732,64 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
     if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_near_kids[[k]],i_near_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
     gc()
     message("loc X")
-}    
+}
+
+multiplot <- function(..., plotlist=NULL, cols=1, layout=NULL) {
+
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+      grid::grid.newpage()
+      grid::pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    # Make each plot, in the correct location
+      for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+          matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+          
+          print(plots[[i]], vp = grid::viewport(layout.pos.row = matchidx$row,
+                                                layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+
+plot_id_msn <- function(i,data,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+    clean_rtrange <- function(def) {
+            x1 <- rtrange[1]
+            x2 <- rtrange[2]
+            if (is.na(x1) || x1 == 0) x1 <- def[1]
+            if (is.na(x2) || x2 == 0) x2 <- def[2]
+
+            c(x1,x2)
+    }
+
+
+
+
+    if (logYAxis == "linear") log = ""
+    if (logYAxis == "log") log = "y"
+    df<-data.frame(a=seq(0,2*pi,0.1),b=sin(seq(0,2*pi,0.1)))
+    pl<-ggplot2::ggplot(data=df,ggplot2::aes(x=a,y=b))+ggplot2::geom_line(colour="red")+theme()
+    multiplot(pl,cols=1)
+
+}
 
 
 
