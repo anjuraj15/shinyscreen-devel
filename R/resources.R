@@ -39,3 +39,6 @@ GUI_TAB_TITLE<-c(conf="Config",
 
 GUI_SIDE_TITLE<-GUI_TAB_TITLE
 GUI_SIDE_TITLE[["gen"]]<-"Spectra Extraction"
+
+CHR_GRAM_X="retention time [min]"
+CHR_GRAM_Y="intensity"

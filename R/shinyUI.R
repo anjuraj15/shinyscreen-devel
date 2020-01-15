@@ -682,7 +682,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     mz<-compMz
                     names(smiles)<-id2name(preID)
                     names(mz)<-id2name(preID)
-                    theme<-ggplot2::theme_minimal
+                    theme<-cowplot::theme_half_open
                     plot_id <- function (i,rtrange=NULL,log=input$yaxis) {
                         i=id2name(i)
                         mz=mz[[i]]
