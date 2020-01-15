@@ -48,6 +48,7 @@ Imports:
     mzR,
     MSnbase,
     ggplot2,
+    cowplot,
     RColorBrewer,
     grid,
     curl,
