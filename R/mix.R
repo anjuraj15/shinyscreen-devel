@@ -782,8 +782,7 @@ plot_id_msn <- function(i,data,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",c
 
     mk_title<-function() paste("EIC (","mz= ",mass,")",sep='')
 
-
-
+    sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
 
     if (logYAxis == "linear") log = ""
     if (logYAxis == "log") log = "y"
@@ -799,7 +798,7 @@ plot_id_msn <- function(i,data,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",c
     intDefRange<-range(dfChrMS1$intensity)
     rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
     titMS1<-mk_title()
-    plMS1<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=tag))+ggplot2::geom_line(ggplot2::aes(colour=tag))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=ii)+theme()
+    plMS1<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=tag))+ggplot2::geom_line(ggplot2::aes(colour=tag))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=ii)+ggplot2::scale_y_continuous(labels = sci10)+theme()
     dfsChrMS2<-lapply(tags,function(tag) {
         d<-data[[tag]]$ms2[[i]]
         if (!is.null(d)) {
@@ -810,7 +809,7 @@ plot_id_msn <- function(i,data,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",c
         } else data.frame(rt=numeric(0),intensity=numeric(0),tag=tag)
     })
     dfChrMS2<-do.call(rbind,c(dfsChrMS2,list(make.row.names=F)))
-    plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=tag))+ggplot2::geom_linerange(ggplot2::aes(colour=tag))+ggplot2::labs(x=NULL,y="maximum intensity",title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+theme()
+    plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=tag))+ggplot2::geom_linerange(ggplot2::aes(colour=tag))+ggplot2::labs(x=NULL,y="maximum intensity",title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::scale_y_continuous(labels = sci10)+theme()
     cowplot::plot_grid(plMS1,plMS2,align = "v",ncol = 1)
     
 }

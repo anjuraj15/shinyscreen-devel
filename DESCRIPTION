@@ -43,6 +43,7 @@ Depends:
     RChemMass
 Imports:
     tools,
+    scales,
     parallel,
     yaml,
     mzR,
