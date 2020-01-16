@@ -818,7 +818,12 @@ plot_id_msn <- function(i,data,rtMS1,rtMS2,mass,smile,tags,fTab,logYAxis,theme,p
 
     ## Structure
     g<-smiles2img(smile,width=500,height=500,zoom=4.5)
-    cowplot::plot_grid(plMS1,g,plMS2,NULL,align = "v",ncol = 2,nrow=2,rel_widths=c(2,1))
+    plStruc<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+
+        ggplot2::geom_blank()+ggplot2::annotation_custom(g)+ggplot2::theme_void()
+
+    ## Empty
+    plEmpty<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
+    cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,align = "v",axis='l',ncol = 2,nrow=2,rel_widths=c(2,1))
     
 }
 
