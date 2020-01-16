@@ -197,18 +197,18 @@ mkUI <- function() {
 
     ## Prescreening elements
     presCompInfo <- shiny::fluidRow(shinydashboard::box(title = "MS Prescreening",
-                                                        width = 7,
+                                                        width = 9,
                                                         height = "80px",
                                                         background = "blue",
                                                         ""),
                                     shinydashboard::box(title = "Compound ID N°",
-                                                        width = 5,
+                                                        width = 3,
                                                         height = "80px",
                                                         background = "olive",
                                                         shiny::textOutput("compoundID")))
 
     presPlotBox <- shinydashboard::box(title = "Plot",
-                                       width = 7,color = "olive",
+                                       width = 9,color = "olive",
                                        solidHeader = FALSE,
                                        collapsible = TRUE,
                                        shiny::plotOutput("chromGram",
@@ -233,7 +233,7 @@ mkUI <- function() {
                                                            icon = shiny::icon("save")))
 
     presCompSelBox <- shinydashboard::box(title = "Compounds",
-                                          width=5,
+                                          width=3,
                                           solidHeader = FALSE,
                                           color = "olive",
                                           collapsible = TRUE,
@@ -260,7 +260,7 @@ mkUI <- function() {
 
     nvPanel<-shiny::uiOutput("nvPanel")
     presQABox <- shinydashboard::box(title = "Prescreening analysis",
-                                     width = 5,
+                                     width = 3,
                                      solidHeader = FALSE,
                                      collapsible = TRUE,
                                      nvPanel,
@@ -274,7 +274,7 @@ mkUI <- function() {
                                                          "Save File Table",
                                                          icon = shiny::icon("save")))
     presPlotParBox <- shinydashboard::box(title = "Plot Parameters",
-                                          width=7,
+                                          width=3,
                                           solidHeader = FALSE,
                                           collapsible = TRUE,
                                           "",

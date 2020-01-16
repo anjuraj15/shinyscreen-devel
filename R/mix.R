@@ -788,13 +788,15 @@ plot_id_msn <- function(i,data,rtMS1,rtMS2,mass,smile,tags,fTab,logYAxis,theme,p
     if (logYAxis == "linear") log = ""
     if (logYAxis == "log") log = "y"
     ii<-name2id(i)
-    dfsChrMS1<-lapply(tags,function(tag) {d<-data[[tag]]$eic
+
+    ## MS1 EIC and MS2 spectral time series.
+    dfschrms1<-lapply(tags,function(tag) {d<-data[[tag]]$eic
         ind<-match(ii,MSnbase::fData(d)[["ID"]])
         cg<-d[[ind]]
         data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1[[tag]]))
     })
 
-    dfChrMS1<-do.call(rbind,c(dfsChrMS1,list(make.row.names=F)))
+    dfChrMS1<-do.call(rbind,c(dfschrms1,list(make.row.names=F)))
     rtDefRange<-range(dfChrMS1$rt)
     intDefRange<-range(dfChrMS1$intensity)
     rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
@@ -812,7 +814,11 @@ plot_id_msn <- function(i,data,rtMS1,rtMS2,mass,smile,tags,fTab,logYAxis,theme,p
     })
     dfChrMS2<-do.call(rbind,c(dfsChrMS2,list(make.row.names=F)))
     plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+ggplot2::geom_linerange(ggplot2::aes(colour=legend))+ggplot2::labs(x=NULL,y="maximum intensity",title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::labs(colour="Retention time at max. intensity (MS2)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
-    cowplot::plot_grid(plMS1,plMS2,align = "v",ncol = 1)
+
+
+    ## Structure
+    g<-smiles2img(smile,width=500,height=500,zoom=4.5)
+    cowplot::plot_grid(plMS1,g,plMS2,NULL,align = "v",ncol = 2,nrow=2,rel_widths=c(2,1))
     
 }
 
