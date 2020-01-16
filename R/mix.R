@@ -405,6 +405,7 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
     ## For loop through dataframe called file to set thresholds.
     ftable[c("MS1","MS2","Alignment","AboveNoise")] <- T
     ftable["MS2rt"] <- NA
+    ftable["rt"]<-NA
     ## QA check plan:
     ##
     ## If MS1 does not exist, set MS1 to F, as well as everything else except MS2.
@@ -438,7 +439,9 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
             warning("No chromatogram for id ",id," found in", wd, " . Skipping.")
             next
         }
-        maxInt <- max(eic$intensity)
+        ms1MaxInd<-which.max(eic$intensity)
+        maxInt<-eic$intensity[[ms1MaxInd]]
+        ftable[ind,"rt"]<-eic$rt[[ms1MaxInd]]
         ##If MS1 does not exist, set entry to F.
         if (maxInt < intThresh) {
             ftable[ind,"MS1"] <- F
@@ -515,19 +518,17 @@ renderurl <- function(depictURL,coords=c(0,0,100,100), filename=tempfile(fileext
 }
 
 
-## rendersmiles <- function(smiles, kekulise=TRUE, coords=c(0,0,100,100), width=200, height=200,
-##                               zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
-##                               showTitle=FALSE, smaLimit=100, sma=NULL) {
-##   dep <- get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
-##                       abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
-##                       sma = NULL)
-##   library(rcdk)
-##   library(RChemMass)
-##   mol <- getMolecule(smiles)
-##   img <- view.image.2d(mol, depictor=dep)
-##   rasterImage(img, coords[1],coords[2], coords[3],coords[4])
+smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
+                              zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
+                              showTitle=FALSE, smaLimit=100, sma=NULL) {
+  dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
+                      abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
+                      sma = NULL)
 
-## }
+  mol <- RMassBank::getMolecule(smiles)
+  z<-rcdk::view.image.2d(mol, depictor=dep)
+  grid::rasterGrob(z)
+}
 
 ##' Render smiles from an online resource.
 ##'
@@ -770,7 +771,7 @@ multiplot <- function(..., plotlist=NULL, cols=1, layout=NULL) {
 }
 
 
-plot_id_msn <- function(i,data,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+plot_id_msn <- function(i,data,rtMS1,rtMS2,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
     clean_rtrange <- function(def) {
             x1 <- rtrange[1]
             x2 <- rtrange[2]
@@ -779,8 +780,8 @@ plot_id_msn <- function(i,data,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",c
 
             c(x1,x2)
     }
-
     mk_title<-function() paste("EIC (","mz= ",mass,")",sep='')
+    mk_leg_lab<-function(tag,rt) {paste(tag,"; rt= ",formatC(rtMS1[[tag]],format='f',digits=rt_digits),"min")}
 
     sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
 
@@ -790,7 +791,7 @@ plot_id_msn <- function(i,data,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",c
     dfsChrMS1<-lapply(tags,function(tag) {d<-data[[tag]]$eic
         ind<-match(ii,MSnbase::fData(d)[["ID"]])
         cg<-d[[ind]]
-        data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag))
+        data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1[[tag]]))
     })
 
     dfChrMS1<-do.call(rbind,c(dfsChrMS1,list(make.row.names=F)))
@@ -798,18 +799,19 @@ plot_id_msn <- function(i,data,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",c
     intDefRange<-range(dfChrMS1$intensity)
     rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
     titMS1<-mk_title()
-    plMS1<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=tag))+ggplot2::geom_line(ggplot2::aes(colour=tag))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=ii)+ggplot2::scale_y_continuous(labels = sci10)+theme()
+    plMS1<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=ii,colour="Retention time at max. intensity (MS1)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
     dfsChrMS2<-lapply(tags,function(tag) {
         d<-data[[tag]]$ms2[[i]]
         if (!is.null(d)) {
             df<-MSnbase::fData(d)[,c("rtm","maxI")]
             colnames(df)<-c("rt","intensity")
             df$tag<-as.character(tag)
+            df$legend=mk_leg_lab(tag,rtMS2[[tag]])
             df
         } else data.frame(rt=numeric(0),intensity=numeric(0),tag=tag)
     })
     dfChrMS2<-do.call(rbind,c(dfsChrMS2,list(make.row.names=F)))
-    plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=tag))+ggplot2::geom_linerange(ggplot2::aes(colour=tag))+ggplot2::labs(x=NULL,y="maximum intensity",title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::scale_y_continuous(labels = sci10)+theme()
+    plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+ggplot2::geom_linerange(ggplot2::aes(colour=legend))+ggplot2::labs(x=NULL,y="maximum intensity",title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::labs(colour="Retention time at max. intensity (MS2)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
     cowplot::plot_grid(plMS1,plMS2,align = "v",ncol = 1)
     
 }

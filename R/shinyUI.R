@@ -675,20 +675,25 @@ shinyScreenApp <- function(projDir=getwd()) {
                     tags<-levels(factor(sfTab$tag))
                     iTag<- match(tags,sfTab$tag)
                     wd<-sfTab$wd[iTag]
+                    rtMS1<-sfTab$rt[iTag]
+                    rtMS2<-sfTab$MS2rt[iTag]
                     pData<-lapply(wd,function (w) readRDS(file.path(w,FN_SPEC)))
                     names(pData)<-tags
+                    names(rtMS1)<-tags
+                    names(rtMS2)<-tags
                     preID<-compIds
                     smiles<-compSMILES
                     mz<-compMz
                     names(smiles)<-id2name(preID)
                     names(mz)<-id2name(preID)
+
                     theme<-cowplot::theme_half_open
                     plot_id <- function (i,rtrange=NULL,log=input$yaxis) {
                         i=id2name(i)
                         mz=mz[[i]]
                         smile<-smiles[[i]]
                         
-                        plot_id_msn(i,data=pData,mass=mz,smile=smile,tags=tags,logYAxis=log,rtrange=rtrange,theme=theme,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
+                        plot_id_msn(i,data=pData,rtMS1=rtMS1,rtMS2=rtMS2,mass=mz,smile=smile,tags=tags,logYAxis=log,rtrange=rtrange,theme=theme,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
                     }
                     rvPres$plot_id<-plot_id
                 }
