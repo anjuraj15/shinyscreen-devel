@@ -430,7 +430,7 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
         ## fn_eic <- fn_out(id,".eic",wd)
         eics<-allData[[wd]]$eic
         nid<-id2name(id)
-        ii<-match(id,MSnbase::fData(eics)[["ID"]]) #id, because id-s, not nid-s are in fData for ms1 eics;
+        ii<-match(nid,MSnbase::fData(eics)[["ID"]]) #id, because id-s, not nid-s are in fData for ms1 eics;
         eic1<-eics[[ii]]
         eic<-data.frame(rt=MSnbase::rtime(eic1)/60.,intensity=MSnbase::intensity(eic1))
         colnames(eic)<-c("rt","intensity")
@@ -771,7 +771,7 @@ multiplot <- function(..., plotlist=NULL, cols=1, layout=NULL) {
 }
 
 
-plot_id_msn <- function(i,data,rtMS1,rtMS2,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
     clean_rtrange <- function(def) {
             x1 <- rtrange[1]
             x2 <- rtrange[2]
@@ -787,11 +787,11 @@ plot_id_msn <- function(i,data,rtMS1,rtMS2,mass,smile,tags,fTab,logYAxis,theme,p
 
     if (logYAxis == "linear") log = ""
     if (logYAxis == "log") log = "y"
-    ii<-name2id(i)
+    i<-name2id(ni)
 
     ## MS1 EIC and MS2 spectral time series.
     dfschrms1<-lapply(tags,function(tag) {d<-data[[tag]]$eic
-        ind<-match(ii,MSnbase::fData(d)[["ID"]])
+        ind<-match(ni,MSnbase::fData(d)[["ID"]])
         cg<-d[[ind]]
         data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1[[tag]]))
     })
@@ -801,19 +801,20 @@ plot_id_msn <- function(i,data,rtMS1,rtMS2,mass,smile,tags,fTab,logYAxis,theme,p
     intDefRange<-range(dfChrMS1$intensity)
     rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
     titMS1<-mk_title()
-    plMS1<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=ii,colour="Retention time at max. intensity (MS1)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
+    plMS1<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour="Retention time at max. intensity (MS1)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
     dfsChrMS2<-lapply(tags,function(tag) {
-        d<-data[[tag]]$ms2[[i]]
+        d<-data[[tag]]$ms2[[ni]]
         if (!is.null(d)) {
             df<-MSnbase::fData(d)[,c("rtm","maxI")]
             colnames(df)<-c("rt","intensity")
             df$tag<-as.character(tag)
             df$legend=mk_leg_lab(tag,rtMS2[[tag]])
             df
-        } else data.frame(rt=numeric(0),intensity=numeric(0),tag=tag)
+        } else NULL
     })
+    dfsChrMS2<-dfsChrMS2[!is.null(dfsChrMS2)]
     dfChrMS2<-do.call(rbind,c(dfsChrMS2,list(make.row.names=F)))
-    plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+ggplot2::geom_linerange(ggplot2::aes(colour=legend))+ggplot2::labs(x=NULL,y="maximum intensity",title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::labs(colour="Retention time at max. intensity (MS2)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
+    plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+ggplot2::geom_linerange(ggplot2::aes(colour=legend))+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::labs(colour="Retention time at max. intensity (MS2)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
 
 
     ## Structure
@@ -823,7 +824,29 @@ plot_id_msn <- function(i,data,rtMS1,rtMS2,mass,smile,tags,fTab,logYAxis,theme,p
 
     ## Empty
     plEmpty<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
-    cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,align = "v",axis='l',ncol = 2,nrow=2,rel_widths=c(2,1))
+
+    ## MS2 Spectrum
+    dfsSpecMS2<-lapply(tags,function(tag) {
+        d<-data[[tag]]$ms2[[ni]]
+        if (!is.null(d)) {
+            ind<-rtMS2Ind[[tag]]
+            if (!is.na(ind)) {
+                x<-data.frame(mz=MSnbase::mz(d[[ind]]),intensity=MSnbase::intensity(d[[ind]]))
+                x$tag<-tag
+                x
+            } else NULL
+            
+        }
+    })
+    dfsSpecMS2<-dfsSpecMS2[!is.null(dfsSpecMS2)]
+    message(str(dfsSpecMS2))
+    dfSpecMS2<-do.call(rbind,c(dfsSpecMS2,list(make.row.names=F)))
+    message(str(dfSpecMS2))
+    plSpecMS2<-ggplot2::ggplot(data=dfSpecMS2,ggplot2::aes(x=mz,ymin=0,ymax=intensity,group=tag))+
+        ggplot2::geom_linerange(ggplot2::aes(colour=tag))+
+        ggplot2::labs(subtitle="MS2",y="intensity")+ggplot2::scale_y_log10(labels=sci10)+theme()
+    
+    cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1))
     
 }
 

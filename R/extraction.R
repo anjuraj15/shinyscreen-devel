@@ -150,7 +150,7 @@ filt_ms2<-function(ms1,ms2,mz,limCoarse,limFinePPM) {
         fData(x)[,"rtm"]<-MSnbase::rtime(x)/60.
         fData(x)[,"maxI"]<-sapply(MSnbase::intensity(x),max)
         x})
-    names(res)<-id2name(uids)
+    names(res)<-uids
     res
 }
 
@@ -403,7 +403,7 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta
 
 }
 
-extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta=NULL,mode="onDisk") {
+extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse,fnSpec,rt=NULL,rtDelta=NULL,mode="onDisk") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
@@ -441,8 +441,8 @@ extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDe
     
 
     x<-list(eic=eicMS1,ms2=fms2)
-    saveRDS(object=x,file=file.path(wd,FN_SPEC))
-
+    saveRDS(object=x,file=file.path(wd,fnSpec))
+    x
 }
 
 extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtDelta=NULL) {
@@ -517,15 +517,16 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtD
 ##' @param limCoarse Absolute tolerance for preliminary association of
 ##'     precursors (from precursorMZ), to MS2 spectra.
 ##' @param rtDelta The half-width of the retention time window.
+##' @param fnSpec Output file specification.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
-extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,rtDelta) {
+extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,fnSpec,rtDelta) {
     fnData<-fTab$Files[[1]]
     wd<-fTab$wd[[1]]
     ID<-fTab$ID
     mz<-fTab$mz
     rt<-fTab$rt
-    names(mz)<-ID
+    names(mz)<-id2name(ID)
     if (!is.null(rt)) names(rt)<-ID
     dir.create(wd,showWarnings=F)
     extr_fun(file=fnData,
@@ -535,6 +536,7 @@ extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,rtDelta) {
              rtDelta=rtDelta,
              limEIC=limEIC,
              limFinePPM=limFinePPM,
-             limCoarse=limCoarse)
+             limCoarse=limCoarse,
+             fnSpec=fnSpec)
     
 }

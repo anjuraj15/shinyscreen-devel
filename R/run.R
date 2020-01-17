@@ -63,7 +63,8 @@ gen<-function(fTab,limEIC,limFinePPM,rtDelta,proc=F,fnLog='prescreen.log',extr_f
                 limEIC=limEIC,
                 limFinePPM=limFinePPM,
                 rtDelta=rtDelta,
-                limCoarse=0.5)
+                limCoarse=0.5,
+                fnSpec=FN_SPEC)
         
         return(T)
     }
