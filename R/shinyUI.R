@@ -960,11 +960,9 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             pos<-input$presSelCmpd
             rvConf$currIDSel<-as.numeric(pos)
-
         })
 
         shiny::observeEvent(input$presPrev,{
-            len<-length(rvConf$currIDSet)
             x<-rvConf$currIDSel-1
             if (x>0) rvConf$currIDSel<-x
         })
@@ -1348,6 +1346,9 @@ shinyScreenApp <- function(projDir=getwd()) {
             rtrange <- c(input$min_val,input$max_val)
             if (!is.null(plot_id)) {
                 plot_id(i,rtrange=rtrange, log=input$yaxis)
+            } else {
+                message("Major plotting oops.")
+                NULL
             }
         })
 
