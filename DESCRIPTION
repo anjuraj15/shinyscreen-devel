@@ -43,11 +43,15 @@ Depends:
     RChemMass
 Imports:
     tools,
+    scales,
     parallel,
     yaml,
     mzR,
     MSnbase,
+    ggplot2,
+    cowplot,
     RColorBrewer,
+    grid,
     curl,
     shiny,
     shinydashboard,

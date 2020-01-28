@@ -1,7 +1,75 @@
 #+TITLE: The Shinyscreen Package
 
-* Usage
-  UNDER CONSTRUCTION
+* Overview
+
+  Shinyscreen R package is an application intended to give the user a
+  first look into /raw/ mass-spectrometry data. This currently means
+  that, given the input of data files and a list of masses of know, or
+  unknown compounds, the application is going to produce the MS1 and
+  MS2 chromatograms of the substances in the list, as well as the MS2
+  spectra. None of these features have been post-processed in the
+  slightest. However, there is a built-in prescreening aid that will
+  help the user assess the quality of the spectra.
+
+  The application is powered by the MSnbase package and built as a
+  Shiny web application.
+  
+* Usage 
+** Inputs (or, what to have at hand before starting Shinyscreen)
+   1. The data files in mzML format.
+   2. The compound list.
+
+      The list should be a comma separated file (CSV). The separator
+      must be a comma. If it is known which compounds are being
+      screened for, the CSV should contain the following columns:
+      *ID*, *Name*, *SMILES* and *RT*. Of the previously mentioned
+      columns, the ID and SMILES are required to be filled. The ID is
+      user-given identifier that is unique to a compound. The SMILES
+      column should contain the SMILES strings of the compounds. These
+      should be in the MS-Ready format. The column *Name* , if filled
+      will be used to print a heading in the plots. If the retention
+      time column, *RT*, is empty, the program will seek through the
+      entire duration of the run and this can be slow for many
+      compounds and big datafiles. If *RT* column has values, only the
+      data within a specified time delta around the retention time
+      will be scanned, leading to large efficiency improvements.
+
+      If the only known information about the compounds are the masses
+      of the progenitor ions, then it is only required to fill out the
+      *ID* and the *mz* columns. The *mz* column will contain the mass
+      of the precursor ion, and the *ID* should be filled as explained
+      before.
+
+
+   3. The compound sets.
+
+      This is a CSV file.
+
+      Shinyscreen organises its data around the concept of compound
+      sets. If, given a collection of data files, it is possible
+      to break down the compounds into logical groups, shinyscreen
+      will make it easier to navigate different groups if this is
+      specified in a CSV list. In this case, the CSV file contains two
+      columns: *ID* and *set*. The *ID* is the identifier of the
+      compound from the compound list and *set* is a name of the
+      set. If there is no sensible way of splitting compounds in
+      groups, it is enough to copy all the ID-s from the compound list
+      into a new CSV and use any character string to fill out the
+      *set* column.
+     
+
+** Installation
+*** The simplest way to install Shinyscreen that always works (at least on *nix systems)
+   #+BEGIN_SRC shell
+     R CMD INSTALL /path/to/the/downloaded/package
+   #+END_SRC
+*** A snippet to test Shinyscreen after installation
+   #+BEGIN_SRC r
+     library(shinyscreen)
+     shinyScreenApp()
+   #+END_SRC
+*** Windows/R Studio
+   TODO
 * Contribute
 ** GUI Style Guide
 *** Colour Scheme

@@ -1,6 +1,6 @@
 load_raw_data<-function(fn,mode="inMemory") {
-    ms1<-MSnbase::readMSData(files=fn,mode=mode,msLevel=1)
-    ms2<-MSnbase::readMSData(files=fn,mode=mode,msLevel=2)
+    ms1<-MSnbase::readMSData(files=fn,mode=mode,msLevel.=1)
+    ms2<-MSnbase::readMSData(files=fn,mode=mode,msLevel.=2)
     c(ms1=ms1,ms2=ms2)
 }
 
@@ -10,10 +10,12 @@ acq_mz<-function(tabFn) {
                  stringsAsFactors=F,
                  comment.char='')
     x<-as.numeric(df$mz)
-    names(x)<-as.character(df$ID)
+    names(x)<-paste("ID:",as.character(df$ID),sep='')
     x
 }
 
+name2id<-function(nm) {as.integer(substring(nm,4))}
+id2name<-function(id) {paste("ID:",id,sep='')}
 
 ppm2dev<-function(m,ppm) 1e-6*ppm*m
 
@@ -51,52 +53,57 @@ filt_ms2_by_prcs_old<-function(pre,preMZRng) {
 }
 
 filt_ms2_by_prcs <- function(ms2,mz,limCoarse) {
-    ppmMzRange<-gen_mz_range(mz,delta=limCoarse)
+
+    mzRng<-gen_mz_range(mz,delta=limCoarse)
+    ids<-rownames(mzRng)
     pre<-MSnbase::precursorMz(ms2)
+    psn<-MSnbase::precScanNum(ms2)
+    acN<-MSnbase::acquisitionNum(ms2)
     nR<-length(pre)
-    df<-data.frame(sn=integer(nR),
-                   prec_scan=integer(nR),
-                   ID=character(nR),
-                   OK=logical(nR),
+
+
+    
+
+    inRange<-function(i) {
+        mp<-pre[[i]]
+        x<-mzRng[,1]<mp & mp<mzRng[,2]
+        mRows<-which(x)
+        sids<-ids[mRows]
+        sids
+    }
+    lst<-lapply(1:nR,function(i) list(n=i,prec_scan=psn[[i]],aN=acN[[i]],ids=inRange(i)))
+    nemp<-sapply(lst,function(m) length(m$ids)>0)
+    wrk<-lst[nemp]
+    dfL<-sum(sapply(wrk,function(w) length(w$ids)))
+    df<-data.frame(ID=character(dfL),
+                   prec_scan=integer(dfL),
+                   aN=integer(dfL),
+                   OK=logical(dfL),
                    stringsAsFactors=F)
     df$OK<-T #TODO Introduced for testing, be careful.
 
     offD<-0
-    nms<-as.character(dimnames(ppmMzRange)[[1]])
-    for (rM in 1:nrow(ppmMzRange)) {
-        m1<-ppmMzRange[rM,1]
-        m2<-ppmMzRange[rM,2]
-        ind <- which((pre > m1) & (pre < m2))
-        nm<-nms[[rM]]
-        rng<-seq.int(offD+1,offD+length(ind),length.out=length(ind))
-        df[rng,"sn"]<-ind
-        df[rng,"ID"]<-nm
-        offD<- offD + length(ind)
+    for (m in wrk) {
+        l<-length(m$ids)
+        rng<-(offD+1):(offD+l)
+        df[rng,"ID"]<-m$ids
+        df[rng,"prec_scan"]=m$prec_scan
+        df[rng,"aN"]<-m$aN
+        offD<-offD+l
     }
-    res <- df[1:offD,]
-    for (i in 1:nrow(res)) {
-        sn<-res$sn[[i]]
-        res$prec_scan[[i]]<-MSnbase::precScanNum(ms2[[sn]])
-    }
-    res
-
+    df[order(df$aN),]
 }
 
-add_ms2_prcs_scans<-function(ms2,idx) {
+filt_ms2_by_prcs_ht<-function(ms2,mz,limCoarse) {
+    lgnd<-filt_ms2_by_prcs(ms2,mz,limCoarse)
 
-    df<-idx
-    df$prec_scan<-integer(nrow(idx))
-    for (i in 1:nrow(df)) {
-        sn<-df$sn[[i]]
-        df$prec_scan[[i]]<-MSnbase::precScanNum(ms2[[sn]])
-    }
-    ## sn<-as.integer(df$sn)
-    ## df$prec_scan[]<-MSnbase::precScanNum(ms2[sn])
-    ## 
-    ## This errors with: msLevel for signature "NULL" for a specific
-    ## compound. However, the above approach is cool.
-    df
+    scans<-unique(lgnd$aN)
+    ns<-which(MSnbase::acquisitionNum(ms2) %in% scans)
+    sms2<-ms2[ns]
+    #fData(sms2)[["ID"]]<-lgnd$ID[]
+    list(ms2=sms2,leg=lgnd)
 }
+
 
 pick_unique_precScans<-function(idx) {
     ps<-unique(idx$prec_scan)
@@ -106,6 +113,46 @@ pick_unique_precScans<-function(idx) {
     
 }
 
+pick_uniq_pscan<-function(leg) {
+    ids<-unique(leg$ID)
+    x<-lapply(ids,function(id) {ups<-unique(leg[id==leg$ID,"prec_scan"]);data.frame(ID=rep(id,length(ups)),prec_scan=ups,stringsAsFactors = F)})
+    res<-do.call(rbind,c(x,list(stringsAsFactors=F)))
+    res[order(res$prec_scan),]
+}
+
+verif_prec_fine_ht<-function(preLeg,ms1,mz,limFinePPM) {
+    mzRng<-gen_mz_range(mz,delta=ppm2dev(mz,limFinePPM))
+    df<-preLeg
+    df$mz<-mz[df$ID]
+    mz1<-mzRng[df$ID,1]
+    mz2<-mzRng[df$ID,2]
+    ipns<-match(df$prec_scan,MSnbase::acquisitionNum(ms1))
+    rms1<-ms1[ipns]
+    mzsp<-MSnbase::mz(rms1)
+    df$OK<-mapply(function(m1,sp,m2) any((m1<sp) & (sp<m2)),mz1,mzsp,mz2)
+    df[df$OK,]     
+}
+
+filt_ms2<-function(ms1,ms2,mz,limCoarse,limFinePPM) {
+    tmp<-filt_ms2_by_prcs_ht(ms2,mz,limCoarse=limCoarse)
+    legMS2<-tmp$leg
+    legPcs<-pick_uniq_pscan(legMS2)
+    legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,limFinePPM=limFinePPM)
+    x<-Map(function (id,psn) {legMS2[id==legMS2$ID & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"])
+
+    x<-do.call(rbind,c(x,list(make.row.names=F,stringsAsFactors=F)))[c("ID","aN")]
+    rownames(x)<-NULL
+    x<-x[order(x$aN),]
+    uids<-unique(x$ID)
+    acN<-MSnbase::acquisitionNum(ms2)
+    res<-lapply(uids,function(id) {
+        x<-ms2[match(x[id==x$ID,"aN"],acN)]
+        fData(x)[,"rtm"]<-MSnbase::rtime(x)/60.
+        fData(x)[,"maxI"]<-sapply(MSnbase::intensity(x),max)
+        x})
+    names(res)<-uids
+    res
+}
 
 verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
     mzRng<-gen_mz_range(mz,delta=ppm2dev(mz,limFinePPM))
@@ -137,6 +184,28 @@ verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
     df
 }
 
+
+add_ms2_prcs_scans<-function(ms2,idx) {
+
+    df<-idx
+    df$prec_scan<-integer(nrow(idx))
+    for (i in 1:nrow(df)) {
+        sn<-df$sn[[i]]
+        df$prec_scan[[i]]<-MSnbase::precScanNum(ms2[[sn]])
+    }
+    ## sn<-as.integer(df$sn)
+    ## df$prec_scan[]<-MSnbase::precScanNum(ms2[sn])
+    ## 
+    ## This errors with: msLevel for signature "NULL" for a specific
+    ## compound. However, the above approach is cool.
+    df
+}
+
+
+
+
+
+
 refn_ms2_by_prec<-function(idxMS2,preFine) {
     pf<-preFine[preFine$OK,]
     pf$ID<-as.character(pf$ID)
@@ -153,6 +222,9 @@ refn_ms2_by_prec<-function(idxMS2,preFine) {
     idxMS2
 }
 
+trim_ms2_by_prec<-function(rawMS2,mz,limCoarse,limFinePPM) {
+    idxMS2<-filt_ms2_by_prcs(ms2=ms2,mz=mz,limCoarse=limCoarse)
+}
 
 grab_ms2_spec<-function(idx,raw) {
     idx<-idx[idx$OK,]
@@ -219,6 +291,17 @@ gen_ms1_chrom<-function(raw,mz,limEIC,rt=NULL,rtDelta=NULL) {
     res
     
 }
+
+
+gen_ms1_chrom_ht<-function(raw,mz,limEIC,rt=NULL,rtDelta=NULL) {
+    mzRng<-gen_mz_range(mz,delta=limEIC)
+    rtRng<-gen_rt_range(rt,delta=rtDelta)
+    res<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0,rt=rtRng)
+    fData(res)[["ID"]]<-rownames(mzRng)
+    res
+}
+
+
 
 tab2file<-function(tab,file,...) {
     write.csv(x=tab,file=file,row.names=F,...)
@@ -320,6 +403,48 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta
 
 }
 
+extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse,fnSpec,rt=NULL,rtDelta=NULL,mode="onDisk") {
+    ## Perform the entire data extraction procedure.
+    ## 
+    ## file - The input mzML file.
+    ## wd - Top-level directory where the results should be deposited.
+    ## mz - A named vector of precursor masses for which to scan the
+    ## file. The names can be RMassBank IDs.
+    ## rt - A named vector of length 1, or same as mz, giving the retention
+    ## times in minutes. The names should be the same as for mz.
+    ## rtDelta - A vector of length 1, or same as mz, giving the
+    ## half-width of the time window in which the peak for the
+    ## corresponding mz is supposed to be.
+    ## limEIC - Absolute mz tolerance used to extract precursor EICs.
+    ## limFinePPM - Tolerance given in PPM used to associate input
+    ## masses with what the instrument assigned as precursors to MS2
+    ## products.
+
+    message("Loading ",file," in mode ",mode, ".")
+    data<-load_raw_data(file,mode=mode)
+    ms1<-data[["ms1"]]
+    ms2<-data[["ms2"]]
+    message("Done loading ",file,".")
+
+
+    ## Filtering
+    mzCrs<-gen_mz_range(mz=mz,delta=limCoarse)
+    mzMin<-min(mzCrs)
+    mzMax<-max(mzCrs)
+    ms1<-MSnbase::filterMz(ms1,c(mzMin,mzMax))
+    fms2<-filt_ms2(ms1,ms2,mz,limCoarse=limCoarse,limFinePPM=limFinePPM)
+
+    ## EICs for precursors.
+    message("Extracting precursor EICs. Please wait.")
+    eicMS1<-gen_ms1_chrom_ht(raw=ms1,mz=mz,limEIC=limEIC,rt=rt,rtDelta=rtDelta)
+    message("Extracting precursor EICs finished.")
+    
+
+    x<-list(eic=eicMS1,ms2=fms2)
+    saveRDS(object=x,file=file.path(wd,fnSpec))
+    x
+}
+
 extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtDelta=NULL) {
     ID<-as.numeric(names(mz))
     maxid <- max(ID)
@@ -392,15 +517,16 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtD
 ##' @param limCoarse Absolute tolerance for preliminary association of
 ##'     precursors (from precursorMZ), to MS2 spectra.
 ##' @param rtDelta The half-width of the retention time window.
+##' @param fnSpec Output file specification.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
-extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,rtDelta) {
+extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,fnSpec,rtDelta) {
     fnData<-fTab$Files[[1]]
     wd<-fTab$wd[[1]]
     ID<-fTab$ID
     mz<-fTab$mz
     rt<-fTab$rt
-    names(mz)<-ID
+    names(mz)<-id2name(ID)
     if (!is.null(rt)) names(rt)<-ID
     dir.create(wd,showWarnings=F)
     extr_fun(file=fnData,
@@ -410,6 +536,7 @@ extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,rtDelta) {
              rtDelta=rtDelta,
              limEIC=limEIC,
              limFinePPM=limFinePPM,
-             limCoarse=limCoarse)
+             limCoarse=limCoarse,
+             fnSpec=fnSpec)
     
 }

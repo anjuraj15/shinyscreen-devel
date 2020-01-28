@@ -159,7 +159,7 @@ mkUI <- function() {
                             width=NULL)
     
     genBoxAutoQA<-prim_box(title="Automatic Quality Control",
-                           shiny::textInput("intTresh",
+                           shiny::textInput("intThresh",
                                             label="Intensity threshold.",
                                             value=1e5),
                            shiny::textInput("noiseFac",
@@ -196,19 +196,21 @@ mkUI <- function() {
 
 
     ## Prescreening elements
-    presCompInfo <- shiny::fluidRow(shinydashboard::box(title = "MS Prescreening",
-                                                        width = 7,
-                                                        height = "80px",
-                                                        background = "blue",
-                                                        ""),
-                                    shinydashboard::box(title = "Compound ID N°",
-                                                        width = 5,
-                                                        height = "80px",
-                                                        background = "olive",
-                                                        shiny::textOutput("compoundID")))
+    presTitle <- shinydashboard::box(title = "MS Prescreening",
+                                     width = NULL,
+                                     height = "80px",
+                                     background = "blue",
+                                     "")
+    presCompDsc <- shinydashboard::box(title = "Compound ID N°",
+                                       width = NULL,
+                                       height = "80px",
+                                       background = "olive",
+                                       shiny::textOutput("compoundID"))
+
+
 
     presPlotBox <- shinydashboard::box(title = "Plot",
-                                       width = 7,color = "olive",
+                                       width = NULL,color = "olive",
                                        solidHeader = FALSE,
                                        collapsible = TRUE,
                                        shiny::plotOutput("chromGram",
@@ -221,19 +223,44 @@ mkUI <- function() {
                                                          hoverDelayType = NULL,
                                                          brush = NULL,
                                                          clickId = NULL,
-                                                         hoverId = NULL),
-                                       shiny::textInput("plotname",
-                                                        "Insert plot name: (e.g. plotname_%i.pdf)",
-                                                        value="plotCpdID_%i.pdf"),
-                                       shiny::actionButton("saveplot",
-                                                           "Save",
-                                                           icon = shiny::icon("save")),
-                                       shiny::actionButton("saveallplots",
-                                                           "Save All Plots",
-                                                           icon = shiny::icon("save")))
+                                                         hoverId = NULL))
+    presXBox<-shinydashboard::box(title = "X-axis",
+                                  width = NULL,
+                                  solidHeader = F,
+                                  collapsible = F,
+                                  shiny::numericInput("min_val",
+                                                      "Lower X Bound",
+                                                      DEFAULT_RT_RANGE[[1]]),
+                                  shiny::numericInput("max_val",
+                                                      "Upper X Bound",
+                                                      DEFAULT_RT_RANGE[[2]]),)
+    presYBox<-shinydashboard::box(title = "Y-axis",
+                                  width= NULL,
+                                  solidHeader = F,
+                                  collapsible = F,
+                                  shiny::radioButtons("yaxis",
+                                                      "Y-axis Scale",
+                                                      c(linear = "linear",
+                                                        log = "log")))
+
+    presSaveBox<-shinydashboard::box(title = "Saving Plots",
+                                     width = NULL,
+                                     solidHeader = F,
+                                     collapsible = F,
+                                     shiny::textInput("plotname",
+                                                      "Insert plot name: (e.g. plotname_%i.pdf)",
+                                                      value="plotCpdID_%i.pdf"),
+                                     shiny::actionButton("saveplot",
+                                                         "Save",
+                                                         icon = shiny::icon("save")),
+                                     shiny::actionButton("saveallplots",
+                                                         "Save All Plots",
+                                                         icon = shiny::icon("save")))
+
+
 
     presCompSelBox <- shinydashboard::box(title = "Compounds",
-                                          width=5,
+                                          width=NULL,
                                           solidHeader = FALSE,
                                           color = "olive",
                                           collapsible = TRUE,
@@ -258,9 +285,11 @@ mkUI <- function() {
                                                              choices="",
                                                              multiple=F))
 
+
+
     nvPanel<-shiny::uiOutput("nvPanel")
     presQABox <- shinydashboard::box(title = "Prescreening analysis",
-                                     width = 5,
+                                     width = NULL,
                                      solidHeader = FALSE,
                                      collapsible = TRUE,
                                      nvPanel,
@@ -273,37 +302,24 @@ mkUI <- function() {
                                      shiny::actionButton("savefiletable",
                                                          "Save File Table",
                                                          icon = shiny::icon("save")))
-    presPlotParBox <- shinydashboard::box(title = "Plot Parameters",
-                                          width=7,
-                                          solidHeader = FALSE,
-                                          collapsible = TRUE,
-                                          "",
-                                          shiny::br(),
-                                          shiny::numericInput("min_val",
-                                                              "Minimum x Axis Value",
-                                                              DEFAULT_RT_RANGE[[1]]),
-                                          shiny::numericInput("max_val",
-                                                              "Maximum x Axis Value",
-                                                              DEFAULT_RT_RANGE[[2]]),
-                                          shiny::radioButtons("yaxis",
-                                                              "Parameters for y Axis",
-                                                              c(linear = "linear",
-                                                                log = "log")),
-                                          shiny::numericInput("nice",
-                                                              "Nice",
-                                                              DEFAULT_RT_RANGE[[1]]),
-                                          shiny::numericInput("steps",
-                                                              "Steps",
-                                                              DEFAULT_RT_RANGE[[2]]))
-    presPlotWidget <- shiny::fluidRow(presPlotBox,
-                                      presCompSelBox,
-                                      presQABox,
-                                      presPlotParBox)
-    
+
     presTab <- shinydashboard::tabItem(tabName = "prescreen",
                                        shiny::h2(GUI_TAB_TITLE[["pres"]]),
-                                       presCompInfo,
-                                       presPlotWidget)
+                                       shiny::fluidRow(shiny::column(width=9,
+                                                                     presTitle),
+                                                       shiny::column(width=3,
+                                                                     presCompDsc)),
+                                       shiny::fluidRow(shiny::column(width=9,
+                                                                     presPlotBox),
+                                                       shiny::column(width=3,
+                                                                     presCompSelBox,
+                                                                     presQABox)),
+                                       shiny::fluidRow(shiny::column(width = 3,
+                                                                     presXBox),
+                                                       shiny::column(width = 3,
+                                                                     presYBox),
+                                                       shiny::column(width = 3,
+                                                                     presSaveBox)))
 
 
 
@@ -341,7 +357,7 @@ mkUI <- function() {
                                                                             genSideItem,
                                                                             presSideItem,
                                                                             shiny::hr(),
-                                                                            shiny::h5("Outputs"),
+                                                                            shiny::h5("Inputs"),
                                                                             compListSideItem,
                                                                             setIdSideItem))
 
@@ -503,6 +519,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                       rt_digits=RT_DIGITS,
                                       m_digits=M_DIGITS,
                                       pal=PAL,
+                                      data=NULL,
                                       plot_id=NULL)
 
         ## ***** shinyFiles observers *****
@@ -660,7 +677,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             set<-rvConf$currSet
             md<-rvConf$currMode
             fTab<-rvTab$mtr
-
             if (!is.na(set) && !is.na(md) && length(fTab)>0) {
                 comp<-getComp()
                 if (!is.null(comp)) {
@@ -669,31 +685,48 @@ shinyScreenApp <- function(projDir=getwd()) {
                     compIds<-comp[,"ID"]
                     compSMILES<-comp[,"SMILES"]
                     compMz<-comp[,"mz"]
-                    tags<-rvConf$tags
+                    tags<-as.character(rvConf$tags)
                     iSet<-which(set==fTab$set & md==fTab$mode)
                     sfTab<-fTab[iSet,]
-                    tags<-levels(factor(sfTab$tag))
-                    iTag<- match(tags,sfTab$tag)
-                    wd<-sfTab$wd[iTag]
-                    
+                    sfTab$tag<-as.character(sfTab$tag)
+                    tags<-unique(sfTab$tag)
+
+                    ## Associate wd-s with tags.
+                    wdTag<- match(tags,sfTab$tag)
+                    wd<-sfTab$wd[wdTag]
+
+                    ## Preload the required data for a give set/mode combination.
+                    pData<-lapply(wd,function (w) readRDS(file.path(w,FN_SPEC)))
+                    names(pData)<-sfTab$tag[wdTag]
+
+
                     preID<-compIds
                     smiles<-compSMILES
                     mz<-compMz
-                    names(smiles)<-as.character(preID)
-                    names(mz)<-as.character(preID)
-                    ## Get the basenames of eic files.
-                    eics <- list.files(path=wd[[1]],patt=".*eic.csv")
-                    eicsPref <- sapply(strsplit(eics,split="\\."),function(x) x[[1]])
-                    eicsID <- as.integer(eicsPref)
-                    maybekids <- sapply(eicsPref,function(x) {paste(x,'.kids.csv',sep='')})
-                    names(eics) <- eicsID
-                    names(maybekids) <- eicsID
+                    names(smiles)<-id2name(preID)
+                    names(mz)<-id2name(preID)
+
+                    theme<-cowplot::theme_half_open
                     plot_id <- function (i,rtrange=NULL,log=input$yaxis) {
-                        i=as.character(i)
-                        mz=mz[[i]]
-                        smile<-smiles[[i]]
+                        ni=id2name(i)
+                        mz=mz[[ni]]
+                        smile<-smiles[[ni]]
+
+                        ## Extract metadata for the required ID.
+                        idTab<-sfTab[sfTab$ID==i,]
+                        tags<-idTab$tag
+                        message("L tags: ",length(tags))
+                        rtMS1<-idTab$rt
+                        rtMS2<-idTab$MS2rt
+                        rtMS2Ind<-idTab$iMS2rt
+
+                        names(rtMS1)<-tags
+                        names(rtMS2)<-tags
+                        names(rtMS2Ind)<-tags
+
+
                         
-                        plot_id_aux(i,wd=wd,eics=eics,maybekids=maybekids,mass=mz,smile=smile,tags=tags,log=log,rtrange=rtrange,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
+                        plot_id_msn(ni,data=pData,rtMS1=rtMS1,rtMS2=rtMS2,rtMS2Ind=rtMS2Ind,mass=mz,smile=smile,tags=tags,logYAxis=log,rtrange=rtrange,theme=theme,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
                     }
                     rvPres$plot_id<-plot_id
                 }
@@ -835,7 +868,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (length(fnTab)>0) {
 
                 fTab<-file2tab(file=fnTab)
-                intTresh<-as.numeric(input$intTresh)
+                intThresh<-as.numeric(input$intThresh)
                 noiseFac<-as.numeric(input$noiseFac)
                 rtDelta<-as.numeric(input$rtDelta)
                 limFinePPM<-as.numeric(input$ppmLimFine)
@@ -890,12 +923,12 @@ shinyScreenApp <- function(projDir=getwd()) {
                                   row.names=F)
                         message("fnTmp: ",fnTmp)
                         comp<-rvTab$comp
-                        intTresh<-as.numeric(input$intTresh)
+                        intThresh<-as.numeric(input$intThresh)
                         noiseFac<-as.numeric(input$noiseFac)
                         rtDelta<-as.numeric(input$rtDelta)
                         preProc(fnFileTab=fnTmp,
                                 fnDest=fnTmp,
-                                intTresh=intTresh,
+                                intThresh=intThresh,
                                 noiseFac=noiseFac,
                                 rtDelta=rtDelta)
                         ppFnTab<-read.csv(file=fnTmp,
@@ -927,11 +960,9 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             pos<-input$presSelCmpd
             rvConf$currIDSel<-as.numeric(pos)
-
         })
 
         shiny::observeEvent(input$presPrev,{
-            len<-length(rvConf$currIDSet)
             x<-rvConf$currIDSel-1
             if (x>0) rvConf$currIDSel<-x
         })
@@ -1315,6 +1346,9 @@ shinyScreenApp <- function(projDir=getwd()) {
             rtrange <- c(input$min_val,input$max_val)
             if (!is.null(plot_id)) {
                 plot_id(i,rtrange=rtrange, log=input$yaxis)
+            } else {
+                message("Major plotting oops.")
+                NULL
             }
         })
 

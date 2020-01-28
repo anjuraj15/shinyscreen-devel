@@ -388,21 +388,24 @@ RMB_EIC_prescreen_df_old1 <- function (wd, RMB_mode, FileList, cmpd_list,
 
 
 
-preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intTresh=1e5) {
+preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intThresh=1e5,intThreshMS2=0.05) {
     ## read in .csv file as file
     ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F,comment.char='')
-    getWidth <- function(maxid) {log10(maxid)+1}
     ids <- as.numeric(levels(factor(ftable$ID)))
-    fn_out<- function(id,suff,wd) {
-        patt<-paste("^0*",id,suff,".csv$",sep='')
-        res<-list.files(path=wd,pattern=patt,full.names=T)
-        if (length(res)>0) res else character(0)
 
-    }
-    
+
+    fn_spec<-function(wd) readRDS(file.path(wd,FN_SPEC))
+    ftable$Comments <- ""
+    wds<-unique(ftable$wd)
+    message("Loading RDS-es ...")
+    allData<-lapply(wds,fn_spec)
+    names(allData)<-wds
+    message("... done with RDSs")
+    names(allData)<-wds
     ## For loop through dataframe called file to set thresholds.
     ftable[c("MS1","MS2","Alignment","AboveNoise")] <- T
     ftable["MS2rt"] <- NA
+    ftable["rt"]<-NA
     ## QA check plan:
     ##
     ## If MS1 does not exist, set MS1 to F, as well as everything else except MS2.
@@ -419,24 +422,28 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
     ## intensity threshold. MS2 does not exist if it was not picked up
     ## during the dataframe generation stage. In this case, the file
     ## with the corresponding ID will not be there.
-
-    ftable$Comments <- ""
+ 
     for (ind in 1:nrow(ftable)) {
         wd <- ftable$wd[ind]
         id <- ftable$ID[ind]
-        odir=file.path(wd)
-        fn_eic <- fn_out(id,".eic",wd)
-        eic <- NULL
+        ## odir=file.path(wd)
+        ## fn_eic <- fn_out(id,".eic",wd)
+        eics<-allData[[wd]]$eic
+        nid<-id2name(id)
+        ii<-match(nid,MSnbase::fData(eics)[["ID"]]) #id, because id-s, not nid-s are in fData for ms1 eics;
+        eic1<-eics[[ii]]
+        eic<-data.frame(rt=MSnbase::rtime(eic1)/60.,intensity=MSnbase::intensity(eic1))
+        colnames(eic)<-c("rt","intensity")
         maxInt <- NULL
-        if (length(fn_eic)==0) {
-            message("wd: ",wd,"fn_eic: ",fn_eic)
-            warning("No file for id ",id," . Skipping.")
+        if (nrow(eic)==0) {
+            warning("No chromatogram for id ",id," found in", wd, " . Skipping.")
             next
         }
-        eic <- read.csv(fn_eic, sep = ",", stringsAsFactors = F,comment.char='')
-        maxInt <- max(eic$intensity)
+        ms1MaxInd<-which.max(eic$intensity)
+        maxInt<-eic$intensity[[ms1MaxInd]]
+        ftable[ind,"rt"]<-eic$rt[[ms1MaxInd]]
         ##If MS1 does not exist, set entry to F.
-        if (maxInt < intTresh) {
+        if (maxInt < intThresh) {
             ftable[ind,"MS1"] <- F
             ## Other checks automatically fail, too.
             ftable[ind,"Alignment"] <- F
@@ -454,31 +461,39 @@ preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv"
                 
             }
         }
-            
+        
     
 
         ## MS2 checks.
-        fn_kids <- fn_out(id,".kids",wd)
-        if (length(fn_kids)==0) {
+        ms2<-allData[[wd]]$ms2
+        ms2nids<-names(ms2)
+        mInt<-mean(eic$intensity)
+        if (! (nid %in% ms2nids)) {
             ftable[ind,"MS2"] <- F
             ftable[ind,"Alignment"] <- F
         } else {
+            sp<-ms2[[nid]]
             ## Alignment still makes sense to be checked?
             if (ftable[ind,"Alignment"]) {
                 rtInd <- match(maxInt,eic$intensity)
                 rtMS1Peak <- eic$rt[[rtInd]]
-                msms <- read.csv(fn_kids, sep = ",", stringsAsFactors = F,comment.char='')
-                rtInd <- which(msms$rt > rtMS1Peak - rtDelta & msms$rt < rtMS1Peak + rtDelta)
+                msms<-MSnbase::fData(sp)[,c("rtm","maxI")]
+                colnames(msms)<-c("rt","intensity")
+                rtInd <- which((msms$rt > rtMS1Peak - rtDelta) &
+                               (msms$rt < rtMS1Peak + rtDelta)) #Close enough?
+                rtInd <- rtInd[which(msms$intensity[rtInd]>intThreshMS2*mInt)] #Intense enough?
                 msmsRT <- msms$rt[rtInd]
                 if (length(msmsRT) > 0) {
                     ftable[ind,"iMS2rt"] <- which.min(abs(msmsRT - rtMS1Peak))
                     ftable[ind,"MS2rt"] <- msmsRT[ftable[ind,"iMS2rt"]]
                 }
             }
-        }
+        } 
     }
     write.csv(ftable, file = fnDest,row.names=F)
 }
+    
+
 
 
 
@@ -503,19 +518,17 @@ renderurl <- function(depictURL,coords=c(0,0,100,100), filename=tempfile(fileext
 }
 
 
-## rendersmiles <- function(smiles, kekulise=TRUE, coords=c(0,0,100,100), width=200, height=200,
-##                               zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
-##                               showTitle=FALSE, smaLimit=100, sma=NULL) {
-##   dep <- get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
-##                       abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
-##                       sma = NULL)
-##   library(rcdk)
-##   library(RChemMass)
-##   mol <- getMolecule(smiles)
-##   img <- view.image.2d(mol, depictor=dep)
-##   rasterImage(img, coords[1],coords[2], coords[3],coords[4])
+smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
+                              zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
+                              showTitle=FALSE, smaLimit=100, sma=NULL) {
+  dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
+                      abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
+                      sma = NULL)
 
-## }
+  mol <- RMassBank::getMolecule(smiles)
+  z<-rcdk::view.image.2d(mol, depictor=dep)
+  grid::rasterGrob(z)
+}
 
 ##' Render smiles from an online resource.
 ##'
@@ -594,8 +607,8 @@ arrPlot <- function(xlim,ylim,ytics,xaxis=F,log=NULL,cex=0.2) {
 
 }
 
-arrPlotStd <- function(xlim,ylim,xaxis=F,log=log,cex=1.5,mar,intTresh) {
-    if (ylim[1]<intTresh) ylim[1] <- intTresh
+arrPlotStd <- function(xlim,ylim,xaxis=F,log=log,cex=1.5,mar,intThresh) {
+    if (ylim[1]<intThresh) ylim[1] <- intThresh
     if  (is.na(ylim[2])) ylim[2] <- 10
     if (xaxis) xaxt="s" else xaxt="n"
     par(mar=mar)
@@ -695,7 +708,7 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
     if (length(lgnd_kids)>0) legend(x=linfo$rect$left-14*linfo$rect$left,y=linfo$rect$top-1*linfo$rect$h,horiz=F,legend=lgnd_kids,fill=cols[indkids],bty="n",cex=1.5)
 
 
-    arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,LEFT_MARGIN,3,0),log=log,intTresh=1e4)
+    arrPlotStd(xlim=rt_rng,ylim=int_rng,mar=c(0,LEFT_MARGIN,3,0),log=log,intThresh=1e4)
     mass<- if (!is.na(mass)) mass else "NA" 
     title(main=paste("ID:",i,"Ion m:",formatC(mass,digits=m_digits,format="f")))
     for (k in seq(length(w_max))) text(rt_max[[k]],i_max[[k]],labels=symbs[[k]],pos=4,offset=0.5*k)
@@ -709,18 +722,140 @@ plot_id_aux <- function(i,wd,eics,maybekids,mass,smile,tags,fTab,logYAxis,pal="D
 
 
     if (length(dfs_kids) >0) {
-        arrPlotStd(xlim=rt_rng,ylim=int_rng_kids,xaxis=T,log=log,mar=c(4,LEFT_MARGIN,0,0),intTresh=1)
+        arrPlotStd(xlim=rt_rng,ylim=int_rng_kids,xaxis=T,log=log,mar=c(4,LEFT_MARGIN,0,0),intThresh=1)
         for (k in 1:length(indkids)) {
             lines(intensity ~ rt,data=dfs_kids[[k]],type="h",col=cols_kids[[k]])
         }
     } else {
-        arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log=log,mar=c(4,9,0,0),intTresh=1)
+        arrPlotStd(xlim=rt_rng,ylim=c(1,10),xaxis=T,log=log,mar=c(4,9,0,0),intThresh=1)
     }
     mtext("retention time [min]",side = 1,adj=0.5,cex=1.3,line = 3)
     if (length(dfs_kids)>0) for (k in seq(length(w_max_kids))) text(rt_near_kids[[k]],i_near_kids[[k]],labels=symbs_kids[[k]],pos=4,offset=0.5*k)    
     gc()
     message("loc X")
-}    
+}
+
+multiplot <- function(..., plotlist=NULL, cols=1, layout=NULL) {
+
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+      grid::grid.newpage()
+      grid::pushViewport(grid::viewport(layout = grid::grid.layout(nrow(layout), ncol(layout))))
+    # Make each plot, in the correct location
+      for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+          matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+          
+          print(plots[[i]], vp = grid::viewport(layout.pos.row = matchidx$row,
+                                                layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+
+plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
+    clean_rtrange <- function(def) {
+            x1 <- rtrange[1]
+            x2 <- rtrange[2]
+            if (is.na(x1) || x1 == 0) x1 <- def[1]
+            if (is.na(x2) || x2 == 0) x2 <- def[2]
+
+            c(x1,x2)
+    }
+    message("Plotting ID: ",ni)
+    mk_title<-function() paste("EIC (","mz= ",mass,")",sep='')
+    mk_leg_lab<-function(tag,rt) {paste(tag,"; rt= ",formatC(rtMS1[[tag]],format='f',digits=rt_digits),"min")}
+
+    sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
+
+    if (logYAxis == "linear") log = ""
+    if (logYAxis == "log") log = "y"
+    i<-name2id(ni)
+
+    ## MS1 EIC and MS2 spectral time series.
+    dfschrms1<-lapply(tags,function(tag) {d<-data[[tag]]$eic
+        ind<-match(ni,MSnbase::fData(d)[["ID"]])
+        cg<-d[[ind]]
+        data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1[[tag]]))
+    })
+    dfChrMS1<-do.call(rbind,c(dfschrms1,list(make.row.names=F)))
+    rtDefRange<-range(dfChrMS1$rt)
+    intDefRange<-range(dfChrMS1$intensity)
+    rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
+    titMS1<-mk_title()
+    plMS1<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour="Retention time at max. intensity (MS1)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
+
+    ## Empty
+    plEmpty<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
+
+    dfsChrMS2<-lapply(tags,function(tag) {
+        d<-data[[tag]]$ms2[[ni]]
+        if (!is.null(d)) {
+            df<-MSnbase::fData(d)[,c("rtm","maxI")]
+            colnames(df)<-c("rt","intensity")
+            df$tag<-as.character(tag)
+            df$legend=mk_leg_lab(tag,rtMS2[[tag]])
+            df
+        } else NULL
+    })
+    dfsChrMS2<-dfsChrMS2[!is.null(dfsChrMS2)]
+    if (!all(sapply(dfsChrMS2,is.null))) {
+        dfChrMS2<-do.call(rbind,c(dfsChrMS2,list(make.row.names=F)))
+        plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+ggplot2::geom_linerange(ggplot2::aes(colour=legend))+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::labs(colour="Retention time at max. intensity (MS2)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
+    } else {
+        plMS2<-plEmpty
+    }
+
+    ## Structure
+    if (!(is.na(smile) || is.null(smile))) {
+        g<-smiles2img(smile,width=500,height=500,zoom=4.5)
+        plStruc<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+
+            ggplot2::geom_blank()+ggplot2::annotation_custom(g)+ggplot2::theme_void()
+    } else plStruc<-plEmpty
+
+
+
+    ## MS2 Spectrum
+    if (!all(sapply(dfsChrMS2,is.null))) {
+        dfsSpecMS2<-lapply(tags,function(tag) {
+            d<-data[[tag]]$ms2[[ni]]
+            if (!is.null(d)) {
+                ind<-rtMS2Ind[[tag]]
+                if (!is.na(ind)) {
+                    x<-data.frame(mz=MSnbase::mz(d[[ind]]),intensity=MSnbase::intensity(d[[ind]]))
+                    x$tag<-tag
+                    x
+                } else NULL
+                
+            }
+        })
+        dfsSpecMS2<-dfsSpecMS2[!is.null(dfsSpecMS2)]
+        dfSpecMS2<-do.call(rbind,c(dfsSpecMS2,list(make.row.names=F)))
+        plSpecMS2<-ggplot2::ggplot(data=dfSpecMS2,ggplot2::aes(x=mz,ymin=0,ymax=intensity,group=tag))+
+            ggplot2::geom_linerange(ggplot2::aes(colour=tag))+
+            ggplot2::labs(subtitle="MS2",y="intensity")+ggplot2::scale_y_log10(labels=sci10)+theme()
+    } else plSpecMS2<-plEmpty
+
+    cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1))
+}
 
 
 
