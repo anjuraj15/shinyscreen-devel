@@ -482,6 +482,52 @@ shinyScreenApp <- function(projDir=getwd()) {
         levels(factor(sdf$mode))
     }
 
+
+    mk_mzML_work<-function() {
+        df<-data.frame(Files=character(),
+                       mode=factor(),
+                       set=factor(),
+                       tag=factor(),
+                       stringsAsFactors=F)
+        levels(df$mode)<-names(MODEMAP)
+        df
+    }
+
+    prep_mzML_work <- function(df,sets,tags) {
+        ## Keeps the dataframe behind the mzML control in shape.
+        if (is.null(df)) df<-mk_mzML_work()
+
+        if (length(tags)>0 && !is.na(tags)) {
+            x<-as.character(df$tag)
+            df$tag<-factor(x,levels=unlist(tags))
+            ina<-which(is.na(df$tag))
+            df$tag[ina]<-TAG_DEF
+        }
+        if (length(sets)>0 && !is.na(sets)) {
+            y<-as.character(df$set)
+            df$set<-factor(y,levels=sets)
+        }
+        df
+    }
+
+    add_mzML_files<-function(df,paths) {
+        lSet<-levels(df$set)
+        if (length(lSet>0) && !is.na(lSet)) {
+            nR<-length(paths)
+            if (nR>0) {
+                st<-nrow(df)+1
+                fi<-nrow(df)+nR
+                df[st:fi,'tag']<-levels(df$tag)[[1]]
+                df[st:fi,'set']<-levels(df$set)[[1]]
+                df[st:fi,'mode']<-levels(df$mode)[[1]]
+                df[st:fi,'Files']<-paths
+            }
+            df
+        } else {
+            warning("Define sets using the compound set table before trying to add files!")
+            df
+        }
+    }
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
@@ -535,13 +581,16 @@ shinyScreenApp <- function(projDir=getwd()) {
         ## ***** reactive function definitions *****
         
         getTags<-shiny::reactive({
-            x<-if (length(input$tagsInp)>0 && !is.na(input$tagsInp)) unlist(strsplit(input$tagsInp, ",")) else list()
+            tagsInp<-input$tagsInp
+            x<-if (length(tagsInp)>0 && !is.na(tagsInp) && nchar(tagsInp)>0) unlist(strsplit(tagsInp, ",")) else list()
             as.list(c(x,"unspecified"))
         })
 
         getSetIdSets<-shiny::reactive({
             ## Returns all sets defined in a setid table.
-            levels(rvTab$setId$set)
+            df<-rvTab$setId
+            sets<-levels(df$set)
+            sets
         })
 
         getSets<-shiny::reactive({
@@ -552,25 +601,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                      if (!anyNA(sets)) levels(factor(sets)) else NULL
                  } else NULL
                  res
-        })
-
-        getMzMLFiles<-shiny::eventReactive(input$mzMLB,
-        {
-            sets<-getSetIdSets()
-            tags<-getTags()
-            
-            fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
-            paths<-fchoice[["datapath"]]
-            df<-rvTab$mzMLWork
-            res<- if (length(sets)>0) {
-                      for (pt in paths) df<-extd_mzMLtab(df,pt,sets,tags)
-                      df
-                  } else {
-                      warning("No sets specified. Load the set id table first.")
-                      NULL
-                  }
-            res
-            
         })
 
         getCmpL<-shiny::reactive({
@@ -755,6 +785,22 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
+        ## shiny::observe({
+        ##     fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impSetIdB)
+        ##     fn<-fnobj[["datapath"]]
+        ##     if (length(fn)>0 && !is.na(fn)) {
+        ##         shiny::updateTextInput(session=session,
+        ##                                inputId="fnSetId",
+        ##                                value=fn)
+        ##     }
+        ## })
+
+        shiny::observe({
+            tags<-getTags()
+            sets<-getSetIdSets()
+            rvTab$mzMLWork<-prep_mzML_work(rvTab$mzMLWork,sets,tags)
+        })
+
 
         shiny::observeEvent(input$impTgtListB,{
             fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impTgtListB)
@@ -826,15 +872,35 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rvTab$setId$set<-factor(rvTab$setId$set)
                 message("Done importing compound sets from: ",fn)
             }
-            df<-rvTab$setId
         })
+
+        ## shiny::observe(
+        ## {
+        ##     fn<-input$fnSetId
+        ##     if (isThingFile(fn)) {
+        ##         message("Importing compound sets from:",fn)
+        ##         rvTab$setId<-file2tab(file=fn,
+        ##                               colClasses=c(set="factor"))
+        ##         rvTab$setId$set<-factor(rvTab$setId$set)
+        ##         message("Done importing compound sets from: ",fn)
+        ##     }
+        ## })
+
 
         shiny::observeEvent(input$mzMLB,
         {
-            rvConf$flMzMLSub<-F
-            rvTab$mzMLWork<-getMzMLFiles()
-
+            fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
+            paths<-fchoice[["datapath"]]
+            rvTab$mzMLWork<-add_mzML_files(rvTab$mzMLWork,paths)
         })
+
+
+        ## shiny::observeEvent(input$mzMLB,
+        ## {
+        ##     rvConf$flMzMLSub<-F
+        ##     rvTab$mzMLWork<-getMzMLFiles()
+
+        ## })
         
         shiny::observeEvent(input$confFileTabBase,
         {
@@ -1181,6 +1247,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         
         
                                         #rvTab$mzML<-getMzMLFiles()
+
 
 
         shiny::observe({

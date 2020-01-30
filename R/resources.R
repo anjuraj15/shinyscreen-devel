@@ -12,6 +12,7 @@ MODEMAP<-list(pH="MpHp_mass",
               pNH4="MpNH4_mass",
               pNa="MpNa_mass")
 
+TAG_DEF<-"unspecified"
 DEFAULT_RT_RANGE=c(NA,NA)
 
 QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
