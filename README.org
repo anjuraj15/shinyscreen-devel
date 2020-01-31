@@ -34,13 +34,29 @@
       data within a specified time delta around the retention time
       will be scanned, leading to large efficiency improvements.
 
+      #+CAPTION: The first few rows of a compound list containing known compounds.
+      |  ID | Name                  | SMILES                          |   RT |
+      |-----+-----------------------+---------------------------------+------|
+      |  33 | "Isoproturon"         | "CC(C)C1=CC=C(NC(=O)N(C)C)C=C1" | 19.6 |
+      | 717 | "epsilon-Decalactone" | "CCCCC1CCCCC(=O)O1"             |      |
+      | ... | "..."                 | "..."                           | ...  |
+
       If the only known information about the compounds are the masses
       of the progenitor ions, then it is only required to fill out the
-      *ID* and the *mz* columns. The *mz* column will contain the mass
-      of the precursor ion, and the *ID* should be filled as explained
+      *ID* and the *mz* columns. The mz column will contain the mass
+      of the precursor ion, and the ID should be filled as explained
       before.
 
+      #+CAPTION: The first few rows of a compound list containing unknown compounds.
+      |  ID | mz       |
+      |-----+----------|
+      |  22 | 296.1160 |
+      | 888 | 503.2816 |
+      | ... | ...      |
+      
+      The column names are case-sensitive.
 
+   
    3. The compound sets.
 
       This is a CSV file.
@@ -56,8 +72,25 @@
       groups, it is enough to copy all the ID-s from the compound list
       into a new CSV and use any character string to fill out the
       *set* column.
-     
 
+      #+CAPTION: The first few rows of a compound set.
+      |  ID | set  |
+      |-----+------|
+      |  33 | mixA |
+      | 717 | mixA |
+      | 999 | mixA |
+      | ... | ...  |
+      | 129 | mixB |
+      | 516 | mixB |
+      | ... | ...  |
+      | 333 | mixC |
+      | 999 | mixC |
+
+
+      
+   
+     
+      
 ** Installation
 *** The simplest way to install Shinyscreen that always works (at least on *nix systems)
    #+BEGIN_SRC shell
