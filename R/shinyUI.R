@@ -1,3 +1,17 @@
+## Copyright (C) 2020 by University of Luxembourg
+
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+
+##     http://www.apache.org/licenses/LICENSE-2.0
+
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+
 prim_box<-function(...) {shinydashboard::box(...,
                                              status="primary",
                                              solidHeader=T)}
@@ -874,33 +888,12 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
-        ## shiny::observe(
-        ## {
-        ##     fn<-input$fnSetId
-        ##     if (isThingFile(fn)) {
-        ##         message("Importing compound sets from:",fn)
-        ##         rvTab$setId<-file2tab(file=fn,
-        ##                               colClasses=c(set="factor"))
-        ##         rvTab$setId$set<-factor(rvTab$setId$set)
-        ##         message("Done importing compound sets from: ",fn)
-        ##     }
-        ## })
-
-
         shiny::observeEvent(input$mzMLB,
         {
             fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
             paths<-fchoice[["datapath"]]
             rvTab$mzMLWork<-add_mzML_files(rvTab$mzMLWork,paths)
         })
-
-
-        ## shiny::observeEvent(input$mzMLB,
-        ## {
-        ##     rvConf$flMzMLSub<-F
-        ##     rvTab$mzMLWork<-getMzMLFiles()
-
-        ## })
         
         shiny::observeEvent(input$confFileTabBase,
         {
@@ -1245,11 +1238,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         })
         
-        
-                                        #rvTab$mzML<-getMzMLFiles()
-
-
-
         shiny::observe({
 
             rvConf$currIDSel
