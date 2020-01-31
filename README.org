@@ -59,8 +59,6 @@
    
    3. The compound sets.
 
-      This is a CSV file.
-
       Shinyscreen organises its data around the concept of compound
       sets. If, given a collection of data files, it is possible
       to break down the compounds into logical groups, shinyscreen
