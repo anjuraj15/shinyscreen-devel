@@ -102,6 +102,11 @@
 *** Windows/R Studio
    TODO
 * Contribute
+** Current State of Code
+   The situation is very fluid, especially in the shinyUI.R which
+   contains the Shiny interface. This part of code looks like a mess
+   (though, it's organised mess), due to swapping out some major parts
+   of the functionality and a recent coding style change.
 ** GUI Style Guide
 *** Colour Scheme
     - LCSB colours?
