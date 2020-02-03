@@ -840,7 +840,7 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
     }
 
     ## Structure
-    if (!(is.na(smile) || is.null(smile))) {
+    if (!(is.na(smile) || is.null(smile) || nchar(smile)<1)) {
         g<-smiles2img(smile,width=500,height=500,zoom=4.5)
         plStruc<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+
             ggplot2::geom_blank()+ggplot2::annotation_custom(g)+ggplot2::theme_void()
