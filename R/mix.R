@@ -812,6 +812,10 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
         data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1[[tag]]))
     })
     dfChrMS1<-do.call(rbind,c(dfschrms1,list(make.row.names=F)))
+
+    message('dfChrMS1:')
+    str(dfChrMS1)
+    message("---dfChrMS1")
     rtDefRange<-range(dfChrMS1$rt)
     intDefRange<-range(dfChrMS1$intensity)
     rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
