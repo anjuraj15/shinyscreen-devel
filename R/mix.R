@@ -813,9 +813,6 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
     })
     dfChrMS1<-do.call(rbind,c(dfschrms1,list(make.row.names=F)))
 
-    message('dfChrMS1:')
-    str(dfChrMS1)
-    message("---dfChrMS1")
     rtDefRange<-range(dfChrMS1$rt)
     intDefRange<-range(dfChrMS1$intensity)
     rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
@@ -848,7 +845,6 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
 
     ## Structure
     if (!is.null(smile) && !is.na(smile) && !nchar(smile)<1) {
-        message("what is here? ",smile)
         g<-smiles2img(smile,width=500,height=500,zoom=4.5)
         plStruc<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+
             ggplot2::geom_blank()+ggplot2::annotation_custom(g)+ggplot2::theme_void()
@@ -872,9 +868,20 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
         })
         dfsSpecMS2<-dfsSpecMS2[!is.null(dfsSpecMS2)]
         dfSpecMS2<-do.call(rbind,c(dfsSpecMS2,list(make.row.names=F)))
-        plSpecMS2<-ggplot2::ggplot(data=dfSpecMS2,ggplot2::aes(x=mz,ymin=0,ymax=intensity,group=tag))+
-            ggplot2::geom_linerange(ggplot2::aes(colour=tag))+
-            ggplot2::labs(subtitle="MS2",y="intensity")+ggplot2::scale_y_log10(labels=sci10)+theme()
+        plSpecMS2<-if (is.data.frame(dfSpecMS2)) { #sometimes
+                                                   #dfSpecMS2 ends up
+                                                   #as a list of
+                                                   #logicals; this
+                                                   #probably happens
+                                                   #when either MS2 is
+                                                   #bad in some way,
+                                                   #or the RT
+                                                   #intervals are
+                                                   #mismatched.
+                       ggplot2::ggplot(data=dfSpecMS2,ggplot2::aes(x=mz,ymin=0,ymax=intensity,group=tag))+
+                           ggplot2::geom_linerange(ggplot2::aes(colour=tag))+
+                           ggplot2::labs(subtitle="MS2",y="intensity")+ggplot2::scale_y_log10(labels=sci10)+theme()
+                   } else plEmpty
     } else plSpecMS2<-plEmpty
 
     res<- if (!is.null(plMS1)) cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1)) else NULL
