@@ -486,7 +486,9 @@ shinyScreenApp <- function(projDir=getwd()) {
     
     getCheckboxValues <- function(tag,input,rv) {
         chkbox <- input[[rv$spectProps[[tag]]]]
-        q <- sapply(QANAMES,function (qn) if (qn %in% chkbox) T else F)
+        q <- sapply(QANAMES,function (qn) {
+            if (qn %in% chkbox) T else F
+        })
         names(q) <- QANAMES
         q
     }
@@ -1330,11 +1332,12 @@ shinyScreenApp <- function(projDir=getwd()) {
                     sprop <- rvConf$spectProps[[t]]
                     sdfSel<-sdf[sdf$tag %in% t,QANAMES]
                     sel <- as.logical(sdfSel)
+
                     choices <- QANAMES[sel]
                     names(choices) <- QANAMES[sel]
                     shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
                 }
-
+                
             }
 
         })
@@ -1376,10 +1379,11 @@ shinyScreenApp <- function(projDir=getwd()) {
             message("Rendering panel started")
             ft<-rvTab$mtr
             set<-input$presSelSet
-            if (nchar(set)>0 && !is.null(ft)) {
+            if (!is.null(set) && !is.na(set) && nchar(set)>0 && !is.null(ft)) {
                 QANms<-rvConf$QANAMES
                 names(QANms)<-QANms
-                tags<-levels(factor(ft[ft$set==set,]$tag))
+                ftSec<-ft[ft$set %in% set,]
+                tags<-levels(factor(as.character(ftSec$tag)))
                 rvConf$tags<-tags
                 spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
                 rvConf$spectProps<-spectProps
@@ -1389,6 +1393,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                                     shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
                                     shiny::verbatimTextOutput(paste("value",tag,sep=""))
                                     )})
+                
+                
                 message("done rendering panel")
                 do.call(shiny::navlistPanel, tabPanelList)
             } else NULL
