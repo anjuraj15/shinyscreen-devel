@@ -681,8 +681,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                                            inputId=nm,
                                            value=sav$input[[nm]])
                 }
-                ## rvConf$fnFTBase<-sav$rvConf$fnFTBase
-                rvConf$fnFT<-sav$rvConf$fnFT
                 for (nm in names(rvTab)) {
                     rvTab[[nm]]<-sav$tab[[nm]]
                 }
@@ -925,6 +923,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                     message("Done generating basic file table in file ",fn)
                 }
             }
+
+            if (input$tabs=="prescreen") {
+                if (is.null(rvTab$mtr) ||
+                    is.na(rvTab$mtr) ||
+                    nrow(rvTab$mtr)==0) rvTab$mtr<-read.csv(file=rvConf$fnFT,comment.char='',stringsAsFactors=F)
+
+            }
         })
             
         shiny::observeEvent(input$genRunB,{
@@ -1017,7 +1022,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                                   x=fullFTab,
                                   row.names=F)
                         file.copy(fnFullTab,rvConf$fnFT,overwrite=T)
-                        rvTab$mtr<-read.csv(file=fnFullTab,comment.char='',stringsAsFactors=F)
                         message("Finished preprocessing.")
                         
                         
