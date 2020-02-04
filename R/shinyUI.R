@@ -87,17 +87,17 @@ mkUI <- function() {
                                                        title="Restore"),
                           width=NULL)
 
-    confPP<-prim_box(title="Output File Tables",
-                     shiny::textInput("confFileTabBase",
-                                      "Basic file table.",
-                                      value=FN_FTAB_BASE),
-                     shiny::textInput("confFileTabProcInp",
-                                      "Preprocessed file table.",
-                                      value=FN_FTAB_PP),
-                     shiny::textInput("confResFileTab",
-                                      "Resulting file table.",
-                                      value=FN_FTAB),
-                     width=NULL)
+    ## confPP<-prim_box(title="Output File Tables",
+    ##                  ## shiny::textInput("confFileTabBase",
+    ##                  ##                  "Basic file table.",
+    ##                  ##                  value=FN_FTAB_BASE),
+    ##                  ## shiny::textInput("confFileTabProcInp",
+    ##                  ##                  "Preprocessed file table.",
+    ##                  ##                  value=FN_FTAB_PP),
+    ##                  ## shiny::textInput("confResFileTab",
+    ##                  ##                  "Resulting file table.",
+    ##                  ##                  value=FN_FTAB),
+    ##                  width=NULL)
     
     confmzMLtab <-prim_box(title="Raw Files in mzML Format",
                            shiny::h5("Use this file table to assign adduct modes and tags to the data files."),
@@ -118,7 +118,6 @@ mkUI <- function() {
                                                 confState,
                                                 width=4),
                                   shiny::column(width=8,
-                                                confPP,
                                                 confmzMLtab))
 
 
@@ -186,12 +185,6 @@ mkUI <- function() {
                                                label="Preprocess!",
                                                icon=shiny::icon("bomb")),
                            width=NULL)
-
-    genBoxGenFT<-prim_box(title="Prepare for Data Extraction",
-                          shiny::actionButton(inputId="genFileTabB",
-                                              label="Prepare.",
-                                              icon=shiny::icon("save")),
-                          width=NULL)
     
     genBoxProcessed<-prim_box(title="Processed Sets",
                               rhandsontable::rHandsontableOutput("genTabProcCtrl"),
@@ -199,8 +192,7 @@ mkUI <- function() {
     
     genTab<-shinydashboard::tabItem(tabName = "gen",
                                     shiny::h2(GUI_TAB_TITLE[["gen"]]),
-                                    shiny::fluidRow(shiny::column(genBoxGenFT,
-                                                                  genBoxExtract,
+                                    shiny::fluidRow(shiny::column(genBoxExtract,
                                                                   width=4),
                                                     shiny::column(genBoxProcessed,
                                                                   genBoxAutoQA,width=4)))
@@ -312,7 +304,7 @@ mkUI <- function() {
                                                          icon = shiny::icon("save")),
                                      shiny::textInput("fn_ftable",
                                                       "File table Name",
-                                                      value=FN_FTAB),
+                                                      value=FN_FTAB_DEF_OUT),
                                      shiny::actionButton("savefiletable",
                                                          "Save File Table",
                                                          icon = shiny::icon("save")))
@@ -367,7 +359,8 @@ mkUI <- function() {
     
     header <- shinydashboard::dashboardHeader(title=headerText)
     
-    sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(confSideItem,
+    sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(id='tabs',
+                                                                            confSideItem,
                                                                             genSideItem,
                                                                             presSideItem,
                                                                             shiny::hr(),
@@ -556,7 +549,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                              MODEMAP=MODEMAP,
                              REST_TXT_INP=REST_TXT_INP,
                              fnLocSetId=FN_LOC_SETID,
-                             fnFTBase="",
+                             fnFTBase=FN_FTAB_BASE,
+                             fnFTPP=FN_FTAB_PP,
                              tagProp="",
                              setProp="",
                              fnComp=FN_COMP_TAB,
@@ -567,7 +561,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              currIDSel=1,
                              currIDSet=list(),
                              currID=NA,
-                             fnFT=NULL,
+                             fnFT=FN_FTAB_STATE,
                              flMzMLSub=F)
         rvTab<-shiny::reactiveValues(
                           mzML=NULL, # files (File), sets (set) and mode (mode)
@@ -910,28 +904,29 @@ shinyScreenApp <- function(projDir=getwd()) {
             rvTab$mzMLWork<-add_mzML_files(rvTab$mzMLWork,paths)
         })
         
-        shiny::observeEvent(input$confFileTabBase,
-        {
-            rvConf$fnFTBase<-input$confFileTabBase
-        })
-        shiny::observeEvent(input$genFileTabB,{
-            fn<-input$confFileTabBase
-            if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
-                message("Generating basic file table in file ",fn)
-                files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
-                comp<-file2tab(rvConf$fnComp) ## TODO: Why is
-                                              ## rvTab$comp not
-                                              ## properly updated?
-                df<-genSuprFileTab(files,comp)
-                df<-addCompColsToFileTbl(df,comp)
-                df$mode<-as.character(df$mode)
-                tab2file(tab=df,file=fn)
-                
-                message("Done generating basic file table in file ",fn)
+        ## shiny::observeEvent(input$confFileTabBase,
+        ## {
+        ##     #rvConf$fnFTBase<-input$confFileTabBase
+        ## })
+        shiny::observeEvent(input$tabs,{
+            if (input$tabs=="gen") {
+                fn<-rvConf$fnFTBase
+                if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
+                    message("Generating basic file table in file ",fn)
+                    files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
+                    comp<-file2tab(rvConf$fnComp) ## TODO: Why is
+                    ## rvTab$comp not
+                    ## properly updated?
+                    df<-genSuprFileTab(files,comp)
+                    df<-addCompColsToFileTbl(df,comp)
+                    df$mode<-as.character(df$mode)
+                    tab2file(tab=df,file=fn)
+                    
+                    message("Done generating basic file table in file ",fn)
+                }
             }
-
         })
-
+            
         shiny::observeEvent(input$genRunB,{
             nProc<-as.integer(input$genNoProc)
             fnTab<-rvConf$fnFTBase
@@ -981,8 +976,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                 doneSets<-sets[sapply(sets,isGenDone)]
                 message("done sets: ",doneSets)
                 if (length(doneSets)>0) {
-                    fnFullTab<-input$confFileTabProcInp
-                    fnBaseTab<-input$confFileTabBase
+                    fnFullTab<-rvConf$fnFTPP
+                    fnBaseTab<-rvConf$fnFTBase
                     fnOpen<-""
                     fnOpen<-if (isThingFile(fnFullTab)) fnFullTab else fnBaseTab
                     fullFTab<-read.csv(file=fnOpen,
@@ -1021,7 +1016,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                         write.csv(file=fnFullTab,
                                   x=fullFTab,
                                   row.names=F)
-                        file.copy(fnFullTab,input$confResFileTab,overwrite=T)
+                        file.copy(fnFullTab,rvConf$fnFT,overwrite=T)
+                        rvTab$mtr<-read.csv(file=fnFullTab,comment.char='',stringsAsFactors=F)
                         message("Finished preprocessing.")
                         
                         
@@ -1047,16 +1043,16 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (x<=len) rvConf$currIDSel<-x
         })
 
-        shiny::observeEvent(rvConf$fnFT,{
+        ## shiny::observeEvent(rvConf$fnFT,{
 
-            fn<-rvConf$fnFT
-            if (!is.null(fn) && isThingFile(fn)) {
-                rvTab$mtr<-read.csv(file=fn,
-                                    comment.char = '',
-                                    stringsAsFactors = F)
-            }
+        ##     fn<-rvConf$fnFT
+        ##     if (!is.null(fn) && isThingFile(fn)) {
+        ##         rvTab$mtr<-read.csv(file=fn,
+        ##                             comment.char = '',
+        ##                             stringsAsFactors = F)
+        ##     }
 
-        })
+        ## })
         
         shiny::observeEvent(rvConf$currIDSel,{
             ids<-rvConf$currIDSet
@@ -1081,6 +1077,10 @@ shinyScreenApp <- function(projDir=getwd()) {
             fn<-input$fn_ftable
             message("Writing current file table to ",fn)
             write.csv(file=fn,x=rvTab$mtr,row.names = F)
+        })
+
+        shiny::observeEvent(rvTab$mtr,{
+            write.csv(file=rvConf$fnFT,x=rvTab$mtr,row.names=F)
         })
 
 
@@ -1281,12 +1281,12 @@ shinyScreenApp <- function(projDir=getwd()) {
             })
         })
         
-        shiny::observe({
-            shiny::invalidateLater(100,
-                                   session=session)
-            fnFT<-if (isThingFile(input$confResFileTab)) input$confResFileTab else NULL
-            rvConf$fnFT<-fnFT
-        })
+        ## shiny::observe({
+        ##     shiny::invalidateLater(100,
+        ##                            session=session)
+        ##     fnFT<-if (isThingFile(input$confResFileTab)) input$confResFileTab else NULL
+        ##     rvConf$fnFT<-fnFT
+        ## })
         
 
         shiny::observe({
