@@ -816,7 +816,10 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
     intDefRange<-range(dfChrMS1$intensity)
     rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
     titMS1<-mk_title()
-    plMS1<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour="Retention time at max. intensity (MS1)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
+    
+    plMS1<- if(!is.null(dfChrMS1) && !is.na(dfChrMS1) && !nrow(dfChrMS1)==0) {
+                ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour="Retention time at max. intensity (MS1)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
+                } else NULL
 
     ## Empty
     plEmpty<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
@@ -870,7 +873,8 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
             ggplot2::labs(subtitle="MS2",y="intensity")+ggplot2::scale_y_log10(labels=sci10)+theme()
     } else plSpecMS2<-plEmpty
 
-    cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1))
+    res<- if (!is.null(plMS1)) cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1)) else NULL
+    res
 }
 
 
