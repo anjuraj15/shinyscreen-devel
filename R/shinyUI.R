@@ -69,7 +69,7 @@ mkUI <- function() {
     confmzMLTags <- prim_box(title="Sets and Tags",
                              shiny::textInput("tagPropInp",
                                               "What is a tag? (example: collision energy; can be left empty.)",
-                                              value=""),
+                                              value=TAG_DEF_DESC),
                              shiny::textInput("tagsInp",
                                               "Comma-delimited list of tag types.",
                                               value=""),

@@ -796,7 +796,10 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
             c(x1,x2)
     }
     message("Plotting ID: ",ni)
-    mk_title<-function() paste("EIC (","mz= ",mass,")",sep='')
+    mk_title<-function() paste("EIC (",
+                               "m/z = ",
+                               formatC(mass,format='f',digits=m_digits),
+                               ")",sep='')
     mk_leg_lab<-function(tag,rt) {paste(tag,"; rt= ",formatC(rt[[tag]],format='f',digits=rt_digits),"min")}
 
     sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
@@ -819,7 +822,7 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
     titMS1<-mk_title()
     
     plMS1<- if(!is.null(dfChrMS1) && !is.na(dfChrMS1) && !nrow(dfChrMS1)==0) {
-                ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend))+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour="Retention time at max. intensity (MS1)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
+                ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour=PLOT_MS1_LEG_TIT)+ggplot2::scale_y_continuous(labels = sci10)+theme()
                 } else NULL
 
     ## Empty
@@ -838,7 +841,7 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
     dfsChrMS2<-dfsChrMS2[!is.null(dfsChrMS2)]
     if (!all(sapply(dfsChrMS2,is.null))) {
         dfChrMS2<-do.call(rbind,c(dfsChrMS2,list(make.row.names=F)))
-        plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+ggplot2::geom_linerange(ggplot2::aes(colour=legend))+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::labs(colour="Retention time at max. intensity (MS2)")+ggplot2::scale_y_continuous(labels = sci10)+theme()
+        plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+ggplot2::geom_linerange(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::labs(colour=PLOT_MS2_LEG_TIT)+ggplot2::scale_y_continuous(labels = sci10)+theme()
     } else {
         plMS2<-plEmpty
     }
@@ -879,10 +882,25 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
                                                    #intervals are
                                                    #mismatched.
                        ggplot2::ggplot(data=dfSpecMS2,ggplot2::aes(x=mz,ymin=0,ymax=intensity,group=tag))+
-                           ggplot2::geom_linerange(ggplot2::aes(colour=tag))+
+                           ggplot2::geom_linerange(ggplot2::aes(colour=tag),key_glyph=KEY_GLYPH)+
                            ggplot2::labs(subtitle="MS2",y="intensity")+ggplot2::scale_y_log10(labels=sci10)+theme()
                    } else plEmpty
     } else plSpecMS2<-plEmpty
+
+    ## Lucky N the most intense N TODO
+    ## lckN<-if (is.data.frame(dfSpecMS2)) {
+    ##           ord<-order(dfSpecMS2$intensity,decreasing=T)
+    ##           ll<-length(ord)
+    ##           theL<-min(ll,MS2_1ST_N)
+    ##           mzN<-dfSpecMS2$mz[ord][1:theL]
+    ##           inN<-dfSpecMS2$intensity[ord][1:theL]
+    ##           df<-data.frame("m/z"=mzN,"intensity"=inN)
+    ##           message("DF:")
+    ##           str(df)
+    ##           message("---DF")
+    ##           gridExtra::tableGrob(df) #+ggplot2::labs(subtitle="Top m/z")
+              
+    ##       } else NULL
 
     res<- if (!is.null(plMS1)) cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1)) else NULL
     res

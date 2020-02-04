@@ -29,6 +29,7 @@ MODEMAP<-list(pH="MpHp_mass",
               pNa="MpNa_mass")
 
 TAG_DEF<-"unspecified"
+TAG_DEF_DESC<-"Case"
 DEFAULT_RT_RANGE=c(NA,NA)
 
 QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
@@ -59,3 +60,13 @@ GUI_SIDE_TITLE[["gen"]]<-"Spectra Extraction"
 
 CHR_GRAM_X="retention time [min]"
 CHR_GRAM_Y="intensity"
+
+KEY_GLYPH='rect'
+
+PLOT_MS1_LEG_TIT<-"peak retention time (MS1)"
+PLOT_MS2_LEG_TIT<-"peak retention time (MS2)"
+
+
+MS2_1ST_N<-5
+
+
