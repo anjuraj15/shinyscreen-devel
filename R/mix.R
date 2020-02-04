@@ -797,7 +797,7 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
     }
     message("Plotting ID: ",ni)
     mk_title<-function() paste("EIC (","mz= ",mass,")",sep='')
-    mk_leg_lab<-function(tag,rt) {paste(tag,"; rt= ",formatC(rtMS1[[tag]],format='f',digits=rt_digits),"min")}
+    mk_leg_lab<-function(tag,rt) {paste(tag,"; rt= ",formatC(rt[[tag]],format='f',digits=rt_digits),"min")}
 
     sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
 
@@ -809,7 +809,7 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
     dfschrms1<-lapply(tags,function(tag) {d<-data[[tag]]$eic
         ind<-match(ni,MSnbase::fData(d)[["ID"]])
         cg<-d[[ind]]
-        data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1[[tag]]))
+        data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1))
     })
     dfChrMS1<-do.call(rbind,c(dfschrms1,list(make.row.names=F)))
 
@@ -831,7 +831,7 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
             df<-MSnbase::fData(d)[,c("rtm","maxI")]
             colnames(df)<-c("rt","intensity")
             df$tag<-as.character(tag)
-            df$legend=mk_leg_lab(tag,rtMS2[[tag]])
+            df$legend=mk_leg_lab(tag,rtMS2)
             df
         } else NULL
     })
