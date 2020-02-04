@@ -761,7 +761,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                         ## Extract metadata for the required ID.
                         idTab<-sfTab[sfTab$ID==i,]
                         tags<-idTab$tag
-                        message("L tags: ",length(tags))
                         rtMS1<-idTab$rt
                         rtMS2<-idTab$MS2rt
                         rtMS2Ind<-idTab$iMS2rt
@@ -772,7 +771,21 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
                         
-                        plot_id_msn(ni,data=pData,rtMS1=rtMS1,rtMS2=rtMS2,rtMS2Ind=rtMS2Ind,mass=mz,smile=smile,tags=tags,logYAxis=log,rtrange=rtrange,theme=theme,cex=rvPres$cex,pal=rvPres$pal,rt_digits=rvPres$rt_digits,m_digits=rvPres$m_digits,fTab=sfTab)
+                        plot_id_msn(ni,data=pData,
+                                    rtMS1=rtMS1,
+                                    rtMS2=rtMS2,
+                                    rtMS2Ind=rtMS2Ind,
+                                    mass=mz,
+                                    smile=smile,
+                                    tags=tags,
+                                    logYAxis=log,
+                                    rtrange=rtrange,
+                                    theme=theme,
+                                    cex=rvPres$cex,
+                                    pal=rvPres$pal,
+                                    rt_digits=rvPres$rt_digits,
+                                    m_digits=rvPres$m_digits,
+                                    fTab=sfTab)
                     }
                     rvPres$plot_id<-plot_id
                 }
@@ -1092,7 +1105,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             fn <- sprintf(pfn,i)
             pdf(file=fn, width=12, height=8)
             for (i in rvConf$currIDSet) {
-                rvPres$plot_id(i,log=input$yaxis)
+                print(rvPres$plot_id(i,log=input$yaxis))
                 message("Plotting compound ", i," done.")
             }
             dev.off()
