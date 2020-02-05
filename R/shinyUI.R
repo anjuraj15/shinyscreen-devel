@@ -1030,11 +1030,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
             
         shiny::observeEvent(input$genRunB,{
+            fTab<-gen_base_ftab()
             nProc<-as.integer(input$genNoProc)
             sets<-input$genSetSelInp
             message("Selected sets:")
             message("Number of processes:",nProc)
-            fTab<-gen_base_ftab()
             intThresh<-as.numeric(input$intThresh)
             noiseFac<-as.numeric(input$noiseFac)
             rtDelta<-as.numeric(input$rtDelta)
@@ -1281,7 +1281,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         shiny::observe({
-            if (input$tabs=="prescreen") {
+            if (input$tabs=="gen") {
                 comp<-gen_comp_tab()
                 currSet<-rvConf$currSet
                 mzML<-getMzML()
@@ -1291,6 +1291,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                                              inputId="genSetSelInp",
                                              choices=sets)
                 }
+                
+
+            }
+
+            if (input$tabs=="prescreen") {
+                comp<-gen_comp_tab()
+                currSet<-rvConf$currSet
                 if (!(is.na(currSet) || is.null(comp))) {
                     mds<-levels(factor(mzML$mode[mzML$set %in% currSet]))
                     rvConf$currMode<-mds[[1]]
@@ -1301,7 +1308,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                     
                     
                 }
-
             }
         })
 
