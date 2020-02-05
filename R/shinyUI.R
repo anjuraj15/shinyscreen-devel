@@ -634,16 +634,11 @@ shinyScreenApp <- function(projDir=getwd()) {
                                })
 
                 for (nm in rvConf$REST_TXT_INP) {
-                    ## sav$input$tagsInp<-input$tagsInp
-                    ## sav$input$setsInp<-input$setsInp
-                    ## sav$input$fnTgtL<-input$fnTgtL
-                    ## sav$input$fnUnkL<-input$fnUnkL
-                    ## sav$input$fnSetId<-input$fnSetId
                     sav$input[[nm]]<-input[[nm]]
                     
                 }
                 sav$tab<-list()
-                for (nm in names(rvTab)) {
+                for (nm in REST_TAB) {
                     df<-rvTab[[nm]]
                     sav$tab[[nm]]<-df
                 }
@@ -666,11 +661,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                                            inputId=nm,
                                            value=sav$input[[nm]])
                 }
-                for (nm in names(rvTab)) {
+                for (nm in REST_TAB) {
                     rvTab[[nm]]<-sav$tab[[nm]]
-                }
-                if (!is.null(rvTab$mzML$set)) {
-                    levels(rvTab$mzML$set)<-factor(rvTab$mzML$set)
                 }
             }
         })
@@ -1013,11 +1005,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             paths<-fchoice[["datapath"]]
             rvTab$mzMLWork<-add_mzML_files(rvTab$mzMLWork,paths)
         })
-        
-        ## shiny::observeEvent(input$confFileTabBase,
-        ## {
-        ##     #rvConf$fnFTBase<-input$confFileTabBase
-        ## })
+
         shiny::observeEvent(input$tabs,{
             if (input$tabs=="gen") {
 
@@ -1146,17 +1134,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (x<=len) rvConf$currIDSel<-x
         })
 
-        ## shiny::observeEvent(rvConf$fnFT,{
-
-        ##     fn<-rvConf$fnFT
-        ##     if (!is.null(fn) && isThingFile(fn)) {
-        ##         rvTab$mtr<-read.csv(file=fn,
-        ##                             comment.char = '',
-        ##                             stringsAsFactors = F)
-        ##     }
-
-        ## })
-        
         shiny::observeEvent(rvConf$currIDSel,{
             ids<-rvConf$currIDSet
             if (length(ids)>0) rvConf$currID<-ids[[rvConf$currIDSel]]
@@ -1252,14 +1229,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             })
         })
         
-        ## shiny::observe({
-        ##     shiny::invalidateLater(100,
-        ##                            session=session)
-        ##     fnFT<-if (isThingFile(input$confResFileTab)) input$confResFileTab else NULL
-        ##     rvConf$fnFT<-fnFT
-        ## })
-        
-
         shiny::observe({
 
             sets<-getSets()

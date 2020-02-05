@@ -45,10 +45,9 @@ PAL="Dark2"
 REST_TXT_INP<-c("fnTgtL",
                 "fnUnkL",
                 "fnSetId",
-                "tagsInp",
-                "confFileTabBase",
-                "confFileTabProcInp",
-                "confResFileTab")
+                "tagsInp")
+
+REST_TAB<-c("mzMLWork")
 
 
 GUI_TAB_TITLE<-c(conf="Config",
