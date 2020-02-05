@@ -1298,6 +1298,8 @@ shinyScreenApp <- function(projDir=getwd()) {
             if (input$tabs=="prescreen") {
                 comp<-gen_comp_tab()
                 currSet<-rvConf$currSet
+                mzML<-getMzML()
+
                 if (!(is.na(currSet) || is.null(comp))) {
                     mds<-levels(factor(mzML$mode[mzML$set %in% currSet]))
                     rvConf$currMode<-mds[[1]]
