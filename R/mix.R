@@ -339,7 +339,8 @@ preProc <- function (ftable,noiseFac=3,rtDelta=0.5,intThresh=1e5,intThreshMS2=0.
             }
         } 
     }
-    write.csv(ftable, file = fnDest,row.names=F)
+          
+    ftable #write.csv(ftable, file = fnDest,row.names=F)
 }
     
 
