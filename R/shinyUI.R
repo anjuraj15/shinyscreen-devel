@@ -611,7 +611,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         getComp<-shiny::reactive({
-            rvTab$comp
+            gen_comp_tab()
         })
 
         getTgt<-shiny::reactive({
@@ -692,9 +692,10 @@ shinyScreenApp <- function(projDir=getwd()) {
         currSetPreCalc<-shiny::reactive({
             set<-rvConf$currSet
             md<-rvConf$currMode
-            fTab<-rvTab$mtr
-            message("I am here for some reason: currSetPreCalc.")
             comp<-gen_comp_tab()
+            fTab<-gen_start_state_ftab()
+            message("I am here for some reason: currSetPreCalc.")
+
             if (!is.na(set) && !is.na(md) && length(fTab)>0) {
                 
                 if (!is.null(comp)) {
@@ -767,7 +768,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         gen_base_ftab<-shiny::reactive({
             message("Generating basic file table in file ",rvConf$fnFTBase)
             files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
-            comp<-file2tab(rvConf$fnComp) ## TODO: Why is
+            comp<- gen_comp_tab() #file2tab(rvConf$fnComp) ## TODO: Why is
             ## rvTab$comp not
             ## properly updated?
             df<-genSuprFileTab(files,comp)
