@@ -779,6 +779,30 @@ shinyScreenApp <- function(projDir=getwd()) {
             df
         })
 
+
+        gen_start_state_ftab<-shiny::reactive({
+            fnFT<-rvConf$fnFT
+            mtr<-rvTab$mtr
+            if (!is.null(mtr)) {
+                mtr
+            } else if (!file.exists(fnFT)) {
+                message("Generating the first instance of the state file table")
+                bdf <- gen_base_ftab()
+                df<-gen_clean_state_ftab(bdf)
+                tab2file(tab=df,file=fnFT)
+                message("Done generating the first instance of the state file table.")
+                rvTab$mtr<-df
+                df
+            } else {
+                message("Reading in the state file table.")
+                df<-file2tab(fnFT,colClasses=c("rt"="numeric",
+                                               "MS2rt"="numeric",
+                                               "iMS2rt"="numeric"))
+                message("Done reading in the state file table.")
+                df
+            }
+        })
+
         gen_comp_tab<-shiny::reactive({
 
             setId<-getSetId()
@@ -786,119 +810,119 @@ shinyScreenApp <- function(projDir=getwd()) {
             unk<-getUnk()
             tgt<-getTgt()
             message("Begin generation of comp table.")
-                    availSets<-getSets()
-                    idTgt<-tgt$ID
-                    idUnk<-unk$ID
-                    if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
-                    
-                    if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
-                    setId$orig<-rep("",nrow(setId))
-                    lTgt<-setId$ID %in% idTgt
-                    lUnk<-setId$ID %in% idUnk
-                    iTgt<-which(lTgt)
-                    iUnk<-which(lUnk)
-                    setId[iTgt,"orig"]<-"known"
-                    setId[iUnk,"orig"]<-"unknown"
-                    rvTab$setId<-setId ## !!!
+            availSets<-getSets()
+            idTgt<-tgt$ID
+            idUnk<-unk$ID
+            if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
+            
+            if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
+            setId$orig<-rep("",nrow(setId))
+            lTgt<-setId$ID %in% idTgt
+            lUnk<-setId$ID %in% idUnk
+            iTgt<-which(lTgt)
+            iUnk<-which(lUnk)
+            setId[iTgt,"orig"]<-"known"
+            setId[iUnk,"orig"]<-"unknown"
+            rvTab$setId<-setId ## !!!
 
 
-                    
-                    ## knowns
-                    setIdTgt<-setId[setId$orig=="known",]
-                    sets<-levels(factor(setIdTgt$set))
-                    sets<-intersect(availSets,sets) #Make sure we only
+            
+            ## knowns
+            setIdTgt<-setId[setId$orig=="known",]
+            sets<-levels(factor(setIdTgt$set))
+            sets<-intersect(availSets,sets) #Make sure we only
                                         #consider sets defined
                                         #on the data files.
-                    nRow<-0
-                    for (s in sets) {
-                        sMode<-getSetMode(s,mzML)
-                        n<-length(sMode)
-                        nRow<-nRow+n*length(which(setIdTgt$set %in% s))
-                        
-                    }
-
-                    compTgt<-data.frame(
-                        ID=rep(0,nRow),
-                        mz=rep(0.0,nRow),
-                        rt=rep(NA,nRow),
-                        mode=rep("",nRow),
-                        set=rep("",nRow),
-                        orig=rep("known",nRow),
-                        Name=rep("",nRow),
-                        SMILES=rep("",nRow),
-                        stringsAsFactors=F)
-
-                    i<-1
-                    for (s in sets) {
-                        sMode<-getSetMode(s,mzML)
-                        for (m in sMode) {
-                            for (id in setIdTgt[setIdTgt$set %in% s,"ID"]) {
-                                compTgt[i,"ID"]<-id
-                                compTgt[i,"mode"]<-m
-                                compTgt[i,"set"]<-s
-                                compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
-                                sm<-getColFromCmpL(id,"SMILES",tgt)
-                                nm<-getColFromCmpL(id,"Name",tgt)
-                                rt<-getColFromCmpL(id,"rt",tgt)
-                                compTgt[i,"SMILES"]<-sm
-                                compTgt[i,"Name"]<-nm
-                                compTgt[i,"rt"]<-rt
-                                i<-i+1
-                            }
-                            
-                        }
-                    }
-
-                    message("Generation of comp table: knowns done.")
-                    ## unknows
-                    setIdUnk<-setId[setId$orig=="unknown",]
-                    sets<-levels(factor(setIdUnk$set))
-                    sets<-intersect(availSets,sets)
-                    
-                    nRow<-0
-                    for (s in sets) {
-                        sMode<-getSetMode(s,mzML)
-                        n<-length(sMode)
-                        if (n>1) stop("Set of unknowns ",s,"has more than one mode. Sets of unknowns cannot have more than one mode.")
-
-                        nRow<-nRow+length(which(setIdUnk$set %in% s))
-                        
-                    }
-
-                    compUnk<-data.frame(
-                        ID=rep(0,nRow),
-                        mz=rep(0.0,nRow),
-                        rt=rep(NA,nRow),
-                        mode=rep("",nRow),
-                        set=rep("",nRow),
-                        orig=rep("unknown",nRow),
-                        Name=rep("",nRow),
-                        SMILES=rep("",nRow),
-                        stringsAsFactors=F)
-
-                    i<-1
-                    for (s in sets) {
-                        m<-getSetMode(s,mzML)
-                        for (id in setIdUnk[setIdUnk$set %in% s,"ID"]) {
-                            compUnk[i,"ID"]<-id
-                            compUnk[i,"mode"]<-m
-                            compUnk[i,"set"]<-s
-                            compUnk[i,"mz"]<-getColFromCmpL(id,"mz",unk)
-                            nm<-getColFromCmpL(id,"Name",unk)
-                            rt<-getColFromCmpL(id,"rt",unk)
-                            compUnk[i,"Name"]<-nm
-                            compUnk[i,"rt"]<-rt
-                            i<-i+1
-                        }
-                        
-                    }
-                    message("Generation of comp table: unknowns done.")
-                    df<-rbind(compTgt,compUnk,stringsAsFactors=F)
-                    tab2file(df,rvConf$fnComp)
-                    message("Generation of comp table finished.")
-                    df   
-
+            nRow<-0
+            for (s in sets) {
+                sMode<-getSetMode(s,mzML)
+                n<-length(sMode)
+                nRow<-nRow+n*length(which(setIdTgt$set %in% s))
                 
+            }
+
+            compTgt<-data.frame(
+                ID=rep(0,nRow),
+                mz=rep(0.0,nRow),
+                rt=rep(NA,nRow),
+                mode=rep("",nRow),
+                set=rep("",nRow),
+                orig=rep("known",nRow),
+                Name=rep("",nRow),
+                SMILES=rep("",nRow),
+                stringsAsFactors=F)
+
+            i<-1
+            for (s in sets) {
+                sMode<-getSetMode(s,mzML)
+                for (m in sMode) {
+                    for (id in setIdTgt[setIdTgt$set %in% s,"ID"]) {
+                        compTgt[i,"ID"]<-id
+                        compTgt[i,"mode"]<-m
+                        compTgt[i,"set"]<-s
+                        compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
+                        sm<-getColFromCmpL(id,"SMILES",tgt)
+                        nm<-getColFromCmpL(id,"Name",tgt)
+                        rt<-getColFromCmpL(id,"rt",tgt)
+                        compTgt[i,"SMILES"]<-sm
+                        compTgt[i,"Name"]<-nm
+                        compTgt[i,"rt"]<-rt
+                        i<-i+1
+                    }
+                    
+                }
+            }
+
+            message("Generation of comp table: knowns done.")
+            ## unknows
+            setIdUnk<-setId[setId$orig=="unknown",]
+            sets<-levels(factor(setIdUnk$set))
+            sets<-intersect(availSets,sets)
+            
+            nRow<-0
+            for (s in sets) {
+                sMode<-getSetMode(s,mzML)
+                n<-length(sMode)
+                if (n>1) stop("Set of unknowns ",s,"has more than one mode. Sets of unknowns cannot have more than one mode.")
+
+                nRow<-nRow+length(which(setIdUnk$set %in% s))
+                
+            }
+
+            compUnk<-data.frame(
+                ID=rep(0,nRow),
+                mz=rep(0.0,nRow),
+                rt=rep(NA,nRow),
+                mode=rep("",nRow),
+                set=rep("",nRow),
+                orig=rep("unknown",nRow),
+                Name=rep("",nRow),
+                SMILES=rep("",nRow),
+                stringsAsFactors=F)
+
+            i<-1
+            for (s in sets) {
+                m<-getSetMode(s,mzML)
+                for (id in setIdUnk[setIdUnk$set %in% s,"ID"]) {
+                    compUnk[i,"ID"]<-id
+                    compUnk[i,"mode"]<-m
+                    compUnk[i,"set"]<-s
+                    compUnk[i,"mz"]<-getColFromCmpL(id,"mz",unk)
+                    nm<-getColFromCmpL(id,"Name",unk)
+                    rt<-getColFromCmpL(id,"rt",unk)
+                    compUnk[i,"Name"]<-nm
+                    compUnk[i,"rt"]<-rt
+                    i<-i+1
+                }
+                
+            }
+            message("Generation of comp table: unknowns done.")
+            df<-rbind(compTgt,compUnk,stringsAsFactors=F)
+            tab2file(df,rvConf$fnComp)
+            message("Generation of comp table finished.")
+            df   
+
+            
 
         })
         ## ***** Observe Event *****
@@ -1006,30 +1030,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             paths<-fchoice[["datapath"]]
             rvTab$mzMLWork<-add_mzML_files(rvTab$mzMLWork,paths)
         })
-
-        shiny::observeEvent(input$tabs,{
-            if (input$tabs=="gen") {
-
-                rvTab$mzML<-rvTab$mzMLWork
-                rvTab$mzML$set<-factor(as.character(rvTab$mzML$set)) # Reduce
-                                                                     # to
-                                                                     # those
-                                                                     # actually
-                                                                     # defined
-                                                                     # on
-                                                                     # data.
-
-                message("I am here for some reason: gen.")
-                rvTab$comp<-gen_comp_tab()
-            }
-
-            if (input$tabs=="prescreen") {
-                if (is.null(rvTab$mtr) ||
-                    is.na(rvTab$mtr) ||
-                    nrow(rvTab$mtr)==0) rvTab$mtr<-read.csv(file=rvConf$fnFT,comment.char='',stringsAsFactors=F)                
-            }
-        })
-            
+        
         shiny::observeEvent(input$genRunB,{
             fTab<-gen_base_ftab()
             nProc<-as.integer(input$genNoProc)
@@ -1076,27 +1077,26 @@ shinyScreenApp <- function(projDir=getwd()) {
                 doneSets<-sets[sapply(sets,isGenDone)]
                 message("done sets: ",doneSets)
                 if (length(doneSets)>0) {
-                    fnFullTab<-rvConf$fnFTPP
-                    fullFTab<-gen_base_ftab()
+                                        #fnFullTab<-rvConf$fnFTPP
+                    fullFTab<- gen_start_state_ftab() #gen_base_ftab()
                     doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
-                    if (nrow(doneFTab)>0) {
-                        fnTmp<-ppInpFt()
-                        write.csv(file=fnTmp,
-                                  x=doneFTab,
-                                  row.names=F)
-                        message("fnTmp: ",fnTmp)
+                    if (nrow(doneFTab) > 0) {
+                        ## fnTmp<-ppInpFt()
+                        ## write.csv(file=fnTmp,
+                        ##           x=doneFTab,
+                        ##           row.names=F)
+                        ## message("fnTmp: ",fnTmp)
                         intThresh<-as.numeric(input$intThresh)
                         noiseFac<-as.numeric(input$noiseFac)
                         rtDelta<-as.numeric(input$rtDelta)
-                        preProc(fnFileTab=fnTmp,
-                                fnDest=fnTmp,
-                                intThresh=intThresh,
-                                noiseFac=noiseFac,
-                                rtDelta=rtDelta)
-                        ppFnTab<-read.csv(file=fnTmp,
-                                          comment.char = '',
-                                          stringsAsFactors = F)
-                        extNms<-names(ppFnTab)
+                        ppFTab<-preProc(ftable=doneFTab,
+                                        intThresh=intThresh,
+                                        noiseFac=noiseFac,
+                                        rtDelta=rtDelta)
+                        ## ppFnTab<-read.csv(file=fnTmp,
+                        ##                   comment.char = '',
+                        ##                   stringsAsFactors = F)
+                        extNms<-names(ppFTab)
                         basNms<-names(fullFTab)
                         diffNms<-setdiff(extNms,basNms)
                         nrf<-nrow(fullFTab)
@@ -1105,11 +1105,11 @@ shinyScreenApp <- function(projDir=getwd()) {
                             z<-T
                             fullFTab[[nm]]<-z
                         }
-                        fullFTab[fullFTab$set %in% doneSets,]<-ppFnTab
-                        write.csv(file=fnFullTab,
+                        fullFTab[fullFTab$set %in% doneSets,]<-ppFTab
+                        write.csv(file=rvConf$fnFT,
                                   x=fullFTab,
                                   row.names=F)
-                        file.copy(fnFullTab,rvConf$fnFT,overwrite=T)
+                        ## file.copy(fnFullTab,rvConf$fnFT,overwrite=T)
                         message("Finished preprocessing.")
                         
                         
@@ -1145,11 +1145,13 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
             names(res) <- rvConf$tags
-            rvTab$mtr <- updateFileTable(df=rvTab$mtr,
+            df<-gen_start_state_ftab()
+            rvTab$mtr <- updateFileTable(df=df,
                                          set=rvConf$currSet,
                                          mode=rvConf$currMode,
                                          id=rvConf$currID,
                                          linput=res)
+            tab2file(tab=rvTab$mtr,file=rvConf$fnFT)
 
         })
         
@@ -1160,9 +1162,9 @@ shinyScreenApp <- function(projDir=getwd()) {
             write.csv(file=fn,x=rvTab$mtr,row.names = F)
         })
 
-        shiny::observeEvent(rvTab$mtr,{
-            write.csv(file=rvConf$fnFT,x=rvTab$mtr,row.names=F)
-        })
+        ## shiny::observeEvent(rvTab$mtr,{
+        ##     write.csv(file=rvConf$fnFT,x=rvTab$mtr,row.names=F)
+        ## })
 
 
         shiny::observeEvent(input$saveplot,
@@ -1283,9 +1285,16 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observe({
             if (input$tabs=="gen") {
-                comp<-gen_comp_tab()
-                currSet<-rvConf$currSet
-                mzML<-getMzML()
+                rvTab$mzML<-rvTab$mzMLWork
+                rvTab$mzML$set<-factor(as.character(rvTab$mzML$set)) # Reduce
+                                        # to
+                                        # those
+                                        # actually
+                                        # defined
+                                        # on
+                                        # data.
+
+                                        # rvTab$comp<-gen_comp_tab()
                 sets<-getSets()
                 if (length(sets)>0) {
                     shiny::updateSelectInput(session=session,
@@ -1298,10 +1307,15 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             if (input$tabs=="prescreen") {
                 comp<-gen_comp_tab()
+                currSetMkCmpMenu()
+                currSetPreCalc()
+                rvTab$mtr<-gen_start_state_ftab()
+
+
                 currSet<-rvConf$currSet
                 mzML<-getMzML()
-
-                if (!(is.na(currSet) || is.null(comp))) {
+                if (input$presSelMode=="") {
+                ## if (!(is.na(currSet) || is.null(comp))) {
                     mds<-levels(factor(mzML$mode[mzML$set %in% currSet]))
                     rvConf$currMode<-mds[[1]]
                     shiny::updateSelectInput(session=session,
@@ -1314,11 +1328,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
-        shiny::observe({
-            if (input$tabs=="prescreen") {
-                currSetMkCmpMenu()
-                currSetPreCalc}()
-        })
 
 
 
@@ -1339,7 +1348,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         output$nvPanel<-shiny::renderUI({
             message("Rendering panel started")
-            ft<-rvTab$mtr
+            ft<- gen_start_state_ftab() #rvTab$mtr
             set<-input$presSelSet
             if (!is.null(set) && !is.na(set) && nchar(set)>0 && !is.null(ft)) {
                 QANms<-rvConf$QANAMES
