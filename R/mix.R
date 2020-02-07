@@ -236,191 +236,25 @@ reconf <- function(wd) {## Load the settings.
 }
 
 
-
-##' Prescreens. Writes data out. Adapted from ReSOLUTION
-##'
-##' 
-##' @title Prescreen
-##' @param wd Absolute path to the directory that will contain the
-##'     resulting data frame.
-##' @param RMB_mode ...
-##' @param FileList ...
-##' @param cmpd_list ...
-##' @param ppm_limit_fine ...
-##' @param EIC_limit ...
-##' @author Emma Schymanski, Todor Kondić
-RMB_EIC_prescreen_df_old <- function (wd, RMB_mode, FileList, cmpd_list,
-                                  ppm_limit_fine = 10, EIC_limit = 0.001) {
-
-
-    n_spec <- 0
-    cmpd_RT_maxI <- ""
-    msms_found <- ""
-    rts <- 0
-    max_I_prec <- ""
-    cmpd_RT_maxI_min <- ""
-    file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
-    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE,comment.char='')
-    ncmpd <- nrow(cmpd_info)
-    odir=wd
-    get_width <- function(maxid) {log10(maxid)+1}
-    id_field_width <- get_width(ncmpd)
-    fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
-    f <- mzR::openMSfile(file_list$Files[1])
-    for (i in 1:length(file_list$ID)) {
-        cpdID <- file_list$ID[i]
-        n_spec <- n_spec + 1
-        smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
-        if (!is.na(smiles)) {
-            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
-        }
-        else {
-            mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
-        }
-        eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
-        msms_found[n_spec] <- FALSE
-        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
-                                                                      p = TRUE))
-        max_I_prec_index <- which.max(eic$intensity)
-        cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
-        max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
-        cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60
-
-        write.csv(x=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"),row.names=F)
-        cpd_df <- data.frame("rt"=c(),"intensity"=c())
-        for (specs in msms) {
-            if (specs@found == TRUE) {
-                
-                df <- do.call(rbind, lapply(specs@children, function(sp) c(sp@rt, 
-                                                                           intensity = max(sp@intensity))))
-                cpd_df <- rbind(cpd_df,df,make.row.names = F)
-
-                msms_found[n_spec] <- TRUE
-            }
-        }
-        if (nrow(cpd_df)>0) write.csv(x=cpd_df,file=fn_out(cpdID,".kids"),row.names=F)
-
-        rts[i] <- (cmpd_RT_maxI[n_spec])
-    }
-
-    write.csv(cbind(file_list$ID, cmpd_info$mz, cmpd_info$Name, 
-                    cmpd_RT_maxI, cmpd_RT_maxI_min, max_I_prec, msms_found), 
-              file = file.path(odir,"RTs_wI.csv"), 
-              row.names = F)
-}
-
-
-##' Prescreens. Writes data out. Adapted from ReSOLUTION
-##'
-##' 
-##' @title Prescreen
-##' @param wd Absolute path to the directory that will contain the
-##'     resulting data frame.
-##' @param RMB_mode ...
-##' @param FileList ...
-##' @param cmpd_list ...
-##' @param ppm_limit_fine ...
-##' @param EIC_limit ...
-##' @author Emma Schymanski, Todor Kondić
-RMB_EIC_prescreen_df_old1 <- function (wd, RMB_mode, FileList, cmpd_list,
-                                       ppm_limit_fine = 10, EIC_limit = 0.001) {
-
-    n_spec <- 0
-    cmpd_RT_maxI <- ""
-    msms_found <- ""
-    rts <- 0
-    max_I_prec <- ""
-    cmpd_RT_maxI_min <- ""
-    file_list <- read.csv(FileList, stringsAsFactors = FALSE,comment.char='')
-    cmpd_info <- read.csv(cmpd_list, stringsAsFactors = FALSE,comment.char='')
-    ncmpd <- nrow(cmpd_info)
-    odir=wd
-    fid <- file_list$ID
-    cmpind <- which(cmpd_info$ID %in% fid)
-    mzCol <- cmpd_info$mz[cmpind]
-    nmCol <- cmpd_info$Name[cmpind]
-    get_width <- function(maxid) {log10(maxid)+1}
-    id_field_width <- get_width(ncmpd)
-
-    fn_out<- function(id,suff) {file.path(odir,paste(formatC(id,width=id_field_width,flag=0),suff,".csv",sep=''))}
-    f <- mzR::openMSfile(file_list$Files[1])
-    for (i in 1:length(file_list$ID)) {
-        cpdID <- file_list$ID[i]
-        n_spec <- n_spec + 1
-        smiles <- tryCatch(RMassBank::findSmiles(cpdID), error = function(e) NA)
-        mz<-if (!is.na(smiles)) {
-                mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode)[3])
-            } else {
-                mzCol[[i]]  ## TODOR REMOVE mz <- as.numeric(RMassBank::findMz(cpdID, RMB_mode, retrieval = "unknown")[3])
-            }
-        ## TODOR REMOVED if (is.na(mzCol[[i]])) mzCol[[i]] <- mz ## infer from findMz.
-        eic <- RMassBank::findEIC(f, mz, limit = EIC_limit)
-        msms_found[n_spec] <- FALSE
-        msms <- RMassBank::findMsMsHR.mass(f, mz, 0.5, RMassBank::ppm(mz, ppm_limit_fine, 
-                                                                      p = TRUE))
-
-        max_I_prec_index <- which.max(eic$intensity)
-        cmpd_RT_maxI[n_spec] <- eic[max_I_prec_index, 1]
-        max_I_prec[n_spec] <- eic[max_I_prec_index, 2]
-        cmpd_RT_maxI_min[n_spec] <- as.numeric(cmpd_RT_maxI[n_spec])/60 ## conversion to minutes
-
-        if (length(eic$rt)>0) eic$rt <- eic$rt/60 ## conversion to minutes
-
-        write.csv(x=eic[c("rt","intensity")],file=fn_out(cpdID,".eic"),row.names=F)
-        bindKids <- function(kids)
-            do.call(rbind,lapply(kids,function (kid)
-                c(rt=kid@rt,intensity=max(kid@intensity))))
-
-        
-        bindSpec <- function(specLst) {
-            do.call(rbind,lapply(specLst,function (sp) bindKids(sp@children)))
-        }
-        
-        found <- which(vapply(msms,function(sp) sp@found,FUN.VALUE=F))
-        msmsExst <- msms[found]
-        ## message("found:",found)
-        ## message("Lall:",length(msms))
-        ## message("Lsome:",length(msmsExst))
-        if (length(found)>0) {
-            msms_found[n_spec] <- T
-            msmsTab <- as.data.frame(bindSpec(msmsExst),stringsAsFactors=F)
-            names(msmsTab) <- c("rt","intensity")
-            if (nrow(msmsTab)>0) {
-                msmsTab$rt <- msmsTab$rt/60 ## conversion to minutes
-                write.csv(x=msmsTab,file=fn_out(cpdID,".kids"),row.names=F)
-            }
-        }
-
-        rts[i] <- (cmpd_RT_maxI[n_spec])
-    }
-    mzR::close(f)
-    rtwiDf <- data.frame(ID=file_list$ID, mz=mzCol, Name=nmCol, 
-                         cmpd_RT_maxI=cmpd_RT_maxI, cmpd_RT_maxI_min=cmpd_RT_maxI_min,
-                         max_I_prec=max_I_prec, msms_found=msms_found,stringsAsFactors=F)
-    
-    write.csv(rtwiDf, file = file.path(odir,"RTs_wI.csv"), row.names = F)
-}
-
-
-
-preProc <- function (fnFileTab,fnDest=paste(stripext(fnFileTab),"_candidate.csv",sep=''),noiseFac=3,rtDelta=0.5,intThresh=1e5,intThreshMS2=0.05) {
-    ## read in .csv file as file
-    ftable <- read.csv(file = fnFileTab, header = T, sep=",", stringsAsFactors = F,comment.char='')
-    ids <- as.numeric(levels(factor(ftable$ID)))
-
-
-    fn_spec<-function(wd) readRDS(file.path(wd,FN_SPEC))
+gen_clean_state_ftab<-function(ftable) {
     ftable$Comments <- ""
+    ftable[c("MS1","MS2","Alignment","AboveNoise")] <- T
+    ftable["MS2rt"] <- NA_real_
+    ftable["iMS2rt"] <- NA_integer_
+    ftable["rt"]<-NA_real_
+    ftable
+}
+
+preProc <- function (ftable,noiseFac=3,rtDelta=0.5,intThresh=1e5,intThreshMS2=0.05) {
     wds<-unique(ftable$wd)
+    fn_spec<-function(wd) readRDS(file.path(wd,FN_SPEC))
     message("Loading RDS-es ...")
     allData<-lapply(wds,fn_spec)
     names(allData)<-wds
     message("... done with RDSs")
-    names(allData)<-wds
-    ## For loop through dataframe called file to set thresholds.
-    ftable[c("MS1","MS2","Alignment","AboveNoise")] <- T
-    ftable["MS2rt"] <- NA
-    ftable["rt"]<-NA
+    
+
+
     ## QA check plan:
     ##
     ## If MS1 does not exist, set MS1 to F, as well as everything else except MS2.
