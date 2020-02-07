@@ -575,13 +575,13 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         ## ***** reactive function definitions *****
         
-        getTags<-shiny::reactive({
+        get_all_tags<-shiny::reactive({
             tagsInp<-input$tagsInp
             x<-if (length(tagsInp)>0 && !is.na(tagsInp) && nchar(tagsInp)>0) unlist(strsplit(tagsInp, ",")) else list()
             as.list(c(x,"unspecified"))
         })
 
-        getSetIdSets<-shiny::reactive({
+        get_all_sets<-shiny::reactive({
             ## Returns all sets defined in a setid table.
             df<-rvTab$setId
             sets<-levels(df$set)
@@ -610,10 +610,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             rvTab$mzML
         })
 
-        getComp<-shiny::reactive({
-            gen_comp_tab()
-        })
-
         getTgt<-shiny::reactive({
             rvTab$tgt
         })
@@ -622,7 +618,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             rvTab$unk
         })
 
-        saveConf<-reactive({
+        saveConf<-shiny::reactive({
             fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 message("Saving config to",fn)
@@ -648,7 +644,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
-        restoreConf<-reactive({
+        restoreConf<-shiny::reactive({
             input$restoreConfB
             fnobj<-shinyFiles::parseFilePaths(root=c(wd=rvConf$projDir),input$restoreConfB)
             fn<-fnobj[["datapath"]]
@@ -667,13 +663,17 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
         })
 
-
+        get_mzml_work<-shiny::reactive({
+            tags<-get_all_tags()
+            sets<-get_all_sets()
+            prep_mzML_work(rvTab$mzMLWork,sets,tags)
+        })
         currSetMkCmpMenu<-shiny::reactive({
             set<-rvConf$currSet
             md<-rvConf$currMode
             setID<-getSetId()
             message("I am here for some reason: currSetMKCmpMenu.")
-            comp<-gen_comp_tab()
+            comp<-get_comp_tab()
             if (!is.na(set) && !is.null(comp) && !is.na(md)) {
                 comp<-comp[comp$set %in% set,]
                 comp<-comp[comp$mode %in% md,]
@@ -692,8 +692,8 @@ shinyScreenApp <- function(projDir=getwd()) {
         currSetPreCalc<-shiny::reactive({
             set<-rvConf$currSet
             md<-rvConf$currMode
-            comp<-gen_comp_tab()
-            fTab<-gen_start_state_ftab()
+            comp<-get_comp_tab()
+            fTab<-get_mtr()
             message("I am here for some reason: currSetPreCalc.")
 
             if (!is.na(set) && !is.na(md) && length(fTab)>0) {
@@ -768,7 +768,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         gen_base_ftab<-shiny::reactive({
             message("Generating basic file table in file ",rvConf$fnFTBase)
             files<-adornmzMLTab(rvTab$mzML,projDir=rvConf$projDir)
-            comp<- gen_comp_tab() #file2tab(rvConf$fnComp) ## TODO: Why is
+            comp<- get_comp_tab() #file2tab(rvConf$fnComp) ## TODO: Why is
             ## rvTab$comp not
             ## properly updated?
             df<-genSuprFileTab(files,comp)
@@ -780,10 +780,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
-        gen_start_state_ftab<-shiny::reactive({
+        get_mtr<-shiny::reactive({
             fnFT<-rvConf$fnFT
             mtr<-rvTab$mtr
             if (!is.null(mtr)) {
+                message("Grabbing existing mtr")
                 mtr
             } else if (!file.exists(fnFT)) {
                 message("Generating the first instance of the state file table")
@@ -798,12 +799,11 @@ shinyScreenApp <- function(projDir=getwd()) {
                 df<-file2tab(fnFT,colClasses=c("rt"="numeric",
                                                "MS2rt"="numeric",
                                                "iMS2rt"="numeric"))
-                message("Done reading in the state file table.")
                 df
             }
         })
 
-        gen_comp_tab<-shiny::reactive({
+        get_comp_tab<-shiny::reactive({
 
             setId<-getSetId()
             mzML<-getMzML()
@@ -956,11 +956,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         ##     }
         ## })
 
-        shiny::observe({
-            tags<-getTags()
-            sets<-getSetIdSets()
-            rvTab$mzMLWork<-prep_mzML_work(rvTab$mzMLWork,sets,tags)
-        })
+        ## shiny::observe({
+        ##     tags<-get_all_tags()
+        ##     sets<-get_all_sets()
+        ##     rvTab$mzMLWork<-prep_mzML_work(rvTab$mzMLWork,sets,tags)
+        ## })
 
 
         shiny::observeEvent(input$impTgtListB,{
@@ -1067,7 +1067,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             sets<-getSets()
             message("I am here for some reason: genRunPPB.")
-            comp<-gen_comp_tab()
+            comp<-get_comp_tab()
             
             nr<-nrow(comp)
             if (!is.null(nr)) {
@@ -1078,7 +1078,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 message("done sets: ",doneSets)
                 if (length(doneSets)>0) {
                                         #fnFullTab<-rvConf$fnFTPP
-                    fullFTab<- gen_start_state_ftab() #gen_base_ftab()
+                    fullFTab<- get_mtr() #gen_base_ftab()
                     doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
                     if (nrow(doneFTab) > 0) {
                         ## fnTmp<-ppInpFt()
@@ -1145,7 +1145,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
             names(res) <- rvConf$tags
-            df<-gen_start_state_ftab()
+            df<-get_mtr()
             rvTab$mtr <- updateFileTable(df=df,
                                          set=rvConf$currSet,
                                          mode=rvConf$currMode,
@@ -1253,9 +1253,10 @@ shinyScreenApp <- function(projDir=getwd()) {
             spectProps<-rvConf$spectProps
             set<-input$presSelSet
             md<-input$presSelMode
+            mtr<-get_mtr()
             if (!is.na(i) && length(spectProps)>0 && !is.na(md)) {
                 QANAMES<-rvConf$QANAMES
-                sdf <- queryFileTable(df=rvTab$mtr,set=set,mode=md,id=i)
+                sdf <- queryFileTable(df=mtr,set=set,mode=md,id=i)
                 sdf$tag<-as.character(sdf$tag)
                 for (t in sdf$tag) {
                     sprop <- rvConf$spectProps[[t]]
@@ -1275,8 +1276,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             set<-input$presSelSet
             if (!nchar(set)==0) {
-                ## cmpdL<-getCmpL()
-                ## setID<-getSetId()
                 rvConf$currSet<-set
             }
 
@@ -1285,7 +1284,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observe({
             if (input$tabs=="gen") {
-                rvTab$mzML<-rvTab$mzMLWork
+                rvTab$mzML<-get_mzml_work()
                 rvTab$mzML$set<-factor(as.character(rvTab$mzML$set)) # Reduce
                                         # to
                                         # those
@@ -1294,7 +1293,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         # on
                                         # data.
 
-                                        # rvTab$comp<-gen_comp_tab()
+                                        # rvTab$comp<-get_comp_tab()
                 sets<-getSets()
                 if (length(sets)>0) {
                     shiny::updateSelectInput(session=session,
@@ -1306,10 +1305,10 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
 
             if (input$tabs=="prescreen") {
-                comp<-gen_comp_tab()
+                comp<-get_comp_tab()
                 currSetMkCmpMenu()
                 currSetPreCalc()
-                rvTab$mtr<-gen_start_state_ftab()
+                rvTab$mtr<-get_mtr()
 
 
                 currSet<-rvConf$currSet
@@ -1343,12 +1342,13 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-            rhandsontable::rhandsontable(rvTab$mzMLWork,stretchH="all")
+            df<-get_mzml_work()
+            rhandsontable::rhandsontable(df,stretchH="all")
         })
 
         output$nvPanel<-shiny::renderUI({
             message("Rendering panel started")
-            ft<- gen_start_state_ftab() #rvTab$mtr
+            ft<- get_mtr() 
             set<-input$presSelSet
             if (!is.null(set) && !is.na(set) && nchar(set)>0 && !is.null(ft)) {
                 QANms<-rvConf$QANAMES
