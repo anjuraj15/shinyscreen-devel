@@ -621,15 +621,36 @@ multiplot <- function(..., plotlist=NULL, cols=1, layout=NULL) {
 }
 
 
-plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAxis,theme,pal="Dark2",cex=0.75,rt_digits=2,m_digits=4,rtrange=NULL) {
-    clean_rtrange <- function(def) {
-            x1 <- rtrange[1]
-            x2 <- rtrange[2]
-            if (is.na(x1) || x1 == 0) x1 <- def[1]
-            if (is.na(x2) || x2 == 0) x2 <- def[2]
+plot_id_msn <- function(ni,
+                        data,
+                        rtMS1,
+                        rtMS2,
+                        rtMS2Ind,
+                        mass,
+                        smile,
+                        tags,
+                        fTab,
+                        prop,
+                        theme,
+                        pal="Dark2",
+                        cex=0.75,
+                        rt_digits=2,
+                        m_digits=4) {
 
-            c(x1,x2)
+    clean_range<-function(def,rng) {
+        x1 <- rng[1]
+        x2 <- rng[2]
+        if (is.na(x1) || x1 == 0) x1 <- def[1]
+        if (is.na(x2) || x2 == 0) x2 <- def[2]
+        c(x1,x2)
+
+
+        
     }
+
+
+
+    
     mk_title<-function() paste("EIC (",
                                "m/z = ",
                                formatC(mass,format='f',digits=m_digits),
@@ -638,30 +659,26 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
 
     sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
 
-    if (logYAxis == "linear") log = ""
-    if (logYAxis == "log") log = "y"
+
     i<-name2id(ni)
 
-    ## MS1 EIC and MS2 spectral time series.
+
+    dfChrMS1<-NULL
+    dfChrMS2<-NULL
+    dfSpecMS2<-NULL
+
+    ## MS1 time series.
     dfschrms1<-lapply(tags,function(tag) {d<-data[[tag]]$eic
         ind<-match(ni,MSnbase::fData(d)[["ID"]])
         cg<-d[[ind]]
-        data.frame(rt=MSnbase::rtime(cg)/60.,intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1))
+        data.frame(rt=MSnbase::rtime(cg)/60.,
+                   intensity=MSnbase::intensity(cg),tag=as.character(tag),legend=mk_leg_lab(tag,rtMS1))
     })
+    
     dfChrMS1<-do.call(rbind,c(dfschrms1,list(make.row.names=F)))
 
-    rtDefRange<-range(dfChrMS1$rt)
-    intDefRange<-range(dfChrMS1$intensity)
-    rtRange <- if (is.null(rtrange))  rtDefRange else clean_rtrange(rtDefRange)
-    titMS1<-mk_title()
-    
-    plMS1<- if(!is.null(dfChrMS1) && !is.na(dfChrMS1) && !nrow(dfChrMS1)==0) {
-                ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+ggplot2::geom_line(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+ggplot2::lims(x=rtRange)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour=PLOT_MS1_LEG_TIT)+ggplot2::scale_y_continuous(labels = sci10)+theme()
-                } else NULL
 
-    ## Empty
-    plEmpty<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
-
+    ## MS2 spectral time series.
     dfsChrMS2<-lapply(tags,function(tag) {
         d<-data[[tag]]$ms2[[ni]]
         if (!is.null(d)) {
@@ -672,24 +689,11 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
             df
         } else NULL
     })
+    
     dfsChrMS2<-dfsChrMS2[!is.null(dfsChrMS2)]
-    if (!all(sapply(dfsChrMS2,is.null))) {
-        dfChrMS2<-do.call(rbind,c(dfsChrMS2,list(make.row.names=F)))
-        plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+ggplot2::geom_linerange(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+ggplot2::lims(x=rtRange)+ggplot2::labs(colour=PLOT_MS2_LEG_TIT)+ggplot2::scale_y_continuous(labels = sci10)+theme()
-    } else {
-        plMS2<-plEmpty
-    }
+    if (!all(sapply(dfsChrMS2,is.null))) dfChrMS2<-do.call(rbind,c(dfsChrMS2,list(make.row.names=F)))
 
-    ## Structure
-    if (!is.null(smile) && !is.na(smile) && !nchar(smile)<1) {
-        g<-smiles2img(smile,width=500,height=500,zoom=4.5)
-        plStruc<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+
-            ggplot2::geom_blank()+ggplot2::annotation_custom(g)+ggplot2::theme_void()
-    } else plStruc<-plEmpty
-
-
-
-    ## MS2 Spectrum
+    ## MS2 Spectrum.
     if (!all(sapply(dfsChrMS2,is.null))) {
         dfsSpecMS2<-lapply(tags,function(tag) {
             d<-data[[tag]]$ms2[[ni]]
@@ -705,6 +709,83 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
         })
         dfsSpecMS2<-dfsSpecMS2[!is.null(dfsSpecMS2)]
         dfSpecMS2<-do.call(rbind,c(dfsSpecMS2,list(make.row.names=F)))
+    }
+
+
+
+    ## Ranges
+    if (!is.null(dfChrMS1)) {
+        rrtMS1<-range(dfChrMS1$rt)
+        rrtMS2<-rrtMS1
+        rintMS1<-range(dfChrMS1$intensity)
+    }
+
+    if (!is.null(dfChrMS2)) {
+        rintMS2<-range(dfChrMS2$intensity)
+        rintMS2 <- if (is.null(prop$ms2$irng))  rintMS2 else clean_range(rintMS2,prop$ms2$irng)
+    }
+
+    if (!is.null(dfSpecMS2)) {
+        rmzSpMS2<-range(dfSpecMS2$mz)
+        rintSpMS2<-range(dfSpecMS2$intensity)
+        rmzSpMS2<- if (is.null(prop$spec$mzrng))  rmzSpMS2 else clean_range(rmzSpMS2,prop$spec$mzrng)
+        rintSpMS2<- if (is.null(prop$spec$irng)) rintSpMS2 else clean_range(rintSpMS2,prop$spec$irng)
+    }
+
+
+
+
+
+    
+
+    titMS1<-mk_title()
+
+    scale_y<-if (prop$ms1$axis=="linear") {
+                 ggplot2::scale_y_continuous
+             } else {
+                 ggplot2::scale_y_log10
+             }
+    
+    plMS1<- if(!is.null(dfChrMS1) && !is.na(dfChrMS1) && !nrow(dfChrMS1)==0) {
+                ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+
+                    ggplot2::geom_line(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+
+                    ggplot2::lims(x=rrtMS1)+
+                    ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour=PLOT_MS1_LEG_TIT)+
+                    scale_y(labels=sci10,limits=rintMS1)+theme()
+                } else NULL
+
+    ## Empty
+    plEmpty<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
+
+    
+    if (!all(sapply(dfsChrMS2,is.null))) {
+
+        scale_y<-if (prop$ms2$axis=="linear") {
+                     ggplot2::scale_y_continuous
+                 } else {
+                     ggplot2::scale_y_log10
+                 }
+        
+        plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+
+            ggplot2::geom_linerange(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+
+            ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+
+            ggplot2::lims(x=rrtMS2)+ggplot2::labs(colour=PLOT_MS2_LEG_TIT)+
+            scale_y(labels=sci10,limits = rintMS2)+theme()
+    } else {
+        plMS2<-plEmpty
+    }
+
+    ## Structure
+    if (!is.null(smile) && !is.na(smile) && !nchar(smile)<1) {
+        g<-smiles2img(smile,width=500,height=500,zoom=4.5)
+        plStruc<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+
+            ggplot2::geom_blank()+ggplot2::annotation_custom(g)+ggplot2::theme_void()
+    } else plStruc<-plEmpty
+
+
+
+    ## MS2 Spectrum
+    if (!all(sapply(dfsChrMS2,is.null))) {
         plSpecMS2<-if (is.data.frame(dfSpecMS2)) { #sometimes
                                                    #dfSpecMS2 ends up
                                                    #as a list of
@@ -714,10 +795,18 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
                                                    #bad in some way,
                                                    #or the RT
                                                    #intervals are
-                                                   #mismatched.
+                                        #mismatched.
+
+                       scale_y<-if (prop$spec$axis=="linear") {
+                                    ggplot2::scale_y_continuous
+                                } else {
+                                    ggplot2::scale_y_log10
+                                }
                        ggplot2::ggplot(data=dfSpecMS2,ggplot2::aes(x=mz,ymin=0,ymax=intensity,group=tag))+
                            ggplot2::geom_linerange(ggplot2::aes(colour=tag),key_glyph=KEY_GLYPH)+
-                           ggplot2::labs(subtitle="MS2",y="intensity")+ggplot2::scale_y_log10(labels=sci10)+theme()
+                           ggplot2::lims(x=rmzSpMS2)+
+                           ggplot2::labs(subtitle="MS2",y="intensity")+
+                           scale_y(labels=sci10,limits= rintSpMS2)+theme()
                    } else plEmpty
     } else plSpecMS2<-plEmpty
 
