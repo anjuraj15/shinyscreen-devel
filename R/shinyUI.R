@@ -1256,7 +1256,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             plot_id<-gen_mset_plot_f()
             prop<-plotProps()
             for (id in ids) {
-                print(plot_id(id,log=input$int_axis))
+                print(plot_id(id,prop=prop))
                 message("Plotting compound ", id," done.")
             }
             dev.off()
