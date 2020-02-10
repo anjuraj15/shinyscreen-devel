@@ -709,7 +709,6 @@ plot_id_msn <- function(ni,
     }
 
 
-
     ## Ranges
     if (!is.null(dfChrMS1)) {
         rrtMS1<-range(dfChrMS1$rt)
@@ -726,15 +725,12 @@ plot_id_msn <- function(ni,
         rintMS2 <- if (is.null(prop$ms2$irng))  rintMS2 else clean_range(rintMS2,prop$ms2$irng)
     }
 
-    if (!is.null(dfSpecMS2)) {
+    if (is.data.frame(dfSpecMS2)) {
         rmzSpMS2<-range(dfSpecMS2$mz)
         rintSpMS2<-range(dfSpecMS2$intensity)
         rmzSpMS2<- if (is.null(prop$spec$mzrng))  rmzSpMS2 else clean_range(rmzSpMS2,prop$spec$mzrng)
         rintSpMS2<- if (is.null(prop$spec$irng)) rintSpMS2 else clean_range(rintSpMS2,prop$spec$irng)
     }
-
-
-
 
     ch_ms1_deco<-function(ggobj) {
         titMS1<-mk_title()
@@ -787,14 +783,14 @@ plot_id_msn <- function(ni,
     }
     
 
-    
     ## MS1 time series.
-    plMS1<- if(!is.null(dfChrMS1) && !is.na(dfChrMS1) && !nrow(dfChrMS1)==0) {
+    plMS1<- if(is.data.frame(dfChrMS1) && nrow(dfChrMS1)>0) {
                 ch_ms1_deco(ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend)))
                 } else NULL
 
     ## Empty
     plEmpty<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
+
 
     ## MS2 time series.
     plMS2 <- if (!all(sapply(dfsChrMS2,is.null))) {
@@ -806,14 +802,12 @@ plot_id_msn <- function(ni,
 
             
 
-
     ## Structure
     if (!is.null(smile) && !is.na(smile) && !nchar(smile)<1) {
         g<-smiles2img(smile,width=500,height=500,zoom=4.5)
         plStruc<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+
             ggplot2::geom_blank()+ggplot2::annotation_custom(g)+ggplot2::theme_void()
     } else plStruc<-plEmpty
-
 
 
     ## MS2 Spectrum
@@ -852,7 +846,10 @@ plot_id_msn <- function(ni,
               
     ##       } else NULL
 
+    message("PH L ",i)
     res<- if (!is.null(plMS1)) cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1)) else NULL
+
+    message("PH M ",i)
     res
 }
 
