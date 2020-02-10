@@ -213,24 +213,45 @@ mkUI <- function() {
                                                          brush = NULL,
                                                          clickId = NULL,
                                                          hoverId = NULL))
-    presXBox<-shinydashboard::box(title = "X-axis",
-                                  width = NULL,
-                                  solidHeader = F,
-                                  collapsible = F,
-                                  shiny::numericInput("min_val",
-                                                      "Lower X Bound",
-                                                      DEFAULT_RT_RANGE[[1]]),
-                                  shiny::numericInput("max_val",
-                                                      "Upper X Bound",
-                                                      DEFAULT_RT_RANGE[[2]]),)
-    presYBox<-shinydashboard::box(title = "Y-axis",
-                                  width= NULL,
-                                  solidHeader = F,
-                                  collapsible = F,
-                                  shiny::radioButtons("yaxis",
-                                                      "Y-axis Scale",
+
+    presChromProp<-shinydashboard::box(title="Chromatogram",
+                                       width=NULL,
+                                       solidHeader = F,
+                                       collapsible = F,
+                                       shiny::numericInput("min_rt",
+                                                           "Minimal RT",
+                                                           DEFAULT_RT_RANGE[[1]]),
+                                       shiny::numericInput("max_rt",
+                                                           "Maximal RT",
+                                                           DEFAULT_RT_RANGE[[2]]),
+                                       shiny::numericInput("min_int",
+                                                           "Minimal Intensity",
+                                                           DEFAULT_INT_RANGE[[1]]),
+                                       shiny::numericInput("max_int",
+                                                           "Maximal Intensity",
+                                                           DEFAULT_INT_RANGE[[2]]),
+                                       shiny::radioButtons("int_axis",
+                                                      "Intensity Scale",
                                                       c(linear = "linear",
                                                         log = "log")))
+    ## presXBox<-shinydashboard::box(title = "X-axis",
+    ##                               width = NULL,
+    ##                               solidHeader = F,
+    ##                               collapsible = F,
+    ##                               shiny::numericInput("min_val",
+    ##                                                   "Lower X Bound",
+    ##                                                   DEFAULT_RT_RANGE[[1]]),
+    ##                               shiny::numericInput("max_val",
+    ##                                                   "Upper X Bound",
+    ##                                                   DEFAULT_RT_RANGE[[2]]))
+    ## presYBox<-shinydashboard::box(title = "Y-axis",
+    ##                               width= NULL,
+    ##                               solidHeader = F,
+    ##                               collapsible = F,
+    ##                               shiny::radioButtons("yaxis",
+    ##                                                   "Y-axis Scale",
+    ##                                                   c(linear = "linear",
+    ##                                                     log = "log")))
 
     presSaveBox<-shinydashboard::box(title = "Saving Plots",
                                      width = NULL,
@@ -291,10 +312,8 @@ mkUI <- function() {
                                                        shiny::column(width=3,
                                                                      presCompSelBox,
                                                                      presQABox)),
-                                       shiny::fluidRow(shiny::column(width = 3,
-                                                                     presXBox),
-                                                       shiny::column(width = 3,
-                                                                     presYBox),
+                                       shiny::fluidRow(shiny::column(width=6,
+                                                                     presChromProp),
                                                        shiny::column(width = 3,
                                                                      presSaveBox)))
 
@@ -758,7 +777,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             names(mz)<-id2name(preID)
 
             theme<-cowplot::theme_half_open
-            plot_id <- function (id,rtrange=NULL,log=input$yaxis) {
+            plot_id <- function (id,rtrange=NULL,log=input$int_axis) {
                 ni=id2name(id)
                 mz=mz[[ni]]
                 smile<-smiles[[ni]]
@@ -1168,9 +1187,9 @@ shinyScreenApp <- function(projDir=getwd()) {
             pfn <-input$plotname
             if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
             fn <- sprintf(pfn,i)
-            rtrange <- c(input$min_val,input$max_val)
+            rtrange <- c(input$min_rt,input$max_rt)
             pdf(file=fn, width=12, height=8)
-            rvPres$plot_id(i,rtrange=rtrange, log=input$yaxis)
+            rvPres$plot_id(i,rtrange=rtrange, log=input$int_axis)
             dev.off()
             message("Plotting compound ", i," to ",fn," done.")
         })
@@ -1185,7 +1204,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             ids<-get_curr_set_ids()
             plot_id<-gen_mset_plot_f()
             for (id in ids) {
-                print(plot_id(id,log=input$yaxis))
+                print(plot_id(id,log=input$int_axis))
                 message("Plotting compound ", id," done.")
             }
             dev.off()
@@ -1327,9 +1346,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         #plot_id<-rvPres$plot_id
             plot_id<-gen_mset_plot_f()
             id=get_curr_id()
-            rtrange <- c(input$min_val,input$max_val)
+            rtrange <- c(input$min_rt,input$max_rt)
             if (!is.null(plot_id)) {
-                plot_id(id,rtrange=rtrange, log=input$yaxis)
+                plot_id(id,rtrange=rtrange, log=input$int_axis)
             } else {
                 message("Major plotting oops.")
                 NULL

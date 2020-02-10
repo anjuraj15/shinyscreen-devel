@@ -32,6 +32,7 @@ MODEMAP<-list(pH="MpHp_mass",
 TAG_DEF<-"unspecified"
 TAG_DEF_DESC<-"Case"
 DEFAULT_RT_RANGE=c(NA,NA)
+DEFAULT_INT_RANGE=c(NA,NA)
 
 QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
 PLOT_DEF_TAGS<-NA
