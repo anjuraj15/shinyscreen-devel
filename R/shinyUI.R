@@ -1247,15 +1247,16 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observeEvent(input$saveallplots,
         {
-            i=get_curr_id()
+            id=get_curr_id()
             pfn <-input$plotname
             if (is.na(pfn)) pfn <- "plotall.pdf"
-            fn <- sprintf(pfn,i)
+            fn <- sprintf(pfn,id)
             pdf(file=fn, width=12, height=8)
             ids<-get_curr_set_ids()
             plot_id<-gen_mset_plot_f()
+            prop<-plotProps()
             for (id in ids) {
-                #print(plot_id(id,log=input$int_axis))
+                print(plot_id(id,log=input$int_axis))
                 message("Plotting compound ", id," done.")
             }
             dev.off()
