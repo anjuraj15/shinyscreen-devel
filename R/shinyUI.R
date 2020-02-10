@@ -1007,27 +1007,21 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         plotProps<-shiny::reactive({
-            rt_ms1_rng <- c(input$min_ms1_rt,input$max_ms1_rt)
-            int_ms1_rng <-c(input$min_ms1_int,input$max_ms1_int)
-            axis_ms1<-input$int_ms1_axis
-
-            rt_ms2_rng <- c(input$min_ms2_rt,input$max_ms2_rt)
-            int_ms2_rng <-c(input$min_ms2_int,input$max_ms2_int)
-            axis_ms2<-input$int_ms2_axis
-
-            mz_ms2_rng<-c(input$min_ms2_mz,input$max_ms2_mz)
-            int_ms2_sp_rng<-c(input$min_ms2_sp_int,input$max_ms2_sp_int)
-            axis_ms2_sp<-input$int_ms2_sp_axis
-            
-            prop<-list(ms1=list(rtrng=rt_ms1_rng,
-                                irng=int_ms1_rng,
-                                axis=axis_ms1),
-                       ms2=list(rtrng=rt_ms2_rng,
-                                irng=rt_ms2_rng,
-                                axis=axis_ms2),
-                       spec=list(mzrng=mz_ms2_rng,
-                                 irng=int_ms2_sp_rng,
-                                 axis=axis_ms2_sp))
+            prop<-list(ms1=list(rtrng=c(input$min_ms1_rt,
+                                                         input$max_ms1_rt),
+                                            irng= c(input$min_ms1_int,
+                                                         input$max_ms1_int),
+                                            axis=input$int_ms1_axis),
+                             ms2=list(rtrng=c(input$min_ms2_rt,
+                                                         input$max_ms2_rt),
+                                             irng= c(input$min_ms2_int,
+                                                         input$max_ms2_int),
+                                             axis=input$int_ms2_axis),
+                             spec=list(mzrng=c(input$min_ms2_mz,
+                                                            input$max_ms2_mz),
+                                             irng=c(input$min_ms2_sp_int,
+                                                         input$max_ms2_sp_int),
+                                             axis=input$int_ms2_sp_axis))
 
             prop
         })

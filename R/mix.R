@@ -643,9 +643,6 @@ plot_id_msn <- function(ni,
         if (is.na(x1) || x1 == 0) x1 <- def[1]
         if (is.na(x2) || x2 == 0) x2 <- def[2]
         c(x1,x2)
-
-
-        
     }
 
 
@@ -716,11 +713,15 @@ plot_id_msn <- function(ni,
     ## Ranges
     if (!is.null(dfChrMS1)) {
         rrtMS1<-range(dfChrMS1$rt)
+        rrtMS1 <- if (is.null(prop$ms1$rt))  rrtMS1 else clean_range(rrtMS1,prop$ms1$rt)
         rrtMS2<-rrtMS1
+        
         rintMS1<-range(dfChrMS1$intensity)
+        rintMS1 <- if (is.null(prop$ms1$irng))  rintMS2 else clean_range(rintMS1,prop$ms1$irng)
     }
 
     if (!is.null(dfChrMS2)) {
+        rrtMS2 <- if (is.null(prop$ms2$rt))  rrtMS2 else clean_range(rrtMS2,prop$ms2$rt)
         rintMS2<-range(dfChrMS2$intensity)
         rintMS2 <- if (is.null(prop$ms2$irng))  rintMS2 else clean_range(rintMS2,prop$ms2$irng)
     }
@@ -735,45 +736,76 @@ plot_id_msn <- function(ni,
 
 
 
-
-    
-
-    titMS1<-mk_title()
-
-    scale_y<-if (prop$ms1$axis=="linear") {
-                 ggplot2::scale_y_continuous
-             } else {
-                 ggplot2::scale_y_log10
-             }
-    
-    plMS1<- if(!is.null(dfChrMS1) && !is.na(dfChrMS1) && !nrow(dfChrMS1)==0) {
-                ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend))+
-                    ggplot2::geom_line(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+
-                    ggplot2::lims(x=rrtMS1)+
-                    ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=titMS1,tag=i,colour=PLOT_MS1_LEG_TIT)+
-                    scale_y(labels=sci10,limits=rintMS1)+theme()
-                } else NULL
-
-    ## Empty
-    plEmpty<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
-
-    
-    if (!all(sapply(dfsChrMS2,is.null))) {
-
-        scale_y<-if (prop$ms2$axis=="linear") {
+    ch_ms1_deco<-function(ggobj) {
+        titMS1<-mk_title()
+        scale_y<-if (!prop$ms1$axis=="log") {
                      ggplot2::scale_y_continuous
                  } else {
                      ggplot2::scale_y_log10
                  }
         
-        plMS2<-ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend))+
-            ggplot2::geom_linerange(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+
-            ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+
-            ggplot2::lims(x=rrtMS2)+ggplot2::labs(colour=PLOT_MS2_LEG_TIT)+
-            scale_y(labels=sci10,limits = rintMS2)+theme()
-    } else {
-        plMS2<-plEmpty
+        ggobj+
+            ggplot2::geom_line(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+
+            ggplot2::coord_cartesian(xlim = rrtMS1,
+                                     ylim = rintMS1)+
+            ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,
+                          title=titMS1,tag=i,
+                          colour=PLOT_MS1_LEG_TIT)+
+            scale_y(labels=sci10)+theme()
     }
+
+    ch_ms2_deco<-function(ggobj) {
+        scale_y<-if (!prop$ms2$axis=="log") {
+                     ggplot2::scale_y_continuous
+                 } else {
+                     ggplot2::scale_y_log10
+                 }
+        ggobj+
+            ggplot2::geom_linerange(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+
+            ggplot2::coord_cartesian(xlim = rrtMS2,
+                                                     ylim = rintMS2)+
+            ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+
+            scale_y(labels=sci10)+
+
+            ggplot2::labs(colour=PLOT_MS2_LEG_TIT)+theme()
+
+    }
+
+    ch_spec_deco<-function(ggobj) {
+        scale_y<-if (!prop$spec$axis=="log") {
+                     ggplot2::scale_y_continuous
+                 } else {
+                     ggplot2::scale_y_log10
+                 }
+        
+        ggobj+
+            ggplot2::geom_linerange(ggplot2::aes(colour=tag),key_glyph=KEY_GLYPH)+
+            ggplot2::coord_cartesian(xlim = rmzSpMS2,
+                                                     ylim = rintSpMS2)+
+            ggplot2::labs(subtitle="MS2",y="intensity")+
+            scale_y(labels=sci10)+theme()
+    }
+    
+
+    
+    ## MS1 time series.
+    plMS1<- if(!is.null(dfChrMS1) && !is.na(dfChrMS1) && !nrow(dfChrMS1)==0) {
+                ch_ms1_deco(ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend)))
+                } else NULL
+
+    ## Empty
+    plEmpty<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
+
+    ## MS2 time series.
+    plMS2 <- if (!all(sapply(dfsChrMS2,is.null))) {
+                 ch_ms2_deco(ggplot2::ggplot(data=dfChrMS2,ggplot2::aes(x=rt,ymin=0,ymax=intensity,group=legend)))
+             } else plEmpty
+
+
+        
+
+            
+
 
     ## Structure
     if (!is.null(smile) && !is.na(smile) && !nchar(smile)<1) {
@@ -796,17 +828,12 @@ plot_id_msn <- function(ni,
                                                    #or the RT
                                                    #intervals are
                                         #mismatched.
+                       ch_spec_deco(ggplot2::ggplot(data=dfSpecMS2,
+                                                    ggplot2::aes(x=mz,
+                                                                 ymin=0,
+                                                                 ymax=intensity,group=tag)))
 
-                       scale_y<-if (prop$spec$axis=="linear") {
-                                    ggplot2::scale_y_continuous
-                                } else {
-                                    ggplot2::scale_y_log10
-                                }
-                       ggplot2::ggplot(data=dfSpecMS2,ggplot2::aes(x=mz,ymin=0,ymax=intensity,group=tag))+
-                           ggplot2::geom_linerange(ggplot2::aes(colour=tag),key_glyph=KEY_GLYPH)+
-                           ggplot2::lims(x=rmzSpMS2)+
-                           ggplot2::labs(subtitle="MS2",y="intensity")+
-                           scale_y(labels=sci10,limits= rintSpMS2)+theme()
+                       
                    } else plEmpty
     } else plSpecMS2<-plEmpty
 
