@@ -630,7 +630,6 @@ plot_id_msn <- function(ni,data,rtMS1,rtMS2,rtMS2Ind,mass,smile,tags,fTab,logYAx
 
             c(x1,x2)
     }
-    message("Plotting ID: ",ni)
     mk_title<-function() paste("EIC (",
                                "m/z = ",
                                formatC(mass,format='f',digits=m_digits),

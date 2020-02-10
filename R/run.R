@@ -12,7 +12,7 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-isGenDone<-function(dest) {
+is_gen_done<-function(dest) {
     fnFlag<-file.path(dest,".gen.DONE")
     file.exists(fnFlag)
 }
@@ -40,7 +40,7 @@ setGenDone<-function(dest) {
 
 unsetGenDone<-function(dest) {
     fnFlag<-file.path(dest,".gen.DONE")
-    if (isGenDone(dest)) unlink(fnFlag,force=T)
+    if (is_gen_done(dest)) unlink(fnFlag,force=T)
 }
 
 

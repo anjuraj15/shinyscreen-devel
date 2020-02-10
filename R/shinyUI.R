@@ -800,9 +800,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             message("Generating basic file table in file ",rvConf$fnFTBase)
             mzML<-get_mzml_work()
             files<-adornmzMLTab(mzML,projDir=rvConf$projDir)
-            comp<- get_comp_tab() #file2tab(rvConf$fnComp) ## TODO: Why is
-            ## rvTab$comp not
-            ## properly updated?
+            comp<- get_comp_tab() 
             df<-genSuprFileTab(files,comp)
             df<-addCompColsToFileTbl(df,comp)
             df$mode<-as.character(df$mode)
@@ -1088,7 +1086,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 if (is.na(nr)) nr<-0
             } else nr<-0
             if (length(sets)>0 && nr>0) {
-                doneSets<-sets[sapply(sets,isGenDone)]
+                doneSets<-sets[sapply(sets,is_gen_done)]
                 message("done sets: ",doneSets)
                 if (length(doneSets)>0) {
                                         #fnFullTab<-rvConf$fnFTPP
@@ -1117,7 +1115,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                         write.csv(file=rvConf$fnFT,
                                   x=fullFTab,
                                   row.names=F)
-
+                        
+                        rvTab$mtr<-fullFTab
                         message("Finished preprocessing.")
                         
                         
@@ -1184,33 +1183,16 @@ shinyScreenApp <- function(projDir=getwd()) {
             fn <- sprintf(pfn,i)
             pdf(file=fn, width=12, height=8)
             ids<-get_curr_set_ids()
+            plot_id<-gen_mset_plot_f()
             for (id in ids) {
-                print(rvPres$plot_id(id,log=input$yaxis))
+                print(plot_id(id,log=input$yaxis))
                 message("Plotting compound ", id," done.")
             }
             dev.off()
         })
         
         ## ***** Observe *****
-        shiny::observe({
-            shiny::invalidateLater(100,
-                                   session=session)
-            output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
-                sets<-get_sets()
-                genState<-sapply(sets,isGenDone)
-                df<-if (!is.null(sets)) {data.frame(set=sets,
-                                                    generated=genState,
-                                                    stringsAsFactors=F)
-                    } else {data.frame(sets=character(),
-                                       generated=logical(),
-                                       stringsAsFactors=F)} 
-                rhandsontable::rhandsontable(df,
-                                             rowHeaders=NULL,
-                                             readOnly=T,
-                                             stretchH="all")
-                
-            })
-        })
+
 
         shiny::observe({
             if (input$tabs=="prescreen") {
@@ -1259,6 +1241,25 @@ shinyScreenApp <- function(projDir=getwd()) {
             rhandsontable::rhandsontable(df,stretchH="all")
         })
 
+
+        output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
+            shiny::invalidateLater(100,
+                                   session=session)
+            sets<-get_sets()
+            genState<-sapply(sets,is_gen_done)
+            df<-if (!is.null(sets)) {data.frame(set=sets,
+                                                generated=genState,
+                                                stringsAsFactors=F)
+                } else {data.frame(sets=character(),
+                                   generated=logical(),
+                                   stringsAsFactors=F)} 
+            rhandsontable::rhandsontable(df,
+                                         rowHeaders=NULL,
+                                         readOnly=F,
+                                         stretchH="all")
+            
+        })
+        
         output$genSetSelInpCtrl<-shiny::renderUI({
             sets<-get_sets()
             shiny::selectInput("genSetSelInp",
