@@ -1234,13 +1234,14 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observeEvent(input$saveplot,
         {
-            i=get_curr_id()
+            id=get_curr_id()
             pfn <-input$plotname
             if (is.na(pfn)) pfn <- "plotCpdID_%i.pdf"
-            fn <- sprintf(pfn,i)
-            rtrange <- c(input$min_rt,input$max_rt)
+            fn <- sprintf(pfn,id)
+            plot_id<-gen_mset_plot_f()
+            prop<-plotProps()
             pdf(file=fn, width=12, height=8)
-            #rvPres$plot_id(i,rtrange=rtrange, log=input$int_axis)
+            print(plot_id(id,prop=prop))
             dev.off()
             message("Plotting compound ", i," to ",fn," done.")
         })
