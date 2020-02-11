@@ -507,7 +507,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
     getSetMode <- function(set,mzMLtab) {
         sdf<-mzMLtab[which(mzMLtab$set %in% set),]
-        levels(factor(sdf$mode))
+        levels(factor(as.character(sdf$mode)))
     }
 
 
