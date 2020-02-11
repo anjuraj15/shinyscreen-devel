@@ -848,11 +848,17 @@ shinyScreenApp <- function(projDir=getwd()) {
         gen_base_ftab<-shiny::reactive({
             message("Generating basic file table in file ",rvConf$fnFTBase)
             mzML<-get_mzml_work()
+            message("alive 1")
             files<-adornmzMLTab(mzML,projDir=rvConf$projDir)
-            comp<- get_comp_tab() 
+            message("alive 2")
+            comp<- get_comp_tab()
+            message("alive 3")
             df<-genSuprFileTab(files,comp)
+            message("alive 4")
             df<-addCompColsToFileTbl(df,comp)
+            message("alive 5")
             df$mode<-as.character(df$mode)
+            message("alive 6")
             tab2file(tab=df,file=rvConf$fnFTBase)
             message("Done generating basic file table in file ",rvConf$fnFTBase)
             df

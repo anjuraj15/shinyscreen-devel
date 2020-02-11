@@ -621,6 +621,47 @@ multiplot <- function(..., plotlist=NULL, cols=1, layout=NULL) {
 }
 
 
+
+
+
+gen_ms2_spec_data <- function(id,tag,rtMS2Ind,data,luckyN=NA) {
+    ## Given the id, tag and the index of the MS2 spectrum, return the
+    ## dataframe of the spectrum, with luckyN number of lagerst
+    ## intensity peaks.
+
+    nid<-id2name(id)
+
+    if (is.integer(rtMS2Ind)) {
+        d <- data[[tag]]$ms2[[nid]][[rtMS2Ind]]
+        if (!is.null(d)) {
+            x<-data.frame(mz=MSnbase::mz(d),intensity=MSnbase::intensity(d))
+            res<-if (!is.na(luckyN)) {
+                     ord<-order(x$intensity,decreasing = T)
+                     len<-length(ord)
+                     sz<-min(len,luckyN)
+                     nx<-x[ord,]
+                     nx<-nx[1:sz,]
+                     ord<-order(nx$mz)
+                     nx[ord,]
+                 } else x
+            
+            return(res)
+            
+        } else return(NULL)
+        
+    } else return(NULL)
+}
+
+gen_ms2_spec_fn <- function(id,tag,mode,set,width=6) {
+    num<-formatC(id,width = width,flag=0)
+    ss<-paste(num,mode,tag,set,sep="_")
+    paste(ss,".csv",sep='')
+}
+
+
+
+
+
 plot_id_msn <- function(ni,
                         data,
                         rtMS1,
