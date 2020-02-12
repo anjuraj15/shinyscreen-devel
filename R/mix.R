@@ -887,10 +887,8 @@ plot_id_msn <- function(ni,
               
     ##       } else NULL
 
-    message("PH L ",i)
     res<- if (!is.null(plMS1)) cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1)) else NULL
-
-    message("PH M ",i)
+    
     res
 }
 
@@ -908,35 +906,6 @@ adornmzMLTab<-function(df,projDir=getwd()) {
     df$wd<-wd
     df
 }
-
-## genSuprFileTblOld <- function(fileTbl,compTab) {
-##     genOneFileTbl <- function(id,fileTbl) {
-##         n <- nrow(fileTbl)
-##         K <- length(id)
-##         longid <- rep(id,n)
-##         cols <- lapply(names(fileTbl),function(cn) rep("",n*K))
-##         names(cols) <- names(fileTbl)
-##         bdf <- as.data.frame(cols,stringsAsFactors = F)
-##         rows <- lapply(1:n*K,function(x) NA)
-##         for (j in 1:n) {
-##             for (i in 1:K)
-##                 rows[[(j-1)*K+i]] <- fileTbl[j,]
-##         }
-##         bdf <- as.data.frame(do.call(rbind,rows),stringsAsFactors = F)
-##         bdf <- cbind(bdf,data.frame(ID=longid))
-##         bdf
-##     }
-##     sets <- levels(factor(compTab$set))
-##     setTbl <- lapply(sets,function (s) {
-##         sl1<-compTab$set %in% s
-##         sl2<-fileTbl$set==s
-##         if (!any(sl2)) stop("Set",s,"does not select anything in the currently processed files.")
-##         genOneFileTbl(compTab[sl1,]$ID,fileTbl[sl2,])
-
-##     })
-##     allTbl <- do.call(rbind,setTbl)
-##     allTbl 
-## }
 
 genSuprFileTab <- function(fileTab,compTab) {
     genOne<-function(ids,fn) {

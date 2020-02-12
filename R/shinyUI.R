@@ -526,8 +526,10 @@ shinyScreenApp <- function(projDir=getwd()) {
         if (is.null(df)) df<-mk_mzML_work()
 
         if (length(tags)>0 && !is.na(tags)) {
+            oldlvl<-levels(df$tag)
+            exttag<-unique(c(unlist(tags),oldlvl))
             x<-as.character(df$tag)
-            df$tag<-factor(x,levels=unlist(tags))
+            df$tag<-factor(x,levels=exttag)
             ina<-which(is.na(df$tag))
             df$tag[ina]<-TAG_DEF
         }
@@ -757,6 +759,8 @@ shinyScreenApp <- function(projDir=getwd()) {
             chset<-as.character(mzml$set)
             shiny::validate(need(chset,"Sets not properly specified for the mzML files."))
             mzml$set<-factor(chset)
+            tag<-as.character(mzml$tag)
+            mzml$tag<-factor(tag)
             mzml
         })
         
@@ -890,11 +894,8 @@ shinyScreenApp <- function(projDir=getwd()) {
             tgt<-getTgt()
             message("Begin generation of comp table.")
             availSets<-get_sets()
-            message("comp tab 1")
             idTgt<-tgt$ID
-            message("comp tab 2")
             idUnk<-unk$ID
-            message("comp tab 3")
             if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
             
             if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
@@ -906,8 +907,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             setId[iTgt,"orig"]<-"known"
             setId[iUnk,"orig"]<-"unknown"
             rvTab$setId<-setId ## !!!
-            message("comp tab 4")
-
             
             ## knowns
             setIdTgt<-setId[setId$orig=="known",]
@@ -917,7 +916,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                                         #on the data files.
             nRow<-0
 
-            message("comp tab 5")
             for (s in sets) {
                 sMode<-getSetMode(s,mzML)
                 n<-length(sMode)
@@ -935,8 +933,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 Name=rep("",nRow),
                 SMILES=rep("",nRow),
                 stringsAsFactors=F)
-
-            message("comp tab 6")
 
             i<-1
             for (s in sets) {
@@ -959,7 +955,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 }
             }
 
-            message("comp tab 7")
             message("Generation of comp table: knowns done.")
             ## unknows
             setIdUnk<-setId[setId$orig=="unknown",]
@@ -967,7 +962,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             sets<-intersect(availSets,sets)
             
             nRow<-0
-            message("comp tab 8")
             for (s in sets) {
                 sMode<-getSetMode(s,mzML)
                 n<-length(sMode)
@@ -977,7 +971,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 
             }
 
-            message("comp tab 9")
             compUnk<-data.frame(
                 ID=rep(0,nRow),
                 mz=rep(0.0,nRow),
@@ -990,7 +983,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 stringsAsFactors=F)
 
 
-            message("comp tab 10")
             i<-1
             for (s in sets) {
                 m<-getSetMode(s,mzML)
@@ -1007,7 +999,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 }
                 
             }
-            message("comp tab 11")
             message("Generation of comp table: unknowns done.")
             df<-rbind(compTgt,compUnk,stringsAsFactors=F)
             tab2file(df,rvConf$fnComp)
@@ -1293,17 +1284,15 @@ shinyScreenApp <- function(projDir=getwd()) {
                     for (t in sdf$tag) {
                         sprop <- rvConf$spectProps[[t]]
                         sdfSel<-sdf[sdf$tag %in% t,QANAMES]
-                        sel <- as.logical(sdfSel)
                         
+                        sel <- as.logical(sdfSel)
                         choices <- QANAMES[sel]
                         names(choices) <- QANAMES[sel]
                         shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
                     }
-                    
+
                 }
-                
-                
-                
+
             }
         })
 
