@@ -961,6 +961,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             mzML<-get_mzml()
             unk<-get_unk()
             known<-get_known()
+            shiny::validate(need(!(is.null(unk) && is.null(known)),"No compound lists have been provided. At least one of the known, or unknown compound lists is required."))
             message("Begin generation of comp table.")
             idKnown<-known$ID
             idUnk<-unk$ID
