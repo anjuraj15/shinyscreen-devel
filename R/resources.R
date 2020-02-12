@@ -44,7 +44,7 @@ RT_DIGITS=2
 M_DIGITS=4
 PAL="Dark2"
 
-REST_TXT_INP<-c("fnTgtL",
+REST_TXT_INP<-c("fnKnownL",
                 "fnUnkL",
                 "fnSetId",
                 "tagsInp")

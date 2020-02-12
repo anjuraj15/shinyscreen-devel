@@ -40,7 +40,7 @@ mkUI <- function() {
                  collapsible=F,...)}
     
     confImport <- prim_box(title="Import",
-                           shiny::textInput("fnTgtL",
+                           shiny::textInput("fnKnownL",
                                             "Knowns list. Required columns: ID and SMILES. Optional column: Name. Remember to quote SMILES and Name entries!",
                                             value=""),
                            shiny::textInput("fnUnkL",
@@ -49,7 +49,7 @@ mkUI <- function() {
                            shiny::textInput("fnSetId",
                                             "Set table.",
                                             value=""),
-                           shinyFiles::shinyFilesButton("impTgtListB",
+                           shinyFiles::shinyFilesButton("impKnownListB",
                                                         label="Import targets.",
                                                         title="",
                                                         icon=shiny::icon("file"),
@@ -113,11 +113,16 @@ mkUI <- function() {
 
     ## ***** Compound List Tab *****
 
-    cmpListBox<-prim_box(title="Compound List",
-                         rhandsontable::rHandsontableOutput("tgtCtrl"),
+    knownListBox<-prim_box(title="Known Compounds List",
+                         rhandsontable::rHandsontableOutput("knownCtrl"),
+                         width=NULL)
+
+    unkListBox<-prim_box(title="Unknown Compounds List",
+                         rhandsontable::rHandsontableOutput("unkCtrl"),
                          width=NULL)
     
-    cmpListLayout <- shiny::fluidRow(shiny::column(cmpListBox,
+    cmpListLayout <- shiny::fluidRow(shiny::column(knownListBox,
+                                                   unkListBox,
                                                    width = 12))
 
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
@@ -582,12 +587,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              currID=NA,
                              fnFT=FN_FTAB_STATE)
         rvTab<-shiny::reactiveValues(
-                          mzML=NULL, # files (File), sets (set) and mode (mode)
                           mzMLWork=NULL,
-                          tgt=NULL, # ids(ID),SMILES(SMILES) and names (Name)
-                          unk=NULL, # ids(ID),mz
-                          setId=NULL, # ids(ID), sets (set)
-                          comp=NULL,  # everything, except file info
                           mtr=NULL)     #master table (everything combined)
         rvPres<-shiny::reactiveValues(cex=CEX,
                                       rt_digits=RT_DIGITS,
@@ -598,7 +598,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         ## ***** shinyFiles observers *****
         wdroot<-c(wd=projDir)
-        shinyFiles::shinyFileChoose(input, 'impTgtListB',roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'impKnownListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impUnkListB',roots=volumes)
         shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
         
@@ -617,8 +617,12 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         get_all_sets<-shiny::reactive({
             ## Returns all sets defined in a setid table.
-            df<-rvTab$setId
-            sets<-levels(df$set)
+            df<-get_setid_file()
+            message("setid")
+            str(df)
+            message("setid.")
+            
+            sets<-levels(factor(df$set))
             sets
         })
 
@@ -628,28 +632,93 @@ shinyScreenApp <- function(projDir=getwd()) {
             mzml<-get_mzml()
             sets<-as.character(mzml$set)
             shiny::validate(need(sets,"Please assign sets to the mzML files."))
-            ## res<-if (!is.null(sets)) {
-            ##          if (!anyNA(sets)) levels(factor(sets)) else NULL
-            ##      } else NULL
-            ##      res
             levels(factor(sets))
         })
 
-        getCmpL<-shiny::reactive({
-            rvTab$tgt #rhandsontable::hot_to_r(input$tgtCtrl)
+        get_known_setid<-shiny::reactive({
+            setid<-get_setid_tab()
+            df<-setid[setid$orig=="known",]
+            df$set<-factor(as.character(df$set))
+            df
         })
 
-        getSetId<-shiny::reactive({
-            shiny::validate(need(rvTab$setId,"Compound set table not read!"))
-            rvTab$setId #rhandsontable::hot_to_r(input$setIdCtrl)
+        get_unknown_setid<-shiny::reactive({
+            setid<-get_setid_tab()
+            df<-setid[setid$orig=="unknown",]
+            df$set<-factor(as.character(df$set))
+            df
+        })
+        
+        get_known_sets<-shiny::reactive({
+            fsets<-get_sets()
+            ktab<-get_known_setid()
+            intersect(levels(ktab$set),fsets)
         })
 
-        getTgt<-shiny::reactive({
-            rvTab$tgt
+
+        get_unknown_sets<-shiny::reactive({
+            fsets<-get_sets()
+            utab<-get_unknown_setid()
+            usets<-levels(utab$set)
+            intersect(usets,fsets)
         })
 
-        getUnk<-shiny::reactive({
-            rvTab$unk
+        get_setid_file<-shiny::reactive({
+            fn<-input$fnSetId
+            shiny::validate(need(fn,"Please set the compounds set CSV filename."),
+                            need(isThingFile(fn),"Cannot find the set CSV file."))
+                
+            message("Importing compound sets from:",fn)
+            df<-file2tab(file=fn,
+                         colClasses=c(set="factor"))
+            df$set<-factor(df$set)
+            message("Done importing compound sets from: ",fn)
+            df
+        })
+
+        get_setid_tab<-shiny::reactive({
+            setId<-get_setid_file()
+            unk<-get_unk()
+            known<-get_known()
+            idKnown<-known$ID
+            idUnk<-unk$ID
+
+            no_id_clash<-length(intersect(idKnown,idUnk))==0
+            shiny::validate(need(no_id_clash,"IDs of known and unknown compounds must be different. Change this in your compound lists and compounds set input CSV tables."))
+             
+            setId$orig<-rep("",nrow(setId))
+            lKnown<-setId$ID %in% idKnown
+            lUnk<-setId$ID %in% idUnk
+            iKnown<-which(lKnown)
+            iUnk<-which(lUnk)
+            setId[iKnown,"orig"]<-"known"
+            setId[iUnk,"orig"]<-"unknown"
+            setId
+        })
+
+        get_known<-shiny::reactive({
+            fn<-input$fnKnownL
+            res<- if (isThingFile(fn)) {
+                      message("Importing knowns/suspects from:",fn)
+                      df<-file2tab(file=fn)
+                      x <-vald_comp_tab(df,fn,checkSMILES=T,checkNames=T)
+                      message("Done knowns/suspects from: ",fn)
+                      x
+
+                  } else NULL
+            res
+        })
+
+        get_unk<-shiny::reactive({
+            fn<-input$fnUnkL
+            if (isThingFile(fn)) {
+                message("Importing unknowns list from:",fn)
+                df<-file2tab(file=fn)
+                res<-vald_comp_tab(df,fn,checkSMILES=F,checkMz=T)
+                message("Done importing unknowns list from: ",fn)
+                res
+
+            } else NULL
         })
 
 
@@ -888,42 +957,24 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         get_comp_tab<-shiny::reactive({
 
-            setId<-getSetId()
+            setId<-get_setid_tab()
             mzML<-get_mzml()
-            unk<-getUnk()
-            tgt<-getTgt()
+            unk<-get_unk()
+            known<-get_known()
             message("Begin generation of comp table.")
-            availSets<-get_sets()
-            idTgt<-tgt$ID
+            idKnown<-known$ID
             idUnk<-unk$ID
-            if (is.null(availSets)) stop("Sets have not been (properly) set on the mzML files. Please check.")
-            
-            if (length(intersect(idTgt,idUnk))>0) stop("There must not be unknowns and targets with the same IDs.")
-            setId$orig<-rep("",nrow(setId))
-            lTgt<-setId$ID %in% idTgt
-            lUnk<-setId$ID %in% idUnk
-            iTgt<-which(lTgt)
-            iUnk<-which(lUnk)
-            setId[iTgt,"orig"]<-"known"
-            setId[iUnk,"orig"]<-"unknown"
-            rvTab$setId<-setId ## !!!
-            
             ## knowns
-            setIdTgt<-setId[setId$orig=="known",]
-            sets<-levels(factor(setIdTgt$set))
-            sets<-intersect(availSets,sets) #Make sure we only
-                                        #consider sets defined
-                                        #on the data files.
+            setIdKnown<-get_known_setid()
+            sets<-get_known_sets()
             nRow<-0
-
             for (s in sets) {
                 sMode<-getSetMode(s,mzML)
                 n<-length(sMode)
-                nRow<-nRow+n*length(which(setIdTgt$set %in% s))
+                nRow<-nRow+n*length(which(setIdKnown$set %in% s))
                 
             }
-
-            compTgt<-data.frame(
+            compKnown<-data.frame(
                 ID=rep(0,nRow),
                 mz=rep(0.0,nRow),
                 rt=rep(NA,nRow),
@@ -938,17 +989,17 @@ shinyScreenApp <- function(projDir=getwd()) {
             for (s in sets) {
                 sMode<-getSetMode(s,mzML)
                 for (m in sMode) {
-                    for (id in setIdTgt[setIdTgt$set %in% s,"ID"]) {
-                        compTgt[i,"ID"]<-id
-                        compTgt[i,"mode"]<-m
-                        compTgt[i,"set"]<-s
-                        compTgt[i,"mz"]<-getMzFromCmpL(id,m,tgt)
-                        sm<-getColFromCmpL(id,"SMILES",tgt)
-                        nm<-getColFromCmpL(id,"Name",tgt)
-                        rt<-getColFromCmpL(id,"rt",tgt)
-                        compTgt[i,"SMILES"]<-sm
-                        compTgt[i,"Name"]<-nm
-                        compTgt[i,"rt"]<-rt
+                    for (id in setIdKnown[setIdKnown$set %in% s,"ID"]) {
+                        compKnown[i,"ID"]<-id
+                        compKnown[i,"mode"]<-m
+                        compKnown[i,"set"]<-s
+                        compKnown[i,"mz"]<-getMzFromCmpL(id,m,known)
+                        sm<-getColFromCmpL(id,"SMILES",known)
+                        nm<-getColFromCmpL(id,"Name",known)
+                        rt<-getColFromCmpL(id,"rt",known)
+                        compKnown[i,"SMILES"]<-sm
+                        compKnown[i,"Name"]<-nm
+                        compKnown[i,"rt"]<-rt
                         i<-i+1
                     }
                     
@@ -957,9 +1008,8 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             message("Generation of comp table: knowns done.")
             ## unknows
-            setIdUnk<-setId[setId$orig=="unknown",]
-            sets<-levels(factor(setIdUnk$set))
-            sets<-intersect(availSets,sets)
+            setIdUnk<-get_unknown_setid()
+            sets<-get_unknown_sets()
             
             nRow<-0
             for (s in sets) {
@@ -1000,7 +1050,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 
             }
             message("Generation of comp table: unknowns done.")
-            df<-rbind(compTgt,compUnk,stringsAsFactors=F)
+            df<-rbind(compKnown,compUnk,stringsAsFactors=F)
             tab2file(df,rvConf$fnComp)
             message("Generation of comp table finished.")
             df   
@@ -1050,12 +1100,12 @@ shinyScreenApp <- function(projDir=getwd()) {
                                        value=fn)
             }})
 
-        shiny::observeEvent(input$impTgtListB,{
-            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impTgtListB)
+        shiny::observeEvent(input$impKnownListB,{
+            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impKnownListB)
             fn<-fnobj[["datapath"]]
             if (length(fn)>0 && !is.na(fn)) {
                 shiny::updateTextInput(session=session,
-                                       inputId="fnTgtL",
+                                       inputId="fnKnownL",
                                        value=fn)
             }})
 
@@ -1072,43 +1122,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         {
             df<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
             rvTab$mzMLWork<-df
-        })
-
-        shiny::observeEvent(input$fnTgtL,
-        {
-            fn<-input$fnTgtL
-            if (isThingFile(fn)) {
-                message("Importing knowns/suspects from:",fn)
-                df<-file2tab(file=fn)
-                rvTab$tgt<-vald_comp_tab(df,fn,checkSMILES=T,checkNames=T)
-                message("Done knowns/suspects from: ",fn)
-
-            }
-        })
-
-
-        shiny::observeEvent(input$fnUnkL,
-        {
-            fn<-input$fnUnkL
-            if (isThingFile(fn)) {
-                message("Importing unknowns list from:",fn)
-                df<-file2tab(file=fn)
-                rvTab$unk<-vald_comp_tab(df,fn,checkSMILES=F,checkMz=T)
-                message("Done importing unknowns list from: ",fn)
-
-            }
-        })
-
-        shiny::observeEvent(input$fnSetId,
-        {
-            fn<-input$fnSetId
-            if (isThingFile(fn)) {
-                message("Importing compound sets from:",fn)
-                rvTab$setId<-file2tab(file=fn,
-                                      colClasses=c(set="factor"))
-                rvTab$setId$set<-factor(rvTab$setId$set)
-                message("Done importing compound sets from: ",fn)
-            }
         })
 
         shiny::observeEvent(input$mzMLB,
@@ -1132,7 +1145,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             rtDelta<-as.numeric(input$rtDeltaWin)
             for (s in sets) {
                 message("***** BEGIN set ",s, " *****")
-                ## fnCmpdList<-input$fnTgtL
+                ## fnCmpdList<-input$fnKnownL
                 
                 dest<-rvConf$projDir
                 gc()
@@ -1300,13 +1313,28 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         ## ***** Render *****
-        output$tgtCtrl <- rhandsontable::renderRHandsontable({
-            df<-rvTab$tgt
-            rhandsontable::rhandsontable(df,stretchH="all")
+        output$knownCtrl <- rhandsontable::renderRHandsontable({
+            df<-get_known()
+            out<-if (!is.null(df)) {
+                     df
+                 } else {
+                     data.frame(ID=numeric(),Name=character(),SMILES=character(),RT=numeric())
+                 }
+            rhandsontable::rhandsontable(out,stretchH="all")
+        })
+
+        output$unkCtrl <- rhandsontable::renderRHandsontable({
+            df<-get_unk()
+            out<-if (!is.null(df)) {
+                     df
+                 } else {
+                     data.frame(ID=numeric(),mz=numeric())
+                 }
+            rhandsontable::rhandsontable(out,stretchH="all")
         })
 
         output$setIdCtrl<- rhandsontable::renderRHandsontable({
-            df<-rvTab$setId
+            df<-get_setid_tab()
             rhandsontable::rhandsontable(df,stretchH="all")
         })
 
