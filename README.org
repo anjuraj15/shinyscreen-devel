@@ -45,7 +45,7 @@
       of the progenitor ions, then it is only required to fill out the
       *ID* and the *mz* columns. The mz column will contain the mass
       of the precursor ion, and the ID should be filled as explained
-      before.
+      before. The RT column must be present, even if empty.
 
       #+CAPTION: The first few rows of a compound list containing unknown compounds.
       |  ID | mz       |
@@ -94,13 +94,17 @@
    #+BEGIN_SRC shell
      R CMD INSTALL /path/to/the/downloaded/package
    #+END_SRC
+*** Windows/RStudio
+   #+BEGIN_SRC r
+     library(devtools)
+	 shinyscreen_dir <- "path/to/the/downloaded/package"
+     devtools::install_local(path=shinyscreen_dir,force=T,dependencies=FALSE)
+   #+END_SRC
 *** A snippet to test Shinyscreen after installation
    #+BEGIN_SRC r
      library(shinyscreen)
      shinyScreenApp()
    #+END_SRC
-*** Windows/R Studio
-   TODO
 * Contribute
 ** Current State of Code
    The situation is very fluid, especially in the shinyUI.R which
