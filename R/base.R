@@ -16,7 +16,7 @@ tab2file<-function(tab,file,...) {
     write.csv(x=tab,file=file,row.names=F,...)
 }
 
-file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
+file2tab<-function(file,stringsAsFactors=F,comment.char='',sep=',',...) {
     read.csv(file=file,
              header=T,
              stringsAsFactors=stringsAsFactors,

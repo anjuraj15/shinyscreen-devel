@@ -460,14 +460,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         res
     }
 
-    readSetId<-function(fn) {
-        read.csv(file=fn,
-                 header=T,
-                 stringsAsFactors = T,
-                 comment.char = '',
-                 na.strings = c("","NA"))
-    }
-
     getMz<-function(ids,cmpdL) {
         mz<-sapply(ids,function(i) {mzs<-cmpdL$mz[cmpdL$ID==i]
             if (length(mzs)>1) mzs[[1]] else mzs
@@ -586,9 +578,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         ## ***** reactive values *****
         rvConf <- shiny::reactiveValues(
-                             allTags=list(),
-                             tags=list(),
-                             sets=list(),
                              spectProps=list(),
                              QANAMES=QANAMES,
                              MODEMAP=MODEMAP,
@@ -596,8 +585,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                              fnLocSetId=FN_LOC_SETID,
                              fnFTBase=FN_FTAB_BASE,
                              fnFTPP=FN_FTAB_PP,
-                             tagProp="",
-                             setProp="",
                              fnComp=FN_COMP_TAB,
                              mode=modeLvl,
                              projDir=projDir,
@@ -606,7 +593,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              currID=NA,
                              fnFT=FN_FTAB_STATE)
         rvTab<-shiny::reactiveValues(
-                          mzMLWork=NULL,
+                          mzml=NULL,
                           mtr=NULL)     #master table (everything combined)
         rvPres<-shiny::reactiveValues(cex=CEX,
                                       rt_digits=RT_DIGITS,
@@ -845,7 +832,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         get_mzml_work<-shiny::reactive({
             tags<-get_all_tags()
             sets<-get_all_sets()
-            prep_mzML_work(rvTab$mzMLWork,sets,tags)
+            prep_mzML_work(rvTab$mzml,sets,tags)
         })
 
         get_mzml <- shiny::reactive({
@@ -889,7 +876,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             compIds<-comp[,"ID"]
             compSMILES<-comp[,"SMILES"]
             compMz<-comp[,"mz"]
-            tags<-as.character(rvConf$tags)
+            tags<-get_curr_tags()
             iSet<-which(set==fTab$set & md==fTab$mode)
             sfTab<-fTab[iSet,]
             sfTab$tag<-as.character(sfTab$tag)
@@ -1000,10 +987,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                     }
                     
                     mtr[mtr$set %in% dsets,]<-mtrPP
-                    write.csv(file=rvConf$fnFT,
-                              x=mtr,
-                              row.names=F)
-                    
+                    tab2file(tab=mtr,file=rvConf$fnFT)
+
                     rvTab$mtr<-mtr
                     message("Finished preprocessing.")
                     idx<-which(dfProc$set %in% dsets)
@@ -1080,10 +1065,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                         compKnown[i,"ID"]<-id
                         compKnown[i,"mode"]<-m
                         compKnown[i,"set"]<-s
-                        compKnown[i,"mz"]<-getMzFromCmpL(id,m,known)
-                        sm<-getColFromCmpL(id,"SMILES",known)
-                        nm<-getColFromCmpL(id,"Name",known)
-                        rt<-getColFromCmpL(id,"rt",known)
+                        compKnown[i,"mz"]<-get_mz_cmp_l(id,m,known)
+                        sm<-get_col_from_cmp_l(id,"SMILES",known)
+                        nm<-get_col_from_cmp_l(id,"Name",known)
+                        rt<-get_col_from_cmp_l(id,"rt",known)
                         compKnown[i,"SMILES"]<-sm
                         compKnown[i,"Name"]<-nm
                         compKnown[i,"rt"]<-rt
@@ -1126,9 +1111,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                     compUnk[i,"ID"]<-id
                     compUnk[i,"mode"]<-m
                     compUnk[i,"set"]<-s
-                    compUnk[i,"mz"]<-getColFromCmpL(id,"mz",unk)
-                    nm<-getColFromCmpL(id,"Name",unk)
-                    rt<-getColFromCmpL(id,"rt",unk)
+                    compUnk[i,"mz"]<-get_col_from_cmp_l(id,"mz",unk)
+                    nm<-get_col_from_cmp_l(id,"Name",unk)
+                    rt<-get_col_from_cmp_l(id,"rt",unk)
                     compUnk[i,"Name"]<-nm
                     compUnk[i,"rt"]<-rt
                     i<-i+1
@@ -1289,14 +1274,14 @@ shinyScreenApp <- function(projDir=getwd()) {
         shiny::observeEvent(input$mzMLtabCtrl,
         {
             df<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
-            rvTab$mzMLWork<-df
+            rvTab$mzml<-df
         })
 
         shiny::observeEvent(input$mzMLB,
         {
             fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
             paths<-fchoice[["datapath"]]
-            rvTab$mzMLWork<-add_mzML_files(rvTab$mzMLWork,paths)
+            rvTab$mzml<-add_mzML_files(rvTab$mzml,paths)
         })
         
 
@@ -1318,9 +1303,9 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
         shiny::observeEvent(input$submitQA,{
-
-            res <- lapply(rvConf$tags,getCheckboxValues,input,rvConf)
-            names(res) <- rvConf$tags
+            tags<-get_curr_tags()
+            res <- lapply(tags,getCheckboxValues,input,rvConf)
+            names(res) <- tags
             df<-get_mtr()
             rvTab$mtr <- updateFileTable(df=df,
                                          set=get_curr_set(),
@@ -1335,7 +1320,8 @@ shinyScreenApp <- function(projDir=getwd()) {
         {
             fn<-input$fn_ftable
             message("Writing current file table to ",fn)
-            write.csv(file=fn,x=rvTab$mtr,row.names = F)
+            mtr<-get_mtr()
+            tab2file(tab=mtr,file=fn)
         })
 
         shiny::observeEvent(input$saveplot,
