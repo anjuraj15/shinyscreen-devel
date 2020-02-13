@@ -93,6 +93,7 @@ getSMILESFromCmpL<-function(id,cmpL) {
 getColFromCmpL<-function(id,cname,cmpL) {
     ind<-match(id,cmpL$ID)
     cmpL[[cname]][[ind]]
+    
 }
 
 ##' Create directories without drama.

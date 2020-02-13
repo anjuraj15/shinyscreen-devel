@@ -169,7 +169,7 @@ mkUI <- function() {
                            shiny::textInput("rtDelta",
                                             label="Retention time shift tolerance (minutes).",
                                             value=0.5),
-                           shiny::actionButton(inputId="genRunPPB",
+                           shiny::actionButton(inputId="qaAutoB",
                                                label="Preprocess!",
                                                icon=shiny::icon("bomb")),
                            width=NULL)
@@ -563,6 +563,25 @@ shinyScreenApp <- function(projDir=getwd()) {
             df
         }
     }
+
+    extr_data_set<-function(df,set) {
+        i<-match(set,df$set)
+        df[i,'extracted']<-T
+        df
+    }
+
+    extr_data_ms2_todo <- function(df){
+        todo<-which(df$extracted & !df$ms2)
+        message("todo:")
+        str(todo)
+        message("todo.")
+        todo
+    }
+
+    extr_data_done<-function(df) {
+        ind<-which(df$extracted)
+        df$set[ind]
+    }
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
@@ -588,7 +607,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                              fnFT=FN_FTAB_STATE)
         rvTab<-shiny::reactiveValues(
                           mzMLWork=NULL,
-                          extrData=NULL,
                           mtr=NULL)     #master table (everything combined)
         rvPres<-shiny::reactiveValues(cex=CEX,
                                       rt_digits=RT_DIGITS,
@@ -633,6 +651,15 @@ shinyScreenApp <- function(projDir=getwd()) {
             levels(factor(sets))
         })
 
+        get_curr_tags<-shiny::reactive({
+            ## Tags in the currently selected set.
+            ft<- get_mtr() 
+            set<-input$presSelSet
+            ftSec<-ft[ft$set %in% set,]
+            tags<-levels(factor(as.character(ftSec$tag)))
+            tags
+        })
+
         get_known_setid<-shiny::reactive({
             setid<-get_setid_tab()
             df<-setid[setid$orig=="known",]
@@ -665,7 +692,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             fn<-input$fnSetId
             shiny::validate(need(fn,"Please set the compounds set CSV filename."),
                             need(isThingFile(fn),"Cannot find the set CSV file."))
-                
+            
             message("Importing compound sets from:",fn)
             df<-file2tab(file=fn,
                          colClasses=c(set="factor"))
@@ -683,7 +710,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             no_id_clash<-length(intersect(idKnown,idUnk))==0
             shiny::validate(need(no_id_clash,"IDs of known and unknown compounds must be different. Change this in your compound lists and compounds set input CSV tables."))
-             
+            
             setId$orig<-rep("",nrow(setId))
             lKnown<-setId$ID %in% idKnown
             lUnk<-setId$ID %in% idUnk
@@ -723,7 +750,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         get_curr_set<-shiny::reactive({
             set<-input$presSelSet
-            # sets<-get_sets()
+                                        # sets<-get_sets()
             shiny::validate(need(set,"Initialising set selection control ..."))
             set
         })
@@ -826,6 +853,13 @@ shinyScreenApp <- function(projDir=getwd()) {
             chset<-as.character(mzml$set)
             shiny::validate(need(chset,"Sets not properly specified for the mzML files."))
             mzml$set<-factor(chset)
+            sets<-levels(mzml$set)
+            for (s in sets) {
+                smzml<-mzml[mzml$set %in% s,]
+                tags<-as.character(smzml$tag)
+                shiny::validate(need(length(tags)==length(unique(tags)),paste("Tags in set `",s,"' must be unique. Please change!",sep='')))
+            }
+            
             tag<-as.character(mzml$tag)
             mzml$tag<-factor(tag)
             mzml
@@ -860,7 +894,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             sfTab<-fTab[iSet,]
             sfTab$tag<-as.character(sfTab$tag)
             tags<-unique(sfTab$tag)
-
             ## Associate wd-s with tags.
             wdTag<- match(tags,sfTab$tag)
             wd<-sfTab$wd[wdTag]
@@ -894,8 +927,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 names(rtMS1)<-tags
                 names(rtMS2)<-tags
                 names(rtMS2Ind)<-tags
-
-
                 
                 plot_id_msn(ni,data=pData,
                             rtMS1=rtMS1,
@@ -930,6 +961,63 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
+
+
+        extr_data_qa <- shiny::reactive({
+            dfProc<-extr_data_mzml()
+            shiny::validate(need(input$qaAutoB,"Please submit QA parameters by clicking `Preprocess'."))
+            
+            shiny::isolate({
+                message("Starting preprocessing.")
+                intThresh<-as.numeric(input$intThresh)
+                noiseFac<-as.numeric(input$noiseFac)
+                rtDelta<-as.numeric(input$rtDelta)
+
+                sets<-get_sets()
+                comp<-get_comp_tab()
+                dsets<-extr_data_done(dfProc)
+                
+                message("done sets: ",dsets)
+                if (length(dsets)>0) {
+                    mtr<- get_mtr() 
+                    mtrDone<-mtr[mtr$set %in% dsets,]
+
+                    mtrPP<-preProc(ftable=mtrDone,
+                                   intThresh=intThresh,
+                                   noiseFac=noiseFac,
+                                   rtDelta=rtDelta)
+
+                    ## In case preProc added more names to the
+                    ## table.
+                    extNms<-names(mtrPP)
+                    basNms<-names(mtr)
+                    diffNms<-setdiff(extNms,basNms)
+                    nrf<-nrow(mtr)
+                    for (nm in diffNms) {
+                        z<-logical(length=nrf)
+                        z<-T
+                        mtr[[nm]]<-z
+                    }
+                    
+                    mtr[mtr$set %in% dsets,]<-mtrPP
+                    write.csv(file=rvConf$fnFT,
+                              x=mtr,
+                              row.names=F)
+                    
+                    rvTab$mtr<-mtr
+                    message("Finished preprocessing.")
+                    idx<-which(dfProc$set %in% dsets)
+                    dfProc$qa[idx]<-T
+                    
+                } else message("Nothing to preprocess")
+            })
+            dfProc
+        })
+        
+
+        
+
+        
         get_mtr<-shiny::reactive({
             fnFT<-rvConf$fnFT
             mtr<-rvTab$mtr
@@ -1009,7 +1097,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             ## unknows
             setIdUnk<-get_unknown_setid()
             sets<-get_unknown_sets()
-            
             nRow<-0
             for (s in sets) {
                 sMode<-getSetMode(s,mzML)
@@ -1019,7 +1106,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 nRow<-nRow+length(which(setIdUnk$set %in% s))
                 
             }
-
+            
             compUnk<-data.frame(
                 ID=rep(0,nRow),
                 mz=rep(0.0,nRow),
@@ -1046,7 +1133,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                     compUnk[i,"rt"]<-rt
                     i<-i+1
                 }
-                
             }
             message("Generation of comp table: unknowns done.")
             df<-rbind(compKnown,compUnk,stringsAsFactors=F)
@@ -1061,20 +1147,20 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         plotProps<-shiny::reactive({
             prop<-list(ms1=list(rtrng=c(input$min_ms1_rt,
-                                                         input$max_ms1_rt),
-                                            irng= c(input$min_ms1_int,
-                                                         input$max_ms1_int),
-                                            axis=input$int_ms1_axis),
-                             ms2=list(rtrng=c(input$min_ms2_rt,
-                                                         input$max_ms2_rt),
-                                             irng= c(input$min_ms2_int,
-                                                         input$max_ms2_int),
-                                             axis=input$int_ms2_axis),
-                             spec=list(mzrng=c(input$min_ms2_mz,
-                                                            input$max_ms2_mz),
-                                             irng=c(input$min_ms2_sp_int,
-                                                         input$max_ms2_sp_int),
-                                             axis=input$int_ms2_sp_axis))
+                                        input$max_ms1_rt),
+                                irng= c(input$min_ms1_int,
+                                        input$max_ms1_int),
+                                axis=input$int_ms1_axis),
+                       ms2=list(rtrng=c(input$min_ms2_rt,
+                                        input$max_ms2_rt),
+                                irng= c(input$min_ms2_int,
+                                        input$max_ms2_int),
+                                axis=input$int_ms2_axis),
+                       spec=list(mzrng=c(input$min_ms2_mz,
+                                         input$max_ms2_mz),
+                                 irng=c(input$min_ms2_sp_int,
+                                        input$max_ms2_sp_int),
+                                 axis=input$int_ms2_sp_axis))
 
             prop
         })
@@ -1093,9 +1179,74 @@ shinyScreenApp <- function(projDir=getwd()) {
         extr_data_prep <- shiny::reactive({
             sets<-get_sets()
             L<-length(sets)
-            data.frame(set=sets,extracted=rep(F,L),ms2=rep(F,L),stringsAsFactors = F)
+            data.frame(set=sets,extracted=rep(F,L),
+                       qa=rep(F,L),
+                       ms2=rep(F,L),stringsAsFactors = F)
         })
 
+
+        extr_data_curr<- shiny::reactive({
+            ## Set up the status data frame.
+            message("Detecting processed data.")
+            df<-extr_data_prep()
+            dsets<-extr_data_scan()
+            dms2<-extr_ms2_scan()
+            dms2<-extr_ms2_scan()
+            df$extracted<-dsets
+            df$ms2<-dms2
+            message("Detecting processed data finished.")
+            df
+        })
+
+
+        extr_data_mzml<-shiny::reactive({
+            ## Extract data for selected sets and return the status
+            ## dataframe.
+            dfProc<-extr_data_curr()
+            input$genRunB
+            shiny::isolate({
+                fTab<-gen_base_ftab()
+                nProc<-as.integer(input$genNoProc)
+                sets<-input$genSetSelInp
+                intThresh<-as.numeric(input$intThresh)
+                noiseFac<-as.numeric(input$noiseFac)
+                rtDelta<-as.numeric(input$rtDelta)
+                limFinePPM<-as.numeric(input$ppmLimFine)
+                limEIC<-as.numeric(input$eicLim)
+                rtDelta<-as.numeric(input$rtDeltaWin)
+                for (s in sets) {
+                    message("***** BEGIN set ",s, " *****")
+                    dest<-rvConf$projDir
+                    gc()
+                    dir.create(s,showWarnings=F)
+                    unset_gen_done(s)
+                    gen(fTab=fTab[fTab$set==s,],
+                        proc=nProc,
+                        limFinePPM=limFinePPM,
+                        limEIC=limEIC,
+                        rtDelta=rtDelta)
+                    set_gen_done(s)
+                    dfProc<-extr_data_set(dfProc,s)
+                    message("***** END set ",s, " *****")
+                }
+                gc()
+            })
+            dfProc
+        })
+
+        ## TODO TODO TODO
+        gen_ms2_data<-shiny::reactive({
+            ## After qa is done, process the ms2 spectra.
+            dfProc<-extr_data_qa()
+            dfProc
+        })
+
+        extr_data<-shiny::reactive({
+            ## Top-level call to start the chain of reactions needed
+            ## to extract data from sets.
+            gen_ms2_data()
+        })
+        
         ## ***** Observe Event *****
 
         shiny::observeEvent(input$saveConfB,{
@@ -1148,86 +1299,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             rvTab$mzMLWork<-add_mzML_files(rvTab$mzMLWork,paths)
         })
         
-        shiny::observeEvent(input$genRunB,{
-            fTab<-gen_base_ftab()
-            nProc<-as.integer(input$genNoProc)
-            sets<-input$genSetSelInp
-            message("Selected sets:")
-            message("Number of processes:",nProc)
-            intThresh<-as.numeric(input$intThresh)
-            noiseFac<-as.numeric(input$noiseFac)
-            rtDelta<-as.numeric(input$rtDelta)
-            limFinePPM<-as.numeric(input$ppmLimFine)
-            limEIC<-as.numeric(input$eicLim)
-            rtDelta<-as.numeric(input$rtDeltaWin)
-            for (s in sets) {
-                message("***** BEGIN set ",s, " *****")
-                ## fnCmpdList<-input$fnKnownL
-                
-                dest<-rvConf$projDir
-                gc()
-                dir.create(s,showWarnings=F)
-                unset_gen_done(s)
-                gen(fTab=fTab[fTab$set==s,],
-                    proc=nProc,
-                    limFinePPM=limFinePPM,
-                    limEIC=limEIC,
-                    rtDelta=rtDelta)
-                set_gen_done(s)
-                message("***** END set ",s, " *****")
-            }
-            gc()
-        })
 
-        shiny::observeEvent(input$genRunPPB,{
-            message("Starting preprocessing.")
-
-            sets<-get_sets()
-            comp<-get_comp_tab()
-            
-            nr<-nrow(comp)
-            if (!is.null(nr)) {
-                if (is.na(nr)) nr<-0
-            } else nr<-0
-            if (length(sets)>0 && nr>0) {
-                doneSets<-sets[sapply(sets,is_gen_done)]
-                message("done sets: ",doneSets)
-                if (length(doneSets)>0) {
-                                        #fnFullTab<-rvConf$fnFTPP
-                    fullFTab<- get_mtr() #gen_base_ftab()
-                    doneFTab<-fullFTab[fullFTab$set %in% doneSets,]
-                    if (nrow(doneFTab) > 0) {
-
-                        intThresh<-as.numeric(input$intThresh)
-                        noiseFac<-as.numeric(input$noiseFac)
-                        rtDelta<-as.numeric(input$rtDelta)
-                        ppFTab<-preProc(ftable=doneFTab,
-                                        intThresh=intThresh,
-                                        noiseFac=noiseFac,
-                                        rtDelta=rtDelta)
-
-                        extNms<-names(ppFTab)
-                        basNms<-names(fullFTab)
-                        diffNms<-setdiff(extNms,basNms)
-                        nrf<-nrow(fullFTab)
-                        for (nm in diffNms) {
-                            z<-logical(length=nrf)
-                            z<-T
-                            fullFTab[[nm]]<-z
-                        }
-                        fullFTab[fullFTab$set %in% doneSets,]<-ppFTab
-                        write.csv(file=rvConf$fnFT,
-                                  x=fullFTab,
-                                  row.names=F)
-                        
-                        rvTab$mtr<-fullFTab
-                        message("Finished preprocessing.")
-                        
-                        
-                    }
-                }
-            }
-        })
 
         shiny::observeEvent(input$presSelCmpd,{
             pos<-input$presSelCmpd
@@ -1314,7 +1386,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     for (t in sdf$tag) {
                         sprop <- rvConf$spectProps[[t]]
                         sdfSel<-sdf[sdf$tag %in% t,QANAMES]
-                        
+        
                         sel <- as.logical(sdfSel)
                         choices <- QANAMES[sel]
                         names(choices) <- QANAMES[sel]
@@ -1359,33 +1431,9 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
-            ## shiny::isolate({df<-rhandsontable::hot_to_r(input$genTabProcCtrl)})
-            df<-rvTab$extrData
-            if (is.null(df)) {
-                df<-extr_data_prep()
-                dsets<-extr_data_scan()
-                dms2<-extr_ms2_scan()
-                dms2<-extr_ms2_scan()
-                df$extracted<-dsets
-                df$ms2<-dms2
-            }
-            rhandsontable::rhandsontable(df)
-            ## sets<-get_sets()
-            ## shiny::validate(need(sets,"Compounds set list must be provided."))
-
-            ## genState<-sapply(sets,is_gen_done)
-            ## df<-if (!is.null(sets)) {data.frame(set=sets,
-            ##                                     generated=genState,
-            ##                                     MS2=rep(F,length(sets)),
-            ##                                     stringsAsFactors=F)
-            ##     } else {data.frame(sets=character(),
-            ##                        generated=logical(),
-            ##                        MS2=logical(),
-            ##                        stringsAsFactors=F)} 
-            ## rhandsontable::rhandsontable(df,
-            ##                              rowHeaders=NULL,
-            ##                              readOnly=F,
-            ##                              stretchH="all")
+            df<-extr_data()
+            ## todo<-extr_data_ms2_todo(rvTab$extrData)
+            rhandsontable::rhandsontable(df,stretchH="all",rowHeaders = F)
             
         })
 
@@ -1428,27 +1476,21 @@ shinyScreenApp <- function(projDir=getwd()) {
         
         output$nvPanel<-shiny::renderUI({
             message("Rendering panel started")
-            ft<- get_mtr() 
-            set<-input$presSelSet
-            if (!is.null(set) && !is.na(set) && nchar(set)>0 && !is.null(ft)) {
-                QANms<-rvConf$QANAMES
-                names(QANms)<-QANms
-                ftSec<-ft[ft$set %in% set,]
-                tags<-levels(factor(as.character(ftSec$tag)))
-                rvConf$tags<-tags
-                spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
-                rvConf$spectProps<-spectProps
-                tabPanelList <- lapply(tags, function(tag) {
-                    shiny::tabPanel(tag, shiny::checkboxGroupInput(spectProps[[tag]], "Quality Control",
-                                                                   QANms),
-                                    shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
-                                    shiny::verbatimTextOutput(paste("value",tag,sep=""))
-                                    )})
+            QANms<-rvConf$QANAMES
+            names(QANms)<-QANms
+            tags<-get_curr_tags()
+            spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
+            rvConf$spectProps<-spectProps
+            tabPanelList <- lapply(tags, function(tag) {
+                shiny::tabPanel(tag, shiny::checkboxGroupInput(spectProps[[tag]], "Quality Control",
+                                                               QANms),
+                                shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
+                                shiny::verbatimTextOutput(paste("value",tag,sep=""))
+                                )})
                 
                 
-                message("done rendering panel")
-                do.call(shiny::navlistPanel, tabPanelList)
-            } else NULL
+            message("done rendering panel")
+            do.call(shiny::navlistPanel, tabPanelList)
         })
 
         output$chromGram <- renderPlot(
@@ -1463,7 +1505,9 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         
         session$onSessionEnded(function () stopApp())
-    }
+        
 
+        
+    }
     shiny::shinyApp(ui=mkUI(),server=server)
 }
