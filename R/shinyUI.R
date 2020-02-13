@@ -619,10 +619,6 @@ shinyScreenApp <- function(projDir=getwd()) {
         get_all_sets<-shiny::reactive({
             ## Returns all sets defined in a setid table.
             df<-get_setid_file()
-            message("setid")
-            str(df)
-            message("setid.")
-            
             sets<-levels(factor(df$set))
             sets
         })
@@ -1170,13 +1166,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                 dest<-rvConf$projDir
                 gc()
                 dir.create(s,showWarnings=F)
-                unsetGenDone(s)
+                unset_gen_done(s)
                 gen(fTab=fTab[fTab$set==s,],
                     proc=nProc,
                     limFinePPM=limFinePPM,
                     limEIC=limEIC,
                     rtDelta=rtDelta)
-                setGenDone(s)
+                set_gen_done(s)
                 message("***** END set ",s, " *****")
             }
             gc()
@@ -1328,9 +1324,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             }
         })
-
-
-
 
         ## ***** Render *****
         output$knownCtrl <- rhandsontable::renderRHandsontable({
