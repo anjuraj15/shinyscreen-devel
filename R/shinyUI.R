@@ -1176,7 +1176,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             df<-extr_data_prep()
             dsets<-extr_data_scan()
             dms2<-extr_ms2_scan()
-            dms2<-extr_ms2_scan()
             df$extracted<-dsets
             df$ms2<-dms2
             message("Detecting processed data finished.")

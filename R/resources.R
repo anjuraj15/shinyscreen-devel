@@ -49,7 +49,7 @@ REST_TXT_INP<-c("fnKnownL",
                 "fnSetId",
                 "tagsInp")
 
-REST_TAB<-c("mzML")
+REST_TAB<-c("mzml")
 
 
 GUI_TAB_TITLE<-c(conf="Config",
