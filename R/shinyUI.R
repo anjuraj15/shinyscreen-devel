@@ -588,6 +588,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              fnFT=FN_FTAB_STATE)
         rvTab<-shiny::reactiveValues(
                           mzMLWork=NULL,
+                          extrData=NULL,
                           mtr=NULL)     #master table (everything combined)
         rvPres<-shiny::reactiveValues(cex=CEX,
                                       rt_digits=RT_DIGITS,
@@ -1080,6 +1081,24 @@ shinyScreenApp <- function(projDir=getwd()) {
 
             prop
         })
+
+        extr_data_scan <- shiny::reactive({
+            ## Which sets are done.
+            sets<-get_sets()
+            sapply(sets,is_gen_done)
+        })
+
+        extr_ms2_scan <- shiny::reactive({
+            sets<-get_sets()
+            sapply(sets,is_ms2_done)
+        })
+
+        extr_data_prep <- shiny::reactive({
+            sets<-get_sets()
+            L<-length(sets)
+            data.frame(set=sets,extracted=rep(F,L),ms2=rep(F,L),stringsAsFactors = F)
+        })
+
         ## ***** Observe Event *****
 
         shiny::observeEvent(input$saveConfB,{
@@ -1346,23 +1365,36 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
-            shiny::invalidateLater(100,
-                                   session=session)
-            sets<-get_sets()
-            genState<-sapply(sets,is_gen_done)
-            df<-if (!is.null(sets)) {data.frame(set=sets,
-                                                generated=genState,
-                                                stringsAsFactors=F)
-                } else {data.frame(sets=character(),
-                                   generated=logical(),
-                                   stringsAsFactors=F)} 
-            rhandsontable::rhandsontable(df,
-                                         rowHeaders=NULL,
-                                         readOnly=F,
-                                         stretchH="all")
+            ## shiny::isolate({df<-rhandsontable::hot_to_r(input$genTabProcCtrl)})
+            df<-rvTab$extrData
+            if (is.null(df)) {
+                df<-extr_data_prep()
+                dsets<-extr_data_scan()
+                dms2<-extr_ms2_scan()
+                dms2<-extr_ms2_scan()
+                df$extracted<-dsets
+                df$ms2<-dms2
+            }
+            rhandsontable::rhandsontable(df)
+            ## sets<-get_sets()
+            ## shiny::validate(need(sets,"Compounds set list must be provided."))
+
+            ## genState<-sapply(sets,is_gen_done)
+            ## df<-if (!is.null(sets)) {data.frame(set=sets,
+            ##                                     generated=genState,
+            ##                                     MS2=rep(F,length(sets)),
+            ##                                     stringsAsFactors=F)
+            ##     } else {data.frame(sets=character(),
+            ##                        generated=logical(),
+            ##                        MS2=logical(),
+            ##                        stringsAsFactors=F)} 
+            ## rhandsontable::rhandsontable(df,
+            ##                              rowHeaders=NULL,
+            ##                              readOnly=F,
+            ##                              stretchH="all")
             
         })
-        
+
         output$genSetSelInpCtrl<-shiny::renderUI({
             sets<-get_sets()
             shiny::selectInput("genSetSelInp",

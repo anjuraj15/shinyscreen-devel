@@ -71,4 +71,5 @@ PLOT_MS2_LEG_TIT<-"peak retention time (MS2)"
 
 MS2_1ST_N<-5
 
-
+EXTR_MS2_DIR<-"MS2"
+EXTR_MS2_FLAG<-file.path(EXTR_MS2_DIR,'.ms2.DONE')

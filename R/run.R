@@ -17,28 +17,22 @@ is_gen_done<-function(dest) {
     file.exists(fnFlag)
 }
 
-isPPDone<-function(dest) {
-    fnFlag<-file.path(dest,".pp.DONE")
+is_ms2_done<-function(dest) {
+    fnFlag<-file.path(dest,EXTR_MS2_FLAG)
     file.exists(fnFlag)
-    
 }
 
-setPPDone<-function(dest) {
-    fnFlag<-file.path(dest,".pp.DONE")
-    if (isPPDone(dest)) file.create(fnFlag)
+set_ms2_done<-function(dest) {
+    fnFlag<-file.path(dest,EXTR_MS2_FLAG)
+    file.create(fnFlag)
 }
 
-unsetPPDone<-function(dest) {
-    fnFlag<-file.path(dest,".pp.DONE")
-    if (isPPDone(dest)) unlink(fnFlag,force=T)
-}
-
-setGenDone<-function(dest) {
+set_gen_done<-function(dest) {
     fnFlag<-file.path(dest,".gen.DONE")
     file.create(fnFlag)
 }
 
-unsetGenDone<-function(dest) {
+unset_gen_done<-function(dest) {
     fnFlag<-file.path(dest,".gen.DONE")
     if (is_gen_done(dest)) unlink(fnFlag,force=T)
 }
