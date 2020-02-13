@@ -627,8 +627,9 @@ shinyScreenApp <- function(projDir=getwd()) {
             ## Returns only the sets set for the mzML files. This
             ## takes precedense over the sets in setid table.
             mzml<-get_mzml()
+            shiny::validate(need(mzml,"Please add the mzML files."))
             sets<-as.character(mzml$set)
-            shiny::validate(need(sets,"Please assign sets to the mzML files."))
+            
             levels(factor(sets))
         })
 
