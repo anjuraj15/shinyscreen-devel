@@ -87,17 +87,17 @@
     *set* column.
     
     #+CAPTION: The first few rows of a compound set.
-    |  ID | set  |
-    |-----+------|
-    |  33 | mixA |
-    | 717 | mixA |
-    | 999 | mixA |
-    | ... | ...  |
-    | 129 | mixB |
-    | 516 | mixB |
-    | ... | ...  |
-    | 333 | mixC |
-    | 999 | mixC |
+    |  ID | set  | RT |
+    |-----+------+----|
+    |  33 | mixA |    |
+    | 717 | mixA |    |
+    | 999 | mixA |    |
+    | ... | ...  |    |
+    | 129 | mixB |    |
+    | 516 | mixB |    |
+    | ... | ...  |    |
+    | 333 | mixC |    |
+    | 999 | mixC |    |
 
 
 ***  Data Files
