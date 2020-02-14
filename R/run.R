@@ -17,13 +17,13 @@ is_gen_done<-function(dest) {
     file.exists(fnFlag)
 }
 
-is_ms2_done<-function(dest) {
-    fnFlag<-file.path(dest,EXTR_MS2_FLAG)
+is_ms2_done<-function(set,dest) {
+    fnFlag<-file.path(dest,paste('.',set,'.DONE',sep=''))
     file.exists(fnFlag)
 }
 
-set_ms2_done<-function(dest) {
-    fnFlag<-file.path(dest,EXTR_MS2_FLAG)
+set_ms2_done<-function(set,dest) {
+    fnFlag<-file.path(dest,paste('.',set,'.DONE',sep=''))
     file.create(fnFlag)
 }
 

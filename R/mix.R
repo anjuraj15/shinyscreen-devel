@@ -156,15 +156,14 @@ smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
   grid::rasterGrob(z)
 }
 
-gen_ms2_spec_data <- function(id,tag,rtMS2Ind,data,luckyN=NA) {
+gen_ms2_spec_data <- function(id,tag,iMS2rt,data,luckyN=NA) {
     ## Given the id, tag and the index of the MS2 spectrum, return the
     ## dataframe of the spectrum, with luckyN number of lagerst
     ## intensity peaks.
 
     nid<-id2name(id)
-
-    if (is.integer(rtMS2Ind)) {
-        d <- data[[tag]]$ms2[[nid]][[rtMS2Ind]]
+    if (!is.na(iMS2rt)) {
+        d <- data$ms2[[nid]][[iMS2rt]]
         if (!is.null(d)) {
             x<-data.frame(mz=MSnbase::mz(d),intensity=MSnbase::intensity(d))
             res<-if (!is.na(luckyN)) {
@@ -179,15 +178,20 @@ gen_ms2_spec_data <- function(id,tag,rtMS2Ind,data,luckyN=NA) {
             
             return(res)
             
-        } else return(NULL)
+        } else {
+            return(NULL)}
         
     } else return(NULL)
 }
 
 gen_ms2_spec_fn <- function(id,tag,mode,set,width=6) {
-    num<-formatC(id,width = width,flag=0)
-    ss<-paste(num,mode,tag,set,sep="_")
-    paste(ss,".csv",sep='')
+    suppressWarnings({
+        iid<-as.numeric(id)
+        iid<- if (!is.na(iid)) iid else id
+        num <- formatC(iid,width = width,format='d',flag='0')
+        ss<-trimws(paste(num,mode,tag,set,sep="_"),which='both')
+        paste(ss,".csv",sep='')
+    })
 }
 
 
@@ -198,7 +202,7 @@ plot_id_msn <- function(ni,
                         data,
                         rtMS1,
                         rtMS2,
-                        rtMS2Ind,
+                        iMS2rt,
                         mass,
                         smile,
                         tags,
@@ -268,7 +272,7 @@ plot_id_msn <- function(ni,
         dfsSpecMS2<-lapply(tags,function(tag) {
             d<-data[[tag]]$ms2[[ni]]
             if (!is.null(d)) {
-                ind<-rtMS2Ind[[tag]]
+                ind<-iMS2rt[[tag]]
                 if (!is.na(ind)) {
                     x<-data.frame(mz=MSnbase::mz(d[[ind]]),intensity=MSnbase::intensity(d[[ind]]))
                     x$tag<-tag
