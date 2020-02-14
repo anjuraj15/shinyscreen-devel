@@ -471,7 +471,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         wh<-which(setTab$set %in% set)
         ids<-setTab$ID[wh]
         mz<-setTab$mz[wh]
-        entries<-base::Map(function(i,m,x) paste(i,'; ','mz: ',m,sep=''),ids,mz)
+        entries<-base::Map(function(i,m) paste(i,'; ','mz: ',m,sep=''),ids,mz)
         entries
     }
 
@@ -578,7 +578,6 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         ## ***** reactive values *****
         rvConf <- shiny::reactiveValues(
-                             spectProps=list(),
                              QANAMES=QANAMES,
                              MODEMAP=MODEMAP,
                              REST_TXT_INP=REST_TXT_INP,
@@ -737,15 +736,14 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         get_curr_set<-shiny::reactive({
             set<-input$presSelSet
-                                        # sets<-get_sets()
             shiny::validate(need(set,"Initialising set selection control ..."))
             set
         })
 
         get_mset_comp_tab<-shiny::reactive({
-            comp<-get_comp_tab()
-            md<-get_curr_mode()
             set<-get_curr_set()
+            md<-get_curr_mode()
+            comp<-get_comp_tab()
             scomp<-comp[comp$set %in% set,]
             mscomp<-scomp[scomp$mode %in% md,]
             mscomp
@@ -759,7 +757,9 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
         get_curr_mode<-shiny::reactive({
             md<-input$presSelMode
-            shiny::validate(need(md,"Initialising mode selection control ..."))
+            modes<-get_set_modes()
+            shiny::req(md)
+            shiny::req(md %in% modes)
             md
         })
 
@@ -774,7 +774,11 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         get_curr_id_pos<-shiny::reactive({
             pos<-as.numeric(input$presSelCmpd)
-            shiny::validate(need(pos,"Initialising compound selection control ..."))
+            lids<-length(get_curr_set_ids())
+            shiny::req(pos < lids)
+            ## shiny::validate(need(pos,"Initialising compound selection control ..."))
+            ## pos
+            ## rvConf$currIDpos
             pos
         })
 
@@ -1230,6 +1234,35 @@ shinyScreenApp <- function(projDir=getwd()) {
             ## to extract data from sets.
             gen_ms2_data()
         })
+
+
+        gen_spec_props<-shiny::reactive({
+            tags<-get_curr_tags()
+            spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
+            names(spectProps) <- tags
+            spectProps
+        })
+
+        gen_spec_chk_box<-shiny::reactive({
+            id<-get_curr_id()
+            set<-get_curr_set()
+            md<-get_curr_mode()
+            mtr<-get_mtr()
+            QANAMES<-rvConf$QANAMES
+            sdf <- queryFileTable(df=mtr,set=set,mode=md,id=id)
+            sdf$tag<-as.character(sdf$tag)
+            sprops<-gen_spec_props()
+            res<-lapply(sdf$tag,function(t) {
+                sprop <- sprops[[t]]
+                sdfSel<-sdf[sdf$tag %in% t,QANAMES]
+                sel <- as.logical(sdfSel)
+                selected <- QANAMES[sel]
+                names(selected) <- QANAMES[sel]
+                selected
+            })
+            names(res)<-sdf$tag
+            res
+        })
         
         ## ***** Observe Event *****
 
@@ -1284,6 +1317,9 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
         
 
+        shiny::observeEvent(input$presSelSet,{
+            rvConf$currIDpos<-1
+        })
 
         shiny::observeEvent(input$presSelCmpd,{
             pos<-input$presSelCmpd
@@ -1357,31 +1393,15 @@ shinyScreenApp <- function(projDir=getwd()) {
         ## ***** Observe *****
 
 
-        shiny::observe({
-            if (input$tabs=="prescreen") {
-                id<-get_curr_id()
-                spectProps<-rvConf$spectProps
-                set<-get_curr_set()
-                md<-get_curr_mode()
-                mtr<-get_mtr()
-                if (!is.na(id) && length(spectProps)>0 && !is.na(md)) {
-                    QANAMES<-rvConf$QANAMES
-                    sdf <- queryFileTable(df=mtr,set=set,mode=md,id=id)
-                    sdf$tag<-as.character(sdf$tag)
-                    for (t in sdf$tag) {
-                        sprop <- rvConf$spectProps[[t]]
-                        sdfSel<-sdf[sdf$tag %in% t,QANAMES]
-        
-                        sel <- as.logical(sdfSel)
-                        choices <- QANAMES[sel]
-                        names(choices) <- QANAMES[sel]
-                        shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
-                    }
-
-                }
-
-            }
-        })
+        ## shiny::observe({
+        ##     if (input$tabs=="prescreen") {
+                
+        ##         for (t in sdf$tag) {
+                
+        ##             shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
+        ##         }
+        ##     }
+        ## })
 
         ## ***** Render *****
         output$knownCtrl <- rhandsontable::renderRHandsontable({
@@ -1451,7 +1471,9 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         output$presSelCmpdCtrl <- shiny::renderUI({
             choices<-gen_pres_set_menu()
+            lids<-length(get_curr_set_ids())
             x<-rvConf$currIDpos
+            req(x<lids)
             shiny::selectInput("presSelCmpd",
                                "Compound",
                                choices = choices,
@@ -1464,11 +1486,13 @@ shinyScreenApp <- function(projDir=getwd()) {
             QANms<-rvConf$QANAMES
             names(QANms)<-QANms
             tags<-get_curr_tags()
-            spectProps<-sapply(tags,function (tag) paste("spectProps",tag,sep=""))
-            rvConf$spectProps<-spectProps
+            sprops<-gen_spec_props()
+            schoices<-gen_spec_chk_box()
             tabPanelList <- lapply(tags, function(tag) {
-                shiny::tabPanel(tag, shiny::checkboxGroupInput(spectProps[[tag]], "Quality Control",
-                                                               QANms),
+                shiny::tabPanel(tag, shiny::checkboxGroupInput(inputId = sprops[[tag]],
+                                                               label = "Quality Control",
+                                                               choices = QANms,
+                                                               selected = schoices[[tag]]),
                                 shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
                                 shiny::verbatimTextOutput(paste("value",tag,sep=""))
                                 )})
