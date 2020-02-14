@@ -15,113 +15,147 @@
   Shiny web application.
   
 * Usage 
-** Inputs (or, what to have at hand before starting Shinyscreen)
-   1. The data files in mzML format.
-   2. The compound list.
+** Before Starting
+***  Compound Lists
 
-      The list should be a comma separated file (CSV). The separator
-      must be a comma. If it is known which compounds are being
-      screened for, the CSV should contain the following columns:
-      *ID*, *Name*, *SMILES* and *RT*. Of the previously mentioned
-      columns, the ID and SMILES are required to be filled. The ID is
-      user-given identifier that is unique to a compound. The SMILES
-      column should contain the SMILES strings of the compounds. These
-      should be in the MS-Ready format. The column *Name* , if filled
-      will be used to print a heading in the plots. If the retention
-      time column, *RT*, is empty, the program will seek through the
-      entire duration of the run and this can be slow for many
-      compounds and big datafiles. If *RT* column has values, only the
-      data within a specified time delta around the retention time
-      will be scanned, leading to large efficiency improvements.
+    The lists of known and unknown compounds contain different
+    information and are treated differently. The application needs at
+    least one, but can take both known and unknown lists as
+    inputs. The formats of both lists are explained below.
 
-      #+CAPTION: The first few rows of a compound list containing known compounds.
-      |  ID | Name                  | SMILES                          |   RT |
-      |-----+-----------------------+---------------------------------+------|
-      |  33 | "Isoproturon"         | "CC(C)C1=CC=C(NC(=O)N(C)C)C=C1" | 19.6 |
-      | 717 | "epsilon-Decalactone" | "CCCCC1CCCCC(=O)O1"             |      |
-      | ... | "..."                 | "..."                           | ...  |
+**** Known Compounds List
+     - A comma-separated CSV file table.
+     - The column names are case-sensitive.
+     - Required headers:
+       - ID :: This is an integer compound identifier. This column
+	       must be filled and each ID entry must be unique. If
+	       both unknown and known lists are given, IDs from both
+	       lists must not overlap.
+       - SMILES ::  The /SMILES/ character string. Shinyscreen accepts
+		    only MS-Ready SMILES. This column must be filled.
+       - Name :: The compound name. This column can be left empty.
+       - RT :: The retention time of the peak in minutes. This column
+	       can be left empty.
+       - Optional headers:
+         - mz :: m/z mass of the compound. If both SMILES and mz entries
+		 are present for a given compound, mz takes precedence.
 
-      If the only known information about the compounds are the masses
-      of the progenitor ions, then it is only required to fill out the
-      *ID* and the *mz* columns. The mz column will contain the mass
-      of the precursor ion, and the ID should be filled as explained
-      before. The RT column must be present, even if empty.
+        #+CAPTION: The first few rows of a compound list containing known compounds.
+	|  ID | Name                  | SMILES                          |   RT |
+	|-----+-----------------------+---------------------------------+------|
+	|  33 | "Isoproturon"         | "CC(C)C1=CC=C(NC(=O)N(C)C)C=C1" | 19.6 |
+	| 717 | "epsilon-Decalactone" | "CCCCC1CCCCC(=O)O1"             |      |
+	| ... | "..."                 | "..."                           | ...  |
 
-      #+CAPTION: The first few rows of a compound list containing unknown compounds.
-      |  ID | mz       |
-      |-----+----------|
-      |  22 | 296.1160 |
-      | 888 | 503.2816 |
-      | ... | ...      |
+	It is *strongly suggested* to quote all the character strings, such
+	as SMILES and Name.
+
+**** Unknown Compounds List
+     - A comma-separated CSV file table.
+     - Required headers:
+       - ID :: This is an integer compound identifier. This column
+               must be filled and each ID entry must be unique. If
+               both unknown and known lists are given, IDs from both
+               lists must not overlap.
+       - mz :: m/z mass of the compound.
+       - RT :: The retention time of the peak in minutes. This column
+               can be left empty.
+
+
+     #+CAPTION: The first few rows of a compound list containing unknown compounds.
+     |  ID |       mz |
+     |-----+----------|
+     |  22 | 296.1160 |
+     | 888 | 503.2816 |
+     | ... |      ... |
       
-      The column names are case-sensitive.
+       
 
    
-   3. The compound sets.
+*** The compound sets.
 
-      Shinyscreen organises its data around the concept of compound
-      sets. If, given a collection of data files, it is possible
-      to break down the compounds into logical groups, shinyscreen
-      will make it easier to navigate different groups if this is
-      specified in a CSV list. In this case, the CSV file contains two
-      columns: *ID* and *set*. The *ID* is the identifier of the
-      compound from the compound list and *set* is a name of the
-      set. If there is no sensible way of splitting compounds in
-      groups, it is enough to copy all the ID-s from the compound list
-      into a new CSV and use any character string to fill out the
-      *set* column.
+    Shinyscreen organises its data around the concept of compound
+    sets. If, given a collection of data files, it is possible
+    to break down the compounds into logical groups, shinyscreen
+    will make it easier to navigate different groups if this is
+    specified in a CSV list. In this case, the CSV file contains two
+    columns: *ID* and *set*. The *ID* is the identifier of the
+    compound from the compound list and *set* is a name of the
+    set. If there is no sensible way of splitting compounds in
+    groups, it is enough to copy all the ID-s from the compound list
+    into a new CSV and use any character string to fill out the
+    *set* column.
+    
+    #+CAPTION: The first few rows of a compound set.
+    |  ID | set  |
+    |-----+------|
+    |  33 | mixA |
+    | 717 | mixA |
+    | 999 | mixA |
+    | ... | ...  |
+    | 129 | mixB |
+    | 516 | mixB |
+    | ... | ...  |
+    | 333 | mixC |
+    | 999 | mixC |
 
-      #+CAPTION: The first few rows of a compound set.
-      |  ID | set  |
-      |-----+------|
-      |  33 | mixA |
-      | 717 | mixA |
-      | 999 | mixA |
-      | ... | ...  |
-      | 129 | mixB |
-      | 516 | mixB |
-      | ... | ...  |
-      | 333 | mixC |
-      | 999 | mixC |
 
-
+***  Data Files
+    These should be in mzML format.
       
    
      
-      
+
+** Sets, Tags, Modes, Files and IDs      
+   Each file is labelled by a tag, mode and set. Sets are defined in
+   the compound set CSV file and group compounds according to their
+   IDs. Modes correspond to the adducts. Tags label files in the
+   plots.
+
+   For known compounds, each set can contain multiple modes. Sets of
+   unknowns can only contain a single mode. Any files belonging to the
+   same set, that have been acquired in a single mode must carry
+   unique tags. 
+
+   In addition, the IDs of compounds belonging to the same set/mode
+   combination must be unique. Different ID sets may overlap.
+
+** Config Screen
+   This is the start tab. Import the compound and set lists first,
+   then proceed to import the mzML files. Provide tags in the tag text
+   box and then assign the sets, modes and tags to the imported mzML
+   files. Once this is done, move on to the `Spectra Extraction' tab.
+
+** Spectra Extraction  
+   Set the extraction parameters and then select a certain number of
+   sets to scan for. This may take a while.
+
+   After one, or more sets have been extracted (once the status box
+   gets checked), it is possibile to carry out the auto quality
+   check. This check is going to perform a rudimentary analysis of the
+   spectra, as well as retrieve the retention times of the precursor
+   peaks and their MS2 spectra. This procedure must be done in order
+   to plot the MS2 spectra.
+
+** Prescreening
+   The third tab allows the visual inspection of the spectra and the
+   chromatogram, as well as exporting the plots in a PDF format.
+
 ** Installation
 *** The simplest way to install Shinyscreen that always works (at least on *nix systems)
    #+BEGIN_SRC shell
-     R CMD INSTALL /path/to/the/downloaded/package
+     R CMD INSTALL /path/to/the/downloaded/package/or/cloned/repo
    #+END_SRC
+
 *** Windows/RStudio
    #+BEGIN_SRC r
      library(devtools)
-	 shinyscreen_dir <- "path/to/the/downloaded/package"
+     shinyscreen_dir <- "path/to/the/downloaded/package"
      devtools::install_local(path=shinyscreen_dir,force=T,dependencies=FALSE)
    #+END_SRC
+
 *** A snippet to test Shinyscreen after installation
    #+BEGIN_SRC r
      library(shinyscreen)
      shinyScreenApp()
    #+END_SRC
-* Contribute
-** Current State of Code
-   The situation is very fluid, especially in the shinyUI.R which
-   contains the Shiny interface. This part of code looks like a mess
-   (though, it's organised mess), due to swapping out some major parts
-   of the functionality and a recent coding style change.
-** GUI Style Guide
-*** Colour Scheme
-    - LCSB colours?
-*** Boxes
-    - All boxes should have statuses. Shinydashboard defines
-      ~primary~, ~success~, ~info~, ~warning~ and ~danger~.
-    - Words in titles should be capitalised, except for /a/, /of/ et simile.
-    - Titles for widgets, where applicable, should consists of full
-      sentences. Yes, with a full-stop at the end.
-*** Usage Flow
-    The UI should feel sequential to the user, unless the actions that
-    are being performed need continuous feedback, or
-    refinement. Encapsulate things that rarely, or never change into
-    steps that can be executed and then forgotten about.
