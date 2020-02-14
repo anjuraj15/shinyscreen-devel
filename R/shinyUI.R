@@ -490,12 +490,13 @@ shinyScreenApp <- function(projDir=getwd()) {
             wh<-which(cond)
 
             df[wh,entries] <- linput[[tag]]
+            df[wh,'checked']<-FTAB_CHK_MANL
         }
         df
     }
     
-    getCheckboxValues <- function(tag,input,rv) {
-        chkbox <- input[[rv$spectProps[[tag]]]]
+    getCheckboxValues <- function(tag,input,sprops) {
+        chkbox <- input[[sprops[[tag]]]]
         q <- sapply(QANAMES,function (qn) {
             if (qn %in% chkbox) T else F
         })
@@ -1417,7 +1418,8 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         shiny::observeEvent(input$submitQA,{
             tags<-get_curr_tags()
-            res <- lapply(tags,getCheckboxValues,input,rvConf)
+            sprops<-gen_spec_props()
+            res <- lapply(tags,getCheckboxValues,input,sprops)
             names(res) <- tags
             df<-get_mtr()
             rvTab$mtr <- updateFileTable(df=df,
