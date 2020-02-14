@@ -380,7 +380,7 @@ mkUI <- function() {
     presSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["pres"]],
                                              tabName="prescreen",
                                              icon=shiny::icon("chart-bar"))
-    
+
     header <- shinydashboard::dashboardHeader(title=headerText)
     
     sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(id='tabs',
@@ -390,7 +390,8 @@ mkUI <- function() {
                                                                             shiny::hr(),
                                                                             shiny::h5("Inputs"),
                                                                             compListSideItem,
-                                                                            setIdSideItem))
+                                                                            setIdSideItem
+                                                                            ))
 
 
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
@@ -588,12 +589,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                              mode=modeLvl,
                              projDir=projDir,
                              currIDpos=1,
-                             currIDSet=list(),
-                             currID=NA,
                              fnFT=FN_FTAB_STATE)
         rvTab<-shiny::reactiveValues(
-                          mzml=NULL,
-                          mtr=NULL)     #master table (everything combined)
+                          mzml=NULL,    # mzML file table
+                          mtr=NULL)     # master table (everything combined)
         rvPres<-shiny::reactiveValues(cex=CEX,
                                       rt_digits=RT_DIGITS,
                                       m_digits=M_DIGITS,
@@ -775,7 +774,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         get_curr_id_pos<-shiny::reactive({
             pos<-as.numeric(input$presSelCmpd)
             lids<-length(get_curr_set_ids())
-            shiny::req(pos < lids)
+            shiny::req(pos <= lids)
             ## shiny::validate(need(pos,"Initialising compound selection control ..."))
             ## pos
             ## rvConf$currIDpos
@@ -847,10 +846,13 @@ shinyScreenApp <- function(projDir=getwd()) {
             sets<-levels(mzml$set)
             for (s in sets) {
                 smzml<-mzml[mzml$set %in% s,]
-                tags<-as.character(smzml$tag)
-                shiny::validate(need(length(tags)==length(unique(tags)),paste("Tags in set `",s,"' must be unique. Please change!",sep='')))
+                modes<-smzml$mode
+                for (m in modes) {
+                    msmzml<-smzml[smzml$mode %in% m,]
+                    tags<-as.character(msmzml$tag)
+                    shiny::validate(need(length(tags)==length(unique(tags)),paste("Tags for a single mode in a set `",s,"' must be unique. Please change!",sep='')))
+                }
             }
-            
             tag<-as.character(mzml$tag)
             mzml$tag<-factor(tag)
             mzml
@@ -1389,19 +1391,11 @@ shinyScreenApp <- function(projDir=getwd()) {
             }
             dev.off()
         })
-        
+
         ## ***** Observe *****
 
 
-        ## shiny::observe({
-        ##     if (input$tabs=="prescreen") {
-                
-        ##         for (t in sdf$tag) {
-                
-        ##             shiny::updateCheckboxGroupInput(session = session,inputId = sprop,selected=choices)
-        ##         }
-        ##     }
-        ## })
+
 
         ## ***** Render *****
         output$knownCtrl <- rhandsontable::renderRHandsontable({
@@ -1473,7 +1467,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             choices<-gen_pres_set_menu()
             lids<-length(get_curr_set_ids())
             x<-rvConf$currIDpos
-            req(x<lids)
+            req(x<=lids)
             shiny::selectInput("presSelCmpd",
                                "Compound",
                                choices = choices,
