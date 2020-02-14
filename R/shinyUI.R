@@ -510,12 +510,12 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
     mtr_set_mode <- function(mtr,set,mode=NULL) {
-        smtr<-mtr[set %in% mtr$set,]
+        smtr<-mtr[mtr$set %in% set,]
         res<-if (!is.null(mode)) {
-                 smtr[mode %in% smtr$mode,]
+                 smtr[smtr$mode %in% mode,]
              } else smtr
         res
-    } 
+    }
     
     mk_mzML_work<-function() {
         df<-data.frame(Files=character(),
@@ -573,11 +573,16 @@ shinyScreenApp <- function(projDir=getwd()) {
         dir
     }
     extr_data_set<-function(df,set) {
-        i<-match(set,df$set)
+        i<-which(df$set %in% set)
         df[i,'extracted']<-T
         df
     }
 
+    extr_data_qa_todo <- function(df) {
+        todo<-which(df$extracted & !df$qa)
+        df$set[todo]
+    }
+    
     extr_data_ms2_todo <- function(df){
         todo<-which(df$qa & !df$ms2)
         df$set[todo]
@@ -606,6 +611,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                              currIDpos=1,
                              fnFT=FN_FTAB_STATE)
         rvTab<-shiny::reactiveValues(
+                          proc=NULL,
                           mzml=NULL,    # mzML file table
                           mtr=NULL)     # master table (everything combined)
         rvPres<-shiny::reactiveValues(cex=CEX,
@@ -983,7 +989,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
                 sets<-get_sets()
                 comp<-get_comp_tab()
-                dsets<-extr_data_done(dfProc)
+                dsets<-extr_data_qa_todo(dfProc)
                 
                 message("done sets: ",dsets)
                 if (length(dsets)>0) {
@@ -1195,7 +1201,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         extr_data_curr<- shiny::reactive({
             ## Set up the status data frame.
             message("Detecting processed data.")
-            df<-extr_data_prep()
+            df <- extr_data_prep()
             dsets<-extr_data_scan()
             dms2<-extr_ms2_scan()
             df$extracted<-dsets
@@ -1208,7 +1214,16 @@ shinyScreenApp <- function(projDir=getwd()) {
         extr_data_mzml<-shiny::reactive({
             ## Extract data for selected sets and return the status
             ## dataframe.
-            dfProc<-extr_data_curr()
+
+            shiny::isolate({orig<-if (is.data.frame(rvTab$proc)) rvTab$proc else NULL})
+            dfProc<-if (is.data.frame(orig)) {
+                     message("Starting from existing proc info.")
+                     str(orig)
+                     orig
+                    } else {
+                        extr_data_curr()
+            
+                    }
             input$genRunB
             shiny::isolate({
                 fTab<-gen_base_ftab()
@@ -1240,51 +1255,51 @@ shinyScreenApp <- function(projDir=getwd()) {
             dfProc
         })
 
-        ## TODO TODO TODO
-        gen_ms2_data <- shiny::reactive({
+        extr_data_ms2 <- shiny::reactive({
             ## After qa is done, process the ms2 spectra.
             dfProc <- extr_data_qa()
             todoSets <- extr_data_ms2_todo(dfProc)
-            mtr <- get_mtr()
-            message("***** BEGIN MS2 EXTRACTION *****")
-            dirMS2<-mk_ms2_dir(rvConf$projDir)
-            for (s in todoSets) {
-                smtr <- mtr_set_mode(mtr=mtr,set=s)
-                wds <- unique(smtr$wd)
-                data <- lapply(wds,extr_data_read)
-                names(data) <- wds
-                for (wd in wds) {
-                    d<-data[[wd]]
-                    wsmtr<-smtr[smtr$wd %in% wd,]
-                    tag<-unique(wsmtr$tag)
-                    modes<-unique(wsmtr$mode)
-                    for (m in modes) {
-                        tb<-wsmtr[modes %in% m,c('ID','iMS2rt')]
-                        message(">>> BEGIN SET: ",s, " MODE: ", m)
-                        for (n in 1:nrow(tb)) {
-                            id<-tb[n,'ID']
-                            ims2<-tb[n,'iMS2rt']
-                            fn <- file.path(dirMS2,
-                                            gen_ms2_spec_fn(id=id,
-                                                            tag=tag,
-                                                            mode=m,
-                                                            set=s))
-                            ms2<-gen_ms2_spec_data(id=id,
-                                                   tag=tag,
-                                                   iMS2rt=ims2,
-                                                   data=d)
-                            
-                            if (!is.null(ms2)) tab2file(tab=ms2,file=fn)
-                            
+            shiny::isolate({
+                mtr <- get_mtr()
+                message("***** BEGIN MS2 EXTRACTION *****")
+                dirMS2<-mk_ms2_dir(rvConf$projDir)
+                for (s in todoSets) {
+                    smtr <- mtr_set_mode(mtr=mtr,set=s)
+                    wds <- unique(smtr$wd)
+                    data <- lapply(wds,extr_data_read)
+                    names(data) <- wds
+                    for (wd in wds) {
+                        d<-data[[wd]]
+                        wsmtr<-smtr[smtr$wd %in% wd,]
+                        tag<-unique(wsmtr$tag)
+                        modes<-unique(wsmtr$mode)
+                        for (m in modes) {
+                            tb<-wsmtr[modes %in% m,c('ID','iMS2rt')]
+                            message(">>> BEGIN SET: ",s, " MODE: ", m)
+                            for (n in 1:nrow(tb)) {
+                                id<-tb[n,'ID']
+                                ims2<-tb[n,'iMS2rt']
+                                fn <- file.path(dirMS2,
+                                                gen_ms2_spec_fn(id=id,
+                                                                tag=tag,
+                                                                mode=m,
+                                                                set=s))
+                                ms2<-gen_ms2_spec_data(id=id,
+                                                       tag=tag,
+                                                       iMS2rt=ims2,
+                                                       data=d)
+                                
+                                if (!is.null(ms2)) tab2file(tab=ms2,file=fn)
+                                
 
+                            }
+                            set_ms2_done(s,dirMS2)
+                            message(">>> DONE SET: ",s, " MODE: ", m)
+                            
                         }
-                        set_ms2_done(s,dirMS2)
-                        message(">>> DONE SET: ",s, " MODE: ", m)
-                        
                     }
-                }
 
-            }
+                }})
             message("***** END MS2 EXTRACTION *****")
 
             is<-which(dfProc$set %in% todoSets)
@@ -1295,7 +1310,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         extr_data<-shiny::reactive({
             ## Top-level call to start the chain of reactions needed
             ## to extract data from sets.
-            gen_ms2_data()
+            extr_data_ms2()
         })
 
 
@@ -1491,9 +1506,9 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
-            df<-extr_data()
+            rvTab$proc<-extr_data()
             ## todo<-extr_data_ms2_todo(rvTab$extrData)
-            rhandsontable::rhandsontable(df,stretchH="all",rowHeaders = F)
+            rhandsontable::rhandsontable(rvTab$proc,stretchH="all",rowHeaders = F)
             
         })
 

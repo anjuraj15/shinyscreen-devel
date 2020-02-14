@@ -43,7 +43,13 @@ gen_clean_state_ftab<-function(ftable) {
     ftable["MS2rt"] <- NA_real_
     ftable["iMS2rt"] <- NA_integer_
     ftable["rt"]<-NA_real_
+    ftable["checked"]<-'NONE'
     ftable
+}
+
+pp_touch_q<-function(ftab) {
+    ## Returns indices that are ok to be auto processed.
+    which(ftab$checked==FTAB_CHK_NONE | ftab$checked==FTAB_CHK_AUTO)
 }
 
 preProc <- function (ftable,noiseFac=3,rtDelta=0.5,intThresh=1e5,intThreshMS2=0.05) {
@@ -72,12 +78,11 @@ preProc <- function (ftable,noiseFac=3,rtDelta=0.5,intThresh=1e5,intThreshMS2=0.
     ## intensity threshold. MS2 does not exist if it was not picked up
     ## during the dataframe generation stage. In this case, the file
     ## with the corresponding ID will not be there.
- 
-    for (ind in 1:nrow(ftable)) {
+
+    okinds<- pp_touch_q(ftable)
+    for (ind in okinds) {
         wd <- ftable$wd[ind]
         id <- ftable$ID[ind]
-        ## odir=file.path(wd)
-        ## fn_eic <- fn_out(id,".eic",wd)
         eics<-allData[[wd]]$eic
         nid<-id2name(id)
         ii<-match(nid,MSnbase::fData(eics)[["ID"]]) #id, because id-s, not nid-s are in fData for ms1 eics;
@@ -89,6 +94,8 @@ preProc <- function (ftable,noiseFac=3,rtDelta=0.5,intThresh=1e5,intThreshMS2=0.
             warning("No chromatogram for id ",id," found in", wd, " . Skipping.")
             next
         }
+
+        
         ms1MaxInd<-which.max(eic$intensity)
         maxInt<-eic$intensity[[ms1MaxInd]]
         ftable[ind,"rt"]<-eic$rt[[ms1MaxInd]]
@@ -138,7 +145,8 @@ preProc <- function (ftable,noiseFac=3,rtDelta=0.5,intThresh=1e5,intThreshMS2=0.
                     ftable[ind,"MS2rt"] <- msmsRT[ftable[ind,"iMS2rt"]]
                 }
             }
-        } 
+        }
+        ftable[ind,"checked"]<-FTAB_CHK_AUTO
     }
           
     ftable
