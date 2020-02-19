@@ -813,13 +813,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 message("Saving config to",fn)
-                sav<-list()
-                sav<-list(rvConf=list(),
-                          input=list())
-                shiny::isolate(for (nm in names(rvConf)) {
-                                   sav$rvConf[[nm]]<-rvConf[[nm]]
-                               })
-
+                sav<-list(input=list())
                 for (nm in rvConf$REST_TXT_INP) {
                     sav$input[[nm]]<-input[[nm]]
                     
