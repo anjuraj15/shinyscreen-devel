@@ -1326,7 +1326,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                     
 
                                 }
-                                post_note(paste("MS2 for set",s, "mode",m,"and tag",t,"has been extracted."))
+                                post_note(paste("MS2 for set",s, "mode",m,"and tag",tag,"has been extracted."))
                             }
                         }
                         set_ms2_done(s,dirMS2)
