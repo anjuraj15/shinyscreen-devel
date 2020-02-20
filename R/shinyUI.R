@@ -1333,8 +1333,9 @@ shinyScreenApp <- function(projDir=getwd()) {
                         is<-which(dfProc$set %in% s)
                         dfProc[is,'ms2']<-T
                         post_note("Extraction of the MS2 spectra has been completed.")
-                        return(dfProc)
+                        
                     }
+                    return(dfProc)
                     
                 }
             })
