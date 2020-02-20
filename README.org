@@ -14,6 +14,78 @@
   The application is powered by the MSnbase package and built as a
   Shiny web application.
   
+* Installation
+
+** R is not RStudio(tm)
+    In order to avoid all the fuss with credentials on github and
+    gitlab, just download the package and use devtools to
+    install. Here is a script that first installs and then runs
+    shinyscreen.
+    #+BEGIN_SRC R
+      ## ***** INSTALLATION OF THE PACKAGE AND ITS DEPENDENCIES (BEGIN) *****
+      library(devtools)
+      SSCREEN_LOC<-"/this/is/where/I/downloaded/shinyscreen/source"
+      install_deps(SSCREEN_LOC,
+                   upgrade = "never")
+      install_local(SSCREEN_LOC,
+                    upgrade = "never")
+      ## ***** INSTALLATION OF THE PACKAGE AND ITS DEPENDENCIES (END) *****
+
+      ## START SHINYSCREEN
+      library(shinyscreen)
+      shinyScreenApp() # shinyscreenApp(projDir=/where/I/want/to/start/the/project)
+    #+END_SRC
+    
+    This installation procedure should work in most situations. If you
+    to just try out the package, without installing it to some system
+    path, you could create .Renviron in a `project' directory with the
+    following content.
+    #+BEGIN_SRC R
+      R_LIBS_USER=local
+    #+END_SRC
+    Then, create the folder `local` inside the project directory.
+    After this is done, start R and make sure that `local' directory
+    is in the current package path.
+    #+BEGIN_SRC R
+      .libPaths() # This should list `local'.
+    #+END_SRC
+    
+    If it is, run the installation script above, and you should have
+    shinyscreen and its dependencies inside the `local' directory.
+   
+** Dependency Hell
+    Perhaps there is a collision between dependencies you already have
+    on your computer and what the devtools want to install. One way to
+    avoid this is to follow the `.Renviron` approach from above, but
+    the other is to try and avoid installing dependencies alltogether.
+   #+BEGIN_SRC R
+     SSCREEN_LOC<-"/this/is/where/I/downloaded/shinyscreen/source"
+     library(devtools)
+     devtools::install_local(path=SSCREEN_LOC,force=T,dependencies=FALSE)
+   #+END_SRC
+
+** Install from Gitlab (TODO)
+
+* Running Shinyscreen
+  Provided Shinyscreen is successfully installed this snippet will
+  run it.
+  #+BEGIN_SRC R
+    library(shinyscreen)
+    PROJECT="project/location/somewhere/on/my/storage/device"
+    shinyScreenApp(projDir=PROJECT) 
+  #+END_SRC
+  The `projDir` argument can be left out in which case shinyscreen is
+  going to assume that the project directory is the result of
+  #+BEGIN_SRC R
+    ## Get current working directory of R instance.
+    getwd()
+  #+END_SRC
+
+  So, what is the /project directory/? This is the place where
+  shinyscreen state, log and output files go by default. In other
+  words, if you produce some PDF plots, this is where they are going
+  to end up.
+  
 * Usage 
 ** Before Starting
 ***  Compound Lists
@@ -36,17 +108,18 @@
        - Name :: The compound name. This column can be left empty.
        - RT :: The retention time of the peak in minutes. This column
 	       can be left empty.
-       - Optional headers:
-         - mz :: m/z mass of the compound. If both SMILES and mz entries
-		 are present for a given compound, mz takes precedence.
+     - Optional headers:
+       - mz :: m/z mass of the compound. If both SMILES and mz entries
+               are present for a given compound, mz takes precedence.
 
         #+CAPTION: The first few rows of a compound list containing known compounds.
-	|  ID | Name                  | SMILES                          |   RT |
-	|-----+-----------------------+---------------------------------+------|
-	|  33 | "Isoproturon"         | "CC(C)C1=CC=C(NC(=O)N(C)C)C=C1" | 19.6 |
-	| 717 | "epsilon-Decalactone" | "CCCCC1CCCCC(=O)O1"             |      |
-	| ... | "..."                 | "..."                           | ...  |
-
+	#+BEGIN_EXAMPLE
+	"ID","Name","SMILES","RT"
+	 33,"Isoproturon","CC(C)C1=CC=C(NC(=O)N(C)C)C=C1",19.6
+        717,"epsilon-Decalactone","CCCCC1CCCCC(=O)O1",
+         67,,"CCCCC1CCCCCC(=O)O1",
+        ...,...,...,...
+	#+END_EXAMPLE
 	It is *strongly suggested* to quote all the character strings, such
 	as SMILES and Name.
 
@@ -63,11 +136,12 @@
 
 
      #+CAPTION: The first few rows of a compound list containing unknown compounds.
-     |  ID |       mz |
-     |-----+----------|
-     |  22 | 296.1160 |
-     | 888 | 503.2816 |
-     | ... |      ... |
+     #+BEGIN_EXAMPLE
+     "ID","mz","RT"
+      22,296.1160,
+     888,503.2816,
+     #+END_EXAMPLE
+
       
        
 
@@ -102,11 +176,7 @@
 
 ***  Data Files
     These should be in mzML format.
-      
-   
-     
-
-** Sets, Tags, Modes, Files and IDs      
+** Sets, Tags, Modes, Files and IDs
    Each file is labelled by a tag, mode and set. Sets are defined in
    the compound set CSV file and group compounds according to their
    IDs. Modes correspond to the adducts. Tags label files in the
@@ -114,7 +184,7 @@
 
    For known compounds, each set can contain multiple modes. Sets of
    unknowns can only contain a single mode. Any files belonging to the
-   same set, that have been acquired in a single mode must carry
+   same set that have been acquired in a single mode, must carry
    unique tags. 
 
    In addition, the IDs of compounds belonging to the same set/mode
@@ -124,38 +194,28 @@
    This is the start tab. Import the compound and set lists first,
    then proceed to import the mzML files. Provide tags in the tag text
    box and then assign the sets, modes and tags to the imported mzML
-   files. Once this is done, move on to the `Spectra Extraction' tab.
+   files using table widget. Once this is done, move on to the
+   `Spectra Extraction' tab.
 
-** Spectra Extraction  
+** Spectra Extraction
    Set the extraction parameters and then select a certain number of
    sets to scan for. This may take a while.
 
    After one, or more sets have been extracted (once the status box
-   gets checked), it is possibile to carry out the auto quality
+   gets checked), it is possible to carry out the auto quality
    check. This check is going to perform a rudimentary analysis of the
    spectra, as well as retrieve the retention times of the precursor
    peaks and their MS2 spectra. This procedure must be done in order
    to plot the MS2 spectra.
 
+   TODO: Explain the parameters
+
+   For entries that had RT empty, the entire retention time interval
+   is scanned for peaks. Those entries with known RT will only be
+   scanned within the interval specified by the parameters (by default
+   1 min). This means that the processing is going to take much less
+   time then for the case if RT was left out.
+
 ** Prescreening
    The third tab allows the visual inspection of the spectra and the
    chromatogram, as well as exporting the plots in a PDF format.
-
-** Installation
-*** The simplest way to install Shinyscreen that always works (at least on *nix systems)
-   #+BEGIN_SRC shell
-     R CMD INSTALL /path/to/the/downloaded/package/or/cloned/repo
-   #+END_SRC
-
-*** Windows/RStudio
-   #+BEGIN_SRC r
-     library(devtools)
-     shinyscreen_dir <- "path/to/the/downloaded/package"
-     devtools::install_local(path=shinyscreen_dir,force=T,dependencies=FALSE)
-   #+END_SRC
-
-*** A snippet to test Shinyscreen after installation
-   #+BEGIN_SRC r
-     library(shinyscreen)
-     shinyScreenApp()
-   #+END_SRC
