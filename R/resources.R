@@ -54,7 +54,8 @@ REST_TAB<-c("mzml")
 
 GUI_TAB_TITLE<-c(conf="Config",
                  gen="Spectra Extraction and Automatic QA",
-                 pres="Prescreening")
+                 pres="Prescreening",
+                 log="Log")
 
 
 GUI_SIDE_TITLE<-GUI_TAB_TITLE

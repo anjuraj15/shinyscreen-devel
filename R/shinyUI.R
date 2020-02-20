@@ -351,11 +351,18 @@ mkUI <- function() {
                                                        shiny::column(width = 3,
                                                                      presSaveBox)))
 
+    
 
 
+    ## ***** Log tab *****
+
+    logTab <- shinydashboard::tabItem(tabName="log",
+                                      shiny::h2(GUI_TAB_TITLE[["log"]]),
+                                      shinydashboard::box(rhandsontable::rHandsontableOutput("logCtrl"),
+                                                          width = 12))
 
 
-    ## ***** Top-level Elements *****
+    ## ***** top-level Elements *****
     
     headerText <- "Shinyscreen"
 
@@ -380,8 +387,13 @@ mkUI <- function() {
     presSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["pres"]],
                                              tabName="prescreen",
                                              icon=shiny::icon("chart-bar"))
+    
+    logSideItem <- shinydashboard::menuItem(text=GUI_SIDE_TITLE[["log"]],
+                                            tabName = "log",
+                                            icon=shiny::icon("history"))
 
-    header <- shinydashboard::dashboardHeader(title=headerText)
+    header <- shinydashboard::dashboardHeader(title=headerText,
+                                              shinydashboard::dropdownMenuOutput("notify"))
     
     sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(id='tabs',
                                                                             confSideItem,
@@ -390,15 +402,17 @@ mkUI <- function() {
                                                                             shiny::hr(),
                                                                             shiny::h5("Inputs"),
                                                                             compListSideItem,
-                                                                            setIdSideItem
-                                                                            ))
+                                                                            setIdSideItem,
+                                                                            shiny::hr(),
+                                                                            logSideItem))
 
 
     body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
                                                                    cmpListTab,
                                                                    setIdTab,
                                                                    genTab,
-                                                                   presTab))
+                                                                   presTab,
+                                                                   logTab))
 
 
     
@@ -573,28 +587,42 @@ shinyScreenApp <- function(projDir=getwd()) {
         dir.create(path=dir,showWarnings=F)
         dir
     }
-    extr_data_set<-function(df,set) {
+
+    proc_qa_todo <- function(df,mtr) {
+        ## Return the sets that should be auto-checked. The sets that
+        ## should be auto-checked are those that have not been
+        ## manually checked/prescreened.
+
+        ind<-which(mtr$checked == FTAB_CHK_NONE |
+              mtr$checked == FTAB_CHK_AUTO)
+        nppsets<-unique(mtr$set[ind])
+        eset<-df$set[df$extracted]
+        eset[eset %in% nppsets]
+    }
+    
+    proc_set<-function(df,set) {
         i<-which(df$set %in% set)
         df[i,'extracted']<-T
         df
     }
 
-    extr_data_qa_todo <- function(df) {
-        todo<-which(df$extracted & !df$qa)
-        df$set[todo]
+    proc_extr_done <- function(df) {
+        df$set[df$extracted]
     }
+
+
     
-    extr_data_ms2_todo <- function(df){
+    proc_ms2_todo <- function(df) {
         todo<-which(df$qa & !df$ms2)
         df$set[todo]
     }
 
-    extr_data_done<-function(df) {
+    proc_done<-function(df) {
         ind<-which(df$extracted)
         df$set[ind]
     }
 
-    extr_data_read<-function(wd) {
+    proc_read<-function(wd) {
     readRDS(file.path(wd,FN_SPEC))}
     server <- function(input,output,session) {
 
@@ -610,9 +638,12 @@ shinyScreenApp <- function(projDir=getwd()) {
                              mode=modeLvl,
                              projDir=projDir,
                              currIDpos=1,
-                             fnFT=FN_FTAB_STATE)
+                             fnFT=FN_FTAB_STATE,
+                             notify=data.frame(time=character(),
+                                               message=character(),
+                                               stringsAsFactors = F))
         rvTab<-shiny::reactiveValues(
-                          proc=NULL,
+                          dfProc=NULL,
                           mzml=NULL,    # mzML file table
                           mtr=NULL)     # master table (everything combined)
         rvPres<-shiny::reactiveValues(cex=CEX,
@@ -969,62 +1000,6 @@ shinyScreenApp <- function(projDir=getwd()) {
             df
         })
 
-
-
-
-        extr_data_qa <- shiny::reactive({
-            dfProc<-extr_data_mzml()
-            shiny::validate(need(input$qaAutoB,"Please submit QA parameters by clicking `Preprocess'."))
-            
-            shiny::isolate({
-                message("Starting preprocessing.")
-                intThresh<-as.numeric(input$intThresh)
-                noiseFac<-as.numeric(input$noiseFac)
-                rtDelta<-as.numeric(input$rtDelta)
-
-                sets<-get_sets()
-                comp<-get_comp_tab()
-                dsets<-extr_data_qa_todo(dfProc)
-                
-                message("done sets: ",dsets)
-                if (length(dsets)>0) {
-                    mtr<- get_mtr() 
-                    mtrDone<-mtr[mtr$set %in% dsets,]
-
-                    mtrPP<-preProc(ftable=mtrDone,
-                                   intThresh=intThresh,
-                                   noiseFac=noiseFac,
-                                   rtDelta=rtDelta)
-
-                    ## In case preProc added more names to the
-                    ## table.
-                    extNms<-names(mtrPP)
-                    basNms<-names(mtr)
-                    diffNms<-setdiff(extNms,basNms)
-                    nrf<-nrow(mtr)
-                    for (nm in diffNms) {
-                        z<-logical(length=nrf)
-                        z<-T
-                        mtr[[nm]]<-z
-                    }
-                    
-                    mtr[mtr$set %in% dsets,]<-mtrPP
-                    tab2file(tab=mtr,file=rvConf$fnFT)
-
-                    rvTab$mtr<-mtr
-                    message("Finished preprocessing.")
-                    idx<-which(dfProc$set %in% dsets)
-                    dfProc$qa[idx]<-T
-                    
-                } else message("Nothing to preprocess")
-            })
-            dfProc
-        })
-        
-
-        
-
-        
         get_mtr<-shiny::reactive({
             fnFT<-rvConf$fnFT
             mtr<-rvTab$mtr
@@ -1050,6 +1025,7 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         get_comp_tab<-shiny::reactive({
 
+            post_note("Started assembling the lists of knowns and unknowns into the `comprehensive' table.")
             setId<-get_setid_tab()
             mzML<-get_mzml()
             unk<-get_unk()
@@ -1145,6 +1121,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             df<-rbind(compKnown,compUnk,stringsAsFactors=F)
             tab2file(df,rvConf$fnComp)
             message("Generation of comp table finished.")
+            post_note("Finished creating `comprehensive' table.")
             df   
 
             
@@ -1172,7 +1149,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             prop
         })
 
-        extr_data_scan <- shiny::reactive({
+        proc_scan <- shiny::reactive({
             ## Which sets are done.
             sets<-get_sets()
             sapply(sets,is_gen_done)
@@ -1184,7 +1161,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             sapply(sets,is_ms2_done,dest=dir)
         })
 
-        extr_data_prep <- shiny::reactive({
+        proc_prep <- shiny::reactive({
             sets<-get_sets()
             L<-length(sets)
             data.frame(set=sets,extracted=rep(F,L),
@@ -1193,11 +1170,11 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
-        extr_data_curr<- shiny::reactive({
+        proc_curr<- shiny::reactive({
             ## Set up the status data frame.
             message("Detecting processed data.")
-            df <- extr_data_prep()
-            dsets<-extr_data_scan()
+            df <- proc_prep()
+            dsets<-proc_scan()
             dms2<-extr_ms2_scan()
             df$extracted<-dsets
             df$ms2<-dms2
@@ -1206,17 +1183,15 @@ shinyScreenApp <- function(projDir=getwd()) {
         })
 
 
-        extr_data_mzml<-shiny::reactive({
+        proc_mzml<-shiny::reactive({
             ## Extract data for selected sets and return the status
             ## dataframe.
-
-            shiny::isolate({orig<-if (is.data.frame(rvTab$proc)) rvTab$proc else NULL})
+            shiny::isolate({orig<-if (is.data.frame(rvTab$dfProc)) rvTab$dfProc else NULL})
             dfProc<-if (is.data.frame(orig)) {
                      message("Starting from existing proc info.")
-                     str(orig)
                      orig
                     } else {
-                        extr_data_curr()
+                        proc_curr()
             
                     }
             input$genRunB
@@ -1232,6 +1207,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rtDelta<-as.numeric(input$rtDeltaWin)
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
+                    post_note(paste("Extracting data for set",s,". Please wait."))
                     dest<-rvConf$projDir
                     gc()
                     dir.create(s,showWarnings=F)
@@ -1242,71 +1218,135 @@ shinyScreenApp <- function(projDir=getwd()) {
                         limEIC=limEIC,
                         rtDelta=rtDelta)
                     set_gen_done(s)
-                    dfProc<-extr_data_set(dfProc,s)
+                    dfProc<-proc_set(dfProc,s)
                     message("***** END set ",s, " *****")
+                    post_note(paste("Done extracting data for set",s,"."))
                 }
                 gc()
             })
             dfProc
         })
 
-        extr_data_ms2 <- shiny::reactive({
-            ## After qa is done, process the ms2 spectra.
-            dfProc <- extr_data_qa()
-            todoSets <- extr_data_ms2_todo(dfProc)
-            shiny::isolate({
-                mtr <- get_mtr()
-                message("***** BEGIN MS2 EXTRACTION *****")
-                dirMS2<-mk_ms2_dir(rvConf$projDir)
-                for (s in todoSets) {
-                    smtr <- mtr_set_mode(mtr=mtr,set=s)
-                    wds <- unique(smtr$wd)
-                    data <- lapply(wds,extr_data_read)
-                    names(data) <- wds
-                    for (wd in wds) {
-                        d<-data[[wd]]
-                        wsmtr<-smtr[smtr$wd %in% wd,]
-                        tag<-unique(wsmtr$tag)
-                        modes<-unique(wsmtr$mode)
-                        for (m in modes) {
-                            tb<-wsmtr[modes %in% m,c('ID','iMS2rt')]
-                            message(">>> BEGIN SET: ",s, " MODE: ", m)
-                            for (n in 1:nrow(tb)) {
-                                id<-tb[n,'ID']
-                                ims2<-tb[n,'iMS2rt']
-                                fn <- file.path(dirMS2,
-                                                gen_ms2_spec_fn(id=id,
-                                                                tag=tag,
-                                                                mode=m,
-                                                                set=s))
-                                ms2<-gen_ms2_spec_data(id=id,
-                                                       tag=tag,
-                                                       iMS2rt=ims2,
-                                                       data=d)
-                                
-                                if (!is.null(ms2)) tab2file(tab=ms2,file=fn)
-                                
+        proc_qa <- shiny::reactive({
+            dfProc<-proc_mzml()
+            input$qaAutoB
+            if (input$qaAutoB>0) {
+                shiny::isolate({
+                    sets<-proc_extr_done(dfProc)
+                    mtr<- get_mtr()
+                    tdsets<-proc_qa_todo(dfProc,mtr)
+                    if (length(tdsets)>0) {
+                        intThresh<-as.numeric(input$intThresh)
+                        noiseFac<-as.numeric(input$noiseFac)
+                        rtDelta<-as.numeric(input$rtDelta)
 
-                            }
-                            set_ms2_done(s,dirMS2)
-                            message(">>> DONE SET: ",s, " MODE: ", m)
-                            
+
+
+                        ## Which have been already prescreened, or QA checked.
+                        dsets<-setdiff(sets,tdsets)
+                        ind<-which(dfProc$set %in% dsets)
+                        dfProc$qa[ind]<-T
+                        ctdsets<-do.call(paste,c(as.list(tdsets),list(sep=', ')))
+                        message("Starting preprocessing.")
+                        post_note(paste("Started preprocessing these sets:",ctdsets))
+                        mtrDone<-mtr[mtr$set %in% tdsets,]
+
+                        mtrPP<-preProc(ftable=mtrDone,
+                                       intThresh=intThresh,
+                                       noiseFac=noiseFac,
+                                       rtDelta=rtDelta)
+
+                        ## In case preProc added more names to the
+                        ## table.
+                        extNms<-names(mtrPP)
+                        basNms<-names(mtr)
+                        diffNms<-setdiff(extNms,basNms)
+                        nrf<-nrow(mtr)
+                        for (nm in diffNms) {
+                            z<-logical(length=nrf)
+                            z<-T
+                            mtr[[nm]]<-z
                         }
+                        
+                        mtr[mtr$set %in% tdsets,]<-mtrPP
+                        tab2file(tab=mtr,file=rvConf$fnFT)
+
+                        rvTab$mtr<-mtr
+                        message("Finished preprocessing.")
+                        post_note("Preprocessing done.")
+
+                        idx<-which(dfProc$set %in% tdsets)
+                        dfProc$qa[idx]<-T
+                        dfProc$ms2[idx]<-F #Different preproc params
+                                           #may invalidate extracted
+                                           #spectra.
                     }
-
-                }})
-            message("***** END MS2 EXTRACTION *****")
-
-            is<-which(dfProc$set %in% todoSets)
-            dfProc$ms2[is]<-T
+                })
+            }
             dfProc
         })
 
-        extr_data<-shiny::reactive({
+        proc_ms2 <- shiny::reactive({
+            ## After qa is done, process the ms2 spectra.
+            dfProc <- proc_qa()
+            shiny::isolate({
+                todoSets <- proc_ms2_todo(dfProc)
+                if (length(todoSets)>0) {
+                    mtr <- get_mtr()
+                    dirMS2<-mk_ms2_dir(rvConf$projDir)
+                    ctdsets<-do.call(paste,c(as.list(todoSets),list(sep=', ')))
+                    post_note(paste("Started extracting MS2 from these sets:",ctdsets))
+                    for (s in todoSets) {
+                        smtr <- mtr_set_mode(mtr=mtr,set=s)
+                        wds <- unique(smtr$wd)
+                        data <- lapply(wds,proc_read)
+                        names(data) <- wds
+                        for (wd in wds) {
+                            d<-data[[wd]]
+                            wsmtr<-smtr[smtr$wd %in% wd,]
+                            tag<-unique(wsmtr$tag)
+                            modes<-unique(wsmtr$mode)
+                            for (m in modes) {
+                                tb<-wsmtr[modes %in% m,c('ID','iMS2rt')]
+                                post_note(paste("Extracting MS2 for set",s,"mode",m, "and tag",tag,"."))
+                                for (n in 1:nrow(tb)) {
+                                    id<-tb[n,'ID']
+                                    ims2<-tb[n,'iMS2rt']
+                                    fn <- file.path(dirMS2,
+                                                    gen_ms2_spec_fn(id=id,
+                                                                    tag=tag,
+                                                                    mode=m,
+                                                                    set=s))
+                                    ms2<-gen_ms2_spec_data(id=id,
+                                                           tag=tag,
+                                                           iMS2rt=ims2,
+                                                           data=d)
+                                    
+                                    if (!is.null(ms2)) tab2file(tab=ms2,file=fn)
+                                    
+
+                                }
+                                post_note(paste("MS2 for set",s, "mode",m,"and tag",t,"has been extracted."))
+                            }
+                        }
+                        set_ms2_done(s,dirMS2)
+                        is<-which(dfProc$set %in% s)
+                        dfProc[is,'ms2']<-T
+                        post_note("Extraction of the MS2 spectra has been completed.")
+                        return(dfProc)
+                    }
+                    
+                }
+            })
+            dfProc
+        })
+
+        proc<-shiny::reactive({
             ## Top-level call to start the chain of reactions needed
             ## to extract data from sets.
-            extr_data_ms2()
-        })
+            df<-proc_ms2()
+            shiny::isolate({rvTab$dfProc<-df})
+            df})
 
 
         gen_spec_props<-shiny::reactive({
@@ -1336,7 +1376,19 @@ shinyScreenApp <- function(projDir=getwd()) {
             names(res)<-sdf$tag
             res
         })
-        
+
+        ## ***** Functions Involving Reactive Values *****
+        post_note<-function(msg) {
+            shiny::isolate({
+                stamp<-Sys.time()
+                df<-rvConf$notify
+                nr<-nrow(df)
+                df[nr+1,'time']<-as.character(stamp)
+                df[nr+1,'message']<-msg
+                rvConf$notify<-df
+            })
+        }
+
         ## ***** Observe Event *****
 
         shiny::observeEvent(input$saveConfB,{
@@ -1470,6 +1522,22 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         ## ***** Render *****
+        output$notify <- shinydashboard::renderMenu({
+            ntf<-rvConf$notify
+            shiny::req(nrow(ntf)>0)
+            msg<-apply(ntf,1,function(x) shinydashboard::notificationItem(text=paste(x['time'],'>',x['message'])))
+            shinydashboard::dropdownMenu(type='notifications',
+                                         .list = msg[length(msg):1])
+        })
+        output$logCtrl <- rhandsontable::renderRHandsontable({
+            df<-rvConf$notify
+            shiny::req(nrow(df)>0)
+            rhandsontable::rhandsontable(df[nrow(df):1,],
+                                         stretchH='all',
+                                         readOnly = T)
+            
+        })
+        
         output$knownCtrl <- rhandsontable::renderRHandsontable({
             df<-get_known()
             out<-if (!is.null(df)) {
@@ -1502,9 +1570,11 @@ shinyScreenApp <- function(projDir=getwd()) {
 
 
         output$genTabProcCtrl<-rhandsontable::renderRHandsontable({
-            rvTab$proc<-extr_data()
-            ## todo<-extr_data_ms2_todo(rvTab$extrData)
-            rhandsontable::rhandsontable(rvTab$proc,stretchH="all",rowHeaders = F)
+            df<-proc()
+            rhandsontable::rhandsontable(df,
+                                         stretchH="all",
+                                         rowHeaders = F,
+                                         readOnly = T)
             
         })
 
