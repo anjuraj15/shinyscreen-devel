@@ -555,7 +555,11 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
             for (i in ind) {
                 warning("SMILES missing at row: ",i, "; ID: ",df$ID[[i]]," .")
             }
-            stop("Missing SMILES found.")
+        }
+        lsmiles<-nrow(df)
+        ll<-length(unique(df$SMILES))
+        if (ll<lsmiles) {
+            warning("There are duplicate SMILES in the compound list. Trouble ahead.")
         }
     }
 
