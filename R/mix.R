@@ -33,7 +33,8 @@ get_mz_cmp_l<-function(id,mode,cmpL) {
 
 get_col_from_cmp_l<-function(id,cname,cmpL) {
     ind<-match(id,cmpL$ID)
-    cmpL[[cname]][[ind]]
+    x<-cmpL[[cname]][[ind]]
+    if (!is.null(x)) x else NA
     
 }
 

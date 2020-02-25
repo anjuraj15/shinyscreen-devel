@@ -1089,7 +1089,6 @@ shinyScreenApp <- function(projDir=getwd()) {
                 nRow<-nRow+length(which(setIdUnk$set %in% s))
                 
             }
-            
             compUnk<-data.frame(
                 ID=rep(0,nRow),
                 mz=rep(0.0,nRow),
