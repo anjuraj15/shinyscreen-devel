@@ -54,7 +54,7 @@ attch<-function(...) paste(...,sep='')
 ##'     columns. Column Files, as well as wd must have all rows
 ##'     identical.
 ##' @param extr_fun Extraction function from the backend. 
-##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
+##' @param deltaEIC Absolute mz tolerance used to extract precursor EICs.
 ##' @param deltaFinePPM Tolerance given in PPM used to associate input
 ##'     masses with what the instrument assigned as precutsors to MS2.
 ##' @param proc Amount of processors, or FALSE. 
@@ -63,7 +63,7 @@ attch<-function(...) paste(...,sep='')
 ##' @author Todor Kondić
 ##' @export
 gen<-function(fTab,
-              limEIC,
+              deltaEIC,
               deltaFinePPM,
               deltaCoarse,
               rtDelta,
@@ -73,7 +73,7 @@ gen<-function(fTab,
     fread<-function(fTab) {
         extract(fTab=fTab,
                 extr_fun=extr_fun,
-                limEIC=limEIC,
+                deltaEIC=deltaEIC,
                 deltaFinePPM=deltaFinePPM,
                 rtDelta=rtDelta,
                 deltaCoarse=deltaCoarse,

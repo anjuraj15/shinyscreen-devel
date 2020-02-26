@@ -248,8 +248,8 @@ gen_ms2_chrom<-function(ms2Spec) {
 }
 
 
-gen_ms1_chrom<-function(raw,mz,limEIC,rt=NULL,rtDelta=NULL) {
-    mzRng<-gen_mz_range(mz,delta=limEIC)
+gen_ms1_chrom<-function(raw,mz,deltaEIC,rt=NULL,rtDelta=NULL) {
+    mzRng<-gen_mz_range(mz,delta=deltaEIC)
     rtRng<-gen_rt_range(rt,delta=rtDelta)
     ids<-dimnames(mzRng)[[1]]
     x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0,rt=rtRng)
@@ -266,8 +266,8 @@ gen_ms1_chrom<-function(raw,mz,limEIC,rt=NULL,rtDelta=NULL) {
 }
 
 
-gen_ms1_chrom_ht<-function(raw,mz,limEIC,rt=NULL,rtDelta=NULL) {
-    mzRng<-gen_mz_range(mz,delta=limEIC)
+gen_ms1_chrom_ht<-function(raw,mz,deltaEIC,rt=NULL,rtDelta=NULL) {
+    mzRng<-gen_mz_range(mz,delta=deltaEIC)
     rtRng<-gen_rt_range(rt,delta=rtDelta)
     res<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0,rt=rtRng)
     fData(res)[["ID"]]<-rownames(mzRng)
@@ -325,7 +325,7 @@ write_ms2_spec<-function(ms2Spec,dir=".") {
     }
 }
 
-extr_msnb <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse=0.5,rt=NULL,rtDelta=NULL,mode="inMemory") {
+extr_msnb <-function(file,wd,mz,deltaEIC, deltaFinePPM,deltaCoarse=0.5,rt=NULL,rtDelta=NULL,mode="inMemory") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
@@ -337,7 +337,7 @@ extr_msnb <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse=0.5,rt=NULL,rtD
     ## rtDelta - A vector of length 1, or same as mz, giving the
     ## half-width of the time window in which the peak for the
     ## corresponding mz is supposed to be.
-    ## limEIC - Absolute mz tolerance used to extract precursor EICs.
+    ## deltaEIC - Absolute mz tolerance used to extract precursor EICs.
     ## deltaFinePPM - Tolerance given in PPM used to associate input
     ## masses with what the instrument assigned as precursors to MS2
     ## products.
@@ -350,7 +350,7 @@ extr_msnb <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse=0.5,rt=NULL,rtD
 
     ## EICs for precursors.
     message("Extracting precursor EICs. Please wait.")
-    eicMS1<-gen_ms1_chrom(raw=ms1,mz=mz,limEIC=limEIC,rt=rt,rtDelta=rtDelta)
+    eicMS1<-gen_ms1_chrom(raw=ms1,mz=mz,deltaEIC=deltaEIC,rt=rt,rtDelta=rtDelta)
     write_eic(eicMS1,dir=wd)
     message("Extracting precursor EICs finished.")
 
@@ -376,7 +376,7 @@ extr_msnb <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse=0.5,rt=NULL,rtD
 
 }
 
-extr_msnb_ht <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse,fnSpec,rt=NULL,rtDelta=NULL,mode="onDisk") {
+extr_msnb_ht <-function(file,wd,mz,deltaEIC, deltaFinePPM,deltaCoarse,fnSpec,rt=NULL,rtDelta=NULL,mode="onDisk") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
@@ -388,7 +388,7 @@ extr_msnb_ht <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse,fnSpec,rt=NU
     ## rtDelta - A vector of length 1, or same as mz, giving the
     ## half-width of the time window in which the peak for the
     ## corresponding mz is supposed to be.
-    ## limEIC - Absolute mz tolerance used to extract precursor EICs.
+    ## deltaEIC - Absolute mz tolerance used to extract precursor EICs.
     ## deltaFinePPM - Tolerance given in PPM used to associate input
     ## masses with what the instrument assigned as precursors to MS2
     ## products.
@@ -409,7 +409,7 @@ extr_msnb_ht <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse,fnSpec,rt=NU
 
     ## EICs for precursors.
     message("Extracting precursor EICs. Please wait.")
-    eicMS1<-gen_ms1_chrom_ht(raw=ms1,mz=mz,limEIC=limEIC,rt=rt,rtDelta=rtDelta)
+    eicMS1<-gen_ms1_chrom_ht(raw=ms1,mz=mz,deltaEIC=deltaEIC,rt=rt,rtDelta=rtDelta)
     message("Extracting precursor EICs finished.")
     
 
@@ -418,7 +418,7 @@ extr_msnb_ht <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse,fnSpec,rt=NU
     x
 }
 
-extr_rmb <- function (file,wd, mz, limEIC, deltaCoarse=0.5, deltaFinePPM,rt=NULL,rtDelta=NULL) {
+extr_rmb <- function (file,wd, mz, deltaEIC, deltaCoarse=0.5, deltaFinePPM,rt=NULL,rtDelta=NULL) {
     ID<-as.numeric(names(mz))
     maxid <- max(ID)
     id_field_width <- as.integer(log10(maxid)+1)
@@ -438,7 +438,7 @@ extr_rmb <- function (file,wd, mz, limEIC, deltaCoarse=0.5, deltaFinePPM,rt=NULL
         cpdID <- ID[[i]]
         n_spec <- i
         mz<-mz[[i]]
-        eic <- RMassBank::findEIC(f, mz, limit = limEIC)
+        eic <- RMassBank::findEIC(f, mz, limit = deltaEIC)
         msms_found[i] <- FALSE
         theppm<-RMassBank::ppm(mz, deltaFinePPM,p = TRUE)
         msms <- RMassBank::findMsMsHR.mass(f, mz, deltaCoarse, theppm)
@@ -484,7 +484,7 @@ extr_rmb <- function (file,wd, mz, limEIC, deltaCoarse=0.5, deltaFinePPM,rt=NULL
 ##'     columns. Column Files, as well as wd must have all rows
 ##'     identical.
 ##' @param extr_fun Extraction function from the backend.
-##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
+##' @param deltaEIC Absolute mz tolerance used to extract precursor EICs.
 ##' @param deltaFinePPM Tolerance given in PPM used to associate input
 ##'     masses with what the instrument assigned as precursors to MS2.
 ##' @param deltaCoarse Absolute tolerance for preliminary association of
@@ -493,7 +493,7 @@ extr_rmb <- function (file,wd, mz, limEIC, deltaCoarse=0.5, deltaFinePPM,rt=NULL
 ##' @param fnSpec Output file specification.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
-extract<-function(fTab,extr_fun,limEIC,deltaFinePPM,deltaCoarse,fnSpec,rtDelta) {
+extract<-function(fTab,extr_fun,deltaEIC,deltaFinePPM,deltaCoarse,fnSpec,rtDelta) {
     fnData<-fTab$Files[[1]]
     wd<-fTab$wd[[1]]
     ID<-fTab$ID
@@ -507,7 +507,7 @@ extract<-function(fTab,extr_fun,limEIC,deltaFinePPM,deltaCoarse,fnSpec,rtDelta) 
              mz=mz,
              rt=rt,
              rtDelta=rtDelta,
-             limEIC=limEIC,
+             deltaEIC=deltaEIC,
              deltaFinePPM=deltaFinePPM,
              deltaCoarse=deltaCoarse,
              fnSpec=fnSpec)

@@ -150,7 +150,7 @@ mkUI <- function() {
                             shiny::textInput("deltaFinePPM",
                                              label="Precursor m/z error (fine) [ppm].",
                                              value=10),
-                            shiny::textInput("eicLim",
+                            shiny::textInput("deltaEIC",
                                              label="EIC m/z error [Da].",
                                              value=1e-3),
                             shiny::textInput("rtDeltaWin",
@@ -1208,7 +1208,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 rtDelta<-as.numeric(input$rtDelta)
                 deltaFinePPM<-as.numeric(input$deltaFinePPM)
                 deltaCoarse <- as.numeric(input$deltaCoarse)
-                limEIC<-as.numeric(input$eicLim)
+                deltaEIC<-as.numeric(input$deltaEIC)
                 rtDelta<-as.numeric(input$rtDeltaWin)
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
@@ -1221,7 +1221,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                         proc=nProc,
                         deltaFinePPM=deltaFinePPM,
                         deltaCoarse=deltaCoarse,
-                        limEIC=limEIC,
+                        deltaEIC=deltaEIC,
                         rtDelta=rtDelta)
                     set_gen_done(s)
                     dfProc<-proc_set(dfProc,s)
