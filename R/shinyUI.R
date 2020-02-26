@@ -1508,7 +1508,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             pdf(file=fn, width=12, height=8)
             print(plot_id(id,prop=prop))
             dev.off()
-            message("Plotting compound ", i," to ",fn," done.")
+            message("Plotting compound ", id," to ",fn," done.")
         })
 
         shiny::observeEvent(input$saveallplots,
