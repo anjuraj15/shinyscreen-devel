@@ -47,7 +47,7 @@ mkUI <- function() {
                                             "Unknows list. Required columns: ID, mz and RT (RT can be empty).",
                                             value=""),
                            shiny::textInput("fnSetId",
-                                            "Set table. Required columns ID and set.",
+                                            "Set table. Required columns <b>ID</b> and set.",
                                             value=""),
                            shinyFiles::shinyFilesButton("impKnownListB",
                                                         label="Import knowns.",
@@ -66,9 +66,9 @@ mkUI <- function() {
                                                         multiple=T),
                            width=NULL)
 
-    confmzMLTags <- prim_box(title="Sets and Tags",
+    confmzMLTags <- prim_box(title="Tags",
                              shiny::textInput("tagPropInp",
-                                              "What is a tag? (example: collision energy; can be left empty.)",
+                                              "What is a tag? (optional)",
                                               value=TAG_DEF_DESC),
                              shiny::textInput("tagsInp",
                                               "Comma-delimited list of tag types.",
@@ -765,6 +765,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                       message("Importing knowns/suspects from:",fn)
                       df<-file2tab(file=fn)
                       x <-vald_comp_tab(df,fn,checkSMILES=T,checkNames=T)
+                      shiny::validate(need(x,"Errors in the known compound list. For reasons, check the messages output to the R session."))
                       message("Done knowns/suspects from: ",fn)
                       x
 
@@ -778,6 +779,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 message("Importing unknowns list from:",fn)
                 df<-file2tab(file=fn)
                 res<-vald_comp_tab(df,fn,checkSMILES=F,checkMz=T)
+                shiny::validate(need(res,"Errors in the unknown compound list. For reasons, check the messages output to the R session."))
                 message("Done importing unknowns list from: ",fn)
                 res
 
