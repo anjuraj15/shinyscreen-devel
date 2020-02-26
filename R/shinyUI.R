@@ -167,7 +167,7 @@ mkUI <- function() {
                                             label="Intensity threshold (MS1).",
                                             value=MS1_INT_THOLD),
                            shiny::textInput("intThreshMS2",
-                                            label="Intensity threshold (MS2; relative to MS1 mean intensity).",
+                                            label="Intensity threshold (MS2; relative to MS1 peak intensity).",
                                             value=MS2_INT_THOLD),
                            shiny::textInput("noiseFac",
                                             label="Signal-to-noise ratio.",
