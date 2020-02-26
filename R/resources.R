@@ -83,4 +83,13 @@ FTAB_CHK_AUTO<-'AUTO'
 FTAB_CHK_MANL<-'MANUAL'
 
 
-MS1_ERR_COARSE<-1.0
+MS1_ERR_COARSE<-1.0                     # Da
+MS1_ERR_FINE<- 10                       # ppm
+EIC_DELTA <- 1e-3                       # Da
+RT_EXTR_DELTA<-1.0                       # min
+RT_SHIFT_DELTA <- 1.0               # min
+
+MS1_INT_THOLD <- 1e5
+MS2_INT_THOLD <- 0.1*MS1_INT_THOLD
+
+MS1_SN_FAC <- 3.0
