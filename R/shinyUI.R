@@ -163,9 +163,12 @@ mkUI <- function() {
                             width=NULL)
     
     genBoxAutoQA<-prim_box(title="Automatic Quality Control",
-                           shiny::textInput("intThresh",
-                                            label="Intensity threshold.",
+                           shiny::textInput("intThreshMS1",
+                                            label="Intensity threshold (MS1).",
                                             value=MS1_INT_THOLD),
+                           shiny::textInput("intThreshMS2",
+                                            label="Intensity threshold (MS2; relative to MS1 mean intensity).",
+                                            value=MS2_INT_THOLD),
                            shiny::textInput("noiseFac",
                                             label="Signal-to-noise ratio.",
                                             value=MS1_SN_FAC),
@@ -1203,7 +1206,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                 fTab<-gen_base_ftab()
                 nProc<-as.integer(input$genNoProc)
                 sets<-input$genSetSelInp
-                intThresh<-as.numeric(input$intThresh)
+                intThreshMS1<-as.numeric(input$intThreshMS1)
                 noiseFac<-as.numeric(input$noiseFac)
                 deltaRT<-as.numeric(input$deltaRT)
                 deltaFinePPM<-as.numeric(input$deltaFinePPM)
@@ -1242,7 +1245,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                     mtr<- get_mtr()
                     tdsets<-proc_qa_todo(dfProc,mtr)
                     if (length(tdsets)>0) {
-                        intThresh<-as.numeric(input$intThresh)
+                        intThreshMS1<-as.numeric(input$intThreshMS1)
+                        intThreshMS2<-as.numeric(input$intThreshMS2)
                         noiseFac<-as.numeric(input$noiseFac)
                         deltaRT<-as.numeric(input$deltaRT)
 
@@ -1258,7 +1262,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                         mtrDone<-mtr[mtr$set %in% tdsets,]
 
                         mtrPP<-preProc(ftable=mtrDone,
-                                       intThresh=intThresh,
+                                       intThreshMS1=intThreshMS1,
+                                       intThreshMS2=intThreshMS2,
                                        noiseFac=noiseFac,
                                        deltaRT=deltaRT)
 

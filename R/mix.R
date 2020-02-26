@@ -53,7 +53,7 @@ pp_touch_q<-function(ftab) {
     which(ftab$checked==FTAB_CHK_NONE | ftab$checked==FTAB_CHK_AUTO)
 }
 
-preProc <- function (ftable,noiseFac=3,deltaRT=0.5,intThresh=1e5,intThreshMS2=0.05) {
+preProc <- function (ftable,noiseFac=3,deltaRT=0.5,intThreshMS1=1e5,intThreshMS2=0.05) {
     wds<-unique(ftable$wd)
     fn_spec<-function(wd) readRDS(file.path(wd,FN_SPEC))
     message("Loading RDS-es ...")
@@ -101,7 +101,7 @@ preProc <- function (ftable,noiseFac=3,deltaRT=0.5,intThresh=1e5,intThreshMS2=0.
         maxInt<-eic$intensity[[ms1MaxInd]]
         ftable[ind,"rt"]<-eic$rt[[ms1MaxInd]]
         ##If MS1 does not exist, set entry to F.
-        if (maxInt < intThresh) {
+        if (maxInt < intThreshMS1) {
             ftable[ind,"MS1"] <- F
             ## Other checks automatically fail, too.
             ftable[ind,"Alignment"] <- F
@@ -125,7 +125,6 @@ preProc <- function (ftable,noiseFac=3,deltaRT=0.5,intThresh=1e5,intThreshMS2=0.
         ## MS2 checks.
         ms2<-allData[[wd]]$ms2
         ms2nids<-names(ms2)
-        mInt<-mean(eic$intensity)
         if (! (nid %in% ms2nids)) {
             ftable[ind,"MS2"] <- F
             ftable[ind,"Alignment"] <- F
@@ -133,17 +132,28 @@ preProc <- function (ftable,noiseFac=3,deltaRT=0.5,intThresh=1e5,intThreshMS2=0.
             sp<-ms2[[nid]]
             ## Alignment still makes sense to be checked?
             if (ftable[ind,"Alignment"]) {
-                rtInd <- match(maxInt,eic$intensity)
-                rtMS1Peak <- eic$rt[[rtInd]]
+                ## rtInd <- ms1MaxInd #match(maxInt,eic$intensity)
+                rtMS1Peak <- eic$rt[[ms1MaxInd]]
                 msms<-MSnbase::fData(sp)[,c("rtm","maxI")]
                 colnames(msms)<-c("rt","intensity")
-                rtInd <- which((msms$rt > rtMS1Peak - deltaRT) &
-                               (msms$rt < rtMS1Peak + deltaRT)) #Close enough?
+                rtInd <- which((msms$rt > rtMS1Peak - deltaRT/2) &
+                               (msms$rt < rtMS1Peak + deltaRT/2)) #Close enough?
+                
+                rtIndMS1 <- which((eic$rt > rtMS1Peak - deltaRT/2) &
+                                  (eic$rt < rtMS1Peak + deltaRT/2)) #Filter the relevant MS1 part.
+                
+                eicFilt<- eic[rtIndMS1,]
+                eicFilt<- eicFilt[which(eicFilt$intensity>intThreshMS1),]
+                mInt<- maxInt #mean(eicFilt$intensity)
                 rtInd <- rtInd[which(msms$intensity[rtInd]>intThreshMS2*mInt)] #Intense enough?
                 msmsRT <- msms$rt[rtInd]
+                msmsInt<- msms$intensity[rtInd]
                 if (length(msmsRT) > 0) {
-                    ftable[ind,"iMS2rt"] <- which.min(abs(msmsRT - rtMS1Peak))
-                    ftable[ind,"MS2rt"] <- msmsRT[ftable[ind,"iMS2rt"]]
+                    msmsRTind <- which.min(abs(msmsRT - rtMS1Peak))
+                    ftable[ind,"iMS2rt"] <- rtInd[msmsRTind]
+                    ftable[ind,"MS2rt"] <- msmsRT[msmsRTind]
+                } else {
+                    ftable[ind,"Alignment"] <- F
                 }
             }
         }

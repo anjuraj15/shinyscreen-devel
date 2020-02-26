@@ -90,6 +90,6 @@ RT_EXTR_DELTA<-1.0                       # min
 RT_SHIFT_DELTA <- 1.0               # min
 
 MS1_INT_THOLD <- 1e5
-MS2_INT_THOLD <- 0.1*MS1_INT_THOLD
+MS2_INT_THOLD <- 0.05
 
 MS1_SN_FAC <- 3.0
