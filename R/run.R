@@ -66,7 +66,7 @@ gen<-function(fTab,
               deltaEIC,
               deltaFinePPM,
               deltaCoarse,
-              rtDelta,
+              deltaRT,
               proc=F,fnLog='prescreen.log',extr_fun=extr_msnb_ht) {
     message("*** Started to generate prescreen data ...")
     unlink(fnLog)
@@ -75,7 +75,7 @@ gen<-function(fTab,
                 extr_fun=extr_fun,
                 deltaEIC=deltaEIC,
                 deltaFinePPM=deltaFinePPM,
-                rtDelta=rtDelta,
+                deltaRT=deltaRT,
                 deltaCoarse=deltaCoarse,
                 fnSpec=FN_SPEC)
         

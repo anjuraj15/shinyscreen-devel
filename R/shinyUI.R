@@ -153,7 +153,7 @@ mkUI <- function() {
                             shiny::textInput("deltaEIC",
                                              label="EIC m/z error [Da].",
                                              value=1e-3),
-                            shiny::textInput("rtDeltaWin",
+                            shiny::textInput("deltaRTWin",
                                              label="Retention time tolerance (minutes).",
                                              value=0.5),
                             shiny::uiOutput("genSetSelInpCtrl"),
@@ -169,7 +169,7 @@ mkUI <- function() {
                            shiny::textInput("noiseFac",
                                             label="Signal-to-noise ratio.",
                                             value=3),
-                           shiny::textInput("rtDelta",
+                           shiny::textInput("deltaRT",
                                             label="Retention time shift tolerance (minutes).",
                                             value=0.5),
                            shiny::actionButton(inputId="qaAutoB",
@@ -1205,11 +1205,11 @@ shinyScreenApp <- function(projDir=getwd()) {
                 sets<-input$genSetSelInp
                 intThresh<-as.numeric(input$intThresh)
                 noiseFac<-as.numeric(input$noiseFac)
-                rtDelta<-as.numeric(input$rtDelta)
+                deltaRT<-as.numeric(input$deltaRT)
                 deltaFinePPM<-as.numeric(input$deltaFinePPM)
                 deltaCoarse <- as.numeric(input$deltaCoarse)
                 deltaEIC<-as.numeric(input$deltaEIC)
-                rtDelta<-as.numeric(input$rtDeltaWin)
+                deltaRT<-as.numeric(input$deltaRTWin)
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
                     post_note(paste("Extracting data for set",s,". Please wait."))
@@ -1222,7 +1222,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                         deltaFinePPM=deltaFinePPM,
                         deltaCoarse=deltaCoarse,
                         deltaEIC=deltaEIC,
-                        rtDelta=rtDelta)
+                        deltaRT=deltaRT)
                     set_gen_done(s)
                     dfProc<-proc_set(dfProc,s)
                     message("***** END set ",s, " *****")
@@ -1244,7 +1244,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     if (length(tdsets)>0) {
                         intThresh<-as.numeric(input$intThresh)
                         noiseFac<-as.numeric(input$noiseFac)
-                        rtDelta<-as.numeric(input$rtDelta)
+                        deltaRT<-as.numeric(input$deltaRT)
 
 
 
@@ -1260,7 +1260,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                         mtrPP<-preProc(ftable=mtrDone,
                                        intThresh=intThresh,
                                        noiseFac=noiseFac,
-                                       rtDelta=rtDelta)
+                                       deltaRT=deltaRT)
 
                         ## In case preProc added more names to the
                         ## table.
