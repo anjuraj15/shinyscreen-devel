@@ -539,14 +539,17 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
     ind<-which(is.na(df$ID))
     if (length(ind)>0) {
         for (i in ind) {
-            warning("ID missing at row: ",i," .")
+            warning("ID missing at row: ",i," . Big trouble ahead.")
         }
-        stop("Missing IDs found.")
+        return(NULL)
     }
     
     ## Unique IDs?
     luids<-length(unique(df$ID))
-    if (length(df$ID) > luids) stop("Duplicate IDs in ", ndf, " are not allowed.")
+    if (length(df$ID) > luids) {
+        warning("Duplicate IDs in ", ndf, " are not allowed.")
+        return(NULL)
+    }
 
     ## Missing SMILES?
     if (checkSMILES) {
@@ -555,11 +558,13 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
             for (i in ind) {
                 warning("SMILES missing at row: ",i, "; ID: ",df$ID[[i]]," .")
             }
+            return(NULL)
         }
         lsmiles<-nrow(df)
         ll<-length(unique(df$SMILES))
         if (ll<lsmiles) {
             warning("There are duplicate SMILES in the compound list. Trouble ahead.")
+            return(NULL)
         }
     }
 
@@ -570,7 +575,7 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
             for (i in ind) {
                 warning("mz missing at row: ",i, "; ID: ",df$ID[[i]]," .")
             }
-            stop("Missing mz-s found.")
+            return(NULL)
         }
     }
 
