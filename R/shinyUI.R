@@ -144,11 +144,14 @@ mkUI <- function() {
                             shiny::textInput("genNoProc",
                                              label="Number of processes.",
                                              value=1),
-                            shiny::textInput("ppmLimFine",
-                                             label="Precursor mz tolerance (relative [ppm]).",
+                            shiny::textInput("deltaCoarse",
+                                             label="Precursor m/z error (coarse) [Da].",
+                                             value=MS1_ERR_COARSE),
+                            shiny::textInput("deltaFinePPM",
+                                             label="Precursor m/z error (fine) [ppm].",
                                              value=10),
                             shiny::textInput("eicLim",
-                                             label="EIC mz tolerance (absolute).",
+                                             label="EIC m/z error [Da].",
                                              value=1e-3),
                             shiny::textInput("rtDeltaWin",
                                              label="Retention time tolerance (minutes).",
@@ -1203,7 +1206,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                 intThresh<-as.numeric(input$intThresh)
                 noiseFac<-as.numeric(input$noiseFac)
                 rtDelta<-as.numeric(input$rtDelta)
-                limFinePPM<-as.numeric(input$ppmLimFine)
+                deltaFinePPM<-as.numeric(input$deltaFinePPM)
+                deltaCoarse <- as.numeric(input$deltaCoarse)
                 limEIC<-as.numeric(input$eicLim)
                 rtDelta<-as.numeric(input$rtDeltaWin)
                 for (s in sets) {
@@ -1215,7 +1219,8 @@ shinyScreenApp <- function(projDir=getwd()) {
                     unset_gen_done(s)
                     gen(fTab=fTab[fTab$set==s,],
                         proc=nProc,
-                        limFinePPM=limFinePPM,
+                        deltaFinePPM=deltaFinePPM,
+                        deltaCoarse=deltaCoarse,
                         limEIC=limEIC,
                         rtDelta=rtDelta)
                     set_gen_done(s)

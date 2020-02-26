@@ -36,9 +36,10 @@ ppm2dev<-function(m,ppm) 1e-6*ppm*m
 
 
 gen_mz_range<-function(mz,delta) {
+    dhalf=delta/2
     mat<-matrix(data=numeric(1),nrow=length(mz),ncol=2,dimnames=list(as.character(names(mz))))
-    mat[,1]<-mz - delta
-    mat[,2]<-mz + delta
+    mat[,1]<-mz - dhalf
+    mat[,2]<-mz + dhalf
     mat
 }
 
@@ -46,37 +47,22 @@ gen_rt_range<-function(rt,delta) {
     mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2,dimnames=list(as.character(names(rt))))
     rV<-which(!is.na(rt))
     rNA<-which(is.na(rt))
-    inna<-which(is.na(rt))
-    mat[rV,1]<-(rt[rV] - delta)*60
-    mat[rV,2]<-(rt[rV] + delta)*60
+    hdelta=delta/2
+    mat[rV,1]<-(rt[rV] - hdelta)*60
+    mat[rV,2]<-(rt[rV] + hdelta)*60
     mat[rNA,1]<--Inf
     mat[rNA,2]<-Inf
     mat
 }
 
-filt_ms2_by_prcs_old<-function(pre,preMZRng) {
-    res<-apply(preMZRng,1,function(rng) {
-        m1<-rng[[1]]
-        m2<-rng[[2]]
-        ind <- which((pre > rng[[1]]) & (pre < rng[[2]]))
-        ind
-    })
+filt_ms2_by_prcs <- function(ms2,mz,deltaCoarse) {
 
-    names(res)<-dimnames(preMZRng)[[1]]
-    res
-}
-
-filt_ms2_by_prcs <- function(ms2,mz,limCoarse) {
-
-    mzRng<-gen_mz_range(mz,delta=limCoarse)
+    mzRng<-gen_mz_range(mz,delta=deltaCoarse)
     ids<-rownames(mzRng)
     pre<-MSnbase::precursorMz(ms2)
     psn<-MSnbase::precScanNum(ms2)
     acN<-MSnbase::acquisitionNum(ms2)
     nR<-length(pre)
-
-
-    
 
     inRange<-function(i) {
         mp<-pre[[i]]
@@ -108,13 +94,12 @@ filt_ms2_by_prcs <- function(ms2,mz,limCoarse) {
     df[order(df$aN),]
 }
 
-filt_ms2_by_prcs_ht<-function(ms2,mz,limCoarse) {
-    lgnd<-filt_ms2_by_prcs(ms2,mz,limCoarse)
+filt_ms2_by_prcs_ht<-function(ms2,mz,deltaCoarse) {
+    lgnd<-filt_ms2_by_prcs(ms2,mz,deltaCoarse)
 
     scans<-unique(lgnd$aN)
     ns<-which(MSnbase::acquisitionNum(ms2) %in% scans)
     sms2<-ms2[ns]
-    #fData(sms2)[["ID"]]<-lgnd$ID[]
     list(ms2=sms2,leg=lgnd)
 }
 
@@ -134,8 +119,13 @@ pick_uniq_pscan<-function(leg) {
     res[order(res$prec_scan),]
 }
 
-verif_prec_fine_ht<-function(preLeg,ms1,mz,limFinePPM) {
-    mzRng<-gen_mz_range(mz,delta=ppm2dev(mz,limFinePPM))
+verif_prec_fine_ht<-function(preLeg,ms1,mz,deltaFinePPM) {
+    mzRng<-gen_mz_range(mz,delta=2*ppm2dev(mz,deltaFinePPM)) # Factor
+                                                             # of two
+                                                             # here is
+                                                             # intentional
+                                                             # and
+                                                             # needed.
     df<-preLeg
     df$mz<-mz[df$ID]
     mz1<-mzRng[df$ID,1]
@@ -147,11 +137,11 @@ verif_prec_fine_ht<-function(preLeg,ms1,mz,limFinePPM) {
     df[df$OK,]     
 }
 
-filt_ms2<-function(ms1,ms2,mz,limCoarse,limFinePPM) {
-    tmp<-filt_ms2_by_prcs_ht(ms2,mz,limCoarse=limCoarse)
+filt_ms2<-function(ms1,ms2,mz,deltaCoarse,deltaFinePPM) {
+    tmp<-filt_ms2_by_prcs_ht(ms2,mz,deltaCoarse=deltaCoarse)
     legMS2<-tmp$leg
     legPcs<-pick_uniq_pscan(legMS2)
-    legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,limFinePPM=limFinePPM)
+    legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,deltaFinePPM=deltaFinePPM)
     x<-Map(function (id,psn) {legMS2[id==legMS2$ID & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"])
 
     x<-do.call(rbind,c(x,list(make.row.names=F,stringsAsFactors=F)))[c("ID","aN")]
@@ -167,37 +157,6 @@ filt_ms2<-function(ms1,ms2,mz,limCoarse,limFinePPM) {
     names(res)<-uids
     res
 }
-
-verif_prec_fine<-function(preSc,ms1,mz,limFinePPM) {
-    mzRng<-gen_mz_range(mz,delta=ppm2dev(mz,limFinePPM))
-    df<-preSc
-    df$mz<-mz[as.character(df$ID)]
-    mz1<-mzRng[as.character(df$ID),1]
-    mz2<-mzRng[as.character(df$ID),2]
-
-    df$OK<-logical(nrow(df))
-    df$preMz<-numeric(nrow(df))
-    df$mz1<-mz1
-    df$mz2<-mz2
-    ord<-order(df$prec_scan)
-    df<-df[ord,]
-    fms1<-MSnbase::filterAcquisitionNum(ms1,df$prec_scan)
-    acqN<-MSnbase::acquisitionNum(fms1)
-    specMz<-lapply(1:length(fms1),function (l) {
-        sp<-fms1[[l]]
-        an<-MSnbase::acquisitionNum(sp)
-        ps<-df$prec_scan[[l]]
-        MSnbase::filterMz(sp,c(df$mz1[[l]],df$mz2[[l]]))
-    })
-    for (i in 1:nrow(df)) {
-        spec<-MSnbase::mz(specMz[[i]])
-        lspec<-length(spec)
-        df$OK[[i]]<- lspec>0
-        df$preMz[[i]]<- if (lspec>0) spec[[1]] else 0
-    }
-    df
-}
-
 
 add_ms2_prcs_scans<-function(ms2,idx) {
 
@@ -236,8 +195,8 @@ refn_ms2_by_prec<-function(idxMS2,preFine) {
     idxMS2
 }
 
-trim_ms2_by_prec<-function(rawMS2,mz,limCoarse,limFinePPM) {
-    idxMS2<-filt_ms2_by_prcs(ms2=ms2,mz=mz,limCoarse=limCoarse)
+trim_ms2_by_prec<-function(rawMS2,mz,deltaCoarse,deltaFinePPM) {
+    idxMS2<-filt_ms2_by_prcs(ms2=ms2,mz=mz,deltaCoarse=deltaCoarse)
 }
 
 grab_ms2_spec<-function(idx,raw) {
@@ -366,7 +325,7 @@ write_ms2_spec<-function(ms2Spec,dir=".") {
     }
 }
 
-extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta=NULL,mode="inMemory") {
+extr_msnb <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse=0.5,rt=NULL,rtDelta=NULL,mode="inMemory") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
@@ -379,7 +338,7 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta
     ## half-width of the time window in which the peak for the
     ## corresponding mz is supposed to be.
     ## limEIC - Absolute mz tolerance used to extract precursor EICs.
-    ## limFinePPM - Tolerance given in PPM used to associate input
+    ## deltaFinePPM - Tolerance given in PPM used to associate input
     ## masses with what the instrument assigned as precursors to MS2
     ## products.
 
@@ -397,11 +356,11 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta
 
     ## Extract MS2 spectra.
     message("Extracting MS2 spectra.")
-    idxMS2<-filt_ms2_by_prcs(ms2=ms2,mz=mz,limCoarse=limCoarse)
+    idxMS2<-filt_ms2_by_prcs(ms2=ms2,mz=mz,deltaCoarse=deltaCoarse)
     message("Resampling MS2 spectra.")
     # idxMS2<-add_ms2_prcs_scans(ms2,idxMS2)
     prsc<-pick_unique_precScans(idxMS2)
-    vprsc<-verif_prec_fine(preSc=prsc,ms1=ms1,mz=mz,limFinePPM = limFinePPM)
+    vprsc<-verif_prec_fine(preSc=prsc,ms1=ms1,mz=mz,deltaFinePPM = deltaFinePPM)
     idxMS2<-refn_ms2_by_prec(idxMS2=idxMS2,preFine=vprsc)
     message("Resampling MS2 spectra finished.")
     
@@ -417,7 +376,7 @@ extr_msnb <-function(file,wd,mz,limEIC, limFinePPM,limCoarse=0.5,rt=NULL,rtDelta
 
 }
 
-extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse,fnSpec,rt=NULL,rtDelta=NULL,mode="onDisk") {
+extr_msnb_ht <-function(file,wd,mz,limEIC, deltaFinePPM,deltaCoarse,fnSpec,rt=NULL,rtDelta=NULL,mode="onDisk") {
     ## Perform the entire data extraction procedure.
     ## 
     ## file - The input mzML file.
@@ -430,7 +389,7 @@ extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse,fnSpec,rt=NULL,r
     ## half-width of the time window in which the peak for the
     ## corresponding mz is supposed to be.
     ## limEIC - Absolute mz tolerance used to extract precursor EICs.
-    ## limFinePPM - Tolerance given in PPM used to associate input
+    ## deltaFinePPM - Tolerance given in PPM used to associate input
     ## masses with what the instrument assigned as precursors to MS2
     ## products.
 
@@ -442,11 +401,11 @@ extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse,fnSpec,rt=NULL,r
 
 
     ## Filtering
-    mzCrs<-gen_mz_range(mz=mz,delta=limCoarse)
+    mzCrs<-gen_mz_range(mz=mz,delta=deltaCoarse)
     mzMin<-min(mzCrs)
     mzMax<-max(mzCrs)
     ms1<-MSnbase::filterMz(ms1,c(mzMin,mzMax))
-    fms2<-filt_ms2(ms1,ms2,mz,limCoarse=limCoarse,limFinePPM=limFinePPM)
+    fms2<-filt_ms2(ms1,ms2,mz,deltaCoarse=deltaCoarse,deltaFinePPM=deltaFinePPM)
 
     ## EICs for precursors.
     message("Extracting precursor EICs. Please wait.")
@@ -459,7 +418,7 @@ extr_msnb_ht <-function(file,wd,mz,limEIC, limFinePPM,limCoarse,fnSpec,rt=NULL,r
     x
 }
 
-extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtDelta=NULL) {
+extr_rmb <- function (file,wd, mz, limEIC, deltaCoarse=0.5, deltaFinePPM,rt=NULL,rtDelta=NULL) {
     ID<-as.numeric(names(mz))
     maxid <- max(ID)
     id_field_width <- as.integer(log10(maxid)+1)
@@ -481,8 +440,8 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtD
         mz<-mz[[i]]
         eic <- RMassBank::findEIC(f, mz, limit = limEIC)
         msms_found[i] <- FALSE
-        theppm<-RMassBank::ppm(mz, limFinePPM,p = TRUE)
-        msms <- RMassBank::findMsMsHR.mass(f, mz, limCoarse, theppm)
+        theppm<-RMassBank::ppm(mz, deltaFinePPM,p = TRUE)
+        msms <- RMassBank::findMsMsHR.mass(f, mz, deltaCoarse, theppm)
         max_I_prec_index <- which.max(eic$intensity)
         cmpd_RT_maxI[i] <- eic[max_I_prec_index, 1]
         max_I_prec[i] <- eic[max_I_prec_index, 2]
@@ -526,15 +485,15 @@ extr_rmb <- function (file,wd, mz, limEIC, limCoarse=0.5, limFinePPM,rt=NULL,rtD
 ##'     identical.
 ##' @param extr_fun Extraction function from the backend.
 ##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
-##' @param limFinePPM Tolerance given in PPM used to associate input
+##' @param deltaFinePPM Tolerance given in PPM used to associate input
 ##'     masses with what the instrument assigned as precursors to MS2.
-##' @param limCoarse Absolute tolerance for preliminary association of
+##' @param deltaCoarse Absolute tolerance for preliminary association of
 ##'     precursors (from precursorMZ), to MS2 spectra.
 ##' @param rtDelta The half-width of the retention time window.
 ##' @param fnSpec Output file specification.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
-extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,fnSpec,rtDelta) {
+extract<-function(fTab,extr_fun,limEIC,deltaFinePPM,deltaCoarse,fnSpec,rtDelta) {
     fnData<-fTab$Files[[1]]
     wd<-fTab$wd[[1]]
     ID<-fTab$ID
@@ -549,8 +508,8 @@ extract<-function(fTab,extr_fun,limEIC,limFinePPM,limCoarse,fnSpec,rtDelta) {
              rt=rt,
              rtDelta=rtDelta,
              limEIC=limEIC,
-             limFinePPM=limFinePPM,
-             limCoarse=limCoarse,
+             deltaFinePPM=deltaFinePPM,
+             deltaCoarse=deltaCoarse,
              fnSpec=fnSpec)
     
 }

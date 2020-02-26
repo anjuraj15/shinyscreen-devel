@@ -55,23 +55,28 @@ attch<-function(...) paste(...,sep='')
 ##'     identical.
 ##' @param extr_fun Extraction function from the backend. 
 ##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
-##' @param limFinePPM Tolerance given in PPM used to associate input
+##' @param deltaFinePPM Tolerance given in PPM used to associate input
 ##'     masses with what the instrument assigned as precutsors to MS2.
 ##' @param proc Amount of processors, or FALSE. 
 ##' @param fnLog For parallel execution, dump messages there.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-gen<-function(fTab,limEIC,limFinePPM,rtDelta,proc=F,fnLog='prescreen.log',extr_fun=extr_msnb_ht) {
+gen<-function(fTab,
+              limEIC,
+              deltaFinePPM,
+              deltaCoarse,
+              rtDelta,
+              proc=F,fnLog='prescreen.log',extr_fun=extr_msnb_ht) {
     message("*** Started to generate prescreen data ...")
     unlink(fnLog)
     fread<-function(fTab) {
         extract(fTab=fTab,
                 extr_fun=extr_fun,
                 limEIC=limEIC,
-                limFinePPM=limFinePPM,
+                deltaFinePPM=deltaFinePPM,
                 rtDelta=rtDelta,
-                limCoarse=0.5,
+                deltaCoarse=deltaCoarse,
                 fnSpec=FN_SPEC)
         
         return(T)
