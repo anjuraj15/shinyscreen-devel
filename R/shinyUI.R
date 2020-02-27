@@ -144,15 +144,18 @@ mkUI <- function() {
                             shiny::textInput("genNoProc",
                                              label="Number of processes.",
                                              value=1),
-                            shiny::textInput("ppmLimFine",
-                                             label="Precursor mz tolerance (relative [ppm]).",
-                                             value=10),
-                            shiny::textInput("eicLim",
-                                             label="EIC mz tolerance (absolute).",
-                                             value=1e-3),
-                            shiny::textInput("rtDeltaWin",
-                                             label="Retention time tolerance (minutes).",
-                                             value=0.5),
+                            shiny::textInput("deltaCoarse",
+                                             label="Precursor m/z error (coarse) [Da].",
+                                             value=MS1_ERR_COARSE),
+                            shiny::textInput("deltaFinePPM",
+                                             label="Precursor m/z error (fine) [ppm].",
+                                             value=MS1_ERR_FINE),
+                            shiny::textInput("deltaEIC",
+                                             label="EIC m/z error [Da].",
+                                             value=EIC_DELTA),
+                            shiny::textInput("deltaRTWin",
+                                             label="Retention time tolerance [min].",
+                                             value=RT_EXTR_DELTA),
                             shiny::uiOutput("genSetSelInpCtrl"),
                             shiny::actionButton(inputId="genRunB",
                                                 label="Run!",
@@ -160,15 +163,18 @@ mkUI <- function() {
                             width=NULL)
     
     genBoxAutoQA<-prim_box(title="Automatic Quality Control",
-                           shiny::textInput("intThresh",
-                                            label="Intensity threshold.",
-                                            value=1e5),
+                           shiny::textInput("intThreshMS1",
+                                            label="Intensity threshold (MS1).",
+                                            value=MS1_INT_THOLD),
+                           shiny::textInput("intThreshMS2",
+                                            label="Intensity threshold (MS2; relative to MS1 peak intensity).",
+                                            value=MS2_INT_THOLD),
                            shiny::textInput("noiseFac",
                                             label="Signal-to-noise ratio.",
-                                            value=3),
-                           shiny::textInput("rtDelta",
-                                            label="Retention time shift tolerance (minutes).",
-                                            value=0.5),
+                                            value=MS1_SN_FAC),
+                           shiny::textInput("deltaRT",
+                                            label="Retention time shift tolerance [min].",
+                                            value=RT_SHIFT_DELTA),
                            shiny::actionButton(inputId="qaAutoB",
                                                label="Preprocess!",
                                                icon=shiny::icon("bomb")),
@@ -1200,12 +1206,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                 fTab<-gen_base_ftab()
                 nProc<-as.integer(input$genNoProc)
                 sets<-input$genSetSelInp
-                intThresh<-as.numeric(input$intThresh)
+                intThreshMS1<-as.numeric(input$intThreshMS1)
                 noiseFac<-as.numeric(input$noiseFac)
-                rtDelta<-as.numeric(input$rtDelta)
-                limFinePPM<-as.numeric(input$ppmLimFine)
-                limEIC<-as.numeric(input$eicLim)
-                rtDelta<-as.numeric(input$rtDeltaWin)
+                deltaRT<-as.numeric(input$deltaRT)
+                deltaFinePPM<-as.numeric(input$deltaFinePPM)
+                deltaCoarse <- as.numeric(input$deltaCoarse)
+                deltaEIC<-as.numeric(input$deltaEIC)
+                deltaRT<-as.numeric(input$deltaRTWin)
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
                     post_note(paste("Extracting data for set",s,". Please wait."))
@@ -1215,9 +1222,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                     unset_gen_done(s)
                     gen(fTab=fTab[fTab$set==s,],
                         proc=nProc,
-                        limFinePPM=limFinePPM,
-                        limEIC=limEIC,
-                        rtDelta=rtDelta)
+                        deltaFinePPM=deltaFinePPM,
+                        deltaCoarse=deltaCoarse,
+                        deltaEIC=deltaEIC,
+                        deltaRT=deltaRT)
                     set_gen_done(s)
                     dfProc<-proc_set(dfProc,s)
                     message("***** END set ",s, " *****")
@@ -1237,9 +1245,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                     mtr<- get_mtr()
                     tdsets<-proc_qa_todo(dfProc,mtr)
                     if (length(tdsets)>0) {
-                        intThresh<-as.numeric(input$intThresh)
+                        intThreshMS1<-as.numeric(input$intThreshMS1)
+                        intThreshMS2<-as.numeric(input$intThreshMS2)
                         noiseFac<-as.numeric(input$noiseFac)
-                        rtDelta<-as.numeric(input$rtDelta)
+                        deltaRT<-as.numeric(input$deltaRT)
 
 
 
@@ -1253,9 +1262,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                         mtrDone<-mtr[mtr$set %in% tdsets,]
 
                         mtrPP<-preProc(ftable=mtrDone,
-                                       intThresh=intThresh,
+                                       intThreshMS1=intThreshMS1,
+                                       intThreshMS2=intThreshMS2,
                                        noiseFac=noiseFac,
-                                       rtDelta=rtDelta)
+                                       deltaRT=deltaRT)
 
                         ## In case preProc added more names to the
                         ## table.
@@ -1498,7 +1508,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             pdf(file=fn, width=12, height=8)
             print(plot_id(id,prop=prop))
             dev.off()
-            message("Plotting compound ", i," to ",fn," done.")
+            message("Plotting compound ", id," to ",fn," done.")
         })
 
         shiny::observeEvent(input$saveallplots,
