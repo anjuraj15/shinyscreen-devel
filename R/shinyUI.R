@@ -26,6 +26,9 @@ inact_box<-function(...) {shinydashboard::box(...,
                                             status="danger",
                                             solidHeader=T)}
 
+
+html<-function(...) {shiny::tags$div(shiny::HTML(...))}
+
 mkUI <- function() {
     browseFile <- function(title,
                            buttonName,
@@ -41,13 +44,13 @@ mkUI <- function() {
     
     confImport <- prim_box(title="Import",
                            shiny::textInput("fnKnownL",
-                                            "Knowns list. Required columns: ID, SMILES, Name and RT (the last two can be empty). Remember to quote SMILES and Name entries!",
+                                            html("The list of knowns. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
                                             value=""),
                            shiny::textInput("fnUnkL",
-                                            "Unknows list. Required columns: ID, mz and RT (RT can be empty).",
+                                            html("The list of unknowns. Required columns: <i>ID</i>, <i>mz</i> and <i>RT</i> (<i>RT</i> can be empty)."),
                                             value=""),
                            shiny::textInput("fnSetId",
-                                            "Set table. Required columns <b>ID</b> and set.",
+                                            html("Set table. Required columns <i>ID</i> and <i>set</i>."),
                                             value=""),
                            shinyFiles::shinyFilesButton("impKnownListB",
                                                         label="Import knowns.",
@@ -77,12 +80,12 @@ mkUI <- function() {
 
     confState <- prim_box(title="Configuration State",
                           shinyFiles::shinySaveButton("saveConfB",
-                                                      "Save configuration",
+                                                      "Save configuration.",
                                                       title="Save",
                                                       filename = "conf-state.rds",
                                                       "rds"),
                           shinyFiles::shinyFilesButton("restoreConfB",
-                                                       label="Restore configuration",
+                                                       label="Restore configuration.",
                                                        multiple=F,
                                                        title="Restore"),
                           width=NULL)
@@ -129,7 +132,6 @@ mkUI <- function() {
                                           cmpListLayout)
 
     ## ***** Sets of compounds *****
-
     setIdBox<-prim_box(title="Compound Sets",
                        rhandsontable::rHandsontableOutput("setIdCtrl"),
                        width = NULL)
