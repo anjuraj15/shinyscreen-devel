@@ -83,11 +83,11 @@ FTAB_CHK_AUTO<-'AUTO'
 FTAB_CHK_MANL<-'MANUAL'
 
 
-MS1_ERR_COARSE<-1.0                     # Da
-MS1_ERR_FINE<- 10                       # ppm
-EIC_DELTA <- 1e-3                       # Da
-RT_EXTR_DELTA<-1.0                       # min
-RT_SHIFT_DELTA <- 1.0               # min
+MS1_ERR_COARSE<-0.5                     # Da
+MS1_ERR_FINE<- 5                       # ppm
+EIC_ERR <- 0.001                       # Da
+RT_EXTR_ERR<-0.5                       # min
+RT_SHIFT_ERR <- 0.5               # min
 
 MS1_INT_THOLD <- 1e5
 MS2_INT_THOLD <- 0.05
@@ -97,4 +97,4 @@ MS1_SN_FAC <- 3.0
 
 ## Shiny objects
 
-NUM_INP_WIDTH="10%"
+NUM_INP_WIDTH="15%"
