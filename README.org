@@ -82,7 +82,7 @@
     please refer the link for installing the dependencies [[https://github.com/schymane/RChemMass/blob/master/README_installation.txt][Installation help]]
 
 *** Alternate option to download shinyscreen
-    The shinyscreen package can be downloaded(~tar.gz~) from gitlab https://git-r3lab.uni.lu/eci/shinyscreen)*.
+    The shinyscreen package can be downloaded(~tar.gz~) from [[https://git-r3lab.uni.lu/eci/shinyscreen][gitlab]].
     The package archive is installed and script given below runs the shinyscreen. 
    
     #+BEGIN_SRC R
