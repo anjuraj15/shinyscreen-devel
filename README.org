@@ -16,6 +16,15 @@
   
 * Installation
 
+** Rtools Installation
+   Use ~installr~ package to download and install Rtools.
+   #+BEGIN SRC R
+   install.packages("installr")   
+   library("installr")
+   install.Rtools()
+   #+END_SRC
+   This will automatically download Rtools and proceed with the default installation process.
+   
 ** R is not RStudio(tm)
     In order to avoid all the fuss with credentials on github and
     gitlab, just download the package and use devtools to
@@ -65,6 +74,17 @@
    #+END_SRC
 
 ** Install from Gitlab (TODO)
+**  Alternate options
+*** Installation of Dependencies  
+    Additionally some dependencies like ~mzR~, ~MSNbase~, ~RMassBank~, ~rcdk~, ~rjava~ should be manually installed if needed.
+    The [installation text](https://github.com/schymane/RChemMass/blob/master/README_installation.txt) can be referred for installing the dependencies.
+
+*** Alternate option to download shinyscreen
+    The [shinyscreen package](https://git-r3lab.uni.lu/eci/shinyscreen) can be downloaded(~tar.gz~) from the gitlab and installed into the Rstudio. 
+    #BEGIN_SRC R
+    ## START SHINYSCREEN
+    library(shinyscreen)
+    shinyScreenApp() # shinyscreenApp(projDir=/where/I/want/to/start/the/project)
 
 * Running Shinyscreen
   Provided Shinyscreen is successfully installed this snippet will
