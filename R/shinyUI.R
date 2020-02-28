@@ -29,7 +29,9 @@ inact_box<-function(...) {shinydashboard::box(...,
 
 html<-function(...) {shiny::tags$div(shiny::HTML(...))}
 
-mkUI <- function() {
+numInput<-function(...,width=NUM_INP_WIDTH) {shiny::tags$div(id="inline",shiny::textInput(...,width=width))}
+
+mkUI <- function(fnStyle) {
     browseFile <- function(title,
                            buttonName,
                            txtName,
@@ -155,9 +157,9 @@ mkUI <- function() {
                             shiny::textInput("deltaEIC",
                                              label="EIC m/z error [Da].",
                                              value=EIC_DELTA),
-                            shiny::textInput("deltaRTWin",
-                                             label="Retention time tolerance [min].",
-                                             value=RT_EXTR_DELTA),
+                            numInput("deltaRTWin",
+                                     label="Retention time tolerance [min].",
+                                     value=RT_EXTR_DELTA),
                             shiny::uiOutput("genSetSelInpCtrl"),
                             shiny::actionButton(inputId="genRunB",
                                                 label="Run!",
@@ -415,21 +417,27 @@ mkUI <- function() {
                                                                             logSideItem))
 
 
-    body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
-                                                                   cmpListTab,
-                                                                   setIdTab,
-                                                                   genTab,
-                                                                   presTab,
-                                                                   logTab))
+    body <- shinydashboard::dashboardBody(
+                                shiny::tags$head(shiny::tags$style(shiny::includeHTML(fnStyle))),
+                                ## shiny::tags$head(
+                                ##                 shiny::tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
+                                ##             ),
+                                shinydashboard::tabItems(confTab,
+                                                         cmpListTab,
+                                                         setIdTab,
+                                                         genTab,
+                                                         presTab,
+                                                         logTab))
 
 
     
-    shinydashboard::dashboardPage(header,
-                                  sidebar,
-                                  body)}
+    shinydashboard::dashboardPage(
+                        header,
+                        sidebar,
+                        body)}
 
-##' @export
-shinyScreenApp <- function(projDir=getwd()) {
+mk_shinyscreen <- function(projDir=getwd(),
+                           fnStyle=system.file('www/custom.css',package = 'shinyscreen')) {
     message("projDir=",projDir)
     modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
@@ -1668,5 +1676,11 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         
     }
-    shiny::shinyApp(ui=mkUI(),server=server)
+    shiny::shinyApp(ui=mkUI(fnStyle=fnStyle),server=server)
+}
+
+##' @export
+launch<-function(projDir=getwd(),...) {
+    app<-mk_shinyscreen(projDir=projDir)
+    shiny::runApp(appDir = app,...)
 }

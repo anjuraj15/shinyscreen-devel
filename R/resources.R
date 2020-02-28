@@ -93,3 +93,8 @@ MS1_INT_THOLD <- 1e5
 MS2_INT_THOLD <- 0.05
 
 MS1_SN_FAC <- 3.0
+
+
+## Shiny objects
+
+NUM_INP_WIDTH="10%"
