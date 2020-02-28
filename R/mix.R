@@ -53,7 +53,7 @@ pp_touch_q<-function(ftab) {
     which(ftab$checked==FTAB_CHK_NONE | ftab$checked==FTAB_CHK_AUTO)
 }
 
-preProc <- function (ftable,noiseFac=3,deltaRT=0.5,intThreshMS1=1e5,intThreshMS2=0.05) {
+preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=0.05) {
     wds<-unique(ftable$wd)
     fn_spec<-function(wd) readRDS(file.path(wd,FN_SPEC))
     message("Loading RDS-es ...")
@@ -136,11 +136,11 @@ preProc <- function (ftable,noiseFac=3,deltaRT=0.5,intThreshMS1=1e5,intThreshMS2
                 rtMS1Peak <- eic$rt[[ms1MaxInd]]
                 msms<-MSnbase::fData(sp)[,c("rtm","maxI")]
                 colnames(msms)<-c("rt","intensity")
-                rtInd <- which((msms$rt > rtMS1Peak - deltaRT/2) &
-                               (msms$rt < rtMS1Peak + deltaRT/2)) #Close enough?
+                rtInd <- which((msms$rt > rtMS1Peak - errRT) &
+                               (msms$rt < rtMS1Peak + errRT)) #Close enough?
                 
-                rtIndMS1 <- which((eic$rt > rtMS1Peak - deltaRT/2) &
-                                  (eic$rt < rtMS1Peak + deltaRT/2)) #Filter the relevant MS1 part.
+                rtIndMS1 <- which((eic$rt > rtMS1Peak - errRT) &
+                                  (eic$rt < rtMS1Peak + errRT)) #Filter the relevant MS1 part.
                 
                 eicFilt<- eic[rtIndMS1,]
                 eicFilt<- eicFilt[which(eicFilt$intensity>intThreshMS1),]
