@@ -72,7 +72,7 @@
   #+BEGIN_SRC R
     library(shinyscreen)
     PROJECT="project/location/somewhere/on/my/storage/device"
-    shinyScreenApp(projDir=PROJECT) 
+    launch(projDir=PROJECT) 
   #+END_SRC
   The `projDir` argument can be left out in which case shinyscreen is
   going to assume that the project directory is the result of
