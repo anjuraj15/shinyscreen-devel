@@ -19,8 +19,7 @@
 ** R is not RStudio(tm)
     In order to avoid all the fuss with credentials on github and
     gitlab, just download the package and use devtools to
-    install. Here is a script that first installs and then runs
-    shinyscreen.
+    install. Here is a script that installs.
     #+BEGIN_SRC R
       ## ***** INSTALLATION OF THE PACKAGE AND ITS DEPENDENCIES (BEGIN) *****
       library(devtools)
@@ -30,10 +29,6 @@
       install_local(SSCREEN_LOC,
                     upgrade = "never")
       ## ***** INSTALLATION OF THE PACKAGE AND ITS DEPENDENCIES (END) *****
-
-      ## START SHINYSCREEN
-      library(shinyscreen)
-      shinyScreenApp() # shinyscreenApp(projDir=/where/I/want/to/start/the/project)
     #+END_SRC
     
     This installation procedure should work in most situations. If you
