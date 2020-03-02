@@ -87,11 +87,11 @@
      BiocManager::install(c(curl","rsvg","enviPat","rJava", "fingerprint", "png", "rcdk","mzR","rcdklibs"), dependencies=TRUE))
    #+END_SRC
   
-   - However the major issue in installing the dependencies is loading ~rjava~ library (essential rcdk functionality)
+   However the major issue in installing the dependencies is loading ~rjava~ library (essential rcdk functionality)
    - Install the latest Java versions: [[https://www.java.com/en/][Download]]
    - Ensure 32 bit and 64 bit versions are available for 64 bit systems.Check in C:\Program Files\Java and C:\Program Files (x86)\Java.
    - Test if the library is loaded properly and proceed with the installation of ~RMassBank~ and ~RChemMass~.
-   - Detailed explanation on how to tackle these is available [[https://github.com/schymane/RChemMass/blob/master/README_installation.txt][here]].
+   Detailed explanation on how to tackle these is available [[https://github.com/schymane/RChemMass/blob/master/README_installation.txt][here]].
 
 * Running Shinyscreen
   Provided Shinyscreen is successfully installed this snippet will
