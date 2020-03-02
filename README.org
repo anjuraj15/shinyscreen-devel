@@ -16,6 +16,21 @@
   
 * Installation
 
+** Docker (TODO)
+
+** Straight from Gitlab(TODO)
+
+** Rtools Installation (Windows users reported this as a necessary step)
+   Use ~installr~ package to download and install Rtools.
+
+   #+BEGIN_SRC R
+     install.packages("installr")   
+     library("installr")
+     install.Rtools()
+   #+END_SRC
+   
+   This will automatically download Rtools and proceed with the default installation process.
+   
 ** R is not RStudio(tm)
     In order to avoid all the fuss with credentials on github and
     gitlab, just download the package and use devtools to
@@ -32,7 +47,7 @@
     #+END_SRC
     
     This installation procedure should work in most situations. If you
-    to just try out the package, without installing it to some system
+    want to just try out the package, without installing it to some system
     path, you could create .Renviron in a `project' directory with the
     following content.
     #+BEGIN_SRC R
@@ -48,7 +63,7 @@
     If it is, run the installation script above, and you should have
     shinyscreen and its dependencies inside the `local' directory.
    
-** Dependency Hell
+** Minor Dependency Hell
     Perhaps there is a collision between dependencies you already have
     on your computer and what the devtools want to install. One way to
     avoid this is to follow the `.Renviron` approach from above, but
@@ -59,7 +74,23 @@
      devtools::install_local(path=SSCREEN_LOC,force=T,dependencies=FALSE)
    #+END_SRC
 
-** Install from Gitlab (TODO)
+** Major Dependency Hell
+   Among Shinyscreen dependencies, ~mzR~ and ~rcdk~ have been known 
+   to cause major installation issues.
+   To install the dependencies use the following script
+   #+BEGIN_SRC R
+     BiocManager::install(c("curl","rsvg","enviPat","rJava", "fingerprint", "png", "rcdk","mzR","rcdklibs"), dependencies=TRUE))
+   #+END_SRC
+
+   The major issue in installing the dependencies is loading ~rjava~ library (essential rcdk functionality)
+   - Install the latest Java versions: [[https://www.java.com/en/][Download]]
+   - Ensure 32 bit and 64 bit versions are available for 64 bit
+     systems. In case of Windows, check in `C:\Program Files\Java` and
+     `C:\Program Files (x86)\Java`.
+   - Test if the library is loaded properly and proceed with the
+     installation of ~RMassBank~ and ~RChemMass~.
+   Detailed explanation on how to tackle these problems is available
+   [[https://github.com/schymane/RChemMass/blob/master/README_installation.txt][here]].
 
 * Running Shinyscreen
   Provided Shinyscreen is successfully installed this snippet will
