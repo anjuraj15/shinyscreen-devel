@@ -122,6 +122,9 @@ mkUI <- function(fnStyle) {
                                                        label="Restore configuration.",
                                                        multiple=F,
                                                        title="Restore"),
+                          shiny::actionButton(inputId="resetConfB",
+                                              label="Reset config (CAUTION!)",
+                                              icon=shiny::icon("trash")),
                           width=NULL)
 
 
@@ -676,7 +679,11 @@ mk_shinyscreen <- function(projDir=getwd(),
     }
 
     proc_read<-function(wd) {
-    readRDS(file.path(wd,FN_SPEC))}
+        readRDS(file.path(wd,FN_SPEC))}
+
+    bak_fstate_pref <- function() {
+        format(Sys.time(),'%Y%m%d_%H_%M_%S_')
+    }
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
@@ -1062,26 +1069,35 @@ mk_shinyscreen <- function(projDir=getwd(),
             df
         })
 
-        get_mtr<-shiny::reactive({
+        mtr_from_inps <- shiny::reactive({
             fnFT<-rvConf$fnFT
-            mtr<-rvTab$mtr
-            if (!is.null(mtr)) {
-                message("Grabbing existing mtr")
-                mtr
-            } else if (!file.exists(fnFT)) {
+            if (!file.exists(fnFT)) {
                 message("Generating the first instance of the state file table")
                 bdf <- gen_base_ftab()
                 df<-gen_clean_state_ftab(bdf)
                 tab2file(tab=df,file=fnFT)
                 message("Done generating the first instance of the state file table.")
-                rvTab$mtr<-df
                 df
             } else {
                 message("Reading in the state file table.")
                 df<-file2tab(fnFT,colClasses=c("rt"="numeric",
                                                "MS2rt"="numeric",
                                                "iMS2rt"="numeric"))
+                message("Done reading in the state file table.")
                 df
+            }
+        })
+
+        get_mtr<-shiny::reactive({
+            mtr<-rvTab$mtr
+            str(mtr)
+            if (!is.null(mtr)) {
+                message("Grabbing existing mtr")
+                return(mtr)
+            } else {
+                mtr <- mtr_from_inps()
+                rvTab$mtr <- mtr
+                return(mtr)
             }
         })
 
@@ -1459,6 +1475,27 @@ mk_shinyscreen <- function(projDir=getwd(),
 
         shiny::observeEvent(input$saveConfB,{
             saveConf()
+        })
+
+        shiny::observeEvent(input$resetConfB,{
+            pDir <- rvConf$projDir
+            shiny::req(rvTab$mtr,pDir,rvConf$fnFT)
+            post_note('Started cleaning up state.')
+            pref<-bak_fstate_pref()
+            fnCurr <- paste0(file.path(pDir,pref),
+                             rvConf$fnFT,'.current.bak.csv')
+            fnLast <- paste0(file.path(pDir,pref),
+                             rvConf$fnFT,'.prev.bak.csv')
+            tab2file(tab=rvTab$mtr,file=fnCurr)
+            post_note(paste('Current state backed up to ',fnCurr,' .',sep=''))
+            maybeSaved <- file.path(pDir,rvConf$fnFT)
+            if (isThingFile(maybeSaved)) {
+                file.copy(maybeSaved,fnLast)
+                post_note(paste('Also, last saved state backed up to ',fnLast,' .',sep=''))
+                unlink(maybeSaved,force = T)
+            }
+            rvTab$mtr<-NULL
+            post_note('State is now less dirty.')
         })
 
         shiny::observeEvent(input$restoreConfB,{
