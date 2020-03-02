@@ -26,7 +26,24 @@ inact_box<-function(...) {shinydashboard::box(...,
                                             status="danger",
                                             solidHeader=T)}
 
-mkUI <- function() {
+
+html<-function(...) {shiny::tags$div(shiny::HTML(...))}
+
+## num_input<-function(...,width=NUM_INP_WIDTH) {shiny::tags$div(id="inline",shiny::textInput(...,width=width))}
+
+num_input <- function(inputId,label,...,width=NUM_INP_WIDTH) {
+    shiny::tags$div(style="display:inline-block",
+                    shiny::tags$label(label, `for` = inputId),
+                    shiny::tags$input(id = inputId, type = "text",style=paste("width:",width,sep = ""),...))
+}
+num_input_unit <- function(inputId,l1,l2,width=NUM_INP_WIDTH,...) {
+    shiny::tags$div(style="display:inline-block",
+                    shiny::tags$label(l1, `for` = inputId), 
+                    shiny::tags$input(id = inputId, type = "text",style=paste("width:",width,sep = ""),...),
+                    shiny::tags$label(paste(" ",l2,sep=""), `for` = inputId))
+}
+
+mkUI <- function(fnStyle) {
     browseFile <- function(title,
                            buttonName,
                            txtName,
@@ -41,13 +58,13 @@ mkUI <- function() {
     
     confImport <- prim_box(title="Import",
                            shiny::textInput("fnKnownL",
-                                            "Knowns list. Required columns: ID, SMILES, Name and RT (the last two can be empty). Remember to quote SMILES and Name entries!",
+                                            html("The list of knowns. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
                                             value=""),
                            shiny::textInput("fnUnkL",
-                                            "Unknows list. Required columns: ID, mz and RT (RT can be empty).",
+                                            html("The list of unknowns. Required columns: <i>ID</i>, <i>mz</i> and <i>RT</i> (<i>RT</i> can be empty)."),
                                             value=""),
                            shiny::textInput("fnSetId",
-                                            "Set table. Required columns <b>ID</b> and set.",
+                                            html("Set table. Required columns <i>ID</i> and <i>set</i>."),
                                             value=""),
                            shinyFiles::shinyFilesButton("impKnownListB",
                                                         label="Import knowns.",
@@ -77,12 +94,12 @@ mkUI <- function() {
 
     confState <- prim_box(title="Configuration State",
                           shinyFiles::shinySaveButton("saveConfB",
-                                                      "Save configuration",
+                                                      "Save configuration.",
                                                       title="Save",
                                                       filename = "conf-state.rds",
                                                       "rds"),
                           shinyFiles::shinyFilesButton("restoreConfB",
-                                                       label="Restore configuration",
+                                                       label="Restore configuration.",
                                                        multiple=F,
                                                        title="Restore"),
                           width=NULL)
@@ -129,7 +146,6 @@ mkUI <- function() {
                                           cmpListLayout)
 
     ## ***** Sets of compounds *****
-
     setIdBox<-prim_box(title="Compound Sets",
                        rhandsontable::rHandsontableOutput("setIdCtrl"),
                        width = NULL)
@@ -141,18 +157,25 @@ mkUI <- function() {
                                       setIdLayout)
 
     genBoxExtract<-prim_box(title="Extract Spectra",
-                            shiny::textInput("genNoProc",
-                                             label="Number of processes.",
-                                             value=1),
-                            shiny::textInput("ppmLimFine",
-                                             label="Precursor mz tolerance (relative [ppm]).",
-                                             value=10),
-                            shiny::textInput("eicLim",
-                                             label="EIC mz tolerance (absolute).",
-                                             value=1e-3),
-                            shiny::textInput("rtDeltaWin",
-                                             label="Retention time tolerance (minutes).",
-                                             value=0.5),
+                            num_input(inputId="genNoProc",
+                                      label="Number of processes:  ",
+                                      value=1),
+                            num_input_unit(inputId="errCoarse",
+                                           l1="Precursor m/z error (coarse) (+/-):  ",
+                                           l2="[Da]",
+                                           value=MS1_ERR_COARSE),
+                            num_input_unit("errFinePPM",
+                                           l1="Precursor m/z error (fine) (+/-):  ",
+                                           l2="[ppm]",
+                                           value=MS1_ERR_FINE),
+                            num_input_unit("errEIC",
+                                           l1="EIC m/z error (+/-): ",
+                                           l2="[Da]",
+                                      value=EIC_ERR),
+                            num_input_unit("errRTWin",
+                                           l1="Retention time tolerance (+/-): ",
+                                           l2="[min]",
+                                           value=RT_EXTR_ERR),
                             shiny::uiOutput("genSetSelInpCtrl"),
                             shiny::actionButton(inputId="genRunB",
                                                 label="Run!",
@@ -160,15 +183,19 @@ mkUI <- function() {
                             width=NULL)
     
     genBoxAutoQA<-prim_box(title="Automatic Quality Control",
-                           shiny::textInput("intThresh",
-                                            label="Intensity threshold.",
-                                            value=1e5),
-                           shiny::textInput("noiseFac",
-                                            label="Signal-to-noise ratio.",
-                                            value=3),
-                           shiny::textInput("rtDelta",
-                                            label="Retention time shift tolerance (minutes).",
-                                            value=0.5),
+                           num_input("intThreshMS1",
+                                     label="Intensity threshold (MS1): ",
+                                     value=MS1_INT_THOLD),
+                           num_input("intThreshMS2",
+                                     label="Intensity threshold (MS2; relative to MS1 peak intensity): ",
+                                     value=MS2_INT_THOLD),
+                           num_input("noiseFac",
+                                     label="Signal-to-noise ratio: ",
+                                     value=MS1_SN_FAC),
+                           num_input_unit("errRT",
+                                     l1="Retention time shift tolerance (+/-): ",
+                                     value=RT_SHIFT_ERR,
+                                     l2="[min]"),
                            shiny::actionButton(inputId="qaAutoB",
                                                label="Preprocess!",
                                                icon=shiny::icon("bomb")),
@@ -407,21 +434,27 @@ mkUI <- function() {
                                                                             logSideItem))
 
 
-    body <- shinydashboard::dashboardBody(shinydashboard::tabItems(confTab,
-                                                                   cmpListTab,
-                                                                   setIdTab,
-                                                                   genTab,
-                                                                   presTab,
-                                                                   logTab))
+    body <- shinydashboard::dashboardBody(
+                                shiny::tags$head(shiny::tags$style(shiny::includeHTML(fnStyle))),
+                                ## shiny::tags$head(
+                                ##                 shiny::tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
+                                ##             ),
+                                shinydashboard::tabItems(confTab,
+                                                         cmpListTab,
+                                                         setIdTab,
+                                                         genTab,
+                                                         presTab,
+                                                         logTab))
 
 
     
-    shinydashboard::dashboardPage(header,
-                                  sidebar,
-                                  body)}
+    shinydashboard::dashboardPage(
+                        header,
+                        sidebar,
+                        body)}
 
-##' @export
-shinyScreenApp <- function(projDir=getwd()) {
+mk_shinyscreen <- function(projDir=getwd(),
+                           fnStyle=system.file('www/custom.css',package = 'shinyscreen')) {
     message("projDir=",projDir)
     modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
@@ -731,7 +764,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             shiny::validate(need(fn,"Please set the compounds set CSV filename."),
                             need(isThingFile(fn),"Cannot find the set CSV file."))
             
-            message("Importing compound sets from:",fn)
+            message("Importing compound sets from: ",fn)
             df<-file2tab(file=fn,
                          colClasses=c(set="factor"))
             df$set<-factor(df$set)
@@ -762,7 +795,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         get_known<-shiny::reactive({
             fn<-input$fnKnownL
             res<- if (isThingFile(fn)) {
-                      message("Importing knowns/suspects from:",fn)
+                      message("Importing knowns/suspects from: ",fn)
                       df<-file2tab(file=fn)
                       x <-vald_comp_tab(df,fn,checkSMILES=T,checkNames=T)
                       shiny::validate(need(x,"Errors in the known compound list. For reasons, check the messages output to the R session."))
@@ -776,7 +809,7 @@ shinyScreenApp <- function(projDir=getwd()) {
         get_unk<-shiny::reactive({
             fn<-input$fnUnkL
             if (isThingFile(fn)) {
-                message("Importing unknowns list from:",fn)
+                message("Importing unknowns list from: ",fn)
                 df<-file2tab(file=fn)
                 res<-vald_comp_tab(df,fn,checkSMILES=F,checkMz=T)
                 shiny::validate(need(res,"Errors in the unknown compound list. For reasons, check the messages output to the R session."))
@@ -1200,12 +1233,13 @@ shinyScreenApp <- function(projDir=getwd()) {
                 fTab<-gen_base_ftab()
                 nProc<-as.integer(input$genNoProc)
                 sets<-input$genSetSelInp
-                intThresh<-as.numeric(input$intThresh)
+                intThreshMS1<-as.numeric(input$intThreshMS1)
                 noiseFac<-as.numeric(input$noiseFac)
-                rtDelta<-as.numeric(input$rtDelta)
-                limFinePPM<-as.numeric(input$ppmLimFine)
-                limEIC<-as.numeric(input$eicLim)
-                rtDelta<-as.numeric(input$rtDeltaWin)
+                errRT<-as.numeric(input$errRT)
+                errFinePPM<-as.numeric(input$errFinePPM)
+                errCoarse <- as.numeric(input$errCoarse)
+                errEIC<-as.numeric(input$errEIC)
+                errRT<-as.numeric(input$errRTWin)
                 for (s in sets) {
                     message("***** BEGIN set ",s, " *****")
                     post_note(paste("Extracting data for set",s,". Please wait."))
@@ -1215,9 +1249,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                     unset_gen_done(s)
                     gen(fTab=fTab[fTab$set==s,],
                         proc=nProc,
-                        limFinePPM=limFinePPM,
-                        limEIC=limEIC,
-                        rtDelta=rtDelta)
+                        errFinePPM=errFinePPM,
+                        errCoarse=errCoarse,
+                        errEIC=errEIC,
+                        errRT=errRT)
                     set_gen_done(s)
                     dfProc<-proc_set(dfProc,s)
                     message("***** END set ",s, " *****")
@@ -1237,9 +1272,10 @@ shinyScreenApp <- function(projDir=getwd()) {
                     mtr<- get_mtr()
                     tdsets<-proc_qa_todo(dfProc,mtr)
                     if (length(tdsets)>0) {
-                        intThresh<-as.numeric(input$intThresh)
+                        intThreshMS1<-as.numeric(input$intThreshMS1)
+                        intThreshMS2<-as.numeric(input$intThreshMS2)
                         noiseFac<-as.numeric(input$noiseFac)
-                        rtDelta<-as.numeric(input$rtDelta)
+                        errRT<-as.numeric(input$errRT)
 
 
 
@@ -1249,13 +1285,14 @@ shinyScreenApp <- function(projDir=getwd()) {
                         dfProc$qa[ind]<-T
                         ctdsets<-do.call(paste,c(as.list(tdsets),list(sep=', ')))
                         message("Starting preprocessing.")
-                        post_note(paste("Started preprocessing these sets:",ctdsets))
+                        post_note(paste("Started preprocessing these sets: ",ctdsets))
                         mtrDone<-mtr[mtr$set %in% tdsets,]
 
                         mtrPP<-preProc(ftable=mtrDone,
-                                       intThresh=intThresh,
+                                       intThreshMS1=intThreshMS1,
+                                       intThreshMS2=intThreshMS2,
                                        noiseFac=noiseFac,
-                                       rtDelta=rtDelta)
+                                       errRT=errRT)
 
                         ## In case preProc added more names to the
                         ## table.
@@ -1296,7 +1333,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                     mtr <- get_mtr()
                     dirMS2<-mk_ms2_dir(rvConf$projDir)
                     ctdsets<-do.call(paste,c(as.list(todoSets),list(sep=', ')))
-                    post_note(paste("Started extracting MS2 from these sets:",ctdsets))
+                    post_note(paste("Started extracting MS2 from these sets: ",ctdsets))
                     for (s in todoSets) {
                         smtr <- mtr_set_mode(mtr=mtr,set=s)
                         wds <- unique(smtr$wd)
@@ -1498,7 +1535,7 @@ shinyScreenApp <- function(projDir=getwd()) {
             pdf(file=fn, width=12, height=8)
             print(plot_id(id,prop=prop))
             dev.off()
-            message("Plotting compound ", i," to ",fn," done.")
+            message("Plotting compound ", id," to ",fn," done.")
         })
 
         shiny::observeEvent(input$saveallplots,
@@ -1631,7 +1668,7 @@ shinyScreenApp <- function(projDir=getwd()) {
                                                                label = "Quality Control",
                                                                choices = QANms,
                                                                selected = schoices[[tag]]),
-                                shiny::textAreaInput(paste("caption",tag,sep=""), "Comments:", "Insert your comment here..."),
+                                shiny::textAreaInput(paste("caption",tag,sep=""), "Comments: ", "Insert your comment here..."),
                                 shiny::verbatimTextOutput(paste("value",tag,sep=""))
                                 )})
                 
@@ -1656,5 +1693,11 @@ shinyScreenApp <- function(projDir=getwd()) {
 
         
     }
-    shiny::shinyApp(ui=mkUI(),server=server)
+    shiny::shinyApp(ui=mkUI(fnStyle=fnStyle),server=server)
+}
+
+##' @export
+launch<-function(projDir=getwd(),...) {
+    app<-mk_shinyscreen(projDir=projDir)
+    shiny::runApp(appDir = app,...)
 }

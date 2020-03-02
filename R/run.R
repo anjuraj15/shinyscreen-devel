@@ -54,24 +54,29 @@ attch<-function(...) paste(...,sep='')
 ##'     columns. Column Files, as well as wd must have all rows
 ##'     identical.
 ##' @param extr_fun Extraction function from the backend. 
-##' @param limEIC Absolute mz tolerance used to extract precursor EICs.
-##' @param limFinePPM Tolerance given in PPM used to associate input
+##' @param errEIC Absolute mz tolerance used to extract precursor EICs.
+##' @param errFinePPM Tolerance given in PPM used to associate input
 ##'     masses with what the instrument assigned as precutsors to MS2.
 ##' @param proc Amount of processors, or FALSE. 
 ##' @param fnLog For parallel execution, dump messages there.
 ##' @return Nothing useful.
 ##' @author Todor Kondić
 ##' @export
-gen<-function(fTab,limEIC,limFinePPM,rtDelta,proc=F,fnLog='prescreen.log',extr_fun=extr_msnb_ht) {
+gen<-function(fTab,
+              errEIC,
+              errFinePPM,
+              errCoarse,
+              errRT,
+              proc=F,fnLog='prescreen.log',extr_fun=extr_msnb_ht) {
     message("*** Started to generate prescreen data ...")
     unlink(fnLog)
     fread<-function(fTab) {
         extract(fTab=fTab,
                 extr_fun=extr_fun,
-                limEIC=limEIC,
-                limFinePPM=limFinePPM,
-                rtDelta=rtDelta,
-                limCoarse=0.5,
+                errEIC=errEIC,
+                errFinePPM=errFinePPM,
+                errRT=errRT,
+                errCoarse=errCoarse,
                 fnSpec=FN_SPEC)
         
         return(T)
