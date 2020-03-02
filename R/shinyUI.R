@@ -43,6 +43,32 @@ num_input_unit <- function(inputId,l1,l2,width=NUM_INP_WIDTH,...) {
                     shiny::tags$label(paste(" ",l2,sep=""), `for` = inputId))
 }
 
+txt_file_input <- function(inputId,input,fileB,label,volumes) {
+
+    fnobj<-shinyFiles::parseFilePaths(roots = volumes,
+                                      selection = input[[fileB]])
+    fn <- fnobj[['datapath']]
+    
+    if (isThingFile(fn)) {
+        shiny::textInput(inputId = inputId,
+                         label = label,
+                         value = fn)
+    } else {
+        shiny::isolate(currFn <- input[[inputId]])
+        if (!isThingFile(currFn)) {
+            shiny::textInput(inputId = inputId,
+                             label = label,
+                             value = "")
+        } else {
+            message('Why is this happening so much?')
+            shiny::textInput(inputId = inputId,
+                             label = label,
+                             value = currFn)
+        }
+    }
+    
+} 
+
 mkUI <- function(fnStyle) {
     browseFile <- function(title,
                            buttonName,
@@ -57,15 +83,9 @@ mkUI <- function(fnStyle) {
                  collapsible=F,...)}
     
     confImport <- prim_box(title="Import",
-                           shiny::textInput("fnKnownL",
-                                            html("The list of knowns. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
-                                            value=""),
-                           shiny::textInput("fnUnkL",
-                                            html("The list of unknowns. Required columns: <i>ID</i>, <i>mz</i> and <i>RT</i> (<i>RT</i> can be empty)."),
-                                            value=""),
-                           shiny::textInput("fnSetId",
-                                            html("Set table. Required columns <i>ID</i> and <i>set</i>."),
-                                            value=""),
+                           shiny::uiOutput("fnKnownLCtrl"),
+                           shiny::uiOutput("fnUnkLCtrl"),
+                           shiny::uiOutput("fnSetIdCtrl"),
                            shinyFiles::shinyFilesButton("impKnownListB",
                                                         label="Import knowns.",
                                                         title="",
@@ -697,6 +717,13 @@ mk_shinyscreen <- function(projDir=getwd(),
         shinyFiles::shinyFileChoose(input, 'mzMLB',roots=volumes)
 
         ## ***** reactive function definitions *****
+
+        ## get_knowns_from_b <- shiny::eventReactive(input$impKnownListB,
+        ## {
+        ##     fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impKnownListB)
+        ##     x <- fnobj[["datapath"]]
+        ##     if (isThingFile(x)) x else ""
+        ## },ignoreInit = T)
         
         get_all_tags<-shiny::reactive({
             ## Returns all tags from the input box.
@@ -1440,33 +1467,6 @@ mk_shinyscreen <- function(projDir=getwd(),
             message("Restore event finished.")
         })
         
-        shiny::observeEvent(input$impSetIdB,{
-            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impSetIdB)
-            fn<-fnobj[["datapath"]]
-            if (length(fn)>0 && !is.na(fn)) {
-                shiny::updateTextInput(session=session,
-                                       inputId="fnSetId",
-                                       value=fn)
-            }})
-
-        shiny::observeEvent(input$impKnownListB,{
-            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impKnownListB)
-            fn<-fnobj[["datapath"]]
-            if (length(fn)>0 && !is.na(fn)) {
-                shiny::updateTextInput(session=session,
-                                       inputId="fnKnownL",
-                                       value=fn)
-            }})
-
-        shiny::observeEvent(input$impUnkListB,{
-            fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impUnkListB)
-            fn<-fnobj[["datapath"]]
-            if (length(fn)>0 && !is.na(fn)) {
-                shiny::updateTextInput(session=session,
-                                       inputId="fnUnkL",
-                                       value=fn)
-            }})
-
         shiny::observeEvent(input$mzMLtabCtrl,
         {
             df<-rhandsontable::hot_to_r(input$mzMLtabCtrl)
@@ -1561,6 +1561,27 @@ mk_shinyscreen <- function(projDir=getwd(),
 
 
         ## ***** Render *****
+        output$fnKnownLCtrl <- shiny::renderUI({
+            txt_file_input(inputId = 'fnKnownL',
+                           input = input,
+                           label = html("The list of knowns. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
+                           fileB = 'impKnownListB',
+                           volumes=volumes)
+        })
+        output$fnUnkLCtrl <- shiny::renderUI({
+            txt_file_input(inputId = 'fnUnkL',
+                           input = input,
+                           label = html("The list of unknowns. Required columns: <i>ID</i>, <i>mz</i> and <i>RT</i> (<i>RT</i> can be empty)."),
+                           fileB = 'impUnkListB',
+                           volumes=volumes)
+        })
+        output$fnSetIdCtrl <- shiny::renderUI({
+            txt_file_input(inputId = 'fnSetId',
+                           input = input,
+                           label = html("Set table. Required columns <i>ID</i> and <i>set</i>."),
+                           fileB = 'impSetIdB',
+                           volumes=volumes)
+        })
         output$notify <- shinydashboard::renderMenu({
             ntf<-rvConf$notify
             shiny::req(nrow(ntf)>0)
