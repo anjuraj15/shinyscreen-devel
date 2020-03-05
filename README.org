@@ -254,10 +254,10 @@
    The third tab allows the visual inspection of the spectra and the
    chromatogram, as well as exporting the plots in a PDF format.
 
-* Significant Contributions
-  - Jessy Krier
+* Significant Contributions (in no particular order)
   - Anjana Elapavalore
   - Hiba Mohammed-Taha
+  - Jessy Krier
   - Mira Narayanan
   - Emma Schymanski
   - Randolph Singh (contributed good mood, mostly :-) )
