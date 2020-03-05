@@ -79,7 +79,7 @@
    to cause major installation issues.
    To install the dependencies use the following script
    #+BEGIN_SRC R
-     BiocManager::install(c("curl","rsvg","enviPat","rJava", "fingerprint", "png", "rcdk","mzR","rcdklibs"), dependencies=TRUE))
+     BiocManager::install(c("curl","rsvg","enviPat","rJava", "fingerprint", "png", "rcdk","mzR","rcdklibs"), dependencies=TRUE)
    #+END_SRC
 
    The major issue in installing the dependencies is loading ~rjava~ library (essential rcdk functionality)
@@ -89,6 +89,14 @@
      `C:\Program Files (x86)\Java`.
    - Test if the library is loaded properly and proceed with the
      installation of ~RMassBank~ and ~RChemMass~.
+     - To install ~RMassBank~,
+       #+BEGIN_SRC R
+         BiocManager::install("RMassBank") # .
+       #+END_SRC
+     - For ~RChemMass~,
+       #+BEGIN_SRC R
+         devtools::install_github("schymane/RChemMass") #.
+       #+END_SRC
    Detailed explanation on how to tackle these problems is available
    [[https://github.com/schymane/RChemMass/blob/master/README_installation.txt][here]].
 
