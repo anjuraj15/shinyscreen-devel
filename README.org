@@ -254,11 +254,12 @@
    The third tab allows the visual inspection of the spectra and the
    chromatogram, as well as exporting the plots in a PDF format.
 * Thanks
-  Many thanks to the students of Masters in Integrated Systems Biology
+  Many thanks to the students of the *Masters in Integrated Systems Biology*
   course 2020/2021,
-  - Tessy Prohaska
-  - Jeff Didier
-  - Claudia Cipriani
-  - Parviel Chirsir
+  - *Tessy Prohaska*
+  - *Jeff Didier*
+  - *Claudia Cipriani*
+  - *Parviel Chirsir*
 
-  for boldly wading through Windows installation issues.
+  for boldly wading through the Windows installation procedure, a task
+  that led to more clarity in the docs.
