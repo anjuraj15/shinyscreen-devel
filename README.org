@@ -263,7 +263,8 @@
   - *Randolph Singh* (contributed good mood, mostly :-) )
 * Thanks
   Many thanks to the students of the *Masters in Integrated Systems Biology*
-  course 2020/2021,
+  course (March 2020)
+
   - *Tessy Prohaska*
   - *Jeff Didier*
   - *Claudia Cipriani*
