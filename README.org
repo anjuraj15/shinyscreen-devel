@@ -253,6 +253,14 @@
 ** Prescreening
    The third tab allows the visual inspection of the spectra and the
    chromatogram, as well as exporting the plots in a PDF format.
+
+* Significant Contributions
+  - Jessy Krier
+  - Anjana Elapavalore
+  - Hiba Mohammed-Taha
+  - Mira Narayanan
+  - Emma Schymanski
+  - Randolph Singh (contributed good mood, mostly :-) )
 * Thanks
   Many thanks to the students of the *Masters in Integrated Systems Biology*
   course 2020/2021,
