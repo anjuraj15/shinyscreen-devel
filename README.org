@@ -16,89 +16,114 @@
   
 * Installation
 
-** Docker (TODO)
-
-** Straight from Gitlab(TODO)
-
-** Rtools Installation (Windows users reported this as a necessary step)
-   Use ~installr~ package to download and install Rtools.
-
-   #+BEGIN_SRC R
-     install.packages("installr")   
-     library("installr")
-     install.Rtools()
-   #+END_SRC
+** The Worst Case Scenario
    
-   This will automatically download Rtools and proceed with the default installation process.
-   
-** R is not RStudio(tm)
-    In order to avoid all the fuss with credentials on github and
-    gitlab, just download the package and use devtools to
-    install. Here is a script that installs.
-    #+BEGIN_SRC R
-      ## ***** INSTALLATION OF THE PACKAGE AND ITS DEPENDENCIES (BEGIN) *****
-      library(devtools)
-      SSCREEN_LOC<-"/this/is/where/I/downloaded/shinyscreen/source"
-      install_deps(SSCREEN_LOC,
-                   upgrade = "never")
-      install_local(SSCREEN_LOC,
-                    upgrade = "never")
-      ## ***** INSTALLATION OF THE PACKAGE AND ITS DEPENDENCIES (END) *****
-    #+END_SRC
-    
-    This installation procedure should work in most situations. If you
-    want to just try out the package, without installing it to some system
-    path, you could create .Renviron in a `project' directory with the
-    following content.
-    #+BEGIN_SRC R
-      R_LIBS_USER=local
-    #+END_SRC
-    Then, create the folder `local` inside the project directory.
-    After this is done, start R and make sure that `local' directory
-    is in the current package path.
-    #+BEGIN_SRC R
-      .libPaths() # This should list `local'.
-    #+END_SRC
-    
-    If it is, run the installation script above, and you should have
-    shinyscreen and its dependencies inside the `local' directory.
-   
-** Minor Dependency Hell
-    Perhaps there is a collision between dependencies you already have
-    on your computer and what the devtools want to install. One way to
-    avoid this is to follow the `.Renviron` approach from above, but
-    the other is to try and avoid installing dependencies alltogether.
-   #+BEGIN_SRC R
-     SSCREEN_LOC<-"/this/is/where/I/downloaded/shinyscreen/source"
-     library(devtools)
-     devtools::install_local(path=SSCREEN_LOC,force=T,dependencies=FALSE)
-   #+END_SRC
+   The major issue users, especially those on Windows, will often
+   experience is the conflict between x64 and x32 architecture of the
+   Java installations and how they interact with many installation
+   methods of R packages and their unfortunate default settings.
 
-** Major Dependency Hell
-   Among Shinyscreen dependencies, ~mzR~ and ~rcdk~ have been known 
-   to cause major installation issues.
-   To install the dependencies use the following script
-   #+BEGIN_SRC R
-     BiocManager::install(c("curl","rsvg","enviPat","rJava", "fingerprint", "png", "rcdk","mzR","rcdklibs"), dependencies=TRUE)
-   #+END_SRC
+   It seems that the best way to overcome the issue is to be
+   consistent in installation of only single architecture
+   packages. Various R install routines do not really help with this.
 
-   The major issue in installing the dependencies is loading ~rjava~ library (essential rcdk functionality)
-   - Install the latest Java versions: [[https://www.java.com/en/][Download]]
-   - Ensure 32 bit and 64 bit versions are available for 64 bit
-     systems. In case of Windows, check in `C:\Program Files\Java` and
-     `C:\Program Files (x86)\Java`.
-   - Test if the library is loaded properly and proceed with the
-     installation of ~RMassBank~ and ~RChemMass~.
-     - To install ~RMassBank~,
+*** Steps for x64 
+    1. Download and install the latest Java runtime. We tested the
+       most recent installation method with [[https://adoptopenjdk.net][OpenJDK]] Java. During the
+       installation, you will be presented with two by default
+       disabled options, the JAVA_HOME and the registry key entry.
+       While the installation may work with both of those left
+       unchecked and fiddling later with the environment variables in
+       R itself, it seems easier to just switch both the JAVA_HOME and
+       the registry key on.
+       As a side note, the procedure /should/
+       work for the closed and soon to be fully commercial Oracle
+       variant, too, but this was not very well tested.
+
+    2. Download and install R and RStudio. After running RStudio, make
+       sure that the R session it uses is indeed x64. Which session is
+       being used can be discovered in the
+       ~Tools>Global Options>General~ menu (R Sessions).
+
+    3. During the procedure, there may be packages that can be be
+       prevented from being installed by mostly harmless
+       warnings. This is why the first order of business is to prevent
+       this from happening.
        #+BEGIN_SRC R
-         BiocManager::install("RMassBank") # .
+       Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS="true")
        #+END_SRC
-     - For ~RChemMass~,
+
+    4. From now on, it is essential to pass the
+       *INSTALL_opts="--no-multiarch"* keyword argument to any ~install~
+       method which will be called subsequently.
+
+    5. Get devtools and BiocManager. 
        #+BEGIN_SRC R
-         devtools::install_github("schymane/RChemMass") #.
+         install.packages(c("devtools","BiocManager"),INSTALL_opts="--no-multiarch")
        #+END_SRC
-   Detailed explanation on how to tackle these problems is available
-   [[https://github.com/schymane/RChemMass/blob/master/README_installation.txt][here]].
+
+    6. Get rJava, rcdk and rcdklibs.
+       #+BEGIN_SRC R
+         install.packages(c("rJava","rcdk","rcdklibs"),INSTALL_opts = "--no-multiarch")
+       #+END_SRC
+
+    7. Get RMassBank.
+       #+BEGIN_SRC R
+         BiocManager::install("RMassBank", INSTALL_opts = "--no-multiarch")
+       #+END_SRC
+
+    8. Get rsvg and enviPat.
+       #+BEGIN_SRC R
+         install.packages(c("rsvg","enviPat"), INSTALL_opts = "--no-multiarch")
+       #+END_SRC
+
+    9. Now, the big challenge - install RChemMass.
+       #+BEGIN_SRC R
+         devtools::install_github("schymane/RChemMass", dependencies = F, INSTALL_opts = "--no-multiarch")
+       #+END_SRC
+
+    10. If the previous step worked, it only remains to install Shinyscreen.
+       #+BEGIN_SRC R
+         devtools::install_url("https://git-r3lab.uni.lu/eci/shinyscreen/-/archive/master/shinyscreen-master.tar.gz", INSTALL_opts="--no-multiarch")
+       #+END_SRC
+       That's it! Not exactly a piece of cake.
+
+**** Problems that can arise
+     - rJava cannot be loaded, because of some DLL. Either you did not
+       follow the "--no-multiarch" rule, or you have conflicting
+       JAVA_HOME, maybe even Jave registry settings. Try playing
+       around with JAVA_HOME environment variable, for example, try
+       setting it either to "", or to the path of your Java JRE
+       installation (somewhere inside Program Files).
+     - If nothing helps, try the /Previously Recommended Method/
+
+*** Steps for x32
+    Not tested, but the procedure should be exactly as outlined above,
+    except that it would be required to install Java x32 bit runtime
+    and make sure RStudio loads x32 bit R session.
+   
+*** Previously Recommended Method
+    This was only tested successfully with Oracle's [[https://www.java.com/en/][JRE]] (please let us
+    know if you manage to achieve the same results with OpenJDK). The
+    steps are same as above with the following exceptions.
+    - Ensure that both 32 bit and 64 bit versions are available for 64 bit
+      systems. In case of Windows, check in `C:\Program Files\Java` and
+      `C:\Program Files (x86)\Java`.
+    - Drop the *INSTALL_opts* keyword (as we now have two
+      architectures in parallel).
+    - Detailed explanation of this method is given [[https://github.com/schymane/RChemMass/blob/master/README_installation.txt][here]].
+
+** Less Bad Scenario
+   You are on a OS with the sane package dependency management (i.e
+   one of the GNU/Linux distributions). There is a reason why people
+   put effort into packaging R software for the distribution (R
+   package management sucks). Try to install as many dependencies as
+   possible from your official distro channels, then fill the gaps
+   using the standard R installation frameworks.
+
+** Good Scenario
+   You have [[https://guix.gnu.org/][Guix]] installed. Great. Just subscribe to ECI's Guix
+   [[https://git-r3lab.uni.lu/eci/eci-pkg-menu][channel]] and install from there.
 
 * Running Shinyscreen
   Provided Shinyscreen is successfully installed this snippet will
