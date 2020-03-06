@@ -118,7 +118,12 @@
    put effort into packaging R software for the distribution (R
    package management sucks). Try to install as many dependencies as
    possible from your official distro channels, then fill the gaps
-   using the standard R installation frameworks.
+   using the standard R installation frameworks. One caveat here is
+   tha some distros that focus on stability (such as Debian stable, or
+   various so-called /LTS/ editions) may have outdated R
+   versions. This might not play well with some dependencies that are
+   changing on shorter time-scales. The solution is to keep your R
+   installation fresh.
 
 ** Good Scenario
    You have [[https://guix.gnu.org/][Guix]] installed. Great. Just subscribe to ECI's Guix
