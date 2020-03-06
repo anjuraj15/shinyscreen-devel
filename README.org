@@ -31,14 +31,13 @@
     1. Download and install the latest Java runtime. We tested the
        most recent installation method with [[https://adoptopenjdk.net][OpenJDK]] Java. During the
        installation, you will be presented with two by default
-       disabled options, the JAVA_HOME and the registry key entry.
+       disabled options, *the JAVA_HOME and the registry key entry*.
        While the installation may work with both of those left
        unchecked and fiddling later with the environment variables in
-       R itself, it seems easier to just switch both the JAVA_HOME and
-       the registry key on.
-       As a side note, the procedure /should/
-       work for the closed and soon to be fully commercial Oracle
-       variant, too, but this was not very well tested.
+       R itself, *it seems easier to just switch both the JAVA_HOME
+       and the registry key on*.  As a side note, the procedure
+       /should/ work for the proprietary Oracle Java variant as well,
+       but this was not very thorougly tested.
 
     2. Download and install R and RStudio. After running RStudio, make
        sure that the R session it uses is indeed x64. Which session is
