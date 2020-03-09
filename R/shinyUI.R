@@ -1525,19 +1525,10 @@ mk_shinyscreen <- function(projDir=getwd(),
             pDir <- rvConf$projDir
             shiny::req(rvTab$mtr,pDir,rvConf$fnFT)
             post_note('Started cleaning up state.')
-            pref<-bak_fstate_pref()
-            fnCurr <- paste0(file.path(pDir,pref),
-                             rvConf$fnFT,'.current.bak.csv')
-            fnLast <- paste0(file.path(pDir,pref),
-                             rvConf$fnFT,'.prev.bak.csv')
-            tab2file(tab=rvTab$mtr,file=fnCurr)
+            fnCurr<-save_state(pDir,fnState=rvConf$fnFT,rvTab$mtr)
             post_note(paste('Current state backed up to ',fnCurr,' .',sep=''))
-            maybeSaved <- file.path(pDir,rvConf$fnFT)
-            if (isThingFile(maybeSaved)) {
-                file.copy(maybeSaved,fnLast)
-                post_note(paste('Also, last saved state backed up to ',fnLast,' .',sep=''))
-                unlink(maybeSaved,force = T)
-            }
+            fnLast <- save_prev_state(pDir,rvConf$fnFT)
+            if (!is.null(fnLast)) post_note(paste('Also, last saved state backed up to ',fnLast,' .',sep=''))
             rvTab$mtr<-NULL
             post_note('State is now less dirty.')
         })
