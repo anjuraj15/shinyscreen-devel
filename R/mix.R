@@ -574,7 +574,6 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
         ll<-length(unique(df$SMILES))
         if (ll<lsmiles) {
             warning("There are duplicate SMILES in the compound list. Trouble ahead.")
-            return(NULL)
         }
     }
 
