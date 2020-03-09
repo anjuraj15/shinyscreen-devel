@@ -765,6 +765,7 @@ mk_shinyscreen <- function(projDir=getwd(),
         shinyFiles::shinyFileSave(input, 'saveConfB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'restoreConfB',roots=wdroot)
         shinyFiles::shinyFileChoose(input, 'mzMLB',roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'switchProjB',roots=volumes)
 
         ## ***** reactive function definitions *****
 
