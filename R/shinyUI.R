@@ -705,6 +705,28 @@ mk_shinyscreen <- function(projDir=getwd(),
     bak_fstate_pref <- function() {
         format(Sys.time(),'%Y%m%d_%H_%M_%S_')
     }
+
+    save_state <- function (pDir,fnState,mtr) {
+        pref<-bak_fstate_pref()
+        fnCurr <- paste0(file.path(pDir,pref),
+                         fnState,'.current.bak.csv')
+        tab2file(tab=mtr,file=fnCurr)
+        fnCurr
+    }
+    save_prev_state <- function (pDir,fnState) {
+        pref<-bak_fstate_pref()
+        fnLast <- paste0(file.path(pDir,pref),
+                         fnState,'.prev.bak.csv')
+
+        maybeSaved <- file.path(pDir,fnState)
+        if (isThingFile(maybeSaved)) {
+            file.copy(maybeSaved,fnLast)
+            unlink(maybeSaved,force = T)
+            return(fnLast)
+        }
+        NULL
+    }
+    
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
