@@ -127,6 +127,14 @@ mkUI <- function(fnStyle) {
                                               icon=shiny::icon("trash")),
                           width=NULL)
 
+    confProj <- prim_box(title="Project",
+                         shinyFiles::shinyFilesButton(id="switchProjB",
+                                                      label="Switch project.",
+                                                      title="Switch project.",
+                                                      icon=shiny::icon("recycle"),
+                                                      multiple=F),
+                         width=NULL)
+
 
     confmzMLtab <-prim_box(title="Raw Files in mzML Format",
                            shiny::h5("Use this file table to assign adduct modes and tags to the data files."),
@@ -142,6 +150,7 @@ mkUI <- function(fnStyle) {
     confLayout <- shiny::fluidRow(shiny::column(confImport,
                                                 confmzMLTags,
                                                 confState,
+                                                confProj,
                                                 width=4),
                                   shiny::column(width=8,
                                                 confmzMLtab))
