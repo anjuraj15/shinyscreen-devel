@@ -29,7 +29,7 @@ MODEMAP<-list(pH="MpHp_mass",
               pNH4="MpNH4_mass",
               pNa="MpNa_mass")
 
-TAG_DEF<-"unspecified"
+TAG_DEF <- "unspecified"
 TAG_DEF_DESC<-"Case"
 DEFAULT_RT_RANGE=c(NA,NA)
 DEFAULT_INT_RANGE=c(NA,NA)
