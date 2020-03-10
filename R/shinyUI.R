@@ -110,6 +110,10 @@ mkUI <- function(fnStyle) {
                              shiny::textInput("tagsInp",
                                               "Comma-delimited list of tag types.",
                                               value=""),
+                             shiny::actionButton("updTagsB",
+                                                 label = "Update tags.",
+                                                 icon=shiny::icon("bomb")),
+
                              width=NULL)
 
     confState <- prim_box(title="Configuration State",
@@ -613,7 +617,7 @@ mk_shinyscreen <- function(projDir=getwd(),
         df<-data.frame(Files=character(),
                        mode=factor(),
                        set=factor(),
-                       tag=factor(),
+                       tag=factor(levels=TAG_DEF),
                        stringsAsFactors=F)
         levels(df$mode)<-names(MODEMAP)
         df
@@ -623,14 +627,6 @@ mk_shinyscreen <- function(projDir=getwd(),
         ## Keeps the dataframe behind the mzML control in shape.
         if (is.null(df)) df<-mk_mzML_work()
 
-        if (length(tags)>0 && !is.na(tags)) {
-            oldlvl<-levels(df$tag)
-            exttag<-unique(c(unlist(tags),oldlvl))
-            x<-as.character(df$tag)
-            df$tag<-factor(x,levels=exttag)
-            ina<-which(is.na(df$tag))
-            df$tag[ina]<-TAG_DEF
-        }
         if (length(sets)>0 && !is.na(sets)) {
             y<-as.character(df$set)
             df$set<-factor(y,levels=sets)
@@ -726,7 +722,8 @@ mk_shinyscreen <- function(projDir=getwd(),
         }
         NULL
     }
-    
+
+
     server <- function(input,output,session) {
 
         ## ***** reactive values *****
@@ -756,32 +753,45 @@ mk_shinyscreen <- function(projDir=getwd(),
                                       data=NULL,
                                       plot_id=NULL)
 
-        ## ***** shinyFiles observers *****
-        wdroot<-c(wd=projDir)
-        shinyFiles::shinyFileChoose(input, 'impKnownListB',roots=volumes)
-        shinyFiles::shinyFileChoose(input, 'impUnkListB',roots=volumes)
-        shinyFiles::shinyFileChoose(input, 'impSetIdB',roots=volumes)
-        
-        shinyFiles::shinyFileSave(input, 'saveConfB',roots=wdroot)
-        shinyFiles::shinyFileChoose(input, 'restoreConfB',roots=wdroot)
-        shinyFiles::shinyFileChoose(input, 'mzMLB',roots=volumes)
-        shinyFiles::shinyFileChoose(input, 'switchProjB',roots=volumes)
-
         ## ***** reactive function definitions *****
 
-        ## get_knowns_from_b <- shiny::eventReactive(input$impKnownListB,
-        ## {
-        ##     fnobj<-shinyFiles::parseFilePaths(roots=volumes,input$impKnownListB)
-        ##     x <- fnobj[["datapath"]]
-        ##     if (isThingFile(x)) x else ""
-        ## },ignoreInit = T)
-        
+        get_proj_vol <- shiny::eventReactive(rvConf$projDir,{
+            ## For shinyfiles dialogs.
+            path <- normalizePath(rvConf$projDir, winslash = '/')
+            vls <- volumes()
+            vol <- path2vol(path)
+            str(vol)
+            str(vls)
+            sel<-match(vol,vls)
+            validate(need(sel,"Yikes! Unable to detect current project's volume."))
+            res<-names(vls)[[sel]]
+            res
+        })
+
+        get_proj_path <- shiny::eventReactive(rvConf$projDir,{
+            ## For shinyfiles dialogs.
+            wd<-rvConf$projDir
+            vol<-get_proj_vol()
+            vols<-volumes()
+            pref<-vols[[vol]]
+            res<-wd #sub(paste0(pref,'(.*)'),'\\1',wd)
+            message('Relative project path is: ',res)
+            res
+        })
+
         get_all_tags<-shiny::reactive({
             ## Returns all tags from the input box.
             tagsInp<-input$tagsInp
-            x<-if (length(tagsInp)>0 && !is.na(tagsInp) && nchar(tagsInp)>0) unlist(strsplit(tagsInp, ",")) else list()
-            as.list(c(x,"unspecified"))
+            x <- if (shiny::isTruthy(tagsInp)) {
+                     trimws(unlist(strsplit(tagsInp, ",")))
+                 } else list()
+
+            
+            as.list(c("unspecified",x))
         })
+
+
+        
 
         get_all_sets<-shiny::reactive({
             ## Returns all sets defined in a setid table.
@@ -993,13 +1003,12 @@ mk_shinyscreen <- function(projDir=getwd(),
         })
 
         get_mzml_work<-shiny::reactive({
-            tags<-get_all_tags()
             sets<-get_all_sets()
-            prep_mzML_work(rvTab$mzml,sets,tags)
+            prep_mzML_work(rvTab$mzml,sets,NULL)
         })
 
         get_mzml <- shiny::reactive({
-            mzml<-get_mzml_work()
+            mzml<-rvTab$mzml #get_mzml_work()
             chset<-as.character(mzml$set)
             shiny::validate(need(chset,"Sets not properly specified for the mzML files."))
             mzml$set<-factor(chset)
@@ -1538,6 +1547,46 @@ mk_shinyscreen <- function(projDir=getwd(),
             restoreConf()
             message("Restore event finished.")
         })
+
+        shiny::observeEvent(input$updTagsB,{
+            ## Modify tags in mzml
+            shiny::req(rvTab$mzml)
+            ttags <- rvTab$mzml$tag
+            ltags <- levels(ttags)
+            itags <- get_all_tags()
+            diff <- setdiff(ltags,itags)
+
+            for (m in diff) {
+                ttags[ttags %in% m] <- 'unspecified'
+            }
+            ttags <- factor(as.character(ttags))
+            ttags <- factor(as.character(ttags),levels=unique(c('unspecified',levels(ttags),itags)))
+            rvTab$mzml$tag <- ttags
+        })
+        
+        shiny::observeEvent(input$switchProjB,{
+            post_note('Cleaning and backing up the current project.')
+            fnCurr <- save_state(rvConf$projDir,
+                                 fnState=rvConf$fnFT,
+                                 rvTab$mtr)
+            rvTab$mtr <- NULL
+
+            spath<-shinyFiles::parseDirPath(roots=volumes,
+                                            selection=input$switchProjB)
+            
+
+            path<- if(length(spath)>0) spath[[1]] else NA
+            message("pathis <")
+            str(path)
+            message(">>>")
+            shiny::validate(need(path,"Yikes! Something wrong with new project dir selection. Try again?"))
+            message("Here ???")
+            rvConf$projDir <- path
+            setwd(rvConf$projDir)
+            post_note(paste('Switched to project in,',path))
+        })
+
+
         
         shiny::observeEvent(input$mzMLtabCtrl,
         {
