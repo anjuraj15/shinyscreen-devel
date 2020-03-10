@@ -132,11 +132,10 @@ mkUI <- function(fnStyle) {
                           width=NULL)
 
     confProj <- prim_box(title="Project",
-                         shinyFiles::shinyFilesButton(id="switchProjB",
+                         shinyFiles::shinyDirButton(id="switchProjB",
                                                       label="Switch project.",
                                                       title="Switch project.",
-                                                      icon=shiny::icon("recycle"),
-                                                      multiple=F),
+                                                      icon=shiny::icon("recycle")),
                          width=NULL)
 
 
@@ -501,15 +500,26 @@ mkUI <- function(fnStyle) {
                         sidebar,
                         body)}
 
-mk_shinyscreen <- function(projDir=getwd(),
-                           fnStyle=system.file('www/custom.css',package = 'shinyscreen')) {
-    message("projDir=",projDir)
+mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shinyscreen')) {
     modeLvl<- c("pH","pNa","pM",
                 "mH","mFA")
-    vols<-shinyFiles::getVolumes()
-    volumes <- c(project=projDir,
-                 home="~",
-                 vols())
+    volumes <- shinyFiles::getVolumes()
+    oldpwd <- getwd()
+    get_pdir <- function() {
+        normalizePath(getwd())
+    }
+
+    path2vol <- function(path) {
+        ## This function returns shinyFiles compatible volumes.
+        splits <- split_path(path)
+        file.path(tail(splits,1),'')
+    }
+
+    defRoot <- normalizePath("/")
+    ## vols<-shinyFiles::getVolumes()
+    ## volumes <- c(project=projDir,
+    ##              home="~",
+    ##              vols())
 
     mk_mzMLtab<-function() {
         modeLvl<- c("pH","pNa","pM",
@@ -630,6 +640,7 @@ mk_shinyscreen <- function(projDir=getwd(),
         if (length(sets)>0 && !is.na(sets)) {
             y<-as.character(df$set)
             df$set<-factor(y,levels=sets)
+            df$set[is.na(df$set)] <- sets[[1]]
         }
         df
     }
@@ -746,7 +757,7 @@ mk_shinyscreen <- function(projDir=getwd(),
                              fnFTPP=FN_FTAB_PP,
                              fnComp=FN_COMP_TAB,
                              mode=modeLvl,
-                             projDir=projDir,
+                             projDir=getwd(),
                              currIDpos=1,
                              fnFT=FN_FTAB_STATE,
                              notify=data.frame(time=character(),
@@ -969,7 +980,8 @@ mk_shinyscreen <- function(projDir=getwd(),
         })
 
         saveConf<-shiny::reactive({
-            fn<-shinyFiles::parseSavePath(root=c(wd=rvConf$projDir),input$saveConfB)[["datapath"]]
+            vls<-volumes()
+            fn<-shinyFiles::parseSavePath(root=volumes,input$saveConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 message("Saving config to",fn)
                 sav<-list(input=list())
@@ -990,7 +1002,7 @@ mk_shinyscreen <- function(projDir=getwd(),
 
         restoreConf<-shiny::reactive({
             input$restoreConfB
-            fnobj<-shinyFiles::parseFilePaths(root=c(wd=rvConf$projDir),input$restoreConfB)
+            fnobj<-shinyFiles::parseFilePaths(root=volumes,input$restoreConfB)
             fn<-fnobj[["datapath"]]
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
                 message("Restoring config from",fn)
@@ -1540,6 +1552,23 @@ mk_shinyscreen <- function(projDir=getwd(),
             })
         }
 
+        ## ***** shinyFiles observers *****
+        ## wdroot<-c(wd=rvConf$projDir)
+        shinyFiles::shinyFileChoose(input, 'impKnownListB',defaultRoot=get_proj_vol(),
+                                    defaultPath=get_proj_path(),roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'impUnkListB',defaultRoot=get_proj_vol(),
+                                    defaultPath=get_proj_path(),roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'impSetIdB',defaultRoot=get_proj_vol(),
+                                    defaultPath=get_proj_path(),roots=volumes)
+        
+        shinyFiles::shinyFileSave(input, 'saveConfB',defaultRoot=get_proj_vol(),
+                                  defaultPath=get_proj_path(),roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'restoreConfB',defaultRoot=get_proj_vol(),
+                                    defaultPath=get_proj_path(),roots=volumes)
+        shinyFiles::shinyFileChoose(input, 'mzMLB',defaultRoot=get_proj_vol(),
+                                    defaultPath=get_proj_path(),roots=volumes)
+        shinyFiles::shinyDirChoose(input, 'switchProjB',roots=volumes)
+
         ## ***** Observe Event *****
 
         shiny::observeEvent(input$saveConfB,{
@@ -1847,7 +1876,10 @@ mk_shinyscreen <- function(projDir=getwd(),
         })
 
         
-        session$onSessionEnded(function () stopApp())
+        session$onSessionEnded(function () {
+            stopApp()
+            setwd(oldpwd)
+        })
         
 
         
@@ -1856,7 +1888,7 @@ mk_shinyscreen <- function(projDir=getwd(),
 }
 
 ##' @export
-launch<-function(projDir=getwd(),...) {
-    app<-mk_shinyscreen(projDir=projDir)
+launch<-function(...) {
+    app<-mk_shinyscreen()
     shiny::runApp(appDir = app,...)
 }

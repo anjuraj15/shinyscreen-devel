@@ -30,3 +30,8 @@ isThingFile<-function(fn) {
     } else F
 }
 
+## Stolen from Stack Overflow
+split_path <- function(path) {
+  if (dirname(path) %in% c(".", path)) return(basename(path))
+  return(c(basename(path), split_path(dirname(path))))
+}
