@@ -723,6 +723,16 @@ mk_shinyscreen <- function(projDir=getwd(),
         NULL
     }
 
+    txt2tags<-function(txt){
+        ## Turns a string into tags
+        x <- if (shiny::isTruthy(txt)) {
+                 trimws(unlist(strsplit(txt, ",")))
+             } else list()
+        
+        
+        as.list(c("unspecified",x))
+    }
+
 
     server <- function(input,output,session) {
 
@@ -782,12 +792,7 @@ mk_shinyscreen <- function(projDir=getwd(),
         get_all_tags<-shiny::reactive({
             ## Returns all tags from the input box.
             tagsInp<-input$tagsInp
-            x <- if (shiny::isTruthy(tagsInp)) {
-                     trimws(unlist(strsplit(tagsInp, ",")))
-                 } else list()
-
-            
-            as.list(c("unspecified",x))
+            txt2tags(tagsInp)
         })
 
 
@@ -999,6 +1004,17 @@ mk_shinyscreen <- function(projDir=getwd(),
                 for (nm in REST_TAB) {
                     rvTab[[nm]]<-sav$tab[[nm]]
                 }
+
+                ## Restore tags.
+                mzmlTags <- levels(rvTab$mzml$tag)
+                currTags <- txt2tags(sav$input[["tagsInp"]])
+                z <- unique(c(currTags, mzmlTags))
+                z <- z[z != 'unspecified']
+                alltags <- do.call(paste,c(as.list(z),sep=','))
+                shiny::updateTextInput(session=session,
+                                       inputId="tagsInp",
+                                       value=alltags)
+                
             }
         })
 
@@ -1598,6 +1614,7 @@ mk_shinyscreen <- function(projDir=getwd(),
         {
             fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
             paths<-fchoice[["datapath"]]
+            shiny::validate(need(rvTab$mzml,"There is no skeleton table. Sets? Tags?"))
             rvTab$mzml<-add_mzML_files(rvTab$mzml,paths)
         })
         
