@@ -781,8 +781,6 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
             path <- normalizePath(rvConf$projDir, winslash = '/')
             vls <- volumes()
             vol <- path2vol(path)
-            str(vol)
-            str(vls)
             sel<-match(vol,vls)
             validate(need(sel,"Yikes! Unable to detect current project's volume."))
             res<-names(vls)[[sel]]
@@ -1183,7 +1181,6 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
 
         get_mtr<-shiny::reactive({
             mtr<-rvTab$mtr
-            ## str(mtr)
             if (!is.null(mtr)) {
                 message("Grabbing existing mtr")
                 return(mtr)
@@ -1407,9 +1404,6 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
                     sets<-proc_extr_done(dfProc)
                     mtr<- get_mtr()
                     tdsets<-proc_qa_todo(dfProc,mtr)
-                    message("tdsets:")
-                    str(tdsets)
-                    message("-------")
                     if (length(tdsets)>0) {
                         intThreshMS1<-as.numeric(input$intThreshMS1)
                         intThreshMS2<-as.numeric(input$intThreshMS2)
@@ -1638,11 +1632,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
             
 
             path<- if(length(spath)>0) spath[[1]] else NA
-            message("pathis <")
-            str(path)
-            message(">>>")
             shiny::validate(need(path,"Yikes! Something wrong with new project dir selection. Try again?"))
-            message("Here ???")
             rvConf$projDir <- path
             setwd(rvConf$projDir)
             post_note(paste('Switched to project in,',path))
