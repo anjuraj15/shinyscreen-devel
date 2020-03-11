@@ -981,7 +981,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
 
         saveConf<-shiny::reactive({
             vls<-volumes()
-            fn<-shinyFiles::parseSavePath(root=volumes,input$saveConfB)[["datapath"]]
+            fn<-shinyFiles::parseSavePath(roots=volumes,input$saveConfB)[["datapath"]]
             if ((! is.na(fn)) && length(fn)>0) {
                 message("Saving config to",fn)
                 sav<-list(input=list())
@@ -1002,7 +1002,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
 
         restoreConf<-shiny::reactive({
             input$restoreConfB
-            fnobj<-shinyFiles::parseFilePaths(root=volumes,input$restoreConfB)
+            fnobj<-shinyFiles::parseFilePaths(roots = volumes,selection = input[["restoreConfB"]])
             fn<-fnobj[["datapath"]]
             if (length(fn)>0 && !is.na(fn) && nchar(fn)>0) {
                 message("Restoring config from",fn)
@@ -1028,6 +1028,9 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
                                        value=alltags)
                 
             }
+            ## Clean up state.
+            rvTab$mtr <- NULL
+            rvTab$dfProc <- NULL
         })
 
         get_mzml_work<-shiny::reactive({
@@ -1152,26 +1155,35 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
 
         mtr_from_inps <- shiny::reactive({
             fnFT<-rvConf$fnFT
-            if (!file.exists(fnFT)) {
-                message("Generating the first instance of the state file table")
-                bdf <- gen_base_ftab()
-                df<-gen_clean_state_ftab(bdf)
-                tab2file(tab=df,file=fnFT)
-                message("Done generating the first instance of the state file table.")
-                df
-            } else {
-                message("Reading in the state file table.")
-                df<-file2tab(fnFT,colClasses=c("rt"="numeric",
-                                               "MS2rt"="numeric",
-                                               "iMS2rt"="numeric"))
-                message("Done reading in the state file table.")
-                df
+            message("Generating the first instance of the state file table")
+            bdf <- gen_base_ftab()
+            df<-gen_clean_state_ftab(bdf)
+            message("Done generating the first instance of the state file table.")
+            if (file.exists(fnFT)) {
+                message("Consulting the existing state file table.")
+                fdf <- file2tab(fnFT,colClasses=c("rt" = "numeric",
+                                                  "MS2rt" = "numeric",
+                                                  "iMS2rt" = "numeric"))
+                likeness <- T
+                if (nrow(fdf) == nrow(df)) {
+                    for (ctg in c("ID","set","tag","wd")) likeness <- likeness && all(df[[ctg]] == fdf[[ctg]])
+                } else likeness <- F
+                
+                if (likeness) {
+                    df <- fdf
+                } else {
+                    message("File table from the state file not compatible. Ignoring.")
+                }
             }
+            message("Done consulting the existing state file table.")
+            df
         })
+        
+       
 
         get_mtr<-shiny::reactive({
             mtr<-rvTab$mtr
-            str(mtr)
+            ## str(mtr)
             if (!is.null(mtr)) {
                 message("Grabbing existing mtr")
                 return(mtr)
@@ -1646,7 +1658,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
 
         shiny::observeEvent(input$mzMLB,
         {
-            fchoice<-shinyFiles::parseFilePaths(root=volumes,input$mzMLB)
+            fchoice<-shinyFiles::parseFilePaths(roots = volumes,input$mzMLB)
             paths<-fchoice[["datapath"]]
             shiny::validate(need(rvTab$mzml,"There is no skeleton table. Sets? Tags?"))
             rvTab$mzml<-add_mzML_files(rvTab$mzml,paths)
