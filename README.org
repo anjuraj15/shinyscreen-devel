@@ -253,12 +253,37 @@
    In addition, the IDs of compounds belonging to the same set/mode
    combination must be unique. Different ID sets may overlap.
 
+   Essentially, sets serve the purpouse of visually grouping files in
+   the plots. Also, set combines those groups of files with particular
+   collections of compounds (from the compound set CSV file).
+
 ** Config Screen
    This is the start tab. Import the compound and set lists first,
    then proceed to import the mzML files. Provide tags in the tag text
    box and then assign the sets, modes and tags to the imported mzML
    files using table widget. Once this is done, move on to the
-   `Spectra Extraction' tab.
+   ~Spectra Extraction~ tab.
+
+*** Resetting State
+    In case some inputs have been changed, but the program for some
+    reason does not seem to respond to those changes, perhaps
+    resetting the state using the button ~Reset State~ will help. This
+    will clean the current compound state tables (but, all the inputs
+    remain unchanged).
+
+*** Switching Projects
+    The ~Switch project.~ button can be used to start new projects, or
+    change between them in the middle of processing.  
+
+    Switching projects while the program is running makes most sense
+    if it is desired to change some of the inputs (e.g. different set
+    configuration, or same compound lists but different files) while
+    retaining the others. The user is presented with a directory
+    change dialogue which is then used to select the new project
+    directory. If needed, a new project directory can be created from
+    the same dialogue. All the inputs that currently exist on the
+    configuration tab will be kept during switching. This way, only
+    what needs to be changed can be changed.
 
 ** Spectra Extraction
    Set the extraction parameters and then select a certain number of
