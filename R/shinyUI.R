@@ -816,7 +816,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
             sets
         })
 
-        get_sets<-shiny::reactive({
+        get_sets <- shiny::reactive({
             ## Returns only the sets set for the mzML files. This
             ## takes precedense over the sets in setid table.
             mzml<-get_mzml()
@@ -1328,7 +1328,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
         })
 
 
-        proc_curr<- shiny::reactive({
+        proc_curr <- shiny::reactive({
             ## Set up the status data frame.
             message("Detecting processed data.")
             df <- proc_prep()
@@ -1341,7 +1341,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
         })
 
 
-        proc_mzml<-shiny::reactive({
+        proc_mzml <- shiny::reactive({
             ## Extract data for selected sets and return the status
             ## dataframe.
             shiny::isolate({orig<-if (is.data.frame(rvTab$dfProc)) rvTab$dfProc else NULL})
@@ -1395,6 +1395,9 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
                     sets<-proc_extr_done(dfProc)
                     mtr<- get_mtr()
                     tdsets<-proc_qa_todo(dfProc,mtr)
+                    message("tdsets:")
+                    str(tdsets)
+                    message("-------")
                     if (length(tdsets)>0) {
                         intThreshMS1<-as.numeric(input$intThreshMS1)
                         intThreshMS2<-as.numeric(input$intThreshMS2)
@@ -1504,7 +1507,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
             dfProc
         })
 
-        proc<-shiny::reactive({
+        proc <- shiny::reactive({
             ## Top-level call to start the chain of reactions needed
             ## to extract data from sets.
             df<-proc_ms2()
@@ -1583,7 +1586,8 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
             post_note(paste('Current state backed up to ',fnCurr,' .',sep=''))
             fnLast <- save_prev_state(pDir,rvConf$fnFT)
             if (!is.null(fnLast)) post_note(paste('Also, last saved state backed up to ',fnLast,' .',sep=''))
-            rvTab$mtr<-NULL
+            rvTab$mtr <- NULL
+            rvTab$dfProc <- NULL
             post_note('State is now less dirty.')
         })
 
@@ -1615,6 +1619,7 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
                                  fnState=rvConf$fnFT,
                                  rvTab$mtr)
             rvTab$mtr <- NULL
+            rvTab$dfProc <- NULL
 
             spath<-shinyFiles::parseDirPath(roots=volumes,
                                             selection=input$switchProjB)
