@@ -222,7 +222,7 @@ mkUI <- function(fnStyle) {
                                      label="Intensity threshold (MS1): ",
                                      value=MS1_INT_THOLD),
                            num_input("intThreshMS2",
-                                     label="Intensity threshold (MS2; relative to MS1 peak intensity): ",
+                                     label="Intensity threshold (MS2): ",
                                      value=MS2_INT_THOLD),
                            num_input("noiseFac",
                                      label="Signal-to-noise ratio: ",
@@ -286,7 +286,7 @@ mkUI <- function(fnStyle) {
                                        width = NULL,color = "olive",
                                        solidHeader = FALSE,
                                        collapsible = TRUE,
-                                       shiny::plotOutput("chromGram",
+                                       shiny::plotOutput("plotsCtrl",
                                                          width = "100%",
                                                          height = "750px",
                                                          click = NULL,
@@ -1872,9 +1872,9 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
             do.call(shiny::navlistPanel, tabPanelList)
         })
 
-        output$chromGram <- renderPlot(
+        output$plotsCtrl <- renderPlot(
         {
-
+            input$submitQA
             plot_id<-gen_mset_plot_f()
             shiny::validate(need(plot_id,"Initialising the plotting function ..."))
             id=get_curr_id()

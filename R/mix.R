@@ -53,7 +53,7 @@ pp_touch_q<-function(ftab) {
     which(ftab$checked==FTAB_CHK_NONE | ftab$checked==FTAB_CHK_AUTO)
 }
 
-preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=0.05) {
+preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=5000.) {
     wds<-unique(ftable$wd)
     fn_spec<-function(wd) readRDS(file.path(wd,FN_SPEC))
     message("Loading RDS-es ...")
@@ -145,7 +145,7 @@ preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=0
                 eicFilt<- eic[rtIndMS1,]
                 eicFilt<- eicFilt[which(eicFilt$intensity>intThreshMS1),]
                 mInt<- maxInt #mean(eicFilt$intensity)
-                rtInd <- rtInd[which(msms$intensity[rtInd]>intThreshMS2*mInt)] #Intense enough?
+                rtInd <- rtInd[which(msms$intensity[rtInd]>intThreshMS2)] #Intense enough?
                 msmsRT <- msms$rt[rtInd]
                 msmsInt<- msms$intensity[rtInd]
                 if (length(msmsRT) > 0) {

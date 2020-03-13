@@ -90,7 +90,7 @@ RT_EXTR_ERR<-0.5                       # min
 RT_SHIFT_ERR <- 0.5               # min
 
 MS1_INT_THOLD <- 1e5
-MS2_INT_THOLD <- 0.05
+MS2_INT_THOLD <- 5000.
 
 MS1_SN_FAC <- 3.0
 
