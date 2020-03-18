@@ -496,9 +496,13 @@ getEntryFromComp<-function(entry,id,set,mode,compTab) {
 
     res<- if (length(ind)==1) compTab[ind,entry] else {
                                                      if (length(ind)>1) {
-                                                         stop("Nonunique entry selection in comprehensive table.")
+                                                         warning("Nonunique selection in comprehensive table:")
+                                                         for (i in ind) {
+                                                             message('ID: ',compTab$ID[[i]],' set: ',compTab$set[[i]],' mode: ',compTab$mode[[i]])
+                                                         }
+                                                         warning("The compound set table likely containes duplicate IDs per set/mode combination. Please correct this.")
                                                      } else {
-                                                         stop("Entries not found for id ", id,"set ",set, "and mode ", mode, " .")
+                                                         warning("Entries not found for id ", id,"set ",set, "and mode ", mode, " .")
                                                      } 
                                                  }
     res
