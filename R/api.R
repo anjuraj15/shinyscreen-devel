@@ -24,6 +24,13 @@ run <- function(fn_conf) {
     conf
 }
 
+
+
+run_in_dir <- function(conf) {
+    conf
+}
+
+
 read_conf <- function(fn_conf) {
     assertthat::assert_that(file.exists(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
     conf <- yaml::yaml.load_file(fn_conf)
@@ -74,8 +81,28 @@ vrfy_conf <- function(conf) {
     return(conf)
 }
 
-run_in_dir <- function(conf) {
-    conf
+mk_mzml_tab <- function(data) {
+    files <- unlist(data,recursive = T)
+    sets <- unique(names(data))
+    tags <- c()
+    for (s in sets) {
+        tags<-c(tags,names(data[[s]]))
+    }
+    tags<-unique(tags)
+    nr<-length(files)
+    z<-suppressWarnings(data.table::data.table(Files=character(nr),
+                                               mode=factor(levels = names(MODEMAP)),
+                                               set=factor(levels = sets),
+                                               tag=factor(levels= c(TAG_DEF,tags)),
+                                               stringsAsFactors = F))
+    z$Files <- files
+    i <- 1
+    for (s in names(data)) {
+        for (t in names(data[[s]])) {
+            z[i,"set"] <- s    
+            z[i,"tag"]<-t
+            i<-i+1
+        }
+    }
+    z
 }
-
-
