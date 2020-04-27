@@ -24,10 +24,10 @@ FN_CMP_L<-"compounds.csv"
 FN_LOC_SETID <-"setid.csv"
 FN_COMP_TAB<-"comprehensive.csv"
 FN_SPEC<-"specdata.rds"
-MODEMAP<-list(pH="MpHp_mass",
-              mH="MmHm_mass",
-              pNH4="MpNH4_mass",
-              pNa="MpNa_mass")
+MODEMAP<-list("[M+H]+"="MpHp_mass",
+              "[M-H]-"="MmHm_mass",
+              "[M+NH4]+"="MpNH4_mass",
+              "[M+Na]+"="MpNa_mass")
 
 TAG_DEF <- "unspecified"
 TAG_DEF_DESC<-"Case"
