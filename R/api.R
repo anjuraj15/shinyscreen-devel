@@ -25,6 +25,7 @@ run <- function(fn_conf) {
 }
 
 read_conf <- function(fn_conf) {
+    assertthat::assert_that(file.exists(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
     conf <- yaml::yaml.load_file(fn_conf)
     conf <- vrfy_conf(conf)
     conf
