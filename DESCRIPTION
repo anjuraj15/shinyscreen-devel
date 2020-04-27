@@ -49,6 +49,7 @@ Collate:
     'mix.R'
     'extraction.R'
     'run.R'
+    'api.R'
     'shinyUI.R'
 Depends:
     RMassBank,
@@ -60,6 +61,8 @@ Imports:
     yaml,
     mzR,
     MSnbase,
+    data.table,
+    assertthat,
     ggplot2,
     cowplot,
     RColorBrewer,
