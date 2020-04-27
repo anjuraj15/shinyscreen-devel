@@ -32,16 +32,44 @@ read_conf <- function(fn_conf) {
 }
 
 vrfy_conf <- function(conf) {
+    ## * Existence of input files
+
+    ## ** Data files
     for (fn in unlist(conf$data,recursive=T)) assertthat::assert_that(file.exists(fn),msg=paste("Unable to read data file:",fn))
     fn_cmpd_known <- conf$compounds$known
     fn_cmpd_unk <- conf$compounds$unknown
     fn_cmpd_sets <- conf$compounds$sets
+
+    ## ** Compound lists and sets
     assertthat::assert_that(file.exists(fn_cmpd_known),
                             msg=paste("Unable to read known compounds file:",fn_cmpd_known))
     assertthat::assert_that(file.exists(fn_cmpd_sets),
                             msg=paste("Unable to read compound sets file:",fn_cmpd_sets))
     if (!is.null(fn_cmpd_unk)) assertthat::assert_that(file.exists(fn_cmpd_unk),
                                                        msg=paste("Unable to read unknown compounds file:",fn_cmpd_unk))
+
+
+    ## * Are sets from data in the compound sets table?
+    df_sets <- file2tab(fn_cmpd_sets)
+    all_sets<-unique(df_sets$set)
+    data_sets<-names(conf$data)
+    for (set in data_sets) assertthat::assert_that(set %in% all_sets,msg = paste("Set", set, "used in the data declaration is not in the compound sets file."))
+
+    ## * Compound lists
+
+    ## ** Knowns
+    df_k <- file2tab(fn_cmpd_known)
+    are_knowns_OK <- shiny::isTruthy(vald_comp_tab(df_k,fn_cmpd_known, checkSMILES=T, checkNames=T))
+    assertthat::assert_that(are_knowns_OK)
+
+    ## ** Unknowns
+    if (!is.null(fn_cmpd_unk)) {
+        df_u <- file2tab(fn_cmpd_unk)
+        are_unknowns_OK <- shiny::isTruthy(vald_comp_tab(df_u,fn_cmpd_unk, checkSMILES=F, checkMz=T))
+        assertthat::assert_that(are_unknowns_OK)
+    }
+    
+    
     
     return(conf)
 }
