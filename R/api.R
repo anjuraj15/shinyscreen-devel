@@ -14,6 +14,15 @@
 
 
 
+run <- function(fn_conf) {
+    conf <- read_conf(fn_conf)
+    dir.create(conf$project,
+               showWarnings = F,
+               recursive = T)
+    
+    withr::with_dir(new=conf$project,code = run_in_dir(conf))
+    conf
+}
 
 read_conf <- function(fn_conf) {
     conf <- yaml::yaml.load_file(fn_conf)
@@ -22,6 +31,22 @@ read_conf <- function(fn_conf) {
 }
 
 vrfy_conf <- function(conf) {
-    for (fn in unlist(conf,recursive=T)) assertthat::assert_that(file.exists(fn),msg=paste("Data file does not exist:",fn))
+    for (fn in unlist(conf$data,recursive=T)) assertthat::assert_that(file.exists(fn),msg=paste("Unable to read data file:",fn))
+    fn_cmpd_known <- conf$compounds$known
+    fn_cmpd_unk <- conf$compounds$unknown
+    fn_cmpd_sets <- conf$compounds$sets
+    assertthat::assert_that(file.exists(fn_cmpd_known),
+                            msg=paste("Unable to read known compounds file:",fn_cmpd_known))
+    assertthat::assert_that(file.exists(fn_cmpd_sets),
+                            msg=paste("Unable to read compound sets file:",fn_cmpd_sets))
+    if (!is.null(fn_cmpd_unk)) assertthat::assert_that(file.exists(fn_cmpd_unk),
+                                                       msg=paste("Unable to read unknown compounds file:",fn_cmpd_unk))
+    
     return(conf)
 }
+
+run_in_dir <- function(conf) {
+    conf
+}
+
+
