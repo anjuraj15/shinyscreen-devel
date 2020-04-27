@@ -1895,7 +1895,14 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
 }
 
 ##' @export
-launch<-function(...) {
-    app<-mk_shinyscreen()
-    shiny::runApp(appDir = app,...)
+launch<-function(GUI=T,fnConf="",...) {
+    if (GUI) {
+        app<-mk_shinyscreen()
+        shiny::runApp(appDir = app,...)
+    } else {
+        if (nchar(fnConf)==0) {
+            fnConf <- commandArgs(trailingOnly=T)[[1]]
+        }
+        run(fnConf)
+    }
 }
