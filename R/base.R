@@ -12,16 +12,17 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
+
+##' @import data.table
+## Redirections
+the_ifelse <- data.table::fifelse
+
 tab2file<-function(tab,file,...) {
-    write.csv(x=tab,file=file,row.names=F,...)
+    data.table::fwrite(x=tab,file=file,...)
 }
 
-file2tab<-function(file,stringsAsFactors=F,comment.char='',sep=',',...) {
-    read.csv(file=file,
-             header=T,
-             stringsAsFactors=stringsAsFactors,
-             comment.char=comment.char,
-             na.strings=c("","NA"),...)
+file2tab<-function(file,na.strings=c("","NA"),...) {
+    data.table::fread(file=file,na.strings = na.strings, ...)
 }
 
 isThingFile<-function(fn) {
@@ -34,4 +35,9 @@ isThingFile<-function(fn) {
 split_path <- function(path) {
   if (dirname(path) %in% c(".", path)) return(basename(path))
   return(c(basename(path), split_path(dirname(path))))
+}
+
+
+print_table <- function (df) {
+    paste(apply(df,1,function (row) paste(row,collapse=',')),collapse = "\n")
 }
