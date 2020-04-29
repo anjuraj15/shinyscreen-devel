@@ -609,12 +609,6 @@ mk_shinyscreen <- function(fnStyle=system.file('www/custom.css',package = 'shiny
         q
     }
 
-    getSetMode <- function(set,mzMLtab) {
-        sdf<-mzMLtab[which(mzMLtab$set %in% set),]
-        levels(factor(as.character(sdf$mode)))
-    }
-
-
     mtr_set_mode <- function(mtr,set,mode=NULL) {
         smtr<-mtr[mtr$set %in% set,]
         res<-if (!is.null(mode)) {

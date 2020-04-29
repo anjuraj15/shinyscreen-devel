@@ -532,6 +532,9 @@ addCompColsToFileTbl<-function(ft,compTab) {
     ft
 }
 
+get_set_mode <- function(set,mzml) {
+    unique(mzml[set==..set,mode])
+}
 
 vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
     ## Fields.
