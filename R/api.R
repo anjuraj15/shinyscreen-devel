@@ -56,16 +56,23 @@ vrfy_conf <- function(conf) {
                                                        msg=paste("Unable to read unknown compounds file:",fn_cmpd_unk))
 
 
-    ## * Are sets from data in the compound sets table?
+    ## * Data files
     df_sets <- file2tab(fn_cmpd_sets)
     all_sets<-unique(df_sets$set)
-    data_sets<-names(conf$data)
-    for (set in data_sets) assertthat::assert_that(set %in% all_sets,msg = paste("Set", set, "used in the data declaration is not in the compound sets file."))
 
-    ## * Compound lists
+    fn_data <- conf$data
+    assertthat::assert_that(file.exists(fn_data),msg=paste("Data table cannot be read:",fn_data))
+    mzml <- file2tab(fn_data)
+    
+    no_files <- which(mzml[,!file.exists(Files)])
+    no_modes <- which(mzml[,!(mode %in% names(MODEMAP))])
+    no_sets <- which(mzml[,!(set %in% all_sets)])
+    assertthat::assert_that(length(no_files)==0,msg = paste("Unreadable data files at rows:",paste(no_files,collapse = ','), "of",fn_data))
+    assertthat::assert_that(length(no_modes)==0,msg = paste("Unrecognised modes at rows:",paste(no_modes,collapse = ','), "of", fn_data))
+    assertthat::assert_that(length(no_sets)==0,msg = paste("Unknown sets at rows:",paste(no_sets,collapse = ','),"of", fn_data))
 
-    ## ** Knowns
     df_k <- file2tab(fn_cmpd_known)
+    
     are_knowns_OK <- shiny::isTruthy(vald_comp_tab(df_k,fn_cmpd_known, checkSMILES=T, checkNames=T))
     assertthat::assert_that(are_knowns_OK)
 
