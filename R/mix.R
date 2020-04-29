@@ -31,6 +31,10 @@ get_mz_cmp_l<-function(id,mode,cmpL) {
     res
 }
 
+get_mz_from_smiles <- function(smiles,mode) {
+    RChemMass::getSuspectFormulaMass(smiles)[[MODEMAP[[mode]]]]
+}
+
 get_col_from_cmp_l<-function(id,cname,cmpL) {
     ind<-match(id,cmpL$ID)
     x<-cmpL[[cname]][[ind]]
@@ -449,7 +453,7 @@ plot_id_msn <- function(ni,
 
 
 
-adornmzMLTab<-function(df,projDir=getwd()) {
+add_wd_to_mzml <- function(df,wdir) {
     pref<-df$set
     mask<-is.na(pref)
     drop<-df$files[mask]
@@ -457,36 +461,16 @@ adornmzMLTab<-function(df,projDir=getwd()) {
     df<-df[!mask,]
     pref<-df$set
     wd<-basename(tools::file_path_sans_ext(df$Files))
-    wd<-file.path(projDir,pref,wd)
+    wd<-file.path(wdir,pref,wd)
     df$wd<-wd
     df
 }
 
-genSuprFileTab <- function(fileTab,compTab) {
-    genOne<-function(ids,fn) {
-
-        K<-length(ids)
-        fTabRow<-fileTab[fileTab$Files == fn,]
-        cols<-lapply(names(fileTab),function(n) rep(fTabRow[[n]],K))
-        names(cols)<-NULL
-        cols<-c(cols,list(ids))
-        names(cols)<-c(names(fileTab),"ID")
-        df<-as.data.frame(cols,stringsAsFactors = F)
-        df
-    }
-    
-    tabs<-lapply(fileTab$Files,function(fn)
-    {
-        wh<-which(fileTab$Files==fn)
-        set<-fileTab$set[[wh]]
-        md<-fileTab$mode[[wh]]
-        sel<-(compTab$set %in% set) & (compTab$mode %in% md)
-        ids<-compTab$ID[sel]
-        genOne(ids,fn)
-        
-    })
-    res<-do.call(rbind,tabs)
-    res
+gen_sup_ftab <- function(ftab,ctab) {
+    df<-ctab[ftab,on=c("set","mode"),allow.cartesian=T]
+    setkeyv(df,cols=FTAB_KEY)
+    setcolorder(df,neworder = FTAB_NAMES)
+    df
 }
 
 getEntryFromComp<-function(entry,id,set,mode,compTab) {
@@ -510,30 +494,30 @@ getEntryFromComp<-function(entry,id,set,mode,compTab) {
     res
         
 }
-addCompColsToFileTbl<-function(ft,compTab) {
-    nR<-nrow(ft)
-    mzCol<-rep(NA,nR)
-    nmCol<-rep("",nR)
-    rtCol<-rep(NA,nR)
+## add_comp_ftab <- function(ft,ctab) {
+##     nR<-nrow(ft)
+##     mzCol<-rep(NA,nR)
+##     nmCol<-rep("",nR)
+##     rtCol<-rep(NA,nR)
     
-    for (ir in 1:nR) {
-        id<-ft[ir,"ID"]
-        set<-ft[ir,"set"]
-        m<-ft[ir,"mode"]
-        entries<-getEntryFromComp(c("mz","Name","rt"),id,set,m,compTab)
-        mzCol[[ir]]<-  entries[["mz"]]
-        nm<-entries[["Name"]]
-        nmCol[[ir]]<- if (!is.na(nm)) nm else ""
-        rtCol[[ir]]<- entries[["rt"]]
-    }
-    ft$mz<-mzCol
-    ft$Name<-nmCol
-    ft$rt<-rtCol
-    ft
-}
+##     for (ir in 1:nR) {
+##         id<-ft[ir,"ID"]
+##         set<-ft[ir,"set"]
+##         m<-ft[ir,"mode"]
+##         entries<-getEntryFromComp(c("mz","Name","rt"),id,set,m,ctab)
+##         mzCol[[ir]]<-  entries[["mz"]]
+##         nm<-entries[["Name"]]
+##         nmCol[[ir]]<- if (!is.na(nm)) nm else ""
+##         rtCol[[ir]]<- entries[["rt"]]
+##     }
+##     ft$mz<-mzCol
+##     ft$Name<-nmCol
+##     ft$rt<-rtCol
+##     ft
+## }
 
-get_set_mode <- function(set,mzml) {
-    unique(mzml[set==..set,mode])
+get_set_mode <- function(s,mzml) {
+    unique(mzml[set == s,mode])
 }
 
 vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
@@ -596,4 +580,15 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
     }
 
     df
+}
+
+read_setid <- function(fn,known,unk) {
+    setid <- file2tab(fn)
+    id_k <- known$ID
+    id_u <- unk$ID
+    tmp <- setid[,.(ID,set,origin=the_ifelse(ID %in% id_k,"known",NA_character_))]
+    tmp <- tmp[,.(ID,set,origin=the_ifelse(is.na(origin) & ID %in% id_u,"unknown",origin))]
+    natmp <- tmp[is.na(origin),.(ID,set)]
+    assertthat::assert_that(nrow(natmp)==0,msg=paste("The following IDs from set table have not been found in the compound table:","------",print_table(natmp),"------",sep = "\n"))
+    tmp
 }

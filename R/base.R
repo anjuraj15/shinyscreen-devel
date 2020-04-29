@@ -16,6 +16,7 @@
 ##' @import data.table
 ## Redirections
 the_ifelse <- data.table::fifelse
+dtable <- data.table::data.table
 
 tab2file<-function(tab,file,...) {
     data.table::fwrite(x=tab,file=file,...)

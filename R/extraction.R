@@ -267,20 +267,6 @@ gen_ms1_chrom_ht<-function(raw,mz,errEIC,rt=NULL,errRT=NULL) {
     res
 }
 
-
-
-tab2file<-function(tab,file,...) {
-    write.csv(x=tab,file=file,row.names=F,...)
-}
-
-file2tab<-function(file,stringsAsFactors=F,comment.char='',...) {
-    read.csv(file=file,
-             header=T,
-             stringsAsFactors=stringsAsFactors,
-             comment.char=comment.char,
-             na.strings=c("","NA"),...)
-}
-
 get_ext_width <- function(maxid) {as.integer(log10(maxid)+1)}
 id_fn_ext<-function(width,id) {
     formatC(as.numeric(id),width=width,flag=0)

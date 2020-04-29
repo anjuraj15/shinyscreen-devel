@@ -13,7 +13,7 @@
 ## limitations under the License.
 
 
-
+##' @export
 run <- function(fn_conf) {
     conf <- read_conf(fn_conf)
     dir.create(conf$project,
@@ -21,7 +21,7 @@ run <- function(fn_conf) {
                recursive = T)
     
     withr::with_dir(new=conf$project,code = run_in_dir(conf))
-    conf
+    return()
 }
 
 
@@ -29,8 +29,18 @@ run <- function(fn_conf) {
 run_in_dir <- function(conf) {
     m <- load_inputs(conf)
     m <- mk_comp_tab(m)
+    m <- gen_base_tab(m)
+    stop()
     m
     
+}
+
+##' @export
+gen_base_ftab <- function(m) {
+    files <- add_wd_to_mzml(df=m$input$tab$mzml,wdir=m$conf$project)
+    df <- gen_sup_ftab(files,m$out$tab$comp)
+    tab2file(df,file.path(m$conf$project,FN_FTAB_BASE))
+    m$out$tab$ftab <- df
 }
 
 ##' @export
@@ -39,112 +49,46 @@ load_inputs <- function(conf) {
     m$conf <- conf
     m$input$tab$mzml <- file2tab(m$conf$data)
     m$input$tab$known <- file2tab(m$conf$compounds$known)
-    if (shiny::isTruthy(m$input$tab$unknown)) m$input$tab$unknown <- file2tab(m$conf$compounds$unknown)
-    m$input$tab$setid <- read_setid(m$conf$compounds$sets,m$input$tab$known,m$input$tab$unknown)#file2tab(m$conf$compounds$sets)
+    m$input$tab$unknown <- if (shiny::isTruthy(m$input$tab$unknown))  {
+                               file2tab(m$conf$compounds$unknown)
+                           } else EMPTY_UNK
+    m$input$tab$setid <- read_setid(m$conf$compounds$sets,
+                                    m$input$tab$known,
+                                    m$input$tab$unknown)
     m
 }
-
-
 
 mk_comp_tab <- function(m) {
     message("Started assembling the lists of knowns and unknowns into the `comprehensive' table.")
     setid <- m$input$tab$setid
-    mzML<- m$input$tab$mzml
+    setkey(setid,set,ID)
+    mzml<- m$input$tab$mzml
+    setkey(mzml,set)
     
     unk<-m$input$tab$unknown
+    setkey(unk,ID)
     known<-m$input$tab$known
-    assertthat::assert_that(xor(is.null(unk),is.null(known)),msg="No compound lists have been provided. At least one of the known, or unknown compound lists is required.")
+    setkey(known,ID)
+    assertthat::assert_that(xor(nrow(unk)==0,nrow(known)==0),msg="No compound lists have been provided. At least one of the known, or unknown compound lists is required.")
     message("Begin generation of comp table.")
-    idKnown<-known$ID
-    idUnk<-unk$ID
     ## knowns
-    setidKnown<- setid[origin=="known",]
-    sets<-setid[origin=="known",unique(set)]
-    nRow<-0
-    for (s in sets) {
-        sMode<-get_set_mode(s,mzML)
-        n<-length(sMode)
-        nRow<-nRow+n*length(which(setidKnown$set %in% s))
-        
-    }
-    compKnown<-dtable(
-        ID=rep(0,nRow),
-        mz=rep(0.0,nRow),
-        rt=rep(NA,nRow),
-        mode=rep("",nRow),
-        set=rep("",nRow),
-        origin=rep("known",nRow),
-        Name=rep("",nRow),
-        SMILES=rep("",nRow))
-
-    i<-1
-    for (s in sets) {
-        sMode<-get_set_mode(s,mzML)
-        
-
-        for (md in sMode) {
-            for (id in setidKnown[set == s,ID]) {
-                compKnown[i,"ID"]<-id
-                compKnown[i,"mode"]<-md
-                compKnown[i,"set"]<-s
-                compKnown[i,"mz"]<-get_mz_cmp_l(id,md,known)
-                sm<-get_col_from_cmp_l(id,"SMILES",known)
-                nm<-get_col_from_cmp_l(id,"Name",known)
-                rt<-get_col_from_cmp_l(id,"rt",known)
-                compKnown[i,"SMILES"]<-sm
-                compKnown[i,"Name"]<-nm
-                compKnown[i,"rt"]<-rt
-                i<-i+1
-            }
-            
-        }
-    }
+    setidKnown<- merge(mzml[,.(mode,set)],setid[origin=="known",],allow.cartesian = T)
+    compKnown <- setidKnown[known,on="ID"]
+    compKnown[,`:=`(mz=mapply(get_mz_from_smiles,SMILES,mode,USE.NAMES = F))]
     message("Generation of comp table: knowns done.")
+
     ## unknows
-    setidUnk<-setid[origin=="unknown",]
-    sets<-setid[origin=="unknown",unique(set)]
-    nRow<-0
-    for (s in sets) {
-        sMode<-get_set_mode(s,mzML)
-        n<-length(sMode)
-        if (n>1) stop("Set of unknowns ",s,"has more than one mode. Sets of unknowns cannot have more than one mode.")
-
-        nRow<-nRow+length(which(setidUnk$set %in% s))
-        
-    }
-
-    compUnk<-dtable(
-        ID=rep(0,nRow),
-        mz=rep(0.0,nRow),
-        rt=rep(NA,nRow),
-        mode=rep("",nRow),
-        set=rep("",nRow),
-        origin=rep("unknown",nRow),
-        Name=rep("",nRow),
-        SMILES=rep("",nRow),
-        stringsAsFactors=F)
-
-
-    i<-1
-    for (s in sets) {
-        md<-get_set_mode(s,mzML)
-        for (id in setidUnk[ set == s, ID]) {
-            compUnk[i,"ID"]<-id
-            compUnk[i,"mode"]<-md
-            compUnk[i,"set"]<-s
-            compUnk[i,"mz"]<-get_col_from_cmp_l(id,"mz",unk)
-            nm<-get_col_from_cmp_l(id,"Name",unk)
-            rt<-get_col_from_cmp_l(id,"rt",unk)
-            compUnk[i,"Name"]<-nm
-            compUnk[i,"rt"]<-rt
-            i<-i+1
-        }
-    }
+    setidUnk<-merge(mzml[,.(mode,set)],setid[origin=="unknown",],allow.cartesian = T)
+    compUnk <- setidUnk[unk,on="ID"]
     message("Generation of comp table: unknowns done.")
-    df<-rbindlist(l=list(compKnown, compUnk))
+    df<-rbindlist(l=list(compKnown, compUnk),fill = T)
+    setnames(df,names(COMP_NAME_MAP),
+             function(o) COMP_NAME_MAP[[o]])
     fn_out <- file.path(m$conf$project,FN_COMP_TAB)
+    
     tab2file(tab=df,file=fn_out)
     message("Generation of comp table finished.")
+    setkeyv(df,c("set","tag","mz"))
     m$out$tab$comp <- df
     m
 }
@@ -157,11 +101,12 @@ read_conf <- function(fn_conf) {
     conf
 }
 
+##' @export
 vrfy_conf <- function(conf) {
     ## * Existence of input files
 
-    ## ** Data files
-    for (fn in unlist(conf$data,recursive=T)) assertthat::assert_that(file.exists(fn),msg=paste("Unable to read data file:",fn))
+
+
     fn_cmpd_known <- conf$compounds$known
     fn_cmpd_unk <- conf$compounds$unknown
     fn_cmpd_sets <- conf$compounds$sets
@@ -207,28 +152,4 @@ vrfy_conf <- function(conf) {
     return(conf)
 }
 
-mk_mzml_tab <- function(data) {
-    files <- unlist(data,recursive = T)
-    sets <- unique(names(data))
-    tags <- c()
-    for (s in sets) {
-        tags<-c(tags,names(data[[s]]))
-    }
-    tags<-unique(tags)
-    nr<-length(files)
-    z<-suppressWarnings(data.table::data.table(Files=character(nr),
-                                               mode=factor(levels = names(MODEMAP)),
-                                               set=factor(levels = sets),
-                                               tag=factor(levels= c(TAG_DEF,tags)),
-                                               stringsAsFactors = F))
-    z$Files <- files
-    i <- 1
-    for (s in names(data)) {
-        for (t in names(data[[s]])) {
-            z[i,"set"] <- s    
-            z[i,"tag"]<-t
-            i<-i+1
-        }
-    }
-    z
-}
+

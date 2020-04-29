@@ -98,3 +98,14 @@ MS1_SN_FAC <- 3.0
 ## Shiny objects
 
 NUM_INP_WIDTH="15%"
+
+## Comprehensive table properties
+COMP_NAME_MAP <- list(RT="rt")
+# COMP_NAMES <-c("ID","mz","rt","mode","set","origin","Name","SMILES")
+
+## File table properties
+FTAB_KEY=c("set","tag","mz")
+FTAB_NAMES=c("ID", "mz", "rt", "tag", "mode", "set", "Name", "SMILES", "Files" , "wd","origin")
+
+
+EMPTY_UNK <- data.table(ID=character(0),mz=numeric(0),RT=numeric(0),Name=character(0),CAS=character(0))
