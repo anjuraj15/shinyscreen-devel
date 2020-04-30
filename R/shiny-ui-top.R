@@ -56,7 +56,7 @@ mk_shinyscreen <- function(fn_style=system.file('www/custom.css',package = 'shin
         rf <- react_conf_f(input,output,session,rv=rv,rf=rf) # Config related r. functions.
 
         ## Observers and renderers.
-        server_conf(input,output,session,rv=rv,rf=rf)
+        rv <- server_conf(input,output,session,rv=rv,rf=rf)
         session$onSessionEnded(function () {
             stopApp()
         })

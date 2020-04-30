@@ -597,3 +597,7 @@ read_setid <- function(fn,known,unk) {
 write_conf <- function(conf,fn) {
     yaml::write_yaml(x=conf,file=fn)
 }
+
+read_conf <- function(fn) {
+    yaml::yaml.load_file(fn)
+}

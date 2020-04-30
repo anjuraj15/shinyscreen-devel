@@ -91,3 +91,13 @@ rv_conf2conf <- function(rv) {
     x$compounds<-shiny::reactiveValuesToList(rv$conf$compounds)
     x
 }
+
+conf2rv_conf <- function(conf,rv) {
+    rv$conf <- shiny::reactiveValues(project=conf$project,
+                                     data=conf$data,
+                                     compounds=shiny::reactiveValues(known=conf$compounds$known,
+                                                                     unknown=conf$compounds$unknown,
+                                                                     setid=conf$compounds$setid))
+    rv
+    
+}

@@ -182,6 +182,17 @@ server_conf <- function(input,output,session,rv,rf) {
         write_conf(conf,fn)
     })
 
-  
+    obsrv_e(input$restoreConfB,{
+        fn <- shinyFiles::parseSavePath(roots=vol_f,input$saveConfB)[["datapath"]]
+        validate(fn,msg="Something went wrong with the config file name.")
+        validate(file.exists(fn),msg="The file is unreadable.")
+        conf <- read_conf(fn)
+        rv <- vonf2rv_conf(conf,rv)
+        
+    })
     
+
+    obsrv_e(rv$conf,message("updated rv"))
+  
+    rv
 }
