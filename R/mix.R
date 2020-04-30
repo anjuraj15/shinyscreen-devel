@@ -592,3 +592,8 @@ read_setid <- function(fn,known,unk) {
     assertthat::assert_that(nrow(natmp)==0,msg=paste("The following IDs from set table have not been found in the compound table:","------",print_table(natmp),"------",sep = "\n"))
     tmp
 }
+
+
+write_conf <- function(conf,fn) {
+    yaml::write_yaml(x=conf,file=fn)
+}

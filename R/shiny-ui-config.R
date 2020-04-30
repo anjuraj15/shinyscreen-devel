@@ -67,8 +67,8 @@ mk_ui_config <- function() {
                           shinyFiles::shinySaveButton("saveConfB",
                                                       "Save configuration.",
                                                       title="Save",
-                                                      filename = "conf-state.rds",
-                                                      "rds"),
+                                                      filename = "conf-state.yaml",
+                                                      "yaml"),
                           shinyFiles::shinyFilesButton("restoreConfB",
                                                        label="Restore configuration.",
                                                        multiple=F,
@@ -135,7 +135,7 @@ react_conf_f <- function(input,output,session,rv,rf) {
         vls <- vols()() #Ugly! :)
         vol <- path2vol(path)
         sel<-match(vol,vls)
-        validate(need(sel,"Yikes! Unable to detect current project's volume."))
+        validate(sel,msg="Yikes! Unable to detect current project's volume.")
         res<-names(vls)[[sel]]
         res
     })
@@ -173,6 +173,14 @@ server_conf <- function(input,output,session,rv,rf) {
     shinyFiles::shinyFileChoose(input, 'mzMLB',defaultRoot=droot(),
                                 defaultPath=dpath(),roots=vs)
     shinyFiles::shinyDirChoose(input, 'switchProjB',roots=vs)
+
+    obsrv_e(input$saveConfB, {
+        conf<-rv_conf2conf(rv)
+        vol <- vol_f()
+        fn <- shinyFiles::parseSavePath(roots=vol_f,input$saveConfB)[["datapath"]]
+        validate(fn,msg="Invalid file to save config to.")
+        write_conf(conf,fn)
+    })
 
   
     

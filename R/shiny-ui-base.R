@@ -16,7 +16,11 @@ react_v <- shiny::reactiveValues
 react_f <- shiny::reactive
 react_e <- shiny::eventReactive
 obsrv <- shiny::observe
+obsrv_e <- shiny::observeEvent
 vols <- shinyFiles::getVolumes
+vol_f <- vols()
+validate <- function(expr,msg) shiny::validate(need(expr,msg))
+
 
 path2vol <- function(path) {
     ## This function returns shinyFiles compatible volumes.
@@ -80,4 +84,10 @@ txt_file_input <- function(inputId,input,fileB,label,volumes) {
         }
     }
     
+}
+
+rv_conf2conf <- function(rv) {
+    x <- shiny::reactiveValuesToList(rv$conf)
+    x$compounds<-shiny::reactiveValuesToList(rv$conf$compounds)
+    x
 }
