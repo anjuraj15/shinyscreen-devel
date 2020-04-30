@@ -58,6 +58,7 @@ load_inputs <- function(conf) {
     m
 }
 
+##' @export
 mk_comp_tab <- function(m) {
     message("Started assembling the lists of knowns and unknowns into the `comprehensive' table.")
     setid <- m$input$tab$setid
