@@ -50,7 +50,8 @@ Collate:
     'extraction.R'
     'run.R'
     'api.R'
-    'shinyUI.R'
+    'shiny-ui-base.R'
+    'shiny-ui-top.R'
 Depends:
     RMassBank,
     RChemMass
