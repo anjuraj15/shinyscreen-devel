@@ -12,6 +12,19 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
+react_v <- shiny::reactiveValues
+react_f <- shiny::reactive
+react_e <- shiny::eventReactive
+obsrv <- shiny::observe
+vols <- shinyFiles::getVolumes
+
+path2vol <- function(path) {
+    ## This function returns shinyFiles compatible volumes.
+    splits <- split_path(path)
+    file.path(tail(splits,1),'')
+}
+
+
 prim_box<-function(...) {shinydashboard::box(...,
                                              status="primary",
                                              solidHeader=T)}
