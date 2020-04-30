@@ -22,13 +22,19 @@ mk_ui <- function (fn_style) {
     headerText <- "Shinyscreen"
     header <- shinydashboard::dashboardHeader(title=headerText,
                                               shinydashboard::dropdownMenuOutput("notify"))
+
+
+    ## Plugins
+    conf <- mk_ui_config()
+    
     sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(id='tabs',
+                                                                            conf$side,
                                                                             shiny::hr(),
                                                                             shiny::h5("Inputs"),
                                                                             shiny::hr()))
     body <- shinydashboard::dashboardBody(
                                 shiny::tags$head(shiny::tags$style(shiny::includeHTML(fn_style))),
-                                shinydashboard::tabItems())
+                                shinydashboard::tabItems(conf$tab))
 
     shinydashboard::dashboardPage(
                         header,
@@ -40,6 +46,7 @@ mk_ui <- function (fn_style) {
 mk_shinyscreen <- function(fn_style=system.file('www/custom.css',package = 'shinyscreen')) {
     server <- function(input,output,session) {
         ## Top-level server function.
+        server_conf(input,output,session)
         session$onSessionEnded(function () {
             stopApp()
         })
@@ -50,14 +57,14 @@ mk_shinyscreen <- function(fn_style=system.file('www/custom.css',package = 'shin
 
 
 ##' @export
-launch <- function(GUI=T,fnConf="",...) {
+launch <- function(GUI=T,fn_conf="",...) {
     if (GUI) {
         app<-mk_shinyscreen()
         shiny::runApp(appDir = app,...)
     } else {
         if (nchar(fnConf)==0) {
-            fnConf <- commandArgs(trailingOnly=T)[[1]]
+            fn_conf <- commandArgs(trailingOnly=T)[[1]]
         }
-        run(fnConf)
+        run(fn_conf)
     }
 }
