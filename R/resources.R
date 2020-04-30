@@ -14,6 +14,14 @@
 
 
 
+
+## Config defaults
+CONF <- list(data=NA_character_,
+             project=getwd(),
+             compounds=list(known=NA_character_,
+                            unknown=NA_character_,
+                            sets=NA_character_))
+
 ## Constants
 FN_FTAB_BASE<-"ftable.base.csv"
 FN_FTAB_PP<-"ftable.pp.csv"
