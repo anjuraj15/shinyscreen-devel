@@ -118,5 +118,62 @@ mk_ui_config <- function() {
                 side=confSideItem))
 }
 
+react_conf_v <- function(input,output,session,rv,rf) {
+    rv$conf <- react_v(data=CONF$data,
+                       project=CONF$project,
+                       compounds=react_v(known=CONF$compounds$known,
+                                         unknown=CONF$compounds$unknown,
+                                         sets=CONF$compounds$sets))
 
-server_conf <- function(input,output,session) {}
+    rv
+}
+
+react_conf_f <- function(input,output,session,rv,rf) {
+    rf$get_proj_vol <- react_e(rv$conf$project,{
+        ## For shinyfiles dialogs.
+        path <- normalizePath(rv$conf$project, winslash = '/')
+        vls <- vols()() #Ugly! :)
+        vol <- path2vol(path)
+        sel<-match(vol,vls)
+        validate(need(sel,"Yikes! Unable to detect current project's volume."))
+        res<-names(vls)[[sel]]
+        res
+    })
+
+    rf$get_proj_path <- react_e(rv$conf$project,{
+        ## For shinyfiles dialogs.
+        wd <- rv$conf$project
+        vol <- rf$get_proj_vol()
+        v <- vols()()
+        pref<-v[[vol]]
+        res<-wd 
+        message('Relative project path is: ',res)
+        res
+    })
+    
+    rf
+}
+
+server_conf <- function(input,output,session,rv,rf) {
+    ## ***** shinyFiles observers *****
+    droot <- rf$get_proj_vol
+    dpath <- rf$get_proj_path
+    vs <- vols()
+    shinyFiles::shinyFileChoose(input, 'impKnownListB',defaultRoot=droot(),
+                                defaultPath=dpath(),roots=vs)
+    shinyFiles::shinyFileChoose(input, 'impUnkListB',defaultRoot=droot(),
+                                defaultPath=dpath(),roots=vs)
+    shinyFiles::shinyFileChoose(input, 'impSetIdB',defaultRoot=droot(),
+                                defaultPath=dpath(),roots=vs)
+    
+    shinyFiles::shinyFileSave(input, 'saveConfB',defaultRoot=droot(),
+                              defaultPath=dpath(),roots=vs)
+    shinyFiles::shinyFileChoose(input, 'restoreConfB',defaultRoot=droot(),
+                                defaultPath=dpath(),roots=vs)
+    shinyFiles::shinyFileChoose(input, 'mzMLB',defaultRoot=droot(),
+                                defaultPath=dpath(),roots=vs)
+    shinyFiles::shinyDirChoose(input, 'switchProjB',roots=vs)
+
+  
+    
+}

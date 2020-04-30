@@ -46,7 +46,17 @@ mk_ui <- function (fn_style) {
 mk_shinyscreen <- function(fn_style=system.file('www/custom.css',package = 'shinyscreen')) {
     server <- function(input,output,session) {
         ## Top-level server function.
-        server_conf(input,output,session)
+        rv <- shiny::reactiveValues(dummy=1) # Container for all
+                                             # reactive values.
+
+        rf <- list()                         # Container for all
+                                             # reactive functions.
+        
+        rv <- react_conf_v(input,output,session,rv=rv,rf=rf) # Config related r. values.
+        rf <- react_conf_f(input,output,session,rv=rv,rf=rf) # Config related r. functions.
+
+        ## Observers and renderers.
+        server_conf(input,output,session,rv=rv,rf=rf)
         session$onSessionEnded(function () {
             stopApp()
         })
