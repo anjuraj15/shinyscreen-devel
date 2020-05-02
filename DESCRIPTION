@@ -44,8 +44,8 @@ LazyData: true
 RoxygenNote: 7.1.0
 Roxygen: list(markdown = TRUE)
 Collate:
-    'resources.R'
     'base.R'
+    'resources.R'
     'mix.R'
     'extraction.R'
     'run.R'
