@@ -162,6 +162,16 @@ react_conf_f <- function(input,output,session,rv,rf) {
         rv
     })
 
+    rf$initial_mzml <- react_f({
+        ## Get data file table either from a CSV file, or create an
+        ## empty one.
+        rv$input$tab$mzml <- if (shiny::isTruthy(rv$conf$data)) {
+                                 file2tab(file=rv$conf$data) 
+                             } else EMPTY_MZML
+
+        rv$input <- lst2rv_lst(rv$input)
+        rv
+    })
 
     rf$get_tags_from_txt <- react_f({
         ## Tags in the text box.
@@ -204,16 +214,30 @@ server_conf <- function(input,output,session,rv,rf) {
         fn <- shinyFiles::parseFilePaths(roots=volumes,input$restoreConfB)[["datapath"]]
         assert(file.exists(fn), msg="The file is unreadable.")
         rv$conf <- lst2rv_lst(read_conf(fn))
-        rv <- load_inputs(rv)
         for (nm in names(rv$conf$compounds)) {
             shiny::updateTextInput(session=session,
                                    inputId=nm,
                                    value=rv$conf$compounds[[nm]])
         }
     })
-    
 
-    obsrv_e(rv$conf,message("updated rv"))
+    obsrv_e(input$mzMLB,
+    {
+        fchoice<-shinyFiles::parseFilePaths(roots = volumes,input$mzMLB)
+        paths<-fchoice[["datapath"]]
+        shiny::validate(need(rv$input$tab$mzml,"There is no skeleton table. Sets? Tags?"))
+        df <- rhandsontable::hot_to_r(input$mzMLtabCtrl)
+        df <- add_mzML_files(df,paths)
+        mzml <- rv$input$tab$mzml
+        mzml$Files <- df$Files
+        mzml$set <- as.character(df$set)
+        mzml$tag <- as.character(df$tag)
+        mzml$mode <- as.character(df$mode)
+        rv$input$tab$mzml <- mzml
+        message('HERE???',input$mzMLB)
+    })
+
+    obsrv_e(rv$conf,message("updated rv$conf"))
 
 
     ## ***** Render *****
@@ -234,9 +258,46 @@ server_conf <- function(input,output,session,rv,rf) {
     output$fnSetIdCtrl <- shiny::renderUI({
         txt_file_input(inputId = 'sets',
                        input = input,
-                       label = html("Set table. Required columns <i>ID</i> and <i>set</i>."),
+                       label = html("Compounds set table. Required columns <i>ID</i> and <i>set</i>."),
                        fileB = 'impSetIdB',
                        volumes=volumes)
+    })
+
+    ## shiny::observeEvent(input$updTagsB,{
+    ##     ## Modify tags in mzml
+    ##     mzml <- rv$input$tab$mzml
+    ##     shiny::req(mzml)
+    ##     ttags <- mzml$tag
+    ##     ltags <- levels(ttags)
+    ##     itags <- get_all_tags()
+    ##     diff <- setdiff(ltags,itags)
+
+    ##     for (m in diff) {
+    ##         ttags[ttags %in% m] <- 'unspecified'
+    ##     }
+    ##     ttags <- factor(as.character(ttags))
+    ##     ttags <- factor(as.character(ttags),levels=unique(c('unspecified',levels(ttags),itags)))
+    ##     rv$input$mzml$tag <- ttags
+    ## })
+    
+
+    output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
+        input$updTagsB
+        message("BEFORE-----")
+        str(rv$input$tab$mzml)
+        
+        rv <- rf$get_compounds()
+        rv <- rf$initial_mzml()
+        all_sets <- unique(rv$input$tab$setid$set)
+        df <- rv$input$tab$mzml
+        df$set <- factor(df$set)
+        levels(df$set) <- all_sets
+        df$mode <- factor(df$mode)
+        levels(df$mode) <- names(MODEMAP)
+        message("AFTER-----")
+        str(rv$input$tab$mzml)
+        
+        rhandsontable::rhandsontable(df,stretchH="all")
     })
     
     rv
