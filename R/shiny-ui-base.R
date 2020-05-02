@@ -21,6 +21,7 @@ obsrv <- shiny::observe
 obsrv_e <- shiny::observeEvent
 vols <- shinyFiles::getVolumes
 vol_f <- vols()
+volumes <- shinyFiles::getVolumes()
 validate1 <- function(expr,msg) shiny::validate(need(expr,msg))
 
 
