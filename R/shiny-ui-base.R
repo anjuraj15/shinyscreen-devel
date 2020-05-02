@@ -12,6 +12,8 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
+##' @importFrom(shiny, validate)
+
 react_v <- shiny::reactiveValues
 react_f <- shiny::reactive
 react_e <- shiny::eventReactive
@@ -19,7 +21,7 @@ obsrv <- shiny::observe
 obsrv_e <- shiny::observeEvent
 vols <- shinyFiles::getVolumes
 vol_f <- vols()
-validate <- function(expr,msg) shiny::validate(need(expr,msg))
+validate1 <- function(expr,msg) shiny::validate(need(expr,msg))
 
 
 path2vol <- function(path) {
