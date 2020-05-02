@@ -128,13 +128,13 @@ vrfy_conf <- function(conf) {
     all_sets<-unique(df_sets$set)
 
     fn_data <- conf$data
-    assertthat::assert_that(file.exists(fn_data),msg=paste("Data table cannot be read:",fn_data))
+    assertthat::assert_that(file.exists(fn_data),msg=paste("Data table does not exist:",fn_data))
     mzml <- file2tab(fn_data)
     
     no_files <- which(mzml[,!file.exists(Files)])
     no_modes <- which(mzml[,!(mode %in% names(MODEMAP))])
     no_sets <- which(mzml[,!(set %in% all_sets)])
-    assertthat::assert_that(length(no_files)==0,msg = paste("Unreadable data files at rows:",paste(no_files,collapse = ','), "of",fn_data))
+    assertthat::assert_that(length(no_files)==0,msg = paste("Non-existent data files at rows:",paste(no_files,collapse = ','), "of",fn_data))
     assertthat::assert_that(length(no_modes)==0,msg = paste("Unrecognised modes at rows:",paste(no_modes,collapse = ','), "of", fn_data))
     assertthat::assert_that(length(no_sets)==0,msg = paste("Unknown sets at rows:",paste(no_sets,collapse = ','),"of", fn_data))
 
