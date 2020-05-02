@@ -118,3 +118,9 @@ FTAB_NAMES=c("ID", "mz", "rt", "tag", "mode", "set", "Name", "SMILES", "Files" ,
 
 EMPTY_UNK <- dtable(ID=character(0),mz=numeric(0),RT=numeric(0),Name=character(0),CAS=character(0))
 EMPTY_KNOWN <- dtable(ID=character(0),SMILES=character(0),RT=numeric(0),Name=character(0),CAS=character(0))
+
+## Trivial data table
+EMPTY_MZML <- dtable(Files=character(0),
+                     tag=character(0),
+                     mode=character(0),
+                     set=character(0))
