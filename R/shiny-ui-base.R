@@ -120,3 +120,21 @@ combine_tags <- function(df_tags,txt_tags) {
     df_tags
 }
 
+add_mzML_files<-function(df,paths) {
+    lSet<-levels(df$set)
+    if (length(lSet>0) && !is.na(lSet)) {
+        nR<-length(paths)
+        if (nR>0) {
+            st<-nrow(df)+1
+            fi<-nrow(df)+nR
+            df[st:fi,'tag']<-levels(df$tag)[[1]]
+            df[st:fi,'set']<-levels(df$set)[[1]]
+            df[st:fi,'mode']<-levels(df$mode)[[1]]
+            df[st:fi,'Files']<-paths
+        }
+        df
+    } else {
+        warning("Define sets using the compound set table before trying to add files!")
+        df
+    }
+}
