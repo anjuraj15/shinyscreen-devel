@@ -583,6 +583,8 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
 }
 
 read_setid <- function(fn,known,unk) {
+    assert(file.exists(fn),msg=paste("Please provide valid compounds set table:", fn))
+    assert(nrow(known)>0 || nrow(unk) > 0,msg="Please provide at least one compounds list.")
     setid <- file2tab(fn)
     id_k <- known$ID
     id_u <- unk$ID
