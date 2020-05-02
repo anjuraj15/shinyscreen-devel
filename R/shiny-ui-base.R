@@ -22,7 +22,7 @@ obsrv_e <- shiny::observeEvent
 vols <- shinyFiles::getVolumes
 vol_f <- vols()
 volumes <- function() c(wd=getwd(), shinyFiles::getVolumes()())
-validate1 <- function(expr,msg) shiny::validate(need(expr,msg))
+validate1 <- function(expr,msg) shiny::validate(shiny::need(expr,msg))
 
 
 path2vol <- function(path) {
