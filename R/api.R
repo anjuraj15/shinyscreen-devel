@@ -31,9 +31,8 @@ run <- function(fn_conf) {
 run_in_dir <- function(m) {
     m <- load_inputs(m)
     m <- mk_comp_tab(m)
-    m <- gen_base_tab(m)
-    stop()
-    m
+    m <- gen_base_ftab(m)
+    invisible(m)
     
 }
 
