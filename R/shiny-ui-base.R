@@ -96,12 +96,8 @@ rv_lst2lst <- function(rv) {
         rv else lapply(shiny::reactiveValuesToList(rv),rv_lst2lst)
 }
 
-conf2rv_conf <- function(conf,rv) {
-    rv$conf <- shiny::reactiveValues(project=conf$project,
-                                     data=conf$data,
-                                     compounds=shiny::reactiveValues(known=conf$compounds$known,
-                                                                     unknown=conf$compounds$unknown,
-                                                                     setid=conf$compounds$setid))
-    rv
-    
+lst2rv_lst <- function(lst) {
+    ## Take nested named list and create reactive values from it.
+    if (class(lst) != "list")
+        lst else do.call(react_v,lapply(lst,lst2rv_lst))
 }
