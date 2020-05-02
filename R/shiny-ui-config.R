@@ -162,6 +162,13 @@ react_conf_f <- function(input,output,session,rv,rf) {
         rv
     })
 
+
+    rf$get_tags_from_txt <- react_f({
+        ## Tags in the text box.
+        txt2tags(input$tagsInp)
+    })
+
+    
     
     rf
 }
