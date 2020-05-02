@@ -101,3 +101,22 @@ lst2rv_lst <- function(lst) {
     if (class(lst) != "list")
         lst else do.call(react_v,lapply(lst,lst2rv_lst))
 }
+
+txt2tags <- function(txt) {
+    ## Turns a string into tags
+    x <- if (shiny::isTruthy(txt)) {
+             trimws(unlist(strsplit(txt, ",")))
+         } else list()
+    
+    
+    as.list(c("unspecified",x))
+}
+
+combine_tags <- function(df_tags,txt_tags) {
+    diff <- setdiff(df_tags,txt_tags)
+    for (x in diff) df_tags[df_tags %in% x] <- "unspecified"
+    df_tags <- factor(as.character(df_tags))
+    df_tags <- factor(as.character(df_tags),levels = unique(c('unspecified',levels(df_tags),txt_tags)))
+    df_tags
+}
+
