@@ -589,7 +589,7 @@ read_setid <- function(fn,known,unk) {
     tmp <- setid[,.(ID,set,origin=the_ifelse(ID %in% id_k,"known",NA_character_))]
     tmp <- tmp[,.(ID,set,origin=the_ifelse(is.na(origin) & ID %in% id_u,"unknown",origin))]
     natmp <- tmp[is.na(origin),.(ID,set)]
-    assertthat::assert_that(nrow(natmp)==0,msg=paste("The following IDs from set table have not been found in the compound table:","------",print_table(natmp),"------",sep = "\n"))
+    assert(nrow(natmp)==0,msg=paste("The following IDs from set table have not been found in the compound table:","------",print_table(natmp),"------",sep = "\n"))
     tmp
 }
 

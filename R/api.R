@@ -97,7 +97,7 @@ mk_comp_tab <- function(m) {
 
 ##' @export
 read_conf <- function(fn_conf) {
-    assertthat::assert_that(file.exists(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
+    assert(file.exists(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
     conf <- yaml::yaml.load_file(fn_conf)
     conf <- vrfy_conf(conf)
     conf
@@ -129,26 +129,26 @@ vrfy_conf <- function(conf) {
     all_sets<-unique(df_sets$set)
 
     fn_data <- conf$data
-    assertthat::assert_that(file.exists(fn_data),msg=paste("Data table does not exist:",fn_data))
+    assert(file.exists(fn_data),msg=paste("Data table does not exist:",fn_data))
     mzml <- file2tab(fn_data)
     
     no_files <- which(mzml[,!file.exists(Files)])
     no_modes <- which(mzml[,!(mode %in% names(MODEMAP))])
     no_sets <- which(mzml[,!(set %in% all_sets)])
-    assertthat::assert_that(length(no_files)==0,msg = paste("Non-existent data files at rows:",paste(no_files,collapse = ','), "of",fn_data))
-    assertthat::assert_that(length(no_modes)==0,msg = paste("Unrecognised modes at rows:",paste(no_modes,collapse = ','), "of", fn_data))
-    assertthat::assert_that(length(no_sets)==0,msg = paste("Unknown sets at rows:",paste(no_sets,collapse = ','),"of", fn_data))
+    assert(length(no_files)==0,msg = paste("Non-existent data files at rows:",paste(no_files,collapse = ','), "of",fn_data))
+    assert(length(no_modes)==0,msg = paste("Unrecognised modes at rows:",paste(no_modes,collapse = ','), "of", fn_data))
+    assert(length(no_sets)==0,msg = paste("Unknown sets at rows:",paste(no_sets,collapse = ','),"of", fn_data))
 
     df_k <- file2tab(fn_cmpd_known)
     
     are_knowns_OK <- shiny::isTruthy(vald_comp_tab(df_k,fn_cmpd_known, checkSMILES=T, checkNames=T))
-    assertthat::assert_that(are_knowns_OK)
+    assert(are_knowns_OK,msg='Aborted because known compounds table contained errors.')
 
     ## ** Unknowns
     if (!is.null(fn_cmpd_unk)) {
         df_u <- file2tab(fn_cmpd_unk)
         are_unknowns_OK <- shiny::isTruthy(vald_comp_tab(df_u,fn_cmpd_unk, checkSMILES=F, checkMz=T))
-        assertthat::assert_that(are_unknowns_OK)
+        assert(are_unknowns_OK, msg='Aborted because unknown compounds table contained errors.')
     }
     
     

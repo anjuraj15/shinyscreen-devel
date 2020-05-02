@@ -42,3 +42,5 @@ split_path <- function(path) {
 print_table <- function (df) {
     paste(apply(df,1,function (row) paste(row,collapse=',')),collapse = "\n")
 }
+
+assert <- function(expr,msg) shiny::validate(shiny::need(expr,message=msg))
