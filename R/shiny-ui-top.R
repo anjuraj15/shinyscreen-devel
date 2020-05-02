@@ -72,7 +72,7 @@ launch <- function(GUI=T,fn_conf="",...) {
         app<-mk_shinyscreen()
         shiny::runApp(appDir = app,...)
     } else {
-        if (nchar(fnConf)==0) {
+        if (nchar(fn_conf)==0) {
             fn_conf <- commandArgs(trailingOnly=T)[[1]]
         }
         run(fn_conf)
