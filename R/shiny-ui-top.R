@@ -46,9 +46,9 @@ mk_ui <- function (fn_style) {
 mk_shinyscreen <- function(fn_style=system.file('www/custom.css',package = 'shinyscreen')) {
     server <- function(input,output,session) {
         ## Top-level server function.
-        rv <- shiny::reactiveValues(dummy=1) # Container for all
-                                             # reactive values.
-
+        rv <- shiny::reactiveValues(GUI=T)   # Container for all
+                                        # reactive values.
+        
         rf <- list()                         # Container for all
                                              # reactive functions.
         
