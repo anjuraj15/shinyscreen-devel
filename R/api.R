@@ -48,9 +48,9 @@ gen_base_ftab <- function(m) {
 ##' @export
 load_inputs <- function(m) {
     m$input$tab$mzml <- file2tab(m$conf$data)
-    m$input$tab$known <- if (shiny::isTruthy(m$input$tab$known))
+    m$input$tab$known <- if (shiny::isTruthy(m$conf$compounds$known))
                              file2tab(m$conf$compounds$known) else EMPTY_KNOWN
-    m$input$tab$unknown <- if (shiny::isTruthy(m$input$tab$unknown))
+    m$input$tab$unknown <- if (shiny::isTruthy(m$conf$compounds$unknown))
                                file2tab(m$conf$compounds$unknown) else EMPTY_UNK
     m$input$tab$setid <- read_setid(m$conf$compounds$sets,
                                     m$input$tab$known,
@@ -66,20 +66,21 @@ mk_comp_tab <- function(m) {
     mzml<- m$input$tab$mzml
     setkey(mzml,set)
     
+    setkey(m$input$tab$unknown,ID)
+    setkey(m$input$tab$known,ID)
     unk<-m$input$tab$unknown
-    setkey(unk,ID)
     known<-m$input$tab$known
-    setkey(known,ID)
-    assertthat::assert_that(xor(nrow(unk)==0,nrow(known)==0),msg="No compound lists have been provided. At least one of the known, or unknown compound lists is required.")
+    
+    assert(xor(nrow(unk)==0,nrow(known)==0),msg="No compound lists have been provided. At least one of the known, or unknown compound lists is required.")
     message("Begin generation of comp table.")
     ## knowns
-    setidKnown<- merge(mzml[,.(mode,set)],setid[origin=="known",],allow.cartesian = T)
+    setidKnown<- merge(mzml[,.(mode,tag,set)],setid[origin=="known",],allow.cartesian = T)
     compKnown <- setidKnown[known,on="ID"]
     compKnown[,`:=`(mz=mapply(get_mz_from_smiles,SMILES,mode,USE.NAMES = F))]
     message("Generation of comp table: knowns done.")
 
     ## unknows
-    setidUnk<-merge(mzml[,.(mode,set)],setid[origin=="unknown",],allow.cartesian = T)
+    setidUnk<-merge(mzml[,.(mode,tag,set)],setid[origin=="unknown",],allow.cartesian = T)
     compUnk <- setidUnk[unk,on="ID"]
     message("Generation of comp table: unknowns done.")
     df<-rbindlist(l=list(compKnown, compUnk),fill = T)
@@ -114,12 +115,12 @@ vrfy_conf <- function(conf) {
 
     ## ** Compound lists and sets
 
-    assertthat::assert_that(file.exists(fn_cmpd_sets),
+    assert(file.exists(fn_cmpd_sets),
                             msg=paste("Cannot find the compound sets file:",fn_cmpd_sets))
     
-    if (!is.null(fn_cmpd_known)) assertthat::assert_that(file.exists(fn_cmpd_known),
+    if (!is.null(fn_cmpd_known)) assert(file.exists(fn_cmpd_known),
                                                              msg=paste("Cannot find known compounds file:",fn_cmpd_known))        
-    if (!is.null(fn_cmpd_unk)) assertthat::assert_that(file.exists(fn_cmpd_unk),
+    if (!is.null(fn_cmpd_unk)) assert(file.exists(fn_cmpd_unk),
                                                        msg=paste("Cannot find unknown compounds file:",fn_cmpd_unk))
 
 

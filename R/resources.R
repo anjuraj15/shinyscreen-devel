@@ -116,5 +116,5 @@ FTAB_KEY=c("set","tag","mz")
 FTAB_NAMES=c("ID", "mz", "rt", "tag", "mode", "set", "Name", "SMILES", "Files" , "wd","origin")
 
 
-EMPTY_UNK <- data.table(ID=character(0),mz=numeric(0),RT=numeric(0),Name=character(0),CAS=character(0))
-EMPTY_KNOWN <- data.table(ID=character(0),SMILES=character(0),RT=numeric(0),Name=character(0),CAS=character(0))
+EMPTY_UNK <- dtable(ID=character(0),mz=numeric(0),RT=numeric(0),Name=character(0),CAS=character(0))
+EMPTY_KNOWN <- dtable(ID=character(0),SMILES=character(0),RT=numeric(0),Name=character(0),CAS=character(0))
