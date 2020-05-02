@@ -135,7 +135,7 @@ react_conf_f <- function(input,output,session,rv,rf) {
         vls <- vols()() #Ugly! :)
         vol <- path2vol(path)
         sel<-match(vol,vls)
-        validate(sel,msg="Yikes! Unable to detect current project's volume.")
+        validate1(sel,msg="Yikes! Unable to detect current project's volume.")
         res<-names(vls)[[sel]]
         res
     })
@@ -178,16 +178,17 @@ server_conf <- function(input,output,session,rv,rf) {
         conf<-rv_conf2conf(rv)
         vol <- vol_f()
         fn <- shinyFiles::parseSavePath(roots=vol_f,input$saveConfB)[["datapath"]]
-        validate(fn,msg="Invalid file to save config to.")
+        validate1(fn,msg="Invalid file to save config to.")
         write_conf(conf,fn)
     })
 
     obsrv_e(input$restoreConfB,{
         fn <- shinyFiles::parseSavePath(roots=vol_f,input$saveConfB)[["datapath"]]
-        validate(fn,msg="Something went wrong with the config file name.")
-        validate(file.exists(fn),msg="The file is unreadable.")
+        validate(need())
+        validate1(fn,msg="Something went wrong with the config file name.")
+        validate1(file.exists(fn),msg="The file is unreadable.")
         conf <- read_conf(fn)
-        rv <- vonf2rv_conf(conf,rv)
+        rv <- conf2rv_conf(conf,rv)
         
     })
     
