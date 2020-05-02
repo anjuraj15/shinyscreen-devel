@@ -89,10 +89,11 @@ txt_file_input <- function(inputId,input,fileB,label,volumes) {
     
 }
 
-rv_conf2conf <- function(rv) {
-    x <- shiny::reactiveValuesToList(rv$conf)
-    x$compounds<-shiny::reactiveValuesToList(rv$conf$compounds)
-    x
+rv_lst2lst <- function(rv) {
+    ## Take reactive values structure and convert them to nested
+    ## lists.
+    if (class(rv) != "reactivevalues")
+        rv else lapply(shiny::reactiveValuesToList(rv),rv_lst2lst)
 }
 
 conf2rv_conf <- function(conf,rv) {
