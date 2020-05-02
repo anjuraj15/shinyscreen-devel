@@ -158,21 +158,20 @@ server_conf <- function(input,output,session,rv,rf) {
     ## ***** shinyFiles observers *****
     droot <- rf$get_proj_vol
     dpath <- rf$get_proj_path
-    vs <- vols()
     shinyFiles::shinyFileChoose(input, 'impKnownListB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=vs)
+                                defaultPath=dpath(),roots=volumes)
     shinyFiles::shinyFileChoose(input, 'impUnkListB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=vs)
+                                defaultPath=dpath(),roots=volumes)
     shinyFiles::shinyFileChoose(input, 'impSetIdB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=vs)
+                                defaultPath=dpath(),roots=volumes)
     
     shinyFiles::shinyFileSave(input, 'saveConfB',defaultRoot=droot(),
-                              defaultPath=dpath(),roots=vs)
+                              defaultPath=dpath(),roots=volumes)
     shinyFiles::shinyFileChoose(input, 'restoreConfB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=vs)
+                                defaultPath=dpath(),roots=volumes)
     shinyFiles::shinyFileChoose(input, 'mzMLB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=vs)
-    shinyFiles::shinyDirChoose(input, 'switchProjB',roots=vs)
+                                defaultPath=dpath(),roots=volumes)
+    shinyFiles::shinyDirChoose(input, 'switchProjB',roots=volumes)
 
     obsrv_e(input$saveConfB, {
         conf<-rv_conf2conf(rv)
