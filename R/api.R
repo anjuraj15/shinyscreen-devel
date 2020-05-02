@@ -19,15 +19,17 @@ run <- function(fn_conf) {
     dir.create(conf$project,
                showWarnings = F,
                recursive = T)
-    
-    withr::with_dir(new=conf$project,code = run_in_dir(conf))
+
+    m <- new_state(conf=conf,
+                   GUI=F)    
+    withr::with_dir(new=conf$project,code = run_in_dir(m))
     return()
 }
 
 
 ##' @export
-run_in_dir <- function(conf) {
-    m <- load_inputs(conf)
+run_in_dir <- function(m) {
+    m <- load_inputs(m)
     m <- mk_comp_tab(m)
     m <- gen_base_tab(m)
     stop()
