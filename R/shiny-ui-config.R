@@ -174,7 +174,7 @@ server_conf <- function(input,output,session,rv,rf) {
     shinyFiles::shinyDirChoose(input, 'switchProjB',roots=volumes)
 
     obsrv_e(input$saveConfB, {
-        conf<-rv_conf2conf(rv)
+        conf<-rv_lst2lst(rv)
         vol <- vol_f()
         fn <- shinyFiles::parseSavePath(roots=vol_f,input$saveConfB)[["datapath"]]
         validate1(fn,msg="Invalid file to save config to.")
@@ -182,12 +182,15 @@ server_conf <- function(input,output,session,rv,rf) {
     })
 
     obsrv_e(input$restoreConfB,{
-        fn <- shinyFiles::parseSavePath(roots=vol_f,input$saveConfB)[["datapath"]]
-        validate(need())
-        validate1(fn,msg="Something went wrong with the config file name.")
-        validate1(file.exists(fn),msg="The file is unreadable.")
+        fn <- shinyFiles::parseFilePaths(roots=volumes,input$restoreConfB)[["datapath"]]
+        assert(file.exists(fn), msg="The file is unreadable.")
         conf <- read_conf(fn)
-        rv <- conf2rv_conf(conf,rv)
+        rv$conf <- lst2rv_lst(conf)
+        for (nm in names(conf$compounds)) {
+            shiny::updateTextInput(session=session,
+                                   inputId=nm,
+                                   value=conf$compounds[[nm]])
+        }
         
     })
     
@@ -197,21 +200,21 @@ server_conf <- function(input,output,session,rv,rf) {
 
     ## ***** Render *****
     output$fnKnownLCtrl <- shiny::renderUI({
-        txt_file_input(inputId = 'fnKnownL',
+        txt_file_input(inputId = 'known',
                        input = input,
                        label = html("The list of knowns. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
                        fileB = 'impKnownListB',
                        volumes=volumes)
     })
     output$fnUnkLCtrl <- shiny::renderUI({
-        txt_file_input(inputId = 'fnUnkL',
+        txt_file_input(inputId = 'unknown',
                        input = input,
                        label = html("The list of unknowns. Required columns: <i>ID</i>, <i>mz</i> and <i>RT</i> (<i>RT</i> can be empty)."),
                        fileB = 'impUnkListB',
                        volumes=volumes)
     })
     output$fnSetIdCtrl <- shiny::renderUI({
-        txt_file_input(inputId = 'fnSetId',
+        txt_file_input(inputId = 'sets',
                        input = input,
                        label = html("Set table. Required columns <i>ID</i> and <i>set</i>."),
                        fileB = 'impSetIdB',
