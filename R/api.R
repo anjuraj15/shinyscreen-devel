@@ -46,9 +46,7 @@ gen_base_ftab <- function(m) {
 }
 
 ##' @export
-load_inputs <- function(conf) {
-    m<-list()
-    m$conf <- conf
+load_inputs <- function(m) {
     m$input$tab$mzml <- file2tab(m$conf$data)
     m$input$tab$known <- if (shiny::isTruthy(m$input$tab$known))
                              file2tab(m$conf$compounds$known) else EMPTY_KNOWN
