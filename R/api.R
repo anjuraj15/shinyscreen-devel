@@ -48,10 +48,10 @@ load_inputs <- function(conf) {
     m<-list()
     m$conf <- conf
     m$input$tab$mzml <- file2tab(m$conf$data)
-    m$input$tab$known <- file2tab(m$conf$compounds$known)
-    m$input$tab$unknown <- if (shiny::isTruthy(m$input$tab$unknown))  {
-                               file2tab(m$conf$compounds$unknown)
-                           } else EMPTY_UNK
+    m$input$tab$known <- if (shiny::isTruthy(m$input$tab$known))
+                             file2tab(m$conf$compounds$known) else EMPTY_KNOWN
+    m$input$tab$unknown <- if (shiny::isTruthy(m$input$tab$unknown))
+                               file2tab(m$conf$compounds$unknown) else EMPTY_UNK
     m$input$tab$setid <- read_setid(m$conf$compounds$sets,
                                     m$input$tab$known,
                                     m$input$tab$unknown)
@@ -113,12 +113,14 @@ vrfy_conf <- function(conf) {
     fn_cmpd_sets <- conf$compounds$sets
 
     ## ** Compound lists and sets
-    assertthat::assert_that(file.exists(fn_cmpd_known),
-                            msg=paste("Unable to read known compounds file:",fn_cmpd_known))
+
     assertthat::assert_that(file.exists(fn_cmpd_sets),
-                            msg=paste("Unable to read compound sets file:",fn_cmpd_sets))
+                            msg=paste("Cannot find the compound sets file:",fn_cmpd_sets))
+    
+    if (!is.null(fn_cmpd_known)) assertthat::assert_that(file.exists(fn_cmpd_known),
+                                                             msg=paste("Cannot find known compounds file:",fn_cmpd_known))        
     if (!is.null(fn_cmpd_unk)) assertthat::assert_that(file.exists(fn_cmpd_unk),
-                                                       msg=paste("Unable to read unknown compounds file:",fn_cmpd_unk))
+                                                       msg=paste("Cannot find unknown compounds file:",fn_cmpd_unk))
 
 
     ## * Data files
