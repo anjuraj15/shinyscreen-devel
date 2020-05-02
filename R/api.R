@@ -42,6 +42,7 @@ gen_base_ftab <- function(m) {
     df <- gen_sup_ftab(files,m$out$tab$comp)
     tab2file(df,file.path(m$conf$project,FN_FTAB_BASE))
     m$out$tab$ftab <- df
+    m
 }
 
 ##' @export
