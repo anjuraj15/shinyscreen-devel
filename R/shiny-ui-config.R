@@ -184,14 +184,13 @@ server_conf <- function(input,output,session,rv,rf) {
     obsrv_e(input$restoreConfB,{
         fn <- shinyFiles::parseFilePaths(roots=volumes,input$restoreConfB)[["datapath"]]
         assert(file.exists(fn), msg="The file is unreadable.")
-        conf <- read_conf(fn)
-        rv$conf <- lst2rv_lst(conf)
-        for (nm in names(conf$compounds)) {
+        rv$conf <- lst2rv_lst(read_conf(fn))
+        rv <- load_inputs(rv)
+        for (nm in names(rv$conf$compounds)) {
             shiny::updateTextInput(session=session,
                                    inputId=nm,
-                                   value=conf$compounds[[nm]])
+                                   value=rv$conf$compounds[[nm]])
         }
-        
     })
     
 
