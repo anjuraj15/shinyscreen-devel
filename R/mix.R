@@ -601,3 +601,11 @@ write_conf <- function(conf,fn) {
 read_conf <- function(fn) {
     yaml::yaml.load_file(fn)
 }
+
+
+new_state <- function(conf,GUI) {
+    m <- list()
+    m$conf <- conf
+    m$GUI <- GUI
+    m
+}
