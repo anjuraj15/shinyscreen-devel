@@ -194,6 +194,30 @@ server_conf <- function(input,output,session,rv,rf) {
     
 
     obsrv_e(rv$conf,message("updated rv"))
-  
+
+
+    ## ***** Render *****
+    output$fnKnownLCtrl <- shiny::renderUI({
+        txt_file_input(inputId = 'fnKnownL',
+                       input = input,
+                       label = html("The list of knowns. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
+                       fileB = 'impKnownListB',
+                       volumes=volumes)
+    })
+    output$fnUnkLCtrl <- shiny::renderUI({
+        txt_file_input(inputId = 'fnUnkL',
+                       input = input,
+                       label = html("The list of unknowns. Required columns: <i>ID</i>, <i>mz</i> and <i>RT</i> (<i>RT</i> can be empty)."),
+                       fileB = 'impUnkListB',
+                       volumes=volumes)
+    })
+    output$fnSetIdCtrl <- shiny::renderUI({
+        txt_file_input(inputId = 'fnSetId',
+                       input = input,
+                       label = html("Set table. Required columns <i>ID</i> and <i>set</i>."),
+                       fileB = 'impSetIdB',
+                       volumes=volumes)
+    })
+    
     rv
 }
