@@ -150,6 +150,18 @@ react_conf_f <- function(input,output,session,rv,rf) {
         message('Relative project path is: ',res)
         res
     })
+
+    rf$get_compounds <- react_f({
+        ## Consult the input text boxes for any files, then load the
+        ## compound tables.
+        rv$conf$compounds <- shiny::reactiveValues(known=input$known,
+                                                   unknown=input$unknown,
+                                                   sets=input$sets)
+        rv <- load_compound_input(rv)
+        rv$input$tab <- lst2rv_lst(rv$input$tab)
+        rv
+    })
+
     
     rf
 }
