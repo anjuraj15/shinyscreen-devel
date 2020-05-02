@@ -52,10 +52,10 @@ RT_DIGITS=2
 M_DIGITS=4
 PAL="Dark2"
 
-REST_TXT_INP<-c("fnKnownL",
-                "fnUnkL",
-                "fnSetId",
-                "tagsInp")
+## REST_TXT_INP<-c("fnKnownL",
+##                 "fnUnkL",
+##                 "fnSetId",
+##                 "tagsInp")
 
 REST_TAB<-c("mzml")
 
