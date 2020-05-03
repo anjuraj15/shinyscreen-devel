@@ -21,6 +21,7 @@ obsrv <- shiny::observe
 obsrv_e <- shiny::observeEvent
 vols <- shinyFiles::getVolumes
 vol_f <- vols()
+isol <- shiny::isolate
 volumes <- function() c(wd=getwd(), shinyFiles::getVolumes()())
 validate1 <- function(expr,msg) shiny::validate(shiny::need(expr,msg))
 
@@ -89,17 +90,17 @@ txt_file_input <- function(inputId,input,fileB,label,volumes) {
     
 }
 
-rv_lst2lst <- function(rv) {
+rev2list <- function(rv) {
     ## Take reactive values structure and convert them to nested
     ## lists.
     if (class(rv) != "reactivevalues")
-        rv else lapply(shiny::reactiveValuesToList(rv),rv_lst2lst)
+        rv else lapply(shiny::reactiveValuesToList(rv),rev2list)
 }
 
-lst2rv_lst <- function(lst) {
+list2rev <- function(lst) {
     ## Take nested named list and create reactive values from it.
     if (class(lst) != "list")
-        lst else do.call(react_v,lapply(lst,lst2rv_lst))
+        lst else do.call(react_v,lapply(lst,list2rev))
 }
 
 txt2tags <- function(txt) {

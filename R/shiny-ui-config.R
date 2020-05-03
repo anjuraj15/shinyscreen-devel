@@ -158,7 +158,7 @@ react_conf_f <- function(input,output,session,rv,rf) {
                                                    unknown=input$unknown,
                                                    sets=input$sets)
         rv <- load_compound_input(rv)
-        rv$input$tab <- lst2rv_lst(rv$input$tab)
+        rv$input$tab <- list2rev(rv$input$tab)
         rv
     })
 
@@ -169,7 +169,7 @@ react_conf_f <- function(input,output,session,rv,rf) {
                                  file2tab(file=rv$conf$data) 
                              } else EMPTY_MZML
 
-        rv$input <- lst2rv_lst(rv$input)
+        rv$input <- list2rev(rv$input)
         rv
     })
 
@@ -203,7 +203,7 @@ server_conf <- function(input,output,session,rv,rf) {
     shinyFiles::shinyDirChoose(input, 'switchProjB',roots=volumes)
 
     obsrv_e(input$saveConfB, {
-        conf<-rv_lst2lst(rv)
+        conf<-rev2list(rv)
         vol <- vol_f()
         fn <- shinyFiles::parseSavePath(roots=vol_f,input$saveConfB)[["datapath"]]
         validate1(fn,msg="Invalid file to save config to.")
@@ -213,7 +213,7 @@ server_conf <- function(input,output,session,rv,rf) {
     obsrv_e(input$restoreConfB,{
         fn <- shinyFiles::parseFilePaths(roots=volumes,input$restoreConfB)[["datapath"]]
         assert(file.exists(fn), msg="The file is unreadable.")
-        rv$conf <- lst2rv_lst(read_conf(fn))
+        rv$conf <- list2rev(read_conf(fn))
         for (nm in names(rv$conf$compounds)) {
             shiny::updateTextInput(session=session,
                                    inputId=nm,
@@ -283,9 +283,6 @@ server_conf <- function(input,output,session,rv,rf) {
 
     output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
         input$updTagsB
-        message("BEFORE-----")
-        str(rv$input$tab$mzml)
-        
         rv <- rf$get_compounds()
         rv <- rf$initial_mzml()
         all_sets <- unique(rv$input$tab$setid$set)
@@ -294,8 +291,7 @@ server_conf <- function(input,output,session,rv,rf) {
         levels(df$set) <- all_sets
         df$mode <- factor(df$mode)
         levels(df$mode) <- names(MODEMAP)
-        message("AFTER-----")
-        str(rv$input$tab$mzml)
+        
         
         rhandsontable::rhandsontable(df,stretchH="all")
     })
