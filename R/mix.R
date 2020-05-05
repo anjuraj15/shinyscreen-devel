@@ -604,10 +604,13 @@ read_conf <- function(fn) {
     yaml::yaml.load_file(fn)
 }
 
-
 new_state <- function(conf,GUI) {
     m <- list()
     m$conf <- conf
     m$GUI <- GUI
+    m$out$tab <- list()
+    m$input$tab$mzml <- EMPTY_MZML
+    m$input$tab$known <- EMPTY_KNOWN
+    m$input$tab$unknown <- EMPTY_UNKNOWN
     m
 }
