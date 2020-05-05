@@ -1,0 +1,20 @@
+#+TITLE: Empirical Notes on Shiny 
+
+
+- It used to be better for Shinyscreen to retain the bare minimum of
+  observers and keep as much of functionality as possible inside
+  reactive functions. The fluidity of UI experience was reported to be
+  better. Probably the logic of the application got better, too. But,
+  going full reactive can sometimes be exhausting. These days, we
+  build some stuff inside observers. All in moderation, though.
+
+- Assignment to a reactive value does not add a dependency on that
+  value.
+
+- A reactive values list is not adding a dependency on all its
+  members. Not even if it was nested inside some other reactive values
+  list.
+
+- An ordinary list inside reactive values list, if used, will add
+  dependency on all its members. Even if only some of its members are
+  used, the dependency is on all the members.
