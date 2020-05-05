@@ -64,7 +64,7 @@ load_data_input <- function(m) {
 
 ##' @export
 load_inputs <- function(m) {
-    m <- load_compound_inputs(m)
+    m <- load_compound_input(m)
     m <- load_data_input(m)
     m
 }
