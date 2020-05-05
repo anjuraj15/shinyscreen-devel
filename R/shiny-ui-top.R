@@ -43,20 +43,24 @@ mk_ui <- function (fn_style) {
 
 }
 
-mk_shinyscreen <- function(fn_style=system.file('www/custom.css',package = 'shinyscreen')) {
+mk_shinyscreen <- function(wd=getwd(),fn_style=system.file('www/custom.css',package = 'shinyscreen')) {
+    roots <- mk_roots(wd)
     server <- function(input,output,session) {
         ## Top-level server function.
-        rv <- shiny::reactiveValues(GUI=T)   # Container for all
-                                        # reactive values.
+        rv <- new_rv_state(project=wd)   # Container for all
+                                         # reactive values.
+
+        rf <- list()           # Container for all
+                               # reactive functions.
         
-        rf <- list()                         # Container for all
-                                             # reactive functions.
-        
-        rv <- react_conf_v(input,output,session,rv=rv,rf=rf) # Config related r. values.
         rf <- react_conf_f(input,output,session,rv=rv,rf=rf) # Config related r. functions.
 
-        ## Observers and renderers.
-        rv <- server_conf(input,output,session,rv=rv,rf=rf)
+        ## ## Observers and renderers.
+        rv <- server_conf(input,output,session,rv=rv,rf=rf,roots=roots)
+        obsrv_e(rv,{
+            message(paste("rv changed at ",Sys.time()))
+        })
+        
         session$onSessionEnded(function () {
             stopApp()
         })
@@ -67,9 +71,9 @@ mk_shinyscreen <- function(fn_style=system.file('www/custom.css',package = 'shin
 
 
 ##' @export
-launch <- function(GUI=T,fn_conf="",...) {
+launch <- function(GUI=T,fn_conf="",wd=getwd(),...) {
     if (GUI) {
-        app<-mk_shinyscreen()
+        app<-mk_shinyscreen(wd=wd)
         shiny::runApp(appDir = app,...)
     } else {
         if (nchar(fn_conf)==0) {

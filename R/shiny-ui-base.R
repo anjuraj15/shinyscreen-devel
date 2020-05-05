@@ -92,13 +92,13 @@ txt_file_input <- function(inputId,input,fileB,label,volumes) {
 rev2list <- function(rv) {
     ## Take reactive values structure and convert them to nested
     ## lists.
-    if (class(rv) != "reactivevalues")
+    if (class(rv)[[1]] != "reactivevalues")
         rv else lapply(shiny::reactiveValuesToList(rv),rev2list)
 }
 
 list2rev <- function(lst) {
     ## Take nested named list and create reactive values from it.
-    if (class(lst) != "list")
+    if (class(lst)[[1]] != "list")
         lst else do.call(react_v,lapply(lst,list2rev))
 }
 
@@ -109,35 +109,43 @@ txt2tags <- function(txt) {
          } else list()
     
     
-    as.list(c("unspecified",x))
+    as.list(c(TAG_DEF,x))
 }
 
 combine_tags <- function(df_tags,txt_tags) {
     diff <- setdiff(df_tags,txt_tags)
-    for (x in diff) df_tags[df_tags %in% x] <- "unspecified"
+    for (x in diff) df_tags[df_tags %in% x] <- TAG_DEF
     df_tags <- factor(as.character(df_tags))
-    df_tags <- factor(as.character(df_tags),levels = unique(c('unspecified',levels(df_tags),txt_tags)))
+    df_tags <- factor(as.character(df_tags),levels = unique(c(TAG_DEF,levels(df_tags),txt_tags)))
     df_tags
 }
 
 add_mzML_files<-function(df,paths) {
     lSet<-levels(df$set)
-    if (length(lSet>0) && !is.na(lSet)) {
+    if (length(lSet > 0) && !is.na(lSet)) {
+        
         nR<-length(paths)
-        if (nR>0) {
-            st<-nrow(df)+1
-            fi<-nrow(df)+nR
-            df[st:fi,'tag']<-levels(df$tag)[[1]]
-            df[st:fi,'set']<-levels(df$set)[[1]]
-            df[st:fi,'mode']<-levels(df$mode)[[1]]
-            df[st:fi,'Files']<-paths
+        if (nR > 0) {
+            st <- nrow(df)+1
+            fi <- nrow(df)+nR
+            df[st:fi,'tag'] <- levels(df$tag)[[1]]
+            df[st:fi,'set'] <- levels(df$set)[[1]]
+            df[st:fi,'mode'] <- levels(df$mode)[[1]]
+            df[st:fi,'Files'] <- paths
         }
-        df
     } else {
         warning("Define sets using the compound set table before trying to add files!")
-        df
+        
     }
+    df
 }
+
+new_rv_state <- function(project) {
+    p <- normalizePath(path=project,winslash = '/')
+    x <- react_v(m=list2rev(new_state(list(project=p,data=""),GUI=T)))
+    x
+}
+
 mk_roots <- function(wd) local({
     addons <- c("project"=normalizePath(wd,winslash = '/'))
     def_vol <- function() {

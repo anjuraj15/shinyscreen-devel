@@ -118,51 +118,18 @@ mk_ui_config <- function() {
                 side=confSideItem))
 }
 
-react_conf_v <- function(input,output,session,rv,rf) {
-    rv$conf <- react_v(data=CONF$data,
-                       project=CONF$project,
-                       compounds=react_v(known=CONF$compounds$known,
-                                         unknown=CONF$compounds$unknown,
-                                         sets=CONF$compounds$sets))
-
-    rv
-}
-
 react_conf_f <- function(input,output,session,rv,rf) {
 
-    rf$get_compounds <- react_f({
-        ## Consult the input text boxes for any files, then load the
-        ## compound tables.
-        rv$conf$compounds <- shiny::reactiveValues(known=input$known,
-                                                   unknown=input$unknown,
-                                                   sets=input$sets)
-        rv <- load_compound_input(rv)
-        rv$input$tab <- list2rev(rv$input$tab)
-        rv
-    })
-
-    rf$initial_mzml <- react_f({
-        ## Get data file table either from a CSV file, or create an
-        ## empty one.
-        rv$input$tab$mzml <- if (shiny::isTruthy(rv$conf$data)) {
-                                 file2tab(file=rv$conf$data) 
-                             } else EMPTY_MZML
-
-        rv$input <- list2rev(rv$input)
-        rv
-    })
-
-    rf$get_tags_from_txt <- react_f({
+    rf$get_tags_from_txt <- react_e(input$updTagsB,{
         ## Tags in the text box.
-        txt2tags(input$tagsInp)
+        if (isTruthy(input$tagsInp)) txt2tags(input$tagsInp) else TAG_DEF
     })
-
-    
     
     rf
 }
 
-server_conf <- function(input,output,session,rv,rf) {
+server_conf <- function(input,output,session,rv,rf,roots) {
+    
     ## ***** shinyFiles observers *****
 
 
@@ -197,22 +164,22 @@ server_conf <- function(input,output,session,rv,rf) {
     })
 
     obsrv_e(input$saveConfB, {
-        conf<-rev2list(rv)
-        vol <- vol_f()
-        fn <- shinyFiles::parseSavePath(roots=vol_f,input$saveConfB)[["datapath"]]
+        conf<-rev2list(rv$m$conf)
+        fn <- shinyFiles::parseSavePath(roots=roots$get,input$saveConfB)[["datapath"]]
         validate1(fn,msg="Invalid file to save config to.")
-        write_conf(conf,fn)
+        write_state(rev2list(rv$m),fn)
     })
 
     obsrv_e(input$restoreConfB,{
-        fn <- shinyFiles::parseFilePaths(roots=volumes,input$restoreConfB)[["datapath"]]
+        fn <- shinyFiles::parseFilePaths(roots=roots$get,input$restoreConfB)[["datapath"]]
         assert(file.exists(fn), msg="The file is unreadable.")
-        rv$conf <- list2rev(read_conf(fn))
-        for (nm in names(rv$conf$compounds)) {
+        rv$m$conf <- list2rev(read_conf(fn))
+        for (nm in names(rv$m$conf$compounds)) {
             shiny::updateTextInput(session=session,
                                    inputId=nm,
-                                   value=rv$conf$compounds[[nm]])
+                                   value=rv$m$conf$compounds[[nm]])
         }
+        ## Tags
     })
 
     obsrv_e(input$mzMLB,
@@ -220,19 +187,41 @@ server_conf <- function(input,output,session,rv,rf) {
         shiny::req(input$mzMLB)
         fchoice<-shinyFiles::parseFilePaths(roots = roots$get,input$mzMLB)
         paths<-fchoice[["datapath"]]
-        shiny::validate(need(rv$input$tab$mzml,"There is no skeleton table. Sets? Tags?"))
         df <- rhandsontable::hot_to_r(input$mzMLtabCtrl)
         df <- add_mzML_files(df,paths)
-        mzml <- rv$input$tab$mzml
-        mzml$Files <- df$Files
-        mzml$set <- as.character(df$set)
-        mzml$tag <- as.character(df$tag)
-        mzml$mode <- as.character(df$mode)
-        rv$input$tab$mzml <- mzml
-        message('HERE???',input$mzMLB)
+        rv$m$input$tab$mzml <- disp2mzml(df)
     })
 
-    obsrv_e(rv$conf,message("updated rv$conf"))
+    obsrv_e(rv$m$conf,message("updated rv$m$conf"))
+
+    obsrv({
+        ## Building rv objects here. Probably should change to
+        ## something like reactive get_m.
+        
+        rv$m$conf$compounds$known <- input$known
+        rv$m$conf$compounds$unknown <- input$unknown
+        rv$m$conf$compounds$sets <- input$sets
+        
+        assert(isTruthy(rv$m$conf$compounds$known) || isTruthy(rv$m$conf$compounds$unknown),
+               msg = "Please provide at least one (known, or unknown) compounds table.")
+        assert(isTruthy(rv$m$conf$compounds$sets), msg = "Please provide the compounds set table.")
+        rv$m <- load_compound_input(rv$m)
+        if (nrow(rv$m$input$tab$mzml)==0 && file.exists(rv$m$conf$data)) rv$m <- load_data_input(rv$m)
+    })
+
+    obsrv_e(rv$m$conf$project,{
+        ## Update shinyFiles roots when project path changes.
+        shiny::req(rv$m$conf$project)
+        dir <- normalizePath(rv$m$conf$project,winslash = '/')
+        if (roots$get()[["project"]] != dir) {
+            roots$set(c("start"= roots$get()[['project']] ,
+                        "project" = dir))
+            
+        } else {
+            roots$set(c("project" = dir))
+        }
+    })
+
 
 
     ## ***** Render *****
@@ -248,48 +237,40 @@ server_conf <- function(input,output,session,rv,rf) {
                        input = input,
                        label = html("The list of unknowns. Required columns: <i>ID</i>, <i>mz</i> and <i>RT</i> (<i>RT</i> can be empty)."),
                        fileB = 'impUnkListB',
-                       volumes=volumes)
+                       volumes=roots$get)
     })
     output$fnSetIdCtrl <- shiny::renderUI({
         txt_file_input(inputId = 'sets',
                        input = input,
                        label = html("Compounds set table. Required columns <i>ID</i> and <i>set</i>."),
                        fileB = 'impSetIdB',
-                       volumes=volumes)
+                       volumes=roots$get)
     })
 
-    ## shiny::observeEvent(input$updTagsB,{
-    ##     ## Modify tags in mzml
-    ##     mzml <- rv$input$tab$mzml
-    ##     shiny::req(mzml)
-    ##     ttags <- mzml$tag
-    ##     ltags <- levels(ttags)
-    ##     itags <- get_all_tags()
-    ##     diff <- setdiff(ltags,itags)
-
-    ##     for (m in diff) {
-    ##         ttags[ttags %in% m] <- 'unspecified'
-    ##     }
-    ##     ttags <- factor(as.character(ttags))
-    ##     ttags <- factor(as.character(ttags),levels=unique(c('unspecified',levels(ttags),itags)))
-    ##     rv$input$mzml$tag <- ttags
-    ## })
-    
-
     output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-        input$updTagsB
-        rv <- rf$get_compounds()
-        rv <- rf$initial_mzml()
-        all_sets <- unique(rv$input$tab$setid$set)
-        df <- rv$input$tab$mzml
-        df$set <- factor(df$set)
-        levels(df$set) <- all_sets
-        df$mode <- factor(df$mode)
-        levels(df$mode) <- names(MODEMAP)
-        
-        
-        rhandsontable::rhandsontable(df,stretchH="all")
+        assert(rv$m$input$tab$setid, msg = "Compounds set table not built yet.")
+        mzml <- rv$m$input$tab$mzml
+        all_sets <- unique(rv$m$input$tab$setid$set)
+        rhandsontable::rhandsontable(mzml2disp(mzml, all_sets),stretchH="all")
     })
     
     rv
 }
+
+
+mzml2disp <- function(mzml,all_sets) {
+    ## Add factors for nicer rhandsontable output.
+    df <- as.data.frame(mzml,stringsAsFactors=F)
+    df$set <- factor(df$set,levels=all_sets)
+    df$mode <- factor(df$mode,levels=names(MODEMAP))
+    df
+}
+
+disp2mzml <- function(df) {
+    df$set <- as.character(df$set)
+    df$mode <- as.character(df$mode)
+    df$tag <- as.character(df$tag)
+    dtable(df)
+}
+
+
