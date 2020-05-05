@@ -596,12 +596,16 @@ read_setid <- function(fn,known,unk) {
 }
 
 
-write_conf <- function(conf,fn) {
-    yaml::write_yaml(x=conf,file=fn)
+write_conf <- function(m,fn) {
+    m$conf$data <- file.path(m$conf$project,FN_DATA_TAB)
+    yaml::write_yaml(x=m$conf,file=fn)
+    
+    
+    
 }
-
-read_conf <- function(fn) {
-    yaml::yaml.load_file(fn)
+write_state <- function(m,fn_conf) {
+    write_conf(m,fn_conf)
+    tab2file(tab=m$input$tab$mzml,file=file.path(m$conf$project,FN_DATA_TAB))
 }
 
 new_state <- function(conf,GUI) {

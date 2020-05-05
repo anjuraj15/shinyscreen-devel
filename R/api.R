@@ -107,12 +107,15 @@ mk_comp_tab <- function(m) {
 }
 
 ##' @export
-read_conf <- function(fn_conf) {
-    assert(file.exists(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
-    conf <- yaml::yaml.load_file(fn_conf)
-    conf <- vrfy_conf(conf)
-    conf
+read_conf <- function(fn) {
+    yaml::yaml.load_file(fn)
 }
+## read_conf <- function(fn_conf) {
+##     assert(file.exists(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
+##     conf <- yaml::yaml.load_file(fn_conf)
+##     conf <- vrfy_conf(conf)
+##     conf
+## }
 
 ##' @export
 vrfy_conf <- function(conf) {
