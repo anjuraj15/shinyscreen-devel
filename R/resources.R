@@ -124,3 +124,6 @@ EMPTY_MZML <- dtable(Files=character(0),
                      tag=character(0),
                      mode=character(0),
                      set=character(0))
+
+
+FN_DATA_TAB <- "data-files.csv"
