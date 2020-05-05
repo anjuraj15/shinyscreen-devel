@@ -120,8 +120,9 @@ mk_ui_config <- function() {
 
 react_conf_f <- function(input,output,session,rv,rf) {
 
-    rf$get_tags_from_txt <- react_e(input$updTagsB,{
+    rf$get_tags_from_txt <- react({
         ## Tags in the text box.
+        input$updTagsB
         if (isTruthy(input$tagsInp)) txt2tags(input$tagsInp) else TAG_DEF
     })
     
@@ -207,6 +208,17 @@ server_conf <- function(input,output,session,rv,rf,roots) {
         assert(isTruthy(rv$m$conf$compounds$sets), msg = "Please provide the compounds set table.")
         rv$m <- load_compound_input(rv$m)
         if (nrow(rv$m$input$tab$mzml)==0 && file.exists(rv$m$conf$data)) rv$m <- load_data_input(rv$m)
+
+        
+        ## Rebuild tags.
+        isol({
+            df_tags <- unique(rv$m$input$tab$mzml$tag)
+            txt_tags <- input$tagsInp
+            new_tags <- combine_tags(df_tags,txt_tags)
+            shiny::updateTextInput(session=session,
+                                   inputId=input$tagsInp,
+                                   value=new_tags)})
+        message("Here at:",Sys.time())
     })
 
     obsrv_e(rv$m$conf$project,{
@@ -249,19 +261,24 @@ server_conf <- function(input,output,session,rv,rf,roots) {
 
     output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
         assert(rv$m$input$tab$setid, msg = "Compounds set table not built yet.")
+        tags <- unique(rf$get_tags_from_txt())
         mzml <- rv$m$input$tab$mzml
+        message("mzml: ----")
+        print(mzml)
+        message("---- mzml")
         all_sets <- unique(rv$m$input$tab$setid$set)
-        rhandsontable::rhandsontable(mzml2disp(mzml, all_sets),stretchH="all")
+        rhandsontable::rhandsontable(mzml2disp(mzml, sets = all_sets, tags = tags),stretchH="all")
     })
     
     rv
 }
 
 
-mzml2disp <- function(mzml,all_sets) {
+mzml2disp <- function(mzml,sets, tags) {
     ## Add factors for nicer rhandsontable output.
     df <- as.data.frame(mzml,stringsAsFactors=F)
-    df$set <- factor(df$set,levels=all_sets)
+    df$set <- factor(df$set,levels=sets)
+    df$tag <- factor(df$tag,levels=tags)
     df$mode <- factor(df$mode,levels=names(MODEMAP))
     df
 }
@@ -274,3 +291,20 @@ disp2mzml <- function(df) {
 }
 
 
+txt2tags <- function(txt) {
+    ## Turns a string into tags
+    x <- if (shiny::isTruthy(txt)) {
+             trimws(unlist(strsplit(txt, ",")))
+         } else list()
+    
+    
+    as.list(c(TAG_DEF,x))
+}
+
+combine_tags <- function(df_tags,txt_tags) {
+    diff <- setdiff(df_tags,txt_tags)
+    for (x in diff) df_tags[df_tags %in% x] <- TAG_DEF
+    df_tags <- factor(as.character(df_tags))
+    df_tags <- factor(as.character(df_tags),levels = unique(c(TAG_DEF,levels(df_tags),txt_tags)))
+    df_tags
+}

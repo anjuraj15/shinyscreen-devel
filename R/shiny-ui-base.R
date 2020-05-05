@@ -102,24 +102,6 @@ list2rev <- function(lst) {
         lst else do.call(react_v,lapply(lst,list2rev))
 }
 
-txt2tags <- function(txt) {
-    ## Turns a string into tags
-    x <- if (shiny::isTruthy(txt)) {
-             trimws(unlist(strsplit(txt, ",")))
-         } else list()
-    
-    
-    as.list(c(TAG_DEF,x))
-}
-
-combine_tags <- function(df_tags,txt_tags) {
-    diff <- setdiff(df_tags,txt_tags)
-    for (x in diff) df_tags[df_tags %in% x] <- TAG_DEF
-    df_tags <- factor(as.character(df_tags))
-    df_tags <- factor(as.character(df_tags),levels = unique(c(TAG_DEF,levels(df_tags),txt_tags)))
-    df_tags
-}
-
 add_mzML_files<-function(df,paths) {
     lSet<-levels(df$set)
     if (length(lSet > 0) && !is.na(lSet)) {
