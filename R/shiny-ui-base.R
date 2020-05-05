@@ -19,10 +19,9 @@ react_f <- shiny::reactive
 react_e <- shiny::eventReactive
 obsrv <- shiny::observe
 obsrv_e <- shiny::observeEvent
-vols <- shinyFiles::getVolumes
-vol_f <- vols()
 isol <- shiny::isolate
-volumes <- function() c(wd=getwd(), shinyFiles::getVolumes()())
+
+# volumes <- function() c(wd=getwd(), shinyFiles::getVolumes()())
 validate1 <- function(expr,msg) shiny::validate(shiny::need(expr,msg))
 
 
@@ -139,3 +138,25 @@ add_mzML_files<-function(df,paths) {
         df
     }
 }
+mk_roots <- function(wd) local({
+    addons <- c("project"=normalizePath(wd,winslash = '/'))
+    def_vol <- function() {
+             path <- addons[['project']]
+             svols <- shinyFiles::getVolumes()()
+             vol <- path2vol(path)
+             sel <- match(vol,svols)
+             res <- names(svols)[[sel]]
+             res
+         }
+    list(set=function (rts) {addons <<- rts},
+         get=function () c(addons,shinyFiles::getVolumes()()),
+         def_vol=def_vol,
+         def_path=function() {
+             vol <- def_vol()
+             svols <- shinyFiles::getVolumes()()
+             pref <- svols[[vol]]
+             res <- sub(paste0(pref,'(.*)'),'\\1',addons[["project"]])
+             message('Relative path: ',res)
+             res
+         })
+})

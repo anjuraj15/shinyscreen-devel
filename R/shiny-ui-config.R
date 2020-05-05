@@ -129,27 +129,6 @@ react_conf_v <- function(input,output,session,rv,rf) {
 }
 
 react_conf_f <- function(input,output,session,rv,rf) {
-    rf$get_proj_vol <- react_e(rv$conf$project,{
-        ## For shinyfiles dialogs.
-        path <- normalizePath(rv$conf$project, winslash = '/')
-        vls <- vols()() #Ugly! :)
-        vol <- path2vol(path)
-        sel<-match(vol,vls)
-        validate1(sel,msg="Yikes! Unable to detect current project's volume.")
-        res<-names(vls)[[sel]]
-        res
-    })
-
-    rf$get_proj_path <- react_e(rv$conf$project,{
-        ## For shinyfiles dialogs.
-        wd <- rv$conf$project
-        vol <- rf$get_proj_vol()
-        v <- vols()()
-        pref<-v[[vol]]
-        res<-wd 
-        message('Relative project path is: ',res)
-        res
-    })
 
     rf$get_compounds <- react_f({
         ## Consult the input text boxes for any files, then load the
@@ -185,22 +164,37 @@ react_conf_f <- function(input,output,session,rv,rf) {
 
 server_conf <- function(input,output,session,rv,rf) {
     ## ***** shinyFiles observers *****
-    droot <- rf$get_proj_vol
-    dpath <- rf$get_proj_path
-    shinyFiles::shinyFileChoose(input, 'impKnownListB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=volumes)
-    shinyFiles::shinyFileChoose(input, 'impUnkListB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=volumes)
-    shinyFiles::shinyFileChoose(input, 'impSetIdB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=volumes)
+
+
+
+    shinyFiles::shinyFileChoose(input, 'impKnownListB',defaultRoot=roots$def_vol(),
+                                defaultPath=roots$def_path(),roots=roots$get)
+    shinyFiles::shinyFileChoose(input, 'impUnkListB',defaultRoot=roots$def_vol(),
+                                defaultPath=roots$def_path(),roots=roots$get)
+    shinyFiles::shinyFileChoose(input, 'impSetIdB',defaultRoot=roots$def_vol(),
+                                defaultPath=roots$def_path(),roots=roots$get)
     
-    shinyFiles::shinyFileSave(input, 'saveConfB',defaultRoot=droot(),
-                              defaultPath=dpath(),roots=volumes)
-    shinyFiles::shinyFileChoose(input, 'restoreConfB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=volumes)
-    shinyFiles::shinyFileChoose(input, 'mzMLB',defaultRoot=droot(),
-                                defaultPath=dpath(),roots=volumes)
-    shinyFiles::shinyDirChoose(input, 'switchProjB',roots=volumes)
+    shinyFiles::shinyFileSave(input, 'saveConfB',defaultRoot=roots$def_vol(),
+                              defaultPath=roots$def_path(),roots=roots$get)
+    shinyFiles::shinyFileChoose(input, 'restoreConfB',defaultRoot=roots$def_vol(),
+                                defaultPath=roots$def_path(),roots=roots$get)
+    shinyFiles::shinyFileChoose(input, 'mzMLB',defaultRoot=roots$def_vol(),
+                                defaultPath=roots$def_path(),roots=roots$get)
+    shinyFiles::shinyDirChoose(input, 'switchProjB',
+                               roots=roots[["get"]],
+                               defaultRoot = "Computer",
+                               defaultPath = "")
+
+
+    obsrv_e(input$switchProjB,{
+        ## Update volumes function as needed.
+        spath<-shinyFiles::parseDirPath(roots=roots$get,
+                                        selection=input$switchProjB)
+        path<- if(length(spath)>0) spath[[1]] else NA
+        if (shiny::isTruthy(path)) {
+            rv$m$conf$project <- path
+        }
+    })
 
     obsrv_e(input$saveConfB, {
         conf<-rev2list(rv)
@@ -223,7 +217,8 @@ server_conf <- function(input,output,session,rv,rf) {
 
     obsrv_e(input$mzMLB,
     {
-        fchoice<-shinyFiles::parseFilePaths(roots = volumes,input$mzMLB)
+        shiny::req(input$mzMLB)
+        fchoice<-shinyFiles::parseFilePaths(roots = roots$get,input$mzMLB)
         paths<-fchoice[["datapath"]]
         shiny::validate(need(rv$input$tab$mzml,"There is no skeleton table. Sets? Tags?"))
         df <- rhandsontable::hot_to_r(input$mzMLtabCtrl)
@@ -246,7 +241,7 @@ server_conf <- function(input,output,session,rv,rf) {
                        input = input,
                        label = html("The list of knowns. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
                        fileB = 'impKnownListB',
-                       volumes=volumes)
+                       volumes=roots$get)
     })
     output$fnUnkLCtrl <- shiny::renderUI({
         txt_file_input(inputId = 'unknown',
