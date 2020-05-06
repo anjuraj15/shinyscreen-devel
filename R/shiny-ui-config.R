@@ -199,26 +199,15 @@ server_conf <- function(input,output,session,rv,rf,roots) {
         ## Building rv objects here. Probably should change to
         ## something like reactive get_m.
         
-        rv$m$conf$compounds$known <- input$known
-        rv$m$conf$compounds$unknown <- input$unknown
-        rv$m$conf$compounds$sets <- input$sets
-        
-        assert(isTruthy(rv$m$conf$compounds$known) || isTruthy(rv$m$conf$compounds$unknown),
-               msg = "Please provide at least one (known, or unknown) compounds table.")
-        assert(isTruthy(rv$m$conf$compounds$sets), msg = "Please provide the compounds set table.")
-        rv$m <- load_compound_input(rv$m)
-        if (nrow(rv$m$input$tab$mzml)==0 && file.exists(rv$m$conf$data)) rv$m <- load_data_input(rv$m)
+        m <- list()
+        m$conf$compounds$known <- input$known
+        m$conf$compounds$unknown <- input$unknown
+        m$conf$compounds$sets <- input$sets
+        m$conf$project <- rv$m$conf$project
+        m$conf$data <- file.path(m$conf$project,FN_DATA_TAB)
 
-        
-        ## Rebuild tags.
-        isol({
-            df_tags <- unique(rv$m$input$tab$mzml$tag)
-            txt_tags <- input$tagsInp
-            new_tags <- combine_tags(df_tags,txt_tags)
-            shiny::updateTextInput(session=session,
-                                   inputId=input$tagsInp,
-                                   value=new_tags)})
-        message("Here at:",Sys.time())
+        m$conf <- vrfy_conf(m$conf)
+        message("Building m at:",Sys.time())
     })
 
     obsrv_e(rv$m$conf$project,{
