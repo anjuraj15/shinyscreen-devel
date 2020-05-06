@@ -120,7 +120,20 @@ mk_ui_config <- function() {
 
 react_conf_f <- function(input,output,session,rv,rf) {
 
-    rf$get_tags_from_txt <- react({
+
+
+
+
+    rf$gen_cmpd_inputs <- react_f({
+
+        rv$m$conf$compounds$known
+        rv$m$conf$compounds$unknown
+        rv$m$conf$compounds$setid
+        verify_compounds(rv$m$conf)
+        list2rev(load_compound_input(rv$m))
+    })
+
+    rf$get_tags_from_txt <- react_f({
         ## Tags in the text box.
         input$updTagsB
         if (isTruthy(input$tagsInp)) txt2tags(input$tagsInp) else TAG_DEF
@@ -141,6 +154,7 @@ server_conf <- function(input,output,session,rv,rf,roots) {
                                 defaultPath=roots$def_path(),roots=roots$get)
     shinyFiles::shinyFileChoose(input, 'impSetIdB',defaultRoot=roots$def_vol(),
                                 defaultPath=roots$def_path(),roots=roots$get)
+
     
     shinyFiles::shinyFileSave(input, 'saveConfB',defaultRoot=roots$def_vol(),
                               defaultPath=roots$def_path(),roots=roots$get)
@@ -191,27 +205,26 @@ server_conf <- function(input,output,session,rv,rf,roots) {
         df <- rhandsontable::hot_to_r(input$mzMLtabCtrl)
         df <- add_mzML_files(df,paths)
         rv$m$input$tab$mzml <- disp2mzml(df)
+    obsrv({
+        ## build-config
+        rv$m$conf$compounds$known <- input$known
+        rv$m$conf$compounds$unknown <- input$unknown
+        rv$m$conf$compounds$sets <- input$sets
+        rv$m$conf$data <- file.path(rv$m$conf$project,FN_DATA_TAB)
+        message("build-config:",Sys.time())
+        
     })
 
     obsrv_e(rv$m$conf,message("updated rv$m$conf"))
 
     obsrv({
-        ## Building rv objects here. Probably should change to
-        ## something like reactive get_m.
-        
-        m <- list()
-        m$conf$compounds$known <- input$known
-        m$conf$compounds$unknown <- input$unknown
-        m$conf$compounds$sets <- input$sets
-        m$conf$project <- rv$m$conf$project
-        m$conf$data <- file.path(m$conf$project,FN_DATA_TAB)
-
-        m$conf <- vrfy_conf(m$conf)
-        message("Building m at:",Sys.time())
+        ## build-compounds
+        rv$m <- rf$gen_cmpd_inputs()
+        message("build-components:",Sys.time())
     })
 
     obsrv_e(rv$m$conf$project,{
-        ## Update shinyFiles roots when project path changes.
+        ## update-roots
         shiny::req(rv$m$conf$project)
         dir <- normalizePath(rv$m$conf$project,winslash = '/')
         if (roots$get()[["project"]] != dir) {
