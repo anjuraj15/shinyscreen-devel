@@ -112,7 +112,7 @@ read_conf <- function(fn) {
     yaml::yaml.load_file(fn)
 }
 ## read_conf <- function(fn_conf) {
-##     assert(file.exists(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
+##     assert(isThingFile(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
 ##     conf <- yaml::yaml.load_file(fn_conf)
 ##     conf <- vrfy_conf(conf)
 ##     conf
@@ -130,12 +130,12 @@ vrfy_conf <- function(conf) {
 
     ## ** Compound lists and sets
 
-    assert(file.exists(fn_cmpd_sets),
+    assert(isThingFile(fn_cmpd_sets),
                             msg=paste("Cannot find the compound sets file:",fn_cmpd_sets))
     
-    if (!is.null(fn_cmpd_known)) assert(file.exists(fn_cmpd_known),
+    if (!is.null(fn_cmpd_known)) assert(isThingFile(fn_cmpd_known),
                                                              msg=paste("Cannot find known compounds file:",fn_cmpd_known))        
-    if (!is.null(fn_cmpd_unk)) assert(file.exists(fn_cmpd_unk),
+    if (!is.null(fn_cmpd_unk)) assert(isThingFile(fn_cmpd_unk),
                                                        msg=paste("Cannot find unknown compounds file:",fn_cmpd_unk))
 
 
@@ -144,7 +144,7 @@ vrfy_conf <- function(conf) {
     all_sets<-unique(df_sets$set)
 
     fn_data <- conf$data
-    assert(file.exists(fn_data),msg=paste("Data table does not exist:",fn_data))
+    assert(isThingFile(fn_data),msg=paste("Data table does not exist:",fn_data))
     mzml <- file2tab(fn_data)
     
     no_files <- which(mzml[,!file.exists(Files)])
