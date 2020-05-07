@@ -118,11 +118,10 @@ read_conf <- function(fn) {
 ##     conf
 ## }
 
-##' @export
-vrfy_conf <- function(conf) {
+
+
+verify_compounds <- function(conf) {
     ## * Existence of input files
-
-
 
     fn_cmpd_known <- conf$compounds$known
     fn_cmpd_unk <- conf$compounds$unknown
@@ -133,11 +132,12 @@ vrfy_conf <- function(conf) {
     assert(isThingFile(fn_cmpd_sets),
                             msg=paste("Cannot find the compound sets file:",fn_cmpd_sets))
     
-    if (!is.null(fn_cmpd_known)) assert(isThingFile(fn_cmpd_known),
-                                                             msg=paste("Cannot find known compounds file:",fn_cmpd_known))        
-    if (!is.null(fn_cmpd_unk)) assert(isThingFile(fn_cmpd_unk),
-                                                       msg=paste("Cannot find unknown compounds file:",fn_cmpd_unk))
+    ## if (!is.null(fn_cmpd_known)) assert(isThingFile(fn_cmpd_known),
+    ##                                                          msg=paste("Cannot find known compounds file:",fn_cmpd_known))        
+    ## if (!is.null(fn_cmpd_unk)) assert(isThingFile(fn_cmpd_unk),
+    ##                                                    msg=paste("Cannot find unknown compounds file:",fn_cmpd_unk))
 
+    assert(xor(!isThingFile(fn_cmpd_known),!isThingFile(fn_cmpd_unk)),msg=paste("Both known and unknown compounds lists are missing."))
 
     ## * Data files
     df_sets <- file2tab(fn_cmpd_sets)
