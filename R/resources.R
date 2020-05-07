@@ -37,6 +37,7 @@ MODEMAP<-list("[M+H]+"="MpHp_mass",
               "[M+NH4]+"="MpNH4_mass",
               "[M+Na]+"="MpNa_mass")
 
+DISP_MODEMAP <- c(list("UNSET"="UNSET_MODE_ERROR"),MODEMAP)
 TAG_DEF <- "unspecified"
 TAG_DEF_DESC<-"Case"
 DEFAULT_RT_RANGE=c(NA,NA)
