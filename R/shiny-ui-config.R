@@ -119,18 +119,14 @@ mk_ui_config <- function() {
 }
 
 react_conf_f <- function(input,output,session,rv,rf) {
-
-
-
-
+    ## Reactive functions.
 
     rf$gen_cmpd_inputs <- react_f({
-
         rv$m$conf$compounds$known
         rv$m$conf$compounds$unknown
-        rv$m$conf$compounds$setid
+        rv$m$conf$compounds$sets
         verify_compounds(rv$m$conf)
-        list2rev(load_compound_input(rv$m))
+        load_compound_input(rv$m)
     })
 
     rf$get_tags_from_txt <- react_f({
