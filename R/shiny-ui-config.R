@@ -202,37 +202,82 @@ server_conf <- function(input,output,session,rv,rf,roots) {
                                    inputId=nm,
                                    value=rv$m$conf$compounds[[nm]])
         }
-        ## Tags
+
+        fn <- rv$m$conf$data
+        shiny::req(fn)
+        rv$work_mzml_pre <- file2tab(fn)
+        
     })
 
-    obsrv_e(input$mzMLB,
-    {
-        shiny::req(input$mzMLB)
+    obsrv_e(rv$work_mzml_pre,{
+        ## update-files-on-restore
+        assert(rv$m$input$tab$setid, msg = "Compounds set table not built yet.")
+        all_sets <- rf$get_all_sets()
+        dt <- rv$work_mzml_pre
+        txt_tags <- rf$get_tags_from_txt()
+        dt_tags <- unique(dt$tag)
+        tags <- combine_tags(dt_tags,txt_tags)
+        inp_tags <- setdiff(tags,TAG_DEF)
+        
+        shiny::updateTextInput(session = session,
+                               inputId = "tagsInp",
+                               value = inp_tags)
+        rv$work_mzml <- mzml2disp(dt, sets = all_sets, tags = tags)
+    })
+
+    obsrv_e(input$mzMLB,{
+        ## update-files-on-mzmlb
+        df <- tryCatch(rhandsontable::hot_to_r(input$mzMLtabCtrl),error=function (e) NULL)
+        shiny::req(df)
+        assert(rv$m$input$tab$setid, msg = "Compounds set table not built yet.")
         fchoice<-shinyFiles::parseFilePaths(roots = roots$get,input$mzMLB)
         paths<-fchoice[["datapath"]]
-        df <- rhandsontable::hot_to_r(input$mzMLtabCtrl)
+        tags <- rf$get_tags_from_txt()
+        all_sets <- unique(rv$m$input$tab$setid$set)
+        
         df <- add_mzML_files(df,paths)
-        rv$m$input$tab$mzml <- disp2mzml(df)
+        rv$work_mzml <- df
+        
+    })
+
+    obsrv_e(input$updTagsB,{
+        message("update-tags:",Sys.time())
+        df <- rf$ctrl2mzml_df()
+        tags <- rf$get_tags_from_txt()
+        z <- factor(as.character(df$tag), levels = tags)
+        df$tag <- factor(sapply(as.character(z),function(x) if (!is.na(x)) x else TAG_DEF),levels = tags)
+
+        rv$work_mzml <- df
+    })
+
     obsrv({
         ## build-config
+        message("build-config:",Sys.time())
         rv$m$conf$compounds$known <- input$known
         rv$m$conf$compounds$unknown <- input$unknown
         rv$m$conf$compounds$sets <- input$sets
         rv$m$conf$data <- file.path(rv$m$conf$project,FN_DATA_TAB)
-        message("build-config:",Sys.time())
+        
         
     })
 
-    obsrv_e(rv$m$conf,message("updated rv$m$conf"))
-
     obsrv({
         ## build-compounds
+        message("build-compounds:",Sys.time())
         rv$m <- rf$gen_cmpd_inputs()
-        message("build-components:",Sys.time())
+    })
+
+    obsrv({
+        ## update-data-table
+        message("update-data-table:",Sys.time())
+        mzml <- rf$ctrl2mzml()
+        verify_data_df(mzml=mzml,all_sets=rf$get_all_sets())
+        rv$m$input$tab$mzml <- mzml
     })
 
     obsrv_e(rv$m$conf$project,{
         ## update-roots
+        message("update-roots:",Sys.time())
         shiny::req(rv$m$conf$project)
         dir <- normalizePath(rv$m$conf$project,winslash = '/')
         if (roots$get()[["project"]] != dir) {
