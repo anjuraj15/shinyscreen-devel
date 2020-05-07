@@ -134,7 +134,19 @@ react_conf_f <- function(input,output,session,rv,rf) {
         input$updTagsB
         isol(if (isTruthy(input$tagsInp)) unique(txt2tags(input$tagsInp)) else TAG_DEF)
     })
-    
+
+    rf$ctrl2mzml_df <- react_f({
+        x <- tryCatch(rhandsontable::hot_to_r(input$mzMLtabCtrl),error=function(m) NULL)
+        shiny::req(x)
+        x
+    })
+
+    rf$ctrl2mzml <- react_f({
+        dtable(rf$ctrl2mzml_df())
+    })
+
+    rf$get_all_sets <- react_e(rv$m$input$tab$setid,unique(rv$m$input$tab$setid$set))
+
     rf
 }
 
