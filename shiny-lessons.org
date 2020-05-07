@@ -18,3 +18,23 @@
 - An ordinary list inside reactive values list, if used, will add
   dependency on all its members. Even if only some of its members are
   used, the dependency is on all the members.
+
+- Recursive dependencies can get ugly. If really needed, do not
+  depend, but use isolate.
+
+- Do *NOT* change the value of things you depend on. This creates
+  infinite loops. It may even work, but will be sloooow.
+
+- Single output produced by any input from a group of inputs: separate
+  observers are needed do differentiate between which of the inputs
+  have been triggered.
+
+- The only way to detect if the button press was acted upon in a
+  reactive expression that depends on multiple inputs is to raise a
+  flag, or write the state of the button when done.
+
+- As development progresses, keep an observer that transforms
+  shinyscreen mess into the logics of the workflow. Then move out as
+  much of this as possible into reactive functions. Example,
+  Shinyscreen underlying script flow was first emulated by an
+  observer.
