@@ -287,9 +287,8 @@ server_conf <- function(input,output,session,rv,rf,roots) {
         } else {
             roots$set(c("project" = dir))
         }
+        
     })
-
-
 
     ## ***** Render *****
     output$fnKnownLCtrl <- shiny::renderUI({
