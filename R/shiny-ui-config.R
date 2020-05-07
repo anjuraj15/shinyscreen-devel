@@ -314,14 +314,14 @@ server_conf <- function(input,output,session,rv,rf,roots) {
     })
 
     output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
-        assert(rv$m$input$tab$setid, msg = "Compounds set table not built yet.")
-        tags <- unique(rf$get_tags_from_txt())
-        mzml <- rv$m$input$tab$mzml
-        message("mzml: ----")
-        print(mzml)
-        message("---- mzml")
-        all_sets <- unique(rv$m$input$tab$setid$set)
-        rhandsontable::rhandsontable(mzml2disp(mzml, sets = all_sets, tags = tags),stretchH="all")
+        df <- rv$work_mzml
+        if (!shiny::isTruthy(df)) {
+            assert(rv$m$input$tab$setid, msg = "Compounds set table not built yet.")
+            all_sets <- unique(rv$m$input$tab$setid$set)
+            txt_tags <- rf$get_tags_from_txt()
+            df <- mzml2disp(EMPTY_MZML, sets = all_sets, tags = txt_tags)
+        }
+        rhandsontable::rhandsontable(df,stretchH="all")
     })
     
     rv
