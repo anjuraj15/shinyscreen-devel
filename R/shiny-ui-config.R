@@ -132,7 +132,7 @@ react_conf_f <- function(input,output,session,rv,rf) {
     rf$get_tags_from_txt <- react_f({
         ## Tags in the text box.
         input$updTagsB
-        if (isTruthy(input$tagsInp)) txt2tags(input$tagsInp) else TAG_DEF
+        isol(if (isTruthy(input$tagsInp)) unique(txt2tags(input$tagsInp)) else TAG_DEF)
     })
     
     rf
