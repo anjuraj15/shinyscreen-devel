@@ -102,26 +102,6 @@ list2rev <- function(lst) {
         lst else do.call(react_v,lapply(lst,list2rev))
 }
 
-add_mzML_files<-function(df,paths) {
-    lSet<-levels(df$set)
-    if (length(lSet > 0) && !is.na(lSet)) {
-        
-        nR<-length(paths)
-        if (nR > 0) {
-            st <- nrow(df)+1
-            fi <- nrow(df)+nR
-            df[st:fi,'tag'] <- levels(df$tag)[[1]]
-            df[st:fi,'set'] <- levels(df$set)[[1]]
-            df[st:fi,'mode'] <- levels(df$mode)[[1]]
-            df[st:fi,'Files'] <- paths
-        }
-    } else {
-        warning("Define sets using the compound set table before trying to add files!")
-        
-    }
-    df
-}
-
 new_rv_state <- function(project) {
     p <- normalizePath(path=project,winslash = '/')
     x <- react_v(m=list2rev(new_state(list(project=p,data=""),GUI=T)))
