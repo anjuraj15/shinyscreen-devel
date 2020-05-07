@@ -312,11 +312,9 @@ txt2tags <- function(txt) {
 }
 
 combine_tags <- function(df_tags,txt_tags) {
-    diff <- setdiff(df_tags,txt_tags)
-    for (x in diff) df_tags[df_tags %in% x] <- TAG_DEF
-    df_tags <- factor(as.character(df_tags))
-    df_tags <- factor(as.character(df_tags),levels = unique(c(TAG_DEF,levels(df_tags),txt_tags)))
-    df_tags
+    unique(c(TAG_DEF,df_tags,txt_tags))
+}
+
 add_mzML_files<-function(df,paths) {
     lSet<-levels(df$set)
     if (length(lSet > 0) && !is.na(lSet)) {
