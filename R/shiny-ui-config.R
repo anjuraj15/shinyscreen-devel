@@ -171,7 +171,7 @@ server_conf <- function(input,output,session,rv,rf,roots) {
     shinyFiles::shinyFileChoose(input, 'mzMLB',defaultRoot=roots$def_vol(),
                                 defaultPath=roots$def_path(),roots=roots$get)
     shinyFiles::shinyDirChoose(input, 'switchProjB',
-                               roots=roots[["get"]],
+                               roots=roots$get,
                                defaultRoot = "Computer",
                                defaultPath = "")
 
