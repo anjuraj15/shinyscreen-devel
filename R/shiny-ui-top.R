@@ -45,13 +45,21 @@ mk_ui <- function (fn_style) {
 
 mk_shinyscreen <- function(wd=getwd(),fn_style=system.file('www/custom.css',package = 'shinyscreen')) {
     roots <- mk_roots(wd)
+    
+
+
     server <- function(input,output,session) {
         ## Top-level server function.
-        rv <- new_rv_state(project=wd)   # Container for all
-                                         # reactive values.
-
+        
         rf <- list()           # Container for all
                                # reactive functions.
+    
+        rv <- new_rv_state(project=wd)   # Container for all
+                                         # reactive values.        
+        
+
+
+
         
         rf <- react_conf_f(input,output,session,rv=rv,rf=rf) # Config related r. functions.
 
