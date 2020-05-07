@@ -289,7 +289,7 @@ mzml2disp <- function(mzml,sets, tags) {
     df <- as.data.frame(mzml,stringsAsFactors=F)
     df$set <- factor(df$set,levels=sets)
     df$tag <- factor(df$tag,levels=tags)
-    df$mode <- factor(df$mode,levels=names(MODEMAP))
+    df$mode <- factor(df$mode,levels=names(DISP_MODEMAP))
     df
 }
 
