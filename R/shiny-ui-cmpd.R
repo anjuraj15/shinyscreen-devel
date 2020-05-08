@@ -42,3 +42,27 @@ mk_ui_cmpd <- function() {
     return(list(tab=cmpListTab,
                 side=compListSideItem))
 }
+
+server_cmpd <- function(input,output,session,rv,rf,roots) {
+    output$knownCtrl <- rhandsontable::renderRHandsontable({
+        df<-rv$m$input$tab$known
+        out<-if (!is.null(df)) {
+                 df
+             } else {
+                 data.frame(ID=numeric(),Name=character(),SMILES=character(),RT=numeric())
+             }
+        rhandsontable::rhandsontable(out,stretchH="all")
+    })
+
+    output$unkCtrl <- rhandsontable::renderRHandsontable({
+        df<-rv$m$input$tab$unknown
+        out<-if (!is.null(df)) {
+                 df
+             } else {
+                 data.frame(ID=numeric(),mz=numeric())
+             }
+        rhandsontable::rhandsontable(out,stretchH="all")
+    })
+
+    rv
+}

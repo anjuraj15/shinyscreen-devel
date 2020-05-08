@@ -72,8 +72,13 @@ mk_shinyscreen <- function(wd=getwd(),fn_style=system.file('www/custom.css',pack
         
         rf <- react_conf_f(input,output,session,rv=rv,rf=rf) # Config related r. functions.
 
-        ## ## Observers and renderers.
+        ## Plugin servers.
         rv <- server_conf(input,output,session,rv=rv,rf=rf,roots=roots)
+        rv <- server_cmpd(input,output,session,rv=rv,rf=rf,roots=roots)
+        rv <- server_sets(input,output,session,rv=rv,rf=rf,roots=roots)
+
+
+        
         obsrv_e(rv,{
             message(paste("rv changed at ",Sys.time()))
         })

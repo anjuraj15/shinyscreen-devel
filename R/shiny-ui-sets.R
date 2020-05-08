@@ -34,4 +34,16 @@ mk_ui_sets <- function() {
                                               icon=shiny::icon("table"))
     return(list(tab=setIdTab,
                 side=setIdSideItem))
+
+}
+
+
+server_sets <- function(input,output,session,rv,rf,roots) {
+    output$setIdCtrl<- rhandsontable::renderRHandsontable({
+        df<-rv$m$input$tab$setid
+        rhandsontable::rhandsontable(df,stretchH="all")
+    })
+
+    rv
+
 }
