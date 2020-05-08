@@ -47,10 +47,9 @@ gen_base_ftab <- function(m) {
 
 ##' @export
 load_compound_input <- function(m) {
-    
+
     if (shiny::isTruthy(m$conf$compounds$known)) m$input$tab$known <- file2tab(m$conf$compounds$known)
     if (shiny::isTruthy(m$conf$compounds$unknown)) m$input$tab$unknown <- file2tab(m$conf$compounds$unknown)
-    
     m$input$tab$setid <- read_setid(m$conf$compounds$sets,
                                     m$input$tab$known,
                                     m$input$tab$unknown)
