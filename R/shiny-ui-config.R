@@ -123,13 +123,7 @@ mk_ui_config <- function() {
 react_conf_f <- function(input,output,session,rv,rf) {
     ## Reactive functions.
 
-    rf$gen_cmpd_inputs <- react_f({
-        rv$m$conf$compounds$known
-        rv$m$conf$compounds$unknown
-        rv$m$conf$compounds$sets
-        verify_compounds(rv$m$conf)
-        load_compound_input(rv$m)
-    })
+
 
     rf$get_tags_from_txt <- react_f({
         ## Tags in the text box.
@@ -147,7 +141,10 @@ react_conf_f <- function(input,output,session,rv,rf) {
         dtable(rf$ctrl2mzml_df())
     })
 
-    rf$get_all_sets <- react_e(rv$m$input$tab$setid,unique(rv$m$input$tab$setid$set))
+    rf$get_all_sets <- react_f({
+        m <- rf$m_input_cmpds()
+        unique(m$input$tab$setid$set)})
+
     rf$m_conf <- react_f({
         m <- list()
         m$conf$project <- rv$project_path
