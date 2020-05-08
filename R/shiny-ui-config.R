@@ -148,7 +148,34 @@ react_conf_f <- function(input,output,session,rv,rf) {
     })
 
     rf$get_all_sets <- react_e(rv$m$input$tab$setid,unique(rv$m$input$tab$setid$set))
+    rf$m_conf <- react_f({
+        m <- list()
+        m$conf$project <- rv$project_path
+        m$conf$compounds$known <- input$known
+        m$conf$compounds$unknown <- input$unknown
+        m$conf$compounds$sets <- input$sets
+        m$conf$data <- input$datafiles
+        verify_compounds(m$conf)
+        m
+    })
 
+    rf$m_input_cmpds <- react_f({
+        m <- rf$m_conf()
+        load_compound_input(m)
+    })
+
+    rf$m_input <- react_f({
+        m <- rf$m_input_cmpds()
+        mzml <- rf$ctrl2mzml()
+        verify_data_df(mzml=mzml,all_sets=rf$get_all_sets())
+        m$input$tab$mzml <- mzml
+        m
+    })
+
+    
+
+    rf$m <- react_f(rf$m_input())
+    
     rf
 }
 
