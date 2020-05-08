@@ -64,26 +64,23 @@ mk_ui_config <- function() {
                              width=NULL)
 
     confState <- prim_box(title="Configuration State",
-                          shinyFiles::shinySaveButton("saveConfB",
-                                                      "Save project.",
+                          shinyFiles::shinySaveButton(id="saveConfB",
+                                                      label="Save project configuration.",
                                                       title="Save",
-                                                      filename = "conf-state.yaml",
+                                                      filename = FN_CONF,
                                                       "yaml"),
-                          shinyFiles::shinyFilesButton("restoreConfB",
-                                                       label="Restore project.",
+                          shinyFiles::shinyFilesButton(id="restoreConfB",
+                                                       label="Restore project configuration.",
                                                        multiple=F,
                                                        title="Restore"),
+                          shinyFiles::shinyDirButton(id="switchProjB",
+                                                     label="Switch project.",
+                                                     title="Switch project.",
+                                                     icon=shiny::icon("recycle")),
                           shiny::actionButton(inputId="resetConfB",
                                               label="Reset config (CAUTION!)",
                                               icon=shiny::icon("trash")),
                           width=NULL)
-
-    confProj <- prim_box(title="Project",
-                         shinyFiles::shinyDirButton(id="switchProjB",
-                                                    label="Switch project.",
-                                                    title="Switch project.",
-                                                    icon=shiny::icon("recycle")),
-                         width=NULL)
 
 
     confmzMLtab <-prim_box(title="Raw Files in mzML Format",
@@ -100,7 +97,6 @@ mk_ui_config <- function() {
     confLayout <- shiny::fluidRow(shiny::column(confImport,
                                                 confmzMLTags,
                                                 confState,
-                                                confProj,
                                                 width=4),
                                   shiny::column(width=8,
                                                 confmzMLtab))
