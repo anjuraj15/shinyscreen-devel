@@ -24,7 +24,7 @@ mk_ui <- function (fn_style) {
                                               shinydashboard::dropdownMenuOutput("notify"))
 
 
-    ## Plugins
+    ## plugin-ui
     conf <- mk_ui_config()
     cmpd <- mk_ui_cmpd()
     sets <- mk_ui_sets()
@@ -72,7 +72,7 @@ mk_shinyscreen <- function(wd=getwd(),fn_style=system.file('www/custom.css',pack
         
         rf <- react_conf_f(input,output,session,rv=rv,rf=rf) # Config related r. functions.
 
-        ## Plugin servers.
+        ## plugin-servers
         rv <- server_conf(input,output,session,rv=rv,rf=rf,roots=roots)
         rv <- server_cmpd(input,output,session,rv=rv,rf=rf,roots=roots)
         rv <- server_sets(input,output,session,rv=rv,rf=rf,roots=roots)
