@@ -80,3 +80,8 @@ mk_ui_gen <- function() {
     return(list(tab=genTab,
                 side=genSideItem))
 }
+
+
+server_gen <- function(input,output,session,rv,rf,roots) {
+    rv
+}
