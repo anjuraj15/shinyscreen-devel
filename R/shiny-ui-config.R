@@ -33,6 +33,7 @@ mk_ui_config <- function() {
                            shiny::uiOutput("fnKnownLCtrl"),
                            shiny::uiOutput("fnUnkLCtrl"),
                            shiny::uiOutput("fnSetIdCtrl"),
+                           shiny::uiOutput("fnDataFilesCtrl"),
                            shinyFiles::shinyFilesButton("impKnownListB",
                                                         label="Import knowns.",
                                                         title="",
@@ -48,6 +49,11 @@ mk_ui_config <- function() {
                                                         title="",
                                                         icon=shiny::icon("file"),
                                                         multiple=T),
+                           shinyFiles::shinyFilesButton("impDataFilesB",
+                                                        label="Import data files table.",
+                                                        title="",
+                                                        icon=shiny::icon("file"),
+                                                        multiple=F),
                            width=NULL)
 
     confmzMLTags <- prim_box(title="Tags",
@@ -158,6 +164,8 @@ server_conf <- function(input,output,session,rv,rf,roots) {
                                 defaultPath=roots$def_path(),roots=roots$get)
     shinyFiles::shinyFileChoose(input, 'impSetIdB',defaultRoot=roots$def_vol(),
                                 defaultPath=roots$def_path(),roots=roots$get)
+    shinyFiles::shinyFileChoose(input, 'impDataFilesB',defaultRoot=roots$def_vol(),
+                                defaultPath=roots$def_path(),roots=roots$get)
 
     
     shinyFiles::shinyFileSave(input, 'saveConfB',defaultRoot=roots$def_vol(),
@@ -192,33 +200,41 @@ server_conf <- function(input,output,session,rv,rf,roots) {
     obsrv_e(input$restoreConfB,{
         fn <- shinyFiles::parseFilePaths(roots=roots$get,input$restoreConfB)[["datapath"]]
         assert(file.exists(fn), msg="The file is unreadable.")
-        rv$m$conf <- read_conf(fn)
+        conf <- read_conf(fn)
+        rv$m$conf$project <- conf$project
         for (nm in names(rv$m$conf$compounds)) {
             shiny::updateTextInput(session=session,
                                    inputId=nm,
-                                   value=rv$m$conf$compounds[[nm]])
+                                   value=conf$compounds[[nm]])
         }
 
-        fn <- rv$m$conf$data
-        shiny::req(fn)
+        shiny::updateTextInput(session = session,
+                               inputId = "datafiles",
+                               value = conf$data)
+
+        fn <- conf$data
+        assert(fn,msg = "Bad data file table path.")
         rv$work_mzml_pre <- file2tab(fn)
         
     })
 
-    obsrv_e(rv$work_mzml_pre,{
+    obsrv({
         ## update-files-on-restore
-        assert(rv$m$input$tab$setid, msg = "Compounds set table not built yet.")
-        all_sets <- rf$get_all_sets()
-        dt <- rv$work_mzml_pre
-        txt_tags <- rf$get_tags_from_txt()
-        dt_tags <- unique(dt$tag)
-        tags <- combine_tags(dt_tags,txt_tags)
-        inp_tags <- setdiff(tags,TAG_DEF)
-        
-        shiny::updateTextInput(session = session,
-                               inputId = "tagsInp",
-                               value = inp_tags)
-        rv$work_mzml <- mzml2disp(dt, sets = all_sets, tags = tags)
+        rv$work_mzml_pre
+        if (shiny::isTruthy(rv$m$input$tab$setid)) {
+            isol({all_sets <- rf$get_all_sets()
+                dt <- rv$work_mzml_pre
+                txt_tags <- rf$get_tags_from_txt()
+                dt_tags <- unique(dt$tag)
+                tags <- combine_tags(dt_tags,txt_tags)
+                inp_tags <- setdiff(tags,TAG_DEF)
+                
+                shiny::updateTextInput(session = session,
+                                       inputId = "tagsInp",
+                                       value = inp_tags)
+                rv$work_mzml <- mzml2disp(dt, sets = all_sets, tags = tags)
+            })
+        } else assert(rv$m$input$tab$setid, msg = "Compounds set table not built yet.") 
     })
 
     obsrv_e(input$mzMLB,{
@@ -252,7 +268,7 @@ server_conf <- function(input,output,session,rv,rf,roots) {
         rv$m$conf$compounds$known <- input$known
         rv$m$conf$compounds$unknown <- input$unknown
         rv$m$conf$compounds$sets <- input$sets
-        rv$m$conf$data <- file.path(rv$m$conf$project,FN_DATA_TAB)
+        rv$m$conf$data <- input$datafiles #file.path(rv$m$conf$project,FN_DATA_TAB)
         
         
     })
@@ -307,6 +323,14 @@ server_conf <- function(input,output,session,rv,rf,roots) {
                        label = html("Compounds set table. Required columns <i>ID</i> and <i>set</i>."),
                        fileB = 'impSetIdB',
                        volumes=roots$get)
+    })
+    output$fnDataFilesCtrl <- shiny::renderUI({
+        txt_file_input(inputId = 'datafiles',
+                       input = input,
+                       label = html("Data files table. Required columns <i>Files</i>, <i>tag</i>, <i>set</i> and <i>mode</i>."),
+                       fileB = 'impDataFilesB',
+                       volumes=roots$get,
+                       default = file.path(rv$m$conf$project, FN_DATA_TAB))
     })
 
     output$mzMLtabCtrl <- rhandsontable::renderRHandsontable({
