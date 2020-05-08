@@ -32,6 +32,7 @@ FN_CMP_L<-"compounds.csv"
 FN_LOC_SETID <-"setid.csv"
 FN_COMP_TAB<-"comprehensive.csv"
 FN_SPEC<-"specdata.rds"
+FN_CONF <- "conf-state.yaml"
 MODEMAP<-list("[M+H]+"="MpHp_mass",
               "[M-H]-"="MmHm_mass",
               "[M+NH4]+"="MpNH4_mass",
