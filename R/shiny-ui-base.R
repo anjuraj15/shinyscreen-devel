@@ -78,7 +78,7 @@ txt_file_input <- function(inputId,input,fileB,label,volumes,default = "") {
         if (!isThingFile(currFn)) {
             shiny::textInput(inputId = inputId,
                              label = label,
-                             value = "")
+                             value = default)
         } else {
             message('Why is this happening so much?')
             shiny::textInput(inputId = inputId,
