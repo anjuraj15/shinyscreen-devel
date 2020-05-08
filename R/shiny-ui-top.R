@@ -26,15 +26,24 @@ mk_ui <- function (fn_style) {
 
     ## Plugins
     conf <- mk_ui_config()
+    cmpd <- mk_ui_cmpd()
+    sets <- mk_ui_sets()
+    gen <- mk_ui_gen()
     
     sidebar <- shinydashboard::dashboardSidebar(shinydashboard::sidebarMenu(id='tabs',
                                                                             conf$side,
+                                                                            gen$side,
                                                                             shiny::hr(),
                                                                             shiny::h5("Inputs"),
+                                                                            cmpd$side,
+                                                                            sets$side,
                                                                             shiny::hr()))
     body <- shinydashboard::dashboardBody(
                                 shiny::tags$head(shiny::tags$style(shiny::includeHTML(fn_style))),
-                                shinydashboard::tabItems(conf$tab))
+                                shinydashboard::tabItems(conf$tab,
+                                                         cmpd$tab,
+                                                         gen$tab,
+                                                         sets$tab))
 
     shinydashboard::dashboardPage(
                         header,
