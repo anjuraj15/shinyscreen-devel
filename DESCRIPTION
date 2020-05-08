@@ -52,6 +52,9 @@ Collate:
     'api.R'
     'shiny-ui-base.R'
     'shiny-ui-config.R'
+    'shiny-ui-cmpd.R'
+    'shiny-ui-sets.R'
+    'shiny-ui-gen.R'
     'shiny-ui-top.R'
 Depends:
     RMassBank,
