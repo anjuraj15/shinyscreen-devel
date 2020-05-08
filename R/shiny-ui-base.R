@@ -63,7 +63,7 @@ num_input_unit <- function(inputId,l1,l2,width=NUM_INP_WIDTH,...) {
                     shiny::tags$label(paste(" ",l2,sep=""), `for` = inputId))
 }
 
-txt_file_input <- function(inputId,input,fileB,label,volumes) {
+txt_file_input <- function(inputId,input,fileB,label,volumes,default = "") {
 
     fnobj<-shinyFiles::parseFilePaths(roots = volumes,
                                       selection = input[[fileB]])
