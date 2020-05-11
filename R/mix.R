@@ -466,12 +466,11 @@ add_wd_to_mzml <- function(df,wdir) {
     df
 }
 
-gen_sup_ftab <- function(ftab,ctab) {
-    df<-ctab[ftab,on=c("set","mode"),allow.cartesian=T]
-    setkeyv(df,cols=FTAB_KEY)
-    setcolorder(df,neworder = FTAB_NAMES)
-    df
+add_wd_to_mzml <- function(fn,proj) {
+    wd<-basename(tools::file_path_sans_ext(fn))
+    file.path(proj,wd)
 }
+
 
 getEntryFromComp<-function(entry,id,set,mode,compTab) {
     ind <- which(compTab$ID %in% id &
