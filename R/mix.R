@@ -451,21 +451,6 @@ plot_id_msn <- function(ni,
     res
 }
 
-
-
-add_wd_to_mzml <- function(df,wdir) {
-    pref<-df$set
-    mask<-is.na(pref)
-    drop<-df$files[mask]
-    for (d in drop) warning("Dropping",d,"because no set specified for it.")
-    df<-df[!mask,]
-    pref<-df$set
-    wd<-basename(tools::file_path_sans_ext(df$Files))
-    wd<-file.path(wdir,pref,wd)
-    df$wd<-wd
-    df
-}
-
 add_wd_to_mzml <- function(fn,proj) {
     wd<-basename(tools::file_path_sans_ext(fn))
     file.path(proj,wd)
