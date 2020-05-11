@@ -31,18 +31,8 @@ run <- function(fn_conf) {
 run_in_dir <- function(m) {
     m <- load_inputs(m)
     m <- mk_comp_tab(m)
-    m <- gen_base_ftab(m)
     invisible(m)
     
-}
-
-##' @export
-gen_base_ftab <- function(m) {
-    files <- add_wd_to_mzml(df=m$input$tab$mzml,wdir=m$conf$project)
-    df <- gen_sup_ftab(files,m$out$tab$comp)
-    tab2file(df,file.path(m$conf$project,FN_FTAB_BASE))
-    m$out$tab$ftab <- df
-    m
 }
 
 ##' @export
