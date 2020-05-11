@@ -76,30 +76,32 @@ load_inputs <- function(m) {
 mk_comp_tab <- function(m) {
     message("Started assembling the lists of knowns and unknowns into the `comprehensive' table.")
     setid <- m$input$tab$setid
-    setkey(setid,set,ID)
+    setkey(setid,set)
     mzml<- m$input$tab$mzml
     setkey(mzml,set)
-    
-    setkey(m$input$tab$unknown,ID)
-    setkey(m$input$tab$known,ID)
     unk<-m$input$tab$unknown
+    setkey(unk,ID)
     known<-m$input$tab$known
-    
+    setkey(known,ID)
+    mzml[,`:=`(wd=sapply(Files,add_wd_to_mzml,m$conf$project))]
     assert(xor(nrow(unk)==0,nrow(known)==0),msg="No compound lists have been provided. At least one of the known, or unknown compound lists is required.")
     message("Begin generation of comp table.")
     ## knowns
-    setidKnown<- merge(mzml[,.(mode,tag,set)],setid[origin=="known",],allow.cartesian = T)
-    compKnown <- setidKnown[known,on="ID"]
+    setidKnown<- mzml[setid[origin %in% "known"],.(tag,mode,ID,set,Files,wd),on="set",allow.cartesian=T]
+    tab2file(tab=setidKnown,file="setidKnown.csv")
+    compKnown <- known[setidKnown,on=c("ID"),allow.cartesian=T]
+    setkey(compKnown,set,ID)
+    tab2file(tab=compKnown,file="compKnown.csv")
     compKnown[,`:=`(mz=mapply(get_mz_from_smiles,SMILES,mode,USE.NAMES = F))]
     message("Generation of comp table: knowns done.")
-
     ## unknows
-    setidUnk<-merge(mzml[,.(mode,tag,set)],setid[origin=="unknown",],allow.cartesian = T)
-    compUnk <- setidUnk[unk,on="ID"]
+    setidUnk<-mzml[setid[origin %in% "unknown"],.(tag,mode,ID,set,Files,wd),on="set",allow.cartesian=T]
+    compUnk <- unk[setidUnk,on="ID"]
     message("Generation of comp table: unknowns done.")
     df<-rbindlist(l=list(compKnown, compUnk),fill = T)
     setnames(df,names(COMP_NAME_MAP),
              function(o) COMP_NAME_MAP[[o]])
+    setcolorder(df,COMP_NAME_FIRST)
     fn_out <- file.path(m$conf$project,FN_COMP_TAB)
     
     tab2file(tab=df,file=fn_out)
