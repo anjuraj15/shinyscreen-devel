@@ -265,14 +265,13 @@ server_conf <- function(input,output,session,rv,rf,roots) {
 
     obsrv_e(input$mzMLB,{
         ## update-files-on-mzmlb
+        m <- rf$m_input()
         df <- tryCatch(rhandsontable::hot_to_r(input$mzMLtabCtrl),error=function (e) NULL)
         shiny::req(df)
-        m <- rf$m_input()
-        assert(m$input$tab$setid, msg = "Compounds set table not built yet.")
         fchoice<-shinyFiles::parseFilePaths(roots = roots$get,input$mzMLB)
         paths<-fchoice[["datapath"]]
         tags <- rf$get_tags_from_txt()
-        all_sets <- unique(m$input$tab$setid$set)
+        
         
         df <- add_mzML_files(df,paths)
         rv$work_mzml <- df
