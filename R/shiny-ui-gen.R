@@ -83,5 +83,16 @@ mk_ui_gen <- function() {
 
 
 server_gen <- function(input,output,session,rv,rf,roots) {
+    
+
+    ## **** Observers ****
+    obsrv({
+        ## Run
+        message("run!")
+        m <- rf$m()
+        m <- mk_comp_tab(m)
+        message("done!")
+    })
+
     rv
 }
