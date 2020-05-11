@@ -76,6 +76,7 @@ mk_shinyscreen <- function(wd=getwd(),fn_style=system.file('www/custom.css',pack
         rv <- server_conf(input,output,session,rv=rv,rf=rf,roots=roots)
         rv <- server_cmpd(input,output,session,rv=rv,rf=rf,roots=roots)
         rv <- server_sets(input,output,session,rv=rv,rf=rf,roots=roots)
+        rv <- server_gen(input,output,session,rv=rv,rf=rf,roots=roots)
 
 
         
