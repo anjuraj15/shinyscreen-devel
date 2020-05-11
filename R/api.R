@@ -49,6 +49,7 @@ load_compound_input <- function(m) {
     m
 }
 
+##' @export
 load_data_input <- function(m) {
     m$input$tab$mzml <- file2tab(m$conf$data)
     m
