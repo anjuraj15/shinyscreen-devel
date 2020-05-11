@@ -19,6 +19,30 @@ load_raw_data<-function(fn,mode="inMemory") {
 }
 
 
+centroided1 <- function(ms) {
+    if (all(MSnbase::centroided(ms)) == T)
+        return(T) else {
+                      state <- MSnbase::isCentroided(ms)
+                      N <- length(state)
+                      fls <-length(which(state == F))
+                      if (fls/(1.*N) < 0.01) T else F
+                  }
+                                                         
+}
+
+centroided <- function(msvec) {
+    if (is.vector(msvec)) {
+        f <- list()
+        for (i in 1:length(msvec)) {
+            f[[i]] <- future::future(centroided1(msvec[[i]]))
+        }
+        lapply(f, FUN = future::value)
+    } else {
+        centroided1(msvec)
+    }
+    
+}
+
 acq_mz<-function(tabFn) {
     df<-read.csv(tabFn,
                  stringsAsFactors=F,

@@ -63,6 +63,7 @@ Imports:
     tools,
     scales,
     parallel,
+    future,
     yaml,
     mzR,
     MSnbase,
