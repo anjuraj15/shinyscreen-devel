@@ -353,7 +353,8 @@ server_conf <- function(input,output,session,rv,rf,roots) {
 mzml2disp <- function(mzml,sets, tags) {
     ## Add factors for nicer rhandsontable output.
     df <- as.data.frame(mzml,stringsAsFactors=F)
-    df$set <- factor(df$set,levels=sets)
+    df$set <- factor(as.character(df$set),levels=c(SET_NA,sets))
+    df$set <- factor(sapply(as.character(df$set),function (x) if (!is.na(x)) x else SET_NA),levels = c(SET_NA,sets))
     df$tag <- factor(df$tag,levels=tags)
     df$mode <- factor(df$mode,levels=names(DISP_MODEMAP))
     df
