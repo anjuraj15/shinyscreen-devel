@@ -39,7 +39,9 @@ MODEMAP<-list("[M+H]+"="MpHp_mass",
               "[M+Na]+"="MpNa_mass")
 
 DISP_MODEMAP <- c(list("UNSET"="UNSET_MODE_ERROR"),MODEMAP)
-TAG_DEF <- "unspecified"
+TAG_NA <- "::UNSET::"
+SET_NA <- "::UNSET::"
+TAG_DEF <- TAG_NA
 TAG_DEF_DESC<-"Case"
 DEFAULT_RT_RANGE=c(NA,NA)
 DEFAULT_INT_RANGE=c(NA,NA)
@@ -111,7 +113,8 @@ NUM_INP_WIDTH="15%"
 
 ## Comprehensive table properties
 COMP_NAME_MAP <- list(RT="rt")
-# COMP_NAMES <-c("ID","mz","rt","mode","set","origin","Name","SMILES")
+## COMP_NAMES <-c("ID","mz","rt","mode","set","origin","Name","SMILES")
+COMP_NAME_FIRST <- c("ID","mz","rt","mode","tag","set","Name","SMILES","Files","wd")
 
 ## File table properties
 FTAB_KEY=c("set","tag","mz")
