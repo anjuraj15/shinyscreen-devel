@@ -29,8 +29,11 @@ run <- function(fn_conf) {
 
 ##' @export
 run_in_dir <- function(m) {
+    m <- mk_tol_funcs(m)
     m <- load_inputs(m)
+    m <- concurrency(m)
     m <- mk_comp_tab(m)
+    
     invisible(m)
     
 }
