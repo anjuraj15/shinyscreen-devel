@@ -22,8 +22,8 @@ run <- function(fn_conf) {
 
     m <- new_state(conf=conf,
                    GUI=F)    
-    withr::with_dir(new=conf$project,code = run_in_dir(m))
-    return()
+    m <- withr::with_dir(new=conf$project,code = run_in_dir(m))
+    return(invisible(m))
 }
 
 
