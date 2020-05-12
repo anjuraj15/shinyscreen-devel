@@ -102,6 +102,6 @@ launch <- function(GUI=T,fn_conf="",wd=getwd(),...) {
         if (nchar(fn_conf)==0) {
             fn_conf <- commandArgs(trailingOnly=T)[[1]]
         }
-        run(fn_conf)
+        return(run(fn_conf))
     }
 }
