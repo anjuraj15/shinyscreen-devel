@@ -187,6 +187,14 @@ vrfy_conf <- function(conf) {
     return(conf)
 }
 
+## @export
+concurrency <- function(m) {
+    m$conf$workers <- if (!is.null(m$conf$workers)) m$conf$workers else NO_WORKERS
+    
+    future::plan("multiprocess",workers=m$conf$workers)
+    message("workers: ",m$conf$workers)
+    m
+}
 
 
 

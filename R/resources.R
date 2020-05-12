@@ -132,3 +132,7 @@ EMPTY_MZML <- dtable(Files=character(0),
 
 
 FN_DATA_TAB <- "data-files.csv"
+
+
+## Default number of concurrent workers
+NO_WORKERS <- 2
