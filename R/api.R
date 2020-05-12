@@ -196,7 +196,38 @@ concurrency <- function(m) {
     m
 }
 
+mk_tol_funcs <- function(m) {
+    grab <- function(entry,unit) {
+        what <- paste0("\\<",unit,"\\>$")
+        entry <- trimws(entry,which="both")
+        if (grepl(what,entry))
+            as.numeric(sub(paste0("^(.*)",unit),"\\1",entry)) else NA_real_
+    }
 
+    asgn_mz_err <- function (entry, msg) {
+        eppm <- grab(entry,"ppm")
+        eda <- grab(entry,"Da")
+        shinyscreen:::assert(xor(is.na(eda), is.na(eppm)), msg = msg)
+        if (is.na(eda)) function(mz) eppm*1e-6*mz else function(mz) eda
+    }
 
+    asgn_t_err <- function (entry, msg) {
+        em <- grab(entry,"min")
+        es <- grab(entry,"s")
+        shinyscreen:::assert(xor(is.na(em), is.na(es)), msg = msg)
+        if (is.na(em)) es/60. else em
+        
+        
+    }
+
+    m$extr$tol$coarse <- asgn_mz_err(m$conf$tolerance[["ms1 coarse"]], msg = "ms1 coarse error: Only ppm, or Da units allowed.")
+    m$extr$tol$fine <- asgn_mz_err(m$conf$tolerance[["ms1 fine"]], msg = "ms1 fine error: Only ppm, or Da units allowed.")
+    m$extr$tol$eic <- asgn_mz_err(m$conf$tolerance$eic, msg = "eic error: Only ppm, or Da units allowed.")
+
+    m$extr$tol$rt <- asgn_t_err(m$conf$tolerance$rt, msg = "rt error: Only s(econds), or min(utes) allowed.")
+
+    m
+    
+}
 
 
