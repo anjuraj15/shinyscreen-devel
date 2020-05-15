@@ -81,15 +81,15 @@ mk_comp_tab <- function(m) {
     assert(xor(nrow(unk)==0,nrow(known)==0),msg="No compound lists have been provided. At least one of the known, or unknown compound lists is required.")
     message("Begin generation of comp table.")
     ## knowns
-    setidKnown<- mzml[setid[origin %in% "known"],.(tag,mode,ID,set,Files,wd),on="set",allow.cartesian=T]
+    setidKnown<- mzml[setid[origin %in% "known"],.(tag,adduct,ID,set,Files,wd),on="set",allow.cartesian=T]
     tab2file(tab=setidKnown,file="setidKnown.csv")
     compKnown <- known[setidKnown,on=c("ID"),allow.cartesian=T]
     setkey(compKnown,set,ID)
     tab2file(tab=compKnown,file="compKnown.csv")
-    compKnown[,`:=`(mz=mapply(get_mz_from_smiles,SMILES,mode,USE.NAMES = F))]
+    compKnown[,`:=`(mz=mapply(get_mz_from_smiles,SMILES,adduct,USE.NAMES = F))]
     message("Generation of comp table: knowns done.")
     ## unknows
-    setidUnk<-mzml[setid[origin %in% "unknown"],.(tag,mode,ID,set,Files,wd),on="set",allow.cartesian=T]
+    setidUnk<-mzml[setid[origin %in% "unknown"],.(tag,adduct,ID,set,Files,wd),on="set",allow.cartesian=T]
     compUnk <- unk[setidUnk,on="ID"]
     message("Generation of comp table: unknowns done.")
     df<-rbindlist(l=list(compKnown, compUnk),fill = T)
@@ -160,10 +160,10 @@ verify_compounds <- function(conf) {
 
 verify_data_df <- function(mzml,all_sets) {
     no_files <- which(mzml[,!file.exists(Files)])
-    no_modes <- which(mzml[,!(mode %in% names(MODEMAP))])
+    no_adducts <- which(mzml[,!(adduct %in% names(ADDUCTMAP))])
     no_sets <- which(mzml[,!(set %in% all_sets)])
     assert(length(no_files)==0,msg = paste("Non-existent data files at rows:",paste(no_files,collapse = ',')))
-    assert(length(no_modes)==0,msg = paste("Unrecognised modes at rows:",paste(no_modes,collapse = ',')))
+    assert(length(no_adducts)==0,msg = paste("Unrecognised adducts at rows:",paste(no_adducts,collapse = ',')))
     assert(length(no_sets)==0,msg = paste("Unknown sets at rows:",paste(no_sets,collapse = ',')))
 }
 

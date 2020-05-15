@@ -16,7 +16,7 @@ stripext<-function(fn) {
     bits<-strsplit(fn,split="\\.")[[1]]
     if (length(bits)> 1) paste(head(bits,-1),collapse=".") else fn}
 
-get_mz_cmp_l<-function(id,mode,cmpL) {
+get_mz_cmp_l<-function(id,adduct,cmpL) {
     ind<-match(id,cmpL$ID)
     mz<-cmpL$mz[[ind]]
     smiles<-cmpL$SMILES[[ind]]
@@ -24,15 +24,15 @@ get_mz_cmp_l<-function(id,mode,cmpL) {
              mz
          } else if (nchar(smiles)>0)
          {
-             mde<-as.character(mode)
-             wh<-MODEMAP[[mde]]
+             mde<-as.character(adduct)
+             wh<-ADDUCTMAP[[mde]]
              RChemMass::getSuspectFormulaMass(smiles)[[wh]]
          } else stop("Both SMILES and mz fields, for ID ",id,", found empty in the compound list. Aborting.")
     res
 }
 
-get_mz_from_smiles <- function(smiles,mode) {
-    RChemMass::getSuspectFormulaMass(smiles)[[MODEMAP[[mode]]]]
+get_mz_from_smiles <- function(smiles,adduct) {
+    RChemMass::getSuspectFormulaMass(smiles)[[ADDUCTMAP[[adduct]]]]
 }
 
 get_col_from_cmp_l<-function(id,cname,cmpL) {
@@ -207,12 +207,12 @@ gen_ms2_spec_data <- function(id,tag,iMS2rt,data,luckyN=NA) {
     } else return(NULL)
 }
 
-gen_ms2_spec_fn <- function(id,tag,mode,set,width=6) {
+gen_ms2_spec_fn <- function(id,tag,adduct,set,width=6) {
     suppressWarnings({
         iid<-as.numeric(id)
         iid<- if (!is.na(iid)) iid else id
         num <- formatC(iid,width = width,format='d',flag='0')
-        ss<-trimws(paste(num,mode,tag,set,sep="_"),which='both')
+        ss<-trimws(paste(num,adduct,tag,set,sep="_"),which='both')
         paste(ss,".csv",sep='')
     })
 }
@@ -457,20 +457,20 @@ add_wd_to_mzml <- function(fn,proj) {
 }
 
 
-getEntryFromComp<-function(entry,id,set,mode,compTab) {
+getEntryFromComp<-function(entry,id,set,adduct,compTab) {
     ind <- which(compTab$ID %in% id &
                  compTab$set %in% set &
-                 compTab$mode %in% mode)
+                 compTab$adduct %in% adduct)
 
     res<- if (length(ind)==1) compTab[ind,entry] else {
                                                      if (length(ind)>1) {
                                                          warning("Nonunique selection in comprehensive table:")
                                                          for (i in ind) {
-                                                             message('ID: ',compTab$ID[[i]],' set: ',compTab$set[[i]],' mode: ',compTab$mode[[i]])
+                                                             message('ID: ',compTab$ID[[i]],' set: ',compTab$set[[i]],' adduct: ',compTab$adduct[[i]])
                                                          }
-                                                         warning("The compound set table likely containes duplicate IDs per set/mode combination. Please correct this.")
+                                                         warning("The compound set table likely containes duplicate IDs per set/adduct combination. Please correct this.")
                                                      } else {
-                                                         warning("Entries not found for id ", id,"set ",set, "and mode ", mode, " .")
+                                                         warning("Entries not found for id ", id,"set ",set, "and adduct ", adduct, " .")
                                                      } 
                                                  }
     res
@@ -487,7 +487,7 @@ getEntryFromComp<-function(entry,id,set,mode,compTab) {
 ##     for (ir in 1:nR) {
 ##         id<-ft[ir,"ID"]
 ##         set<-ft[ir,"set"]
-##         m<-ft[ir,"mode"]
+##         m<-ft[ir,"adduct"]
 ##         entries<-getEntryFromComp(c("mz","Name","rt"),id,set,m,ctab)
 ##         mzCol[[ir]]<-  entries[["mz"]]
 ##         nm<-entries[["Name"]]
@@ -500,8 +500,8 @@ getEntryFromComp<-function(entry,id,set,mode,compTab) {
 ##     ft
 ## }
 
-get_set_mode <- function(s,mzml) {
-    unique(mzml[set == s,mode])
+get_set_adduct <- function(s,mzml) {
+    unique(mzml[set == s,adduct])
 }
 
 vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {

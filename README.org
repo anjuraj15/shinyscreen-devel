@@ -239,18 +239,18 @@
 
 ***  Data Files
     These should be in mzML format.
-** Sets, Tags, Modes, Files and IDs
-   Each file is labelled by a tag, mode and set. Sets are defined in
+** Sets, Tags, Adducts, Files and IDs
+   Each file is labelled by a tag, adduct and set. Sets are defined in
    the compound set CSV file and group compounds according to their
-   IDs. Modes correspond to the adducts. Tags label files in the
+   IDs. Adducts correspond to the adducts. Tags label files in the
    plots.
 
-   For known compounds, each set can contain multiple modes. Sets of
-   unknowns can only contain a single mode. Any files belonging to the
-   same set that have been acquired in a single mode, must carry
+   For known compounds, each set can contain multiple adducts. Sets of
+   unknowns can only contain a single adduct. Any files belonging to the
+   same set that have been acquired in a single adduct, must carry
    unique tags. 
 
-   In addition, the IDs of compounds belonging to the same set/mode
+   In addition, the IDs of compounds belonging to the same set/adduct
    combination must be unique. Different ID sets may overlap.
 
    Essentially, sets serve the purpouse of visually grouping files in
@@ -260,7 +260,7 @@
 ** Config Screen
    This is the start tab. Import the compound and set lists first,
    then proceed to import the mzML files. Provide tags in the tag text
-   box and then assign the sets, modes and tags to the imported mzML
+   box and then assign the sets, adducts and tags to the imported mzML
    files using table widget. Once this is done, move on to the
    ~Spectra Extraction~ tab.
 

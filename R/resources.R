@@ -33,12 +33,12 @@ FN_LOC_SETID <-"setid.csv"
 FN_COMP_TAB<-"comprehensive.csv"
 FN_SPEC<-"specdata.rds"
 FN_CONF <- "conf-state.yaml"
-MODEMAP<-list("[M+H]+"="MpHp_mass",
+ADDUCTMAP<-list("[M+H]+"="MpHp_mass",
               "[M-H]-"="MmHm_mass",
               "[M+NH4]+"="MpNH4_mass",
               "[M+Na]+"="MpNa_mass")
 
-DISP_MODEMAP <- c(list("UNSET"="UNSET_MODE_ERROR"),MODEMAP)
+DISP_ADDUCTMAP <- c(list("UNSET"="UNSET_ADDUCT_ERROR"),ADDUCTMAP)
 TAG_NA <- "::UNSET::"
 SET_NA <- "::UNSET::"
 TAG_DEF <- TAG_NA
@@ -113,12 +113,12 @@ NUM_INP_WIDTH="15%"
 
 ## Comprehensive table properties
 COMP_NAME_MAP <- list(RT="rt")
-## COMP_NAMES <-c("ID","mz","rt","mode","set","origin","Name","SMILES")
-COMP_NAME_FIRST <- c("ID","mz","rt","mode","tag","set","Name","SMILES","Files","wd")
+## COMP_NAMES <-c("ID","mz","rt","adduct","set","origin","Name","SMILES")
+COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","SMILES","Files","wd")
 
 ## File table properties
 FTAB_KEY=c("set","tag","mz")
-FTAB_NAMES=c("ID", "mz", "rt", "tag", "mode", "set", "Name", "SMILES", "Files" , "wd","origin")
+FTAB_NAMES=c("ID", "mz", "rt", "tag", "adduct", "set", "Name", "SMILES", "Files" , "wd","origin")
 
 
 EMPTY_UNKNOWN <- dtable(ID=character(0),mz=numeric(0),RT=numeric(0),Name=character(0),CAS=character(0))
@@ -127,7 +127,7 @@ EMPTY_KNOWN <- dtable(ID=character(0),SMILES=character(0),RT=numeric(0),Name=cha
 ## Trivial data table
 EMPTY_MZML <- dtable(Files=character(0),
                      tag=character(0),
-                     mode=character(0),
+                     adduct=character(0),
                      set=character(0))
 
 

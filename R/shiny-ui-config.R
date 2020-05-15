@@ -329,7 +329,7 @@ server_conf <- function(input,output,session,rv,rf,roots) {
         m <- rf$m_conf()
         txt_file_input(inputId = 'datafiles',
                        input = input,
-                       label = html("Data files table. Required columns <i>Files</i>, <i>tag</i>, <i>set</i> and <i>mode</i>."),
+                       label = html("Data files table. Required columns <i>Files</i>, <i>tag</i>, <i>set</i> and <i>adduct</i>."),
                        fileB = 'impDataFilesB',
                        volumes=roots$get,
                        default = file.path(m$conf$project, FN_DATA_TAB))
@@ -356,13 +356,13 @@ mzml2disp <- function(mzml,sets, tags) {
     df$set <- factor(as.character(df$set),levels=c(SET_NA,sets))
     df$set <- factor(sapply(as.character(df$set),function (x) if (!is.na(x)) x else SET_NA),levels = c(SET_NA,sets))
     df$tag <- factor(df$tag,levels=tags)
-    df$mode <- factor(df$mode,levels=names(DISP_MODEMAP))
+    df$adduct <- factor(df$adduct,levels=names(DISP_ADDUCTMAP))
     df
 }
 
 disp2mzml <- function(df) {
     df$set <- as.character(df$set)
-    df$mode <- as.character(df$mode)
+    df$adduct <- as.character(df$adduct)
     df$tag <- as.character(df$tag)
     dtable(df)
 }
@@ -392,7 +392,7 @@ add_mzML_files<-function(df,paths) {
             fi <- nrow(df)+nR
             df[st:fi,'tag'] <- levels(df$tag)[[1]]
             df[st:fi,'set'] <- levels(df$set)[[1]]
-            df[st:fi,'mode'] <- levels(df$mode)[[1]]
+            df[st:fi,'adduct'] <- levels(df$adduct)[[1]]
             df[st:fi,'Files'] <- paths
         }
     } else {
