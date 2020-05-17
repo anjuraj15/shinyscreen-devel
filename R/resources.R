@@ -33,8 +33,14 @@ FN_LOC_SETID <-"setid.csv"
 FN_COMP_TAB<-"comprehensive.csv"
 FN_SPEC<-"specdata.rds"
 FN_CONF <- "conf-state.yaml"
+.envp <- new.env(parent = emptyenv())
+data(adducts,package = "enviPat", envir = .envp)
+data(isotopes,package = "enviPat", envir = .envp)
+ADDUCTS <- dtable(.envp$adducts)
+ISOTOPES <- dtable(.envp$isotopes)
+.envp <- NULL
 ADDUCTMAP <- RChemMass:::adducts$Name
-names(ADDUCTMAP) <- apply(RChemMass:::adducts,1,function(row) {
+names(ADDUCTMAP) <- apply(ADDUCTS,1,function(row) {
     nm <- row[["Name"]]
     sgn <- row[["Charge"]]
     suff <- if (sgn > 0) "+" else if (sgn < 0) "-" else ""

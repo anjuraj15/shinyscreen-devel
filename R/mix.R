@@ -31,7 +31,66 @@ get_mz_cmp_l<-function(id,adduct,cmpL) {
     res
 }
 
-get_mz_from_smiles <- function(smiles,adduct) {
+calc_mz_from_formula <- function(chform,adduct,id) {
+    check_chform <- enviPat::check_chemform(ISOTOPES,chform)
+    wind <- which(check_chform$warning)
+    if (length(wind) > 0) stop("Cannot understand the following formulas: ",
+                               paste(check_chform$new_formula[wind],collapse = ","))
+    mol_form <- check_chform$new_formula
+    l_mol <- length(mol_form)
+    l_add <- length(adduct)
+    
+    adds <- ADDUCTS[Name %in% adduct,.(Name,
+                                       add=as.character(Formula_add),
+                                       ded=as.character(Formula_ded),
+                                       charge=Charge)]
+
+    dt <- dtable(ID = rep(id,each = l_add),
+                 mol_form = rep(mol_form,each = l_add),
+                 adduct = rep(adds$Name,l_mol),
+                 add = rep(adds$add,l_mol),
+                 ded = rep(adds$ded,l_mol),
+                 charge= rep(adds$charge,l_mol))
+    
+    merger <- function (mol_form,add,ded) {
+        full_form <- rep(NA_character_,length(mol_form))
+        both_ind <- which(add != 'FALSE' & ded != 'FALSE')
+        add_only_ind <- which(add != 'FALSE' & ded == 'FALSE')
+        ded_only_ind <- which(ded != 'FALSE' & add == 'FALSE')
+        ainds <- c(both_ind,add_only_ind)
+        full_form[ainds] <- vapply(ainds,function (i) enviPat::mergeform(mol_form[[i]],add[[i]]),FUN.VALUE = character(1), USE.NAMES = F)
+        dinds <- c(both_ind,ded_only_ind)
+        full_form[dinds] <- vapply(dinds,function (i) {
+            z <- check_ded2(mol_form[[i]],ded[[i]])
+            if (z) enviPat::subform(mol_form[[i]],ded[[i]]) else NA_character_
+        },
+        FUN.VALUE = character(1))
+        full_form
+    }
+    dt[,("full_form"):=.(merger(mol_form,add,ded))]
+    dt[!is.na(full_form),("mz"):=.(mapply(function(ff,ch) enviPat::isopattern(ISOTOPES,chemforms = ff,
+                                                                              charge = ch, verbose = F)[[1]][1],
+                                          full_form,
+                                          charge, USE.NAMES = F))]
+    dt[is.na(full_form),("mz"):=NA_real_]
+    dt
+}
+
+    
+    
+    
+
+## calc_mz_from_smiles <- function(smiles,adduct) {
+    
+## }
+
+get_mz_from_smiles <- function(smiles,Formula,mz,adduct,id) {
+    mapply(function (sm,frm,mz) {
+        if (!is.na(sm)) {
+            RChemMass::getSuspectMasses(smiles=sm,adduct_list = adduct)
+        } else if (!is.na(frm)) {
+            RChemMass::getAdductMassesFromFormula
+        } })
     RChemMass::getSuspectFormulaMass(smiles)[[ADDUCTMAP[[adduct]]]]
 }
 
