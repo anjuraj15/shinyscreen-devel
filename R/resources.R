@@ -33,12 +33,15 @@ FN_LOC_SETID <-"setid.csv"
 FN_COMP_TAB<-"comprehensive.csv"
 FN_SPEC<-"specdata.rds"
 FN_CONF <- "conf-state.yaml"
-ADDUCTMAP<-list("[M+H]+"="MpHp_mass",
-              "[M-H]-"="MmHm_mass",
-              "[M+NH4]+"="MpNH4_mass",
-              "[M+Na]+"="MpNa_mass")
+ADDUCTMAP <- RChemMass:::adducts$Name
+names(ADDUCTMAP) <- apply(RChemMass:::adducts,1,function(row) {
+    nm <- row[["Name"]]
+    sgn <- row[["Charge"]]
+    suff <- if (sgn > 0) "+" else if (sgn < 0) "-" else ""
+    paste0("[",nm,"]",suff)
+})
 
-DISP_ADDUCTMAP <- c(list("UNSET"="UNSET_ADDUCT_ERROR"),ADDUCTMAP)
+DISP_ADDUCTMAP <- c(c("UNSET"="UNSET_ADDUCT_ERROR"),ADDUCTMAP)
 TAG_NA <- "::UNSET::"
 SET_NA <- "::UNSET::"
 TAG_DEF <- TAG_NA
