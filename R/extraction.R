@@ -57,17 +57,15 @@ id2name<-function(id) {paste("ID:",id,sep='')}
 
 ppm2dev<-function(m,ppm) 1e-6*ppm*m
 
-
-
 gen_mz_range<-function(mz,err) {
-    mat<-matrix(data=numeric(1),nrow=length(mz),ncol=2,dimnames=list(as.character(names(mz))))
+    mat<-matrix(data=numeric(1),nrow=length(mz),ncol=2)
     mat[,1]<-mz - err
     mat[,2]<-mz + err
     mat
 }
 
 gen_rt_range<-function(rt,err) {
-    mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2,dimnames=list(as.character(names(rt))))
+    mat<-matrix(data=numeric(1),nrow=length(rt),ncol=2)
     rV<-which(!is.na(rt))
     rNA<-which(is.na(rt))
     mat[rV,1]<-(rt[rV] - err)*60
@@ -265,19 +263,18 @@ gen_ms2_chrom<-function(ms2Spec) {
 }
 
 
-gen_ms1_chrom<-function(raw,mz,errEIC,rt=NULL,errRT=NULL) {
-    mzRng<-gen_mz_range(mz,err=errEIC)
-    rtRng<-gen_rt_range(rt,err=errRT)
-    ids<-dimnames(mzRng)[[1]]
+gen_ms1_chrom <- function(raw,mz,errEIC,id,rt=NULL,errRT=NULL) {
+    mzRng<-gen_mz_range(mz,err = errEIC)
+    rtRng<-gen_rt_range(rt,err = errRT)
     x<-MSnbase::chromatogram(raw,mz=mzRng,msLevel=1,missing=0.0,rt=rtRng)
 
     res<-lapply(x,function (xx) {
         rt<-MSnbase::rtime(xx)/60.
         ints<-MSnbase::intensity(xx)
-        df<-data.frame(rt=rt,intensity=ints,stringsAsFactors=F)
+        df<-dtable(rt=rt,intensity=ints)
         df
     })
-    names(res)<-ids
+    names(res)<-id
     res
     
 }
