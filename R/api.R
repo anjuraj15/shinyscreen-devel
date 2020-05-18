@@ -38,17 +38,29 @@ run_in_dir <- function(m) {
     
 }
 
+
+
 ##' @export
 load_compound_input <- function(m) {
 
-    m$input$tab$known <- if (shiny::isTruthy(m$conf$compounds$known))
-                             file2tab(m$conf$compounds$known) else EMPTY_KNOWN
-    m$input$tab$unknown <- if (shiny::isTruthy(m$conf$compounds$unknown))
-                               file2tab(m$conf$compounds$unknown) else EMPTY_UNKNOWN
-    
+    coll <- list()
+    fields <- colnames(EMPTY_CMPD_LIST)
+    fns <- m$conf$compounds$lists
+    for (l in 1:length(fns)) {
+        fn <- fns[[l]]
+        fnfields <- colnames(fn)
+        dt <- file2tab(fn)
+        verify_cmpd_l(dt=dt,fn=fn)
+        nonexist <- setdiff(colnames,fields)
+        coll[[l]] <- dt[,(nonexist) := NULL]
+        coll[[l]]$ORIG <- fn
+        
+    }
+    cmpds <- if (length(fns)>0) rbindlist(l=coll,use.names = T, fill = T) else EMPTY_CMPD_LIST
+    cmpds[,("known"):=.(the_ifelse(!is.na(SMILES),"structure",the_ifelse(!is.na(Formula),"formula","mz")))]
+    m$input$tab$cmpds <- cmpds
     m$input$tab$setid <- read_setid(m$conf$compounds$sets,
-                                    m$input$tab$known,
-                                    m$input$tab$unknown)
+                                    m$input$tab$cmpds)
     m
 }
 

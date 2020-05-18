@@ -639,17 +639,17 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
     df
 }
 
-read_setid <- function(fn,known,unk) {
+read_setid <- function(fn,cmpds) {
     assert(file.exists(fn),msg=paste("Please provide valid compounds set table:", fn))
-    assert(nrow(known)>0 || nrow(unk) > 0,msg="Please provide at least one compounds list.")
+    assert(nrow(cmpds) > 0,msg="Please provide at least one compounds list.")
     setid <- file2tab(fn)
-    id_k <- known$ID
-    id_u <- unk$ID
-    tmp <- setid[,.(ID,set,origin=the_ifelse(ID %in% id_k,"known",NA_character_))]
-    tmp <- tmp[,.(ID,set,origin=the_ifelse(is.na(origin) & ID %in% id_u,"unknown",origin))]
-    natmp <- tmp[is.na(origin),.(ID,set)]
-    assert(nrow(natmp)==0,msg=paste("The following IDs from set table have not been found in the compound table:","------",print_table(natmp),"------",sep = "\n"))
-    tmp
+    x<-cmpds[setid,on='ID'][,.SD,.SDcols=c(colnames(setid),'known')]
+
+    sids <- unique(setid$ID)
+    cids <- unique(cmpds$ID)
+    diff <- setdiff(sids,cids)
+    assert(length(diff)==0,msg=paste("The following IDs from set table have not been found in the compound table:","------",print_table(dtable(diff)),"------",sep = "\n"))
+    x
 }
 
 
@@ -674,4 +674,20 @@ new_state <- function(conf,GUI) {
     m$input$tab$known <- EMPTY_KNOWN
     m$input$tab$unknown <- EMPTY_UNKNOWN
     m
+}
+
+verify_cmpd_l <- function(dt,fn) {
+    fields <- colnames(EMPTY_CMPD_LIST)
+    dtflds <- colnames(dt)
+    ess <- c('SMILES','Formula','mz')
+    pres <- ess %in% dtflds
+    assert(length(pres) > 0,
+           msg = paste('Compound list from ',fn,
+                       'does not contain any of "SMILES", "Formula", or "mz". \nThe compound list needs at least one of those to be valid.'))
+    exst <- ess[pres]
+    x <- lapply(exst,function (nm) all(is.na(dt[[nm]])))
+    assert(!all(x), msg = paste('At least one of', paste(exst,collapse = T),
+                                '\nmust contain some values in compound list from',fn))
+    
+    invisible(T)
 }

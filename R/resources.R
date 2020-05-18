@@ -120,6 +120,18 @@ MS1_SN_FAC <- 3.0
 
 NUM_INP_WIDTH="15%"
 
+
+
+## Possible compound list fields
+EMPTY_CMPD_LIST <- dtable(ID=character(),
+                          SMILES=character(),
+                          Name=character(),
+                          Formula=character(),
+                          RT=numeric(),
+                          mz=numeric(),
+                          known=character(),
+                          ORIG=character())
+COMP_LIST_COLS <- c("ID","Name","SMILES","Formula","RT","mz")
 ## Comprehensive table properties
 COMP_NAME_MAP <- list(RT="rt")
 ## COMP_NAMES <-c("ID","mz","rt","adduct","set","origin","Name","SMILES")
