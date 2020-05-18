@@ -76,6 +76,20 @@ calc_mz_from_formula <- function(chform,adduct,id) {
     dt
 }
 
+calc_mz_from_smiles <- function(smiles,adduct,id) {
+    mol <- try(getMolecule(smiles), silent = T)
+    mol <- lapply(smiles,function(s) try(RMassBank::getMolecule(s), silent = T))
+    check <- which(is.atomic(mol))
+    if (length(check) > 0)
+        stop("Errors in SMILES with IDs:",paste(id[which],collapse = T))
+
+    mol_form <- sapply(mol,function(x) (rcdk::get.mol2formula(x))@string,USE.NAMES = F)
+    names(mol_form) <- id
+    calc_mz_from_formula(mol_form,adduct,id)
+    
+    
+}
+
     
     
     
