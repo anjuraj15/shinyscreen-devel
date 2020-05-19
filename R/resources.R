@@ -39,15 +39,16 @@ data(isotopes,package = "enviPat", envir = .envp)
 ADDUCTS <- dtable(.envp$adducts)
 ISOTOPES <- dtable(.envp$isotopes)
 .envp <- NULL
-ADDUCTMAP <- RChemMass:::adducts$Name
-names(ADDUCTMAP) <- apply(ADDUCTS,1,function(row) {
-    nm <- row[["Name"]]
-    sgn <- row[["Charge"]]
-    suff <- if (sgn > 0) "+" else if (sgn < 0) "-" else ""
-    paste0("[",nm,"]",suff)
-})
-
-DISP_ADDUCTMAP <- c(c("UNSET"="UNSET_ADDUCT_ERROR"),ADDUCTMAP)
+ADDUCTMAP <- ADDUCTS$Name
+ADDUCTS$Name <- the_ifelse(ADDUCTS$Charge>0,paste0("[",ADDUCTS$Name,"]+"),paste0("[",ADDUCTS$Name,"]-"))
+## names(ADDUCTMAP) <- apply(ADDUCTS,1,function(row) {
+##     nm <- row[["Name"]]
+##     sgn <- row[["Charge"]]
+##     suff <- if (sgn > 0) "+" else if (sgn < 0) "-" else ""
+##     paste0("[",nm,"]",suff)
+## })
+## ADDUCTS$Name <- names(ADDUCTMAP)
+DISP_ADDUCTS <- c("UNSET",ADDUCTS$Name)
 TAG_NA <- "::UNSET::"
 SET_NA <- "::UNSET::"
 TAG_DEF <- TAG_NA
@@ -134,12 +135,11 @@ EMPTY_CMPD_LIST <- dtable(ID=character(),
 COMP_LIST_COLS <- c("ID","Name","SMILES","Formula","RT","mz")
 ## Comprehensive table properties
 COMP_NAME_MAP <- list(RT="rt")
-## COMP_NAMES <-c("ID","mz","rt","adduct","set","origin","Name","SMILES")
-COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","SMILES","Files","wd")
+COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","known","SMILES","Formula","Files","wd")
 
 ## File table properties
 FTAB_KEY=c("set","tag","mz")
-FTAB_NAMES=c("ID", "mz", "rt", "tag", "adduct", "set", "Name", "SMILES", "Files" , "wd","origin")
+FTAB_NAMES=c("ID", "mz", "rt", "tag", "adduct", "set", "Name", "SMILES", "Files" , "wd","known")
 
 
 EMPTY_UNKNOWN <- dtable(ID=character(0),mz=numeric(0),RT=numeric(0),Name=character(0),CAS=character(0))

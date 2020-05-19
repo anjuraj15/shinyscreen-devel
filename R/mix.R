@@ -31,7 +31,7 @@ get_mz_cmp_l<-function(id,adduct,cmpL) {
     res
 }
 
-calc_mz_from_formula <- function(chform,adduct,id) {
+calc_mz_from_formula_outer <- function(chform,adduct,id) {
     check_chform <- enviPat::check_chemform(ISOTOPES,chform)
     wind <- which(check_chform$warning)
     if (length(wind) > 0) stop("Cannot understand the following formulas: ",
@@ -76,16 +76,67 @@ calc_mz_from_formula <- function(chform,adduct,id) {
     dt
 }
 
+calc_mz_from_formula <- function(chform,adduct,id) {
+    check_chform <- enviPat::check_chemform(ISOTOPES,chform)
+    wind <- which(check_chform$warning)
+    if (length(wind) > 0) stop("Cannot understand the following formulas: ",
+                               paste(check_chform$new_formula[wind],collapse = ","))
+    mol_form <- check_chform$new_formula
+    uad <- unique(adduct)
+    uadds <- lapply(uad,function(a) ADDUCTS[Name==a,.(Name,
+                                                      add=as.character(Formula_add),
+                                                      ded=as.character(Formula_ded),
+                                                      charge=Charge),on=""])
+    names(uadds) <- uad
+    adds <- rbindlist(l=lapply(adduct,function(a) uadds[[a]]))
+    
+    merger <- function (mol_form,add,ded) {
+        res <- numeric(length(mol_form))
+        both_ind <- which(add != 'FALSE' & ded != 'FALSE')
+        add_only_ind <- which(add != 'FALSE' & ded == 'FALSE')
+        ded_only_ind <- which(ded != 'FALSE' & add == 'FALSE')
+        ainds <- c(both_ind,add_only_ind)
+        res[ainds] <- vapply(ainds,function (i) enviPat::mergeform(mol_form[[i]],add[[i]]),FUN.VALUE = character(1), USE.NAMES = F)
+        dinds <- c(both_ind,ded_only_ind)
+        res[dinds] <- vapply(dinds,function (i) {
+            z <- check_ded2(mol_form[[i]],ded[[i]])
+            if (z) enviPat::subform(mol_form[[i]],ded[[i]]) else NA_character_
+        },
+        FUN.VALUE = character(1))
+        res
+    }
+    forms  <- merger(mol_form,adds$add,adds$ded)
+    mz <- the_ifelse(!is.na(forms),
+                     mapply(function(ff,ch) enviPat::isopattern(ISOTOPES,chemforms = ff,
+                                                                charge = ch, verbose = F)[[1]][1],
+                            forms,
+                            adds$charge, USE.NAMES = F),
+                     NA_real_)
+    mz
+}
+
 calc_mz_from_smiles <- function(smiles,adduct,id) {
-    mol <- try(getMolecule(smiles), silent = T)
     mol <- lapply(smiles,function(s) try(RMassBank::getMolecule(s), silent = T))
     check <- which(is.atomic(mol))
     if (length(check) > 0)
-        stop("Errors in SMILES with IDs:",paste(id[which],collapse = T))
+        stop("Errors in SMILES with IDs:",paste(id[which],collapse = ','))
 
     mol_form <- sapply(mol,function(x) (rcdk::get.mol2formula(x))@string,USE.NAMES = F)
     names(mol_form) <- id
     calc_mz_from_formula(mol_form,adduct,id)
+    
+    
+}
+
+calc_mz_from_smiles_outer <- function(smiles,adduct,id) {
+    mol <- lapply(smiles,function(s) try(RMassBank::getMolecule(s), silent = T))
+    check <- which(is.atomic(mol))
+    if (length(check) > 0)
+        stop("Errors in SMILES with IDs:",paste(id[which],collapse = ','))
+
+    mol_form <- sapply(mol,function(x) (rcdk::get.mol2formula(x))@string,USE.NAMES = F)
+    names(mol_form) <- id
+    calc_mz_from_formula_outer(mol_form,adduct,id)
     
     
 }
@@ -98,15 +149,7 @@ calc_mz_from_smiles <- function(smiles,adduct,id) {
     
 ## }
 
-get_mz_from_smiles <- function(smiles,Formula,mz,adduct,id) {
-    mapply(function (sm,frm,mz) {
-        if (!is.na(sm)) {
-            RChemMass::getSuspectMasses(smiles=sm,adduct_list = adduct)
-        } else if (!is.na(frm)) {
-            RChemMass::getAdductMassesFromFormula
-        } })
-    RChemMass::getSuspectFormulaMass(smiles)[[ADDUCTMAP[[adduct]]]]
-}
+
 
 get_col_from_cmp_l<-function(id,cname,cmpL) {
     ind<-match(id,cmpL$ID)
@@ -642,7 +685,7 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
 read_setid <- function(fn,cmpds) {
     assert(file.exists(fn),msg=paste("Please provide valid compounds set table:", fn))
     assert(nrow(cmpds) > 0,msg="Please provide at least one compounds list.")
-    setid <- file2tab(fn)
+    setid <- file2tab(fn,colClasses=c(ID="character"))
     x<-cmpds[setid,on='ID'][,.SD,.SDcols=c(colnames(setid),'known')]
 
     sids <- unique(setid$ID)
@@ -685,8 +728,8 @@ verify_cmpd_l <- function(dt,fn) {
            msg = paste('Compound list from ',fn,
                        'does not contain any of "SMILES", "Formula", or "mz". \nThe compound list needs at least one of those to be valid.'))
     exst <- ess[pres]
-    x <- lapply(exst,function (nm) all(is.na(dt[[nm]])))
-    assert(!all(x), msg = paste('At least one of', paste(exst,collapse = T),
+    x <- lapply(exst,function (nm) do.call(all,as.list(is.na(dt[[nm]]))))
+    assert(!do.call(all,x), msg = paste('At least one of', paste(exst,collapse = ','),
                                 '\nmust contain some values in compound list from',fn))
     
     invisible(T)
