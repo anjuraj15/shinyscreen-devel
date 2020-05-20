@@ -49,7 +49,12 @@ load_compound_input <- function(m) {
     for (l in 1:length(fns)) {
         fn <- fns[[l]]
         fnfields <- colnames(fn)
-        dt <- file2tab(fn, colClasses=c(ID="character"))
+        dt <- file2tab(fn, colClasses=c(ID="character",
+                                        SMILES="character",
+                                        Formula="character",
+                                        Name="character",
+                                        RT="numeric",
+                                        mz="numeric"))
         verify_cmpd_l(dt=dt,fn=fn)
         nonexist <- setdiff(fnfields,fields)
         coll[[l]] <- if (length(nonexist)==0) dt else dt[,(nonexist) := NULL]
@@ -57,6 +62,21 @@ load_compound_input <- function(m) {
         
     }
     cmpds <- if (length(fns)>0) rbindlist(l=c(list(EMPTY_CMPD_LIST), coll), use.names = T, fill = T) else EMPTY_CMPD_LIST
+
+    dups <- duplicated(cmpds$ID)
+    dups <- dups | duplicated(cmpds$ID,fromLast = T)
+    dupIDs <- cmpds$ID[dups]
+    dupfns <- cmpds$ORIG[dups]
+
+    msg <- ""
+    for (fn in unique(dupfns)) {
+        inds <- which(dupfns %in% fn)
+        fndupID <- paste(dupIDs[inds], collapse = ',')
+        msg <- paste(paste('Duplicate IDs', fndupID,'found in',fn),msg,sep = '\n')
+    }
+
+    assert(all(!dups), msg = msg)
+    
     cmpds[,("known"):=.(the_ifelse(!is.na(SMILES),"structure",the_ifelse(!is.na(Formula),"formula","mz")))]
     m$input$tab$cmpds <- cmpds
     m$input$tab$setid <- read_setid(m$conf$compounds$sets,
@@ -127,40 +147,22 @@ read_conf <- function(fn) {
 verify_compounds <- function(conf) {
     ## * Existence of input files
 
-    fn_cmpd_known <- conf$compounds$known
-    fn_cmpd_unk <- conf$compounds$unknown
+    fns_cmpds <- conf$compounds$lists
     fn_cmpd_sets <- conf$compounds$sets
 
     ## ** Compound lists and sets
 
     assert(isThingFile(fn_cmpd_sets),
                             msg=paste("Cannot find the compound sets file:",fn_cmpd_sets))
-    
-    ## if (!is.null(fn_cmpd_known)) assert(isThingFile(fn_cmpd_known),
-    ##                                                          msg=paste("Cannot find known compounds file:",fn_cmpd_known))        
-    ## if (!is.null(fn_cmpd_unk)) assert(isThingFile(fn_cmpd_unk),
-    ##                                                    msg=paste("Cannot find unknown compounds file:",fn_cmpd_unk))
 
-    assert(xor(!isThingFile(fn_cmpd_known),!isThingFile(fn_cmpd_unk)),msg=paste("Both known and unknown compounds lists are missing."))
+    for (fn in fns_cmpds) {
+        assert(isThingFile(fn), msg=paste("Cannot find compound list:",fn))
+    }
 
     ## * Data files
     df_sets <- file2tab(fn_cmpd_sets)
     all_sets<-unique(df_sets$set)
 
-    ## ** Knowns
-    if (isThingFile(fn_cmpd_unk)) {
-        df_k <- file2tab(fn_cmpd_known)
-        are_knowns_OK <- shiny::isTruthy(vald_comp_tab(df_k,fn_cmpd_known, checkSMILES=T, checkNames=T))
-        assert(are_knowns_OK,msg='Aborted because known compounds table contained errors.')
-    }
-
-    ## ** Unknowns
-    if (isThingFile(fn_cmpd_unk)) {
-        df_u <- file2tab(fn_cmpd_unk)
-        are_unknowns_OK <- shiny::isTruthy(vald_comp_tab(df_u,fn_cmpd_unk, checkSMILES=F, checkMz=T))
-        assert(are_unknowns_OK, msg='Aborted because unknown compounds table contained errors.')
-    }
-    
     return(list(conf=conf,all_sets=all_sets))
 }
 
@@ -179,20 +181,6 @@ verify_data <- function(conf,all_sets) {
     assert(isThingFile(fn_data),msg=paste("Data table does not exist:",fn_data))
     mzml <- file2tab(fn_data)
     verify_data_df(mzml=mzml,all_sets)
-    return(conf)
-}
-
-
-
-##' @export
-vrfy_conf <- function(conf) {
-    ## * Existence of input files
-
-    z <- verify_compounds(conf)
-    conf <- z$conf
-    all_sets <- z$all_sets
- 
-    verify_data(conf=conf,all_sets=all_sets)
     return(conf)
 }
 

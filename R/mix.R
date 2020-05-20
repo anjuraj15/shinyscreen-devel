@@ -141,16 +141,6 @@ calc_mz_from_smiles_outer <- function(smiles,adduct,id) {
     
 }
 
-    
-    
-    
-
-## calc_mz_from_smiles <- function(smiles,adduct) {
-    
-## }
-
-
-
 get_col_from_cmp_l<-function(id,cname,cmpL) {
     ind<-match(id,cmpL$ID)
     x<-cmpL[[cname]][[ind]]
@@ -714,14 +704,15 @@ new_state <- function(conf,GUI) {
     m$GUI <- GUI
     m$out$tab <- list()
     m$input$tab$mzml <- EMPTY_MZML
-    m$input$tab$known <- EMPTY_KNOWN
-    m$input$tab$unknown <- EMPTY_UNKNOWN
+    m$input$tab$lists <- list(EMPTY_CMPD_LIST)
     m
 }
 
 verify_cmpd_l <- function(dt,fn) {
     fields <- colnames(EMPTY_CMPD_LIST)
     dtflds <- colnames(dt)
+
+    assert('ID' %in% dtflds, msg = paste('ID column must be present and filled in', fn))
     ess <- c('SMILES','Formula','mz')
     pres <- ess %in% dtflds
     assert(length(pres) > 0,

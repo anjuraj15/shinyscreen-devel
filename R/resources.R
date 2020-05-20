@@ -18,8 +18,7 @@
 ## Config defaults
 CONF <- list(data=NA_character_,
              project=getwd(),
-             compounds=list(known=NA_character_,
-                            unknown=NA_character_,
+             compounds=list(lists=list(),
                             sets=NA_character_))
 
 ## Constants
@@ -65,11 +64,6 @@ CEX<-0.75
 RT_DIGITS=2
 M_DIGITS=4
 PAL="Dark2"
-
-## REST_TXT_INP<-c("fnKnownL",
-##                 "fnUnkL",
-##                 "fnSetId",
-##                 "tagsInp")
 
 REST_TAB<-c("mzml")
 
@@ -141,16 +135,11 @@ COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","known","SMILES"
 FTAB_KEY=c("set","tag","mz")
 FTAB_NAMES=c("ID", "mz", "rt", "tag", "adduct", "set", "Name", "SMILES", "Files" , "wd","known")
 
-
-EMPTY_UNKNOWN <- dtable(ID=character(0),mz=numeric(0),RT=numeric(0),Name=character(0),CAS=character(0))
-EMPTY_KNOWN <- dtable(ID=character(0),SMILES=character(0),RT=numeric(0),Name=character(0),CAS=character(0))
-
 ## Trivial data table
 EMPTY_MZML <- dtable(Files=character(0),
                      tag=character(0),
                      adduct=character(0),
                      set=character(0))
-
 
 FN_DATA_TAB <- "data-files.csv"
 
