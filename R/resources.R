@@ -146,3 +146,12 @@ FN_DATA_TAB <- "data-files.csv"
 
 ## Default number of concurrent workers
 NO_WORKERS <- 2
+
+EMPTY_CONF <- list(project="",
+                   compounds=list(lists=list(),
+                                  sets=""),
+                   data="",
+                   tolerance=list("ms1 coarse"=MS1_ERR_COARSE,
+                                  "ms 1 fine"=MS1_ERR_FINE,
+                                  "eic"=EIC_ERR,
+                                  "rt"=RT_EXTR_ERR))

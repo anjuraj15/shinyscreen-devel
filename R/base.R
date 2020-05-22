@@ -44,3 +44,12 @@ print_table <- function (df) {
 }
 
 assert <- function(expr,msg) shiny::validate(shiny::need(expr,message=msg))
+
+
+gen_uniq_lab <- function(prev,pref='',suff='') {
+    l <- length(prev)
+    gen <- function() paste0(pref,as.integer(runif(1,min=l,max=2L*l+1L)),suff)
+    cand <- gen()
+    while (cand %in% prev) cand <- gen()
+    c(prev,cand)
+}

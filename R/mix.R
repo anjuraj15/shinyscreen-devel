@@ -699,12 +699,35 @@ write_state <- function(m,fn_conf) {
 }
 
 new_state <- function(conf,GUI) {
+read_conf <- function(fn) {
+    cf <- yaml::yaml.load_file(fn)
+    fnl <- cf$compound$lists
+    if (!is.null(fnl)) {
+        nms <- character(0)
+        for (i in 1:length(fnl)) {
+            nms <- gen_uniq_lab(nms,pref = 'L')
+        }
+        names(fnl) <- nms
+        
+    }
+    cf$compound$lists <- fnl
+
+    cf
+}
+
+new_conf <- function() EMPTY_CONF
+
+new_state <- function(conf=NULL,fn_conf="",GUI=F) {
+    assert(xor(!is.null(conf),nchar(fn_conf)!=0L),
+           msg="Provide either conf, or fn_conf, not both, not none.")
     m <- list()
-    m$conf <- conf
+    m$conf <- if (!is.null(conf)) conf else read_conf(fn_conf)
     m$GUI <- GUI
     m$out$tab <- list()
     m$input$tab$mzml <- EMPTY_MZML
-    m$input$tab$lists <- list(EMPTY_CMPD_LIST)
+    lab <- gen_uniq_lab(list(),pref="L")
+    m$input$tab$lists <- list()
+    m$input$tab[[lab[[1]]]] <- EMPTY_CMPD_LIST
     m
 }
 
