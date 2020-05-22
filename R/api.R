@@ -131,18 +131,6 @@ mk_comp_tab <- function(m) {
     m
 }
 
-##' @export
-read_conf <- function(fn) {
-    yaml::yaml.load_file(fn)
-}
-## read_conf <- function(fn_conf) {
-##     assert(isThingFile(fn_conf),msg=paste("Unable to read the configuration file:", fn_conf))
-##     conf <- yaml::yaml.load_file(fn_conf)
-##     conf <- vrfy_conf(conf)
-##     conf
-## }
-
-
 
 verify_compounds <- function(conf) {
     ## * Existence of input files
