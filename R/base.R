@@ -22,7 +22,7 @@ tab2file<-function(tab,file,...) {
     data.table::fwrite(x=tab,file=file,...)
 }
 
-file2tab<-function(file,na.strings=c("","NA"),...) {
+file2tab<-function(file,na.strings=c("","NA","\"\""),...) {
     data.table::fread(file=file,na.strings = na.strings, ...)
 }
 
