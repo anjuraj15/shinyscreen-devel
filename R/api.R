@@ -15,13 +15,11 @@
 
 ##' @export
 run <- function(fn_conf) {
-    conf <- read_conf(fn_conf)
-    dir.create(conf$project,
+    m <- new_state(fn_conf=fn_conf,
+                   GUI=F)    
+    dir.create(m$conf$project,
                showWarnings = F,
                recursive = T)
-
-    m <- new_state(conf=conf,
-                   GUI=F)    
     m <- withr::with_dir(new=conf$project,code = run_in_dir(m))
     return(invisible(m))
 }

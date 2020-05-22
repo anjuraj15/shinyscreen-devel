@@ -103,7 +103,9 @@ list2rev <- function(lst) {
 
 new_rv_state <- function(project) {
     p <- normalizePath(path=project,winslash = '/')
-    x <- react_v(m=list2rev(new_state(list(project=p,data=""),GUI=T)))
+    nc <- new_conf()
+    nc$project <- project
+    x <- react_v(m=list2rev(new_state(conf=nc,GUI=T)))
     x
 }
 

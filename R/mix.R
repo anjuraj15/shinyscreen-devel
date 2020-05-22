@@ -698,7 +698,6 @@ write_state <- function(m,fn_conf) {
     tab2file(tab=m$input$tab$mzml,file=file.path(m$conf$project,FN_DATA_TAB))
 }
 
-new_state <- function(conf,GUI) {
 read_conf <- function(fn) {
     cf <- yaml::yaml.load_file(fn)
     fnl <- cf$compound$lists
