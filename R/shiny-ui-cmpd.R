@@ -20,16 +20,11 @@
 mk_ui_cmpd <- function() {
     ## ***** Compound List Tab *****
 
-    knownListBox<-prim_box(title="Known Compounds List",
-                         rhandsontable::rHandsontableOutput("knownCtrl"),
+    cmpdsListBox<-prim_box(title="Compounds List",
+                         rhandsontable::rHandsontableOutput("cmpdsCtrl"),
                          width=NULL)
 
-    unkListBox<-prim_box(title="Unknown Compounds List",
-                         rhandsontable::rHandsontableOutput("unkCtrl"),
-                         width=NULL)
-    
-    cmpListLayout <- shiny::fluidRow(shiny::column(knownListBox,
-                                                   unkListBox,
+    cmpListLayout <- shiny::fluidRow(shiny::column(cmpdsListBox,
                                                    width = 12))
 
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
@@ -44,25 +39,14 @@ mk_ui_cmpd <- function() {
 }
 
 server_cmpd <- function(input,output,session,rv,rf,roots) {
-    output$knownCtrl <- rhandsontable::renderRHandsontable({
-        df<-rv$m$input$tab$known
+    output$cmpdsCtrl <- rhandsontable::renderRHandsontable({
+        df<-rv$m$input$tab$cmpds
         out<-if (!is.null(df)) {
                  df
              } else {
-                 data.frame(ID=numeric(),Name=character(),SMILES=character(),RT=numeric())
+                 EMPTY_CMPD_LIST
              }
         rhandsontable::rhandsontable(out,stretchH="all")
     })
-
-    output$unkCtrl <- rhandsontable::renderRHandsontable({
-        df<-rv$m$input$tab$unknown
-        out<-if (!is.null(df)) {
-                 df
-             } else {
-                 data.frame(ID=numeric(),mz=numeric())
-             }
-        rhandsontable::rhandsontable(out,stretchH="all")
-    })
-
     rv
 }

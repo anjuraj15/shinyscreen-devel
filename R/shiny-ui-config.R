@@ -30,20 +30,14 @@ mk_ui_config <- function() {
                  collapsible=F,...)}
     
     confImport <- prim_box(title="Import",
-                           shiny::uiOutput("fnKnownLCtrl"),
-                           shiny::uiOutput("fnUnkLCtrl"),
+                           shiny::uiOutput("fnCmpdsLCtrl"),
                            shiny::uiOutput("fnSetIdCtrl"),
                            shiny::uiOutput("fnDataFilesCtrl"),
-                           shinyFiles::shinyFilesButton("impKnownListB",
-                                                        label="Import knowns.",
+                           shinyFiles::shinyFilesButton("impCmpdsListB",
+                                                        label="Import compound lists.",
                                                         title="",
                                                         icon=shiny::icon("file"),
-                                                        multiple=F),
-                           shinyFiles::shinyFilesButton("impUnkListB",
-                                                        label="Import unknowns.",
-                                                        title="",
-                                                        icon=shiny::icon("file"),
-                                                        multiple=F),
+                                                        multiple=T),
                            shinyFiles::shinyFilesButton("impSetIdB",
                                                         label="Import set ID table.",
                                                         title="",
@@ -148,8 +142,7 @@ react_conf_f <- function(input,output,session,rv,rf) {
     rf$m_conf <- react_f({
         m <- list()
         m$conf$project <- rv$project_path
-        m$conf$compounds$known <- input$known
-        m$conf$compounds$unknown <- input$unknown
+        m$conf$compounds$cmpds <- input$cmpds #TODO multi-lists.
         m$conf$compounds$sets <- input$sets
         m$conf$data <- input$datafiles
         verify_compounds(m$conf)
@@ -182,9 +175,7 @@ server_conf <- function(input,output,session,rv,rf,roots) {
 
 
 
-    shinyFiles::shinyFileChoose(input, 'impKnownListB',defaultRoot=roots$def_vol(),
-                                defaultPath=roots$def_path(),roots=roots$get)
-    shinyFiles::shinyFileChoose(input, 'impUnkListB',defaultRoot=roots$def_vol(),
+    shinyFiles::shinyFileChoose(input, 'impCmpdsListB',defaultRoot=roots$def_vol(),
                                 defaultPath=roots$def_path(),roots=roots$get)
     shinyFiles::shinyFileChoose(input, 'impSetIdB',defaultRoot=roots$def_vol(),
                                 defaultPath=roots$def_path(),roots=roots$get)
@@ -304,19 +295,12 @@ server_conf <- function(input,output,session,rv,rf,roots) {
     })
 
     ## ***** Render *****
-    output$fnKnownLCtrl <- shiny::renderUI({
-        txt_file_input(inputId = 'known',
+    output$fnCmpdsLCtrl <- shiny::renderUI({
+        txt_file_input(inputId = 'cmpds',
                        input = input,
-                       label = html("The list of knowns. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
-                       fileB = 'impKnownListB',
-                       volumes=roots$get)
-    })
-    output$fnUnkLCtrl <- shiny::renderUI({
-        txt_file_input(inputId = 'unknown',
-                       input = input,
-                       label = html("The list of unknowns. Required columns: <i>ID</i>, <i>mz</i> and <i>RT</i> (<i>RT</i> can be empty)."),
-                       fileB = 'impUnkListB',
-                       volumes=roots$get)
+                       label = html("The list of cmpds. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
+                       fileB = 'impCmpdsListB',
+                       volumes=roots$get) #TODO multi-lists
     })
     output$fnSetIdCtrl <- shiny::renderUI({
         txt_file_input(inputId = 'sets',
