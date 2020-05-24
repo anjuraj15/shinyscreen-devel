@@ -30,19 +30,19 @@ mk_ui_config <- function() {
                  collapsible=F,...)}
     
     confImport <- prim_box(title="Import",
-                           shiny::uiOutput("fnCmpdsLCtrl"),
-                           shiny::uiOutput("fnSetIdCtrl"),
-                           shiny::uiOutput("fnDataFilesCtrl"),
+                           shiny::includeMarkdown(system.file("ui/compounds-list-button.md",package="shinyscreen")),
                            shinyFiles::shinyFilesButton("impCmpdsListB",
                                                         label="Import compound lists.",
                                                         title="",
                                                         icon=shiny::icon("file"),
                                                         multiple=T),
+                           shiny::includeMarkdown(system.file("ui/compound-sets-button.md",package="shinyscreen")),
                            shinyFiles::shinyFilesButton("impSetIdB",
                                                         label="Import set ID table.",
                                                         title="",
                                                         icon=shiny::icon("file"),
                                                         multiple=T),
+                           shiny::uiOutput("fnDataFilesCtrl"),
                            shinyFiles::shinyFilesButton("impDataFilesB",
                                                         label="Import data files table.",
                                                         title="",
@@ -295,13 +295,13 @@ server_conf <- function(input,output,session,rv,rf,roots) {
     })
 
     ## ***** Render *****
-    output$fnCmpdsLCtrl <- shiny::renderUI({
-        txt_file_input(inputId = 'cmpds',
-                       input = input,
-                       label = html("The list of cmpds. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
-                       fileB = 'impCmpdsListB',
-                       volumes=roots$get) #TODO multi-lists
-    })
+
+    ##     txt_file_input(inputId = 'cmpds',
+    ##                    input = input,
+    ##                    label = html("The list of cmpds. Required columns: <i>ID</i>, <i>SMILES</i>, <i>Name</i> and <i>RT</i> (the last two can be empty). Remember to quote <i>SMILES</i> and <i>Name</i> entries!"),
+    ##                    fileB = 'impCmpdsListB',
+    ##                    volumes=roots$get) #TODO multi-lists
+    ## })
     output$fnSetIdCtrl <- shiny::renderUI({
         txt_file_input(inputId = 'sets',
                        input = input,

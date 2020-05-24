@@ -24,21 +24,43 @@ mk_ui_cmpd <- function() {
                          rhandsontable::rHandsontableOutput("cmpdsCtrl"),
                          width=NULL)
 
-    cmpListLayout <- shiny::fluidRow(shiny::column(cmpdsListBox,
+    compFileList <- shiny::verbatimTextOutput("filelist")
+    ## shiny::tags$style(type="text/css", "#filelist {white-space: pre-wrap;}")
+    cmpListLayout <- shiny::fluidRow(shiny::column(
+                                                compFileList,
+                                                cmpdsListBox,
                                                    width = 12))
 
+    
+    
+    
+    
+    
     cmpListTab <- shinydashboard::tabItem(tabName="compList",
                                           cmpListLayout)
 
+    
     compListSideItem <- shinydashboard::menuItem(text="Compound list",
                                                  tabName="compList",
                                                  icon=shiny::icon("table"))
+
+    
 
     return(list(tab=cmpListTab,
                 side=compListSideItem))
 }
 
 server_cmpd <- function(input,output,session,rv,rf,roots) {
+
+    output$filelist <- shiny::renderText({
+        header <- "Compounds list generated from files:"
+        cmpds <- rv$m$input$tab$cmpds
+
+        files <- unique(cmpds$ORIG)
+        entries <- sapply(files,function(fn) paste0('- ',fn))
+        paste(c(header,entries),collapse = '\n')
+    })
+    
     output$cmpdsCtrl <- rhandsontable::renderRHandsontable({
         df<-rv$m$input$tab$cmpds
         out<-if (!is.null(df)) {
