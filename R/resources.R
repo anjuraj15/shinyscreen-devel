@@ -152,6 +152,6 @@ EMPTY_CONF <- list(project="",
                                   sets=""),
                    data="",
                    tolerance=list("ms1 coarse"=MS1_ERR_COARSE,
-                                  "ms 1 fine"=MS1_ERR_FINE,
+                                  "ms1 fine"=MS1_ERR_FINE,
                                   "eic"=EIC_ERR,
                                   "rt"=RT_EXTR_ERR))
