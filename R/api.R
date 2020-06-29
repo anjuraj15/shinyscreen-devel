@@ -213,4 +213,8 @@ mk_tol_funcs <- function(m) {
     
 }
 
-
+##' @export
+extr_data <- function(m) {
+    m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=c('adduct','tag','ID')]
+    m
+}
