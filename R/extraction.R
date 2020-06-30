@@ -454,3 +454,30 @@ extract<-function(fTab,extr_fun,errEIC,errFinePPM,errCoarse,fnSpec,errRT) {
              fnSpec=fnSpec)
     
 }
+
+
+extr_eic_ms1 <- function(tab,err) {
+    ## Asynchronous extraction of ms1 spectra. The result is a list of
+    ## running futures.
+    files <- unique(tab$Files)
+    extr_fn <- function(fn) {
+        ms1 <- MSnbase::readMSData(file=fn,msLevel=1,mode="onDisk")
+        chunk<-tab[Files==fn]
+        mz <- chunk$mz
+        rt <- chunk$rt
+        id <- chunk$ID
+        mzerr <- m$extr$tol$coarse(mz)
+        mzrng <- gen_mz_range(mz=mz,err=mzerr)
+        rtrng <- gen_rt_range(rt=rt,err=m$extr$tol$rt)
+        mzMin <- min(mzrng)
+        mzMax <- max(mzrng)
+        ms1 <- MSnbase::filterMz(ms1,c(mzMin,mzMax))
+        eic <- MSnbase::chromatogram(ms1,mz=mzrng,msLevel=1,missing=0.0,rt=rtrng)
+        res <- lapply(eic,function (e) dtable(rt=MSnbase::rtime(e)/60.,intensity=MSnbase::intensity(e)))
+        names(res) <- id
+        res
+    }
+    res <-lapply(files,function (fn) future::future(extr_fn(fn), lazy=T))
+    names(res) <- files
+    res
+}
