@@ -180,6 +180,16 @@ concurrency <- function(m) {
 }
 
 mk_tol_funcs <- function(m) {
+    ## Depending on units given when the user specified the errors,
+    ## generate functions that calculate errors given the concrete
+    ## mass.
+
+    ## Mass errors can be either in ppm, or Da.
+    ## Time errors in min, or s.
+
+    ## The mass error calculation functions and the retention time
+    ## error in minutes are in m$extr$tol.
+    
     grab <- function(entry,unit) {
         what <- paste0("\\<",unit,"\\>$")
         entry <- trimws(entry,which="both")
