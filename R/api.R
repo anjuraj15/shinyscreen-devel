@@ -225,6 +225,23 @@ mk_tol_funcs <- function(m) {
 
 ##' @export
 extr_data <- function(m) {
+
+    ## Reduce the comp table to only unique masses (this is because
+    ## different sets can have same masses).
     m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=c('adduct','tag','ID')]
+    files <- m$out$tab$data[,unique(Files)]
+    allCEs <- do.call(c,args=lapply(files,function(fn) {
+        z <- MSnbase::readMSData(files=fn,msLevel = c(1,2),mode="onDisk")
+        unique(MSnbase::collisionEnergy(z),fromLast=T)
+        
+    }))
+    allCEs <- unique(allCEs)
+    allCEs <- allCEs[!is.na(allCEs)]
+    cols <-paste('CE',allCEs,sep = '')
+    vals <- rep(NA,length(cols))
+    m$out$tab$data[,(cols) := .(rep(NA,.N))]
+
+    m$extr$tmp$EICMS1 <- extr_eic_ms1(tab=m$out$tab$data[,.(Files,mz,rt,ID)],err=m$extr$tol$eic)
     m
+    
 }
