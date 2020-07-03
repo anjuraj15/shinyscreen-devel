@@ -224,7 +224,7 @@ mk_tol_funcs <- function(m) {
         eppm <- grab(entry,"ppm")
         eda <- grab(entry,"Da")
         shinyscreen:::assert(xor(is.na(eda), is.na(eppm)), msg = msg)
-        if (is.na(eda)) function(mz) eppm*1e-6*mz else function(mz) eda
+        if (is.na(eda)) Vectorize(function(mz) eppm*1e-6*mz, USE.NAMES = F) else Vectorize(function(mz) eda, USE.NAMES = F)
     }
 
     asgn_t_err <- function (entry, msg) {
