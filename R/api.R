@@ -264,13 +264,13 @@ extr_data <- function(m) {
     vals <- rep(NA,length(cols))
     m$out$tab$data[,(cols) := .(rep(NA,.N))]
     files <- m$out$tab$data[,unique(Files)]
-    m$extr$tmp <- lapply(files,function(fn) future::future(extract(fn=fn,
-                                                                   tab=m$out$tab$data[,.(Files,mz,rt,ID)],
-                                                                   err_ms1_eic=m$extr$tol$eic,
-                                                                   err_coarse_fun=m$extr$tol$coarse,
-                                                                   err_fine_fun=m$extr$tol$fine,
-                                                                   err_rt=m$extr$tol$rt),
-                                                           lazy = T))
+    m$extr$tmp <- lapply(files,function(fn) m$future(extract(fn=fn,
+                                                             tab=m$out$tab$data[,.(Files,mz,rt,ID)],
+                                                             err_ms1_eic=m$extr$tol$eic,
+                                                             err_coarse_fun=m$extr$tol$coarse,
+                                                             err_fine_fun=m$extr$tol$fine,
+                                                             err_rt=m$extr$tol$rt),
+                                                     lazy = T))
     m
     
 }
