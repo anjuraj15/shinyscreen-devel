@@ -75,10 +75,10 @@ gen_rt_range<-function(rt,err) {
     mat
 }
 
-filt_ms2_by_prcs <- function(ms2,mz,errCoarse) {
+filt_ms2_by_prcs <- function(ms2,mzrng) {
 
-    mzRng<-gen_mz_range(mz,err=errCoarse)
-    ids<-rownames(mzRng)
+    
+    ids<-rownames(mzrng)
     pre<-MSnbase::precursorMz(ms2)
     psn<-MSnbase::precScanNum(ms2)
     acN<-MSnbase::acquisitionNum(ms2)
@@ -86,7 +86,7 @@ filt_ms2_by_prcs <- function(ms2,mz,errCoarse) {
 
     inRange<-function(i) {
         mp<-pre[[i]]
-        x<-mzRng[,1]<mp & mp<mzRng[,2]
+        x<-mzrng[,1]<mp & mp<mzrng[,2]
         mRows<-which(x)
         sids<-ids[mRows]
         sids
@@ -95,11 +95,10 @@ filt_ms2_by_prcs <- function(ms2,mz,errCoarse) {
     nemp<-sapply(lst,function(m) length(m$ids)>0)
     wrk<-lst[nemp]
     dfL<-sum(sapply(wrk,function(w) length(w$ids)))
-    df<-data.frame(ID=character(dfL),
-                   prec_scan=integer(dfL),
-                   aN=integer(dfL),
-                   OK=logical(dfL),
-                   stringsAsFactors=F)
+    df<-dtable(ID=character(dfL),
+               prec_scan=integer(dfL),
+               aN=integer(dfL),
+               OK=logical(dfL))
     df$OK<-T #TODO Introduced for testing, be careful.
 
     offD<-0
@@ -114,9 +113,8 @@ filt_ms2_by_prcs <- function(ms2,mz,errCoarse) {
     df[order(df$aN),]
 }
 
-filt_ms2_by_prcs_ht<-function(ms2,mz,errCoarse) {
-    lgnd<-filt_ms2_by_prcs(ms2,mz,errCoarse)
-
+filt_ms2_by_prcs_ht<-function(ms2,mzrng) {
+    lgnd<-filt_ms2_by_prcs(ms2,mzrng=mzrng)
     scans<-unique(lgnd$aN)
     ns<-which(MSnbase::acquisitionNum(ms2) %in% scans)
     sms2<-ms2[ns]
@@ -139,12 +137,13 @@ pick_uniq_pscan<-function(leg) {
     res[order(res$prec_scan),]
 }
 
-verif_prec_fine_ht<-function(preLeg,ms1,mz,errFinePPM) {
-    mzRng<-gen_mz_range(mz,err=ppm2dev(mz,errFinePPM))
+verif_prec_fine_ht<-function(preLeg,ms1,mz,mzrng) {
+    ## TODO FIXME Something goes wrong here, all mapply results are
+    ## not OK.
     df<-preLeg
     df$mz<-mz[df$ID]
-    mz1<-mzRng[df$ID,1]
-    mz2<-mzRng[df$ID,2]
+    mz1<-mzrng[df$ID,1]
+    mz2<-mzrng[df$ID,2]
     ipns<-match(df$prec_scan,MSnbase::acquisitionNum(ms1))
     rms1<-ms1[ipns]
     mzsp<-MSnbase::mz(rms1)
@@ -172,6 +171,51 @@ filt_ms2<-function(ms1,ms2,mz,errCoarse,errFinePPM) {
     names(res)<-uids
     res
 }
+filt_ms2_fine <- function(ms1,ms2,ids,mz,err_coarse_fun,err_fine_fun) {
+    ## This function is supposed to extract only those MS2 spectra for
+    ## which it is proven that the precursor exists within the fine
+    ## error range.
+    mzrng_c <- gen_mz_range(mz,err_coarse_fun(mz))
+    mzrng_f <- gen_mz_range(mz,err_fine_fun(mz))
+    rownames(mzrng_c) <- ids
+    rownames(mzrng_f) <- ids
+
+    tmp<-filt_ms2_by_prcs_ht(ms2,mzrng=mzrng_c)
+    legMS2<-tmp$leg
+    legPcs<-pick_uniq_pscan(legMS2)
+    legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,mzrng=mzrng_f)
+    x<-Map(function (id,psn) {legMS2[id==legMS2$ID & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"])
+
+    x<-do.call(rbind,c(x,list(make.row.names=F,stringsAsFactors=F)))[c("ID","aN")]
+    rownames(x)<-NULL
+    x<-x[order(x$aN),]
+    x
+}
+extr_ms2<-function(ms1,ms2,ids,mz,err_coarse_fun, err_fine_fun) {
+    ## Extraction of MS2 EICs and spectra.
+    x <- filt_ms2_fine(ms1=ms1,
+                       ms2=ms2,
+                       ids=ids,
+                       mz=mz,
+                       err_coarse_fun=err_coarse_fun,
+                       err_fine_fun=err_fine_fun)
+    
+    uids<-unique(x$ID)
+    acN<-MSnbase::acquisitionNum(ms2)
+    res<-lapply(uids,function(id) {
+        x<-ms2[match(x[id==x$ID,"aN"],acN)]
+        res$eic <- dtable(CE=MSnbase::collisionEnergy(x),
+                          ID=id,
+                          rtm=MSnbase::rtime(x)/60.,
+                          maxI=sapply(MSnbase::intensity(x),max,USE.NAMES=F))
+
+        res$spec <- lapply(x,dtable(mz=MSnbase::mz(x),intensity=MSnbase::intensity(x)))
+        res
+    })
+    names(res)<-uids
+    res
+}
+
 
 add_ms2_prcs_scans<-function(ms2,idx) {
 
@@ -236,7 +280,7 @@ grab_ms2_spec<-function(idx,raw) {
     names(res)<-IDs
     res
 }
-               
+
 
 gen_ms2_chrom<-function(ms2Spec) {
     lapply(ms2Spec, function(sp)
@@ -358,7 +402,7 @@ extr_msnb <-function(file,wd,mz,errEIC, errFinePPM,errCoarse=0.5,rt=NULL,errRT=N
     message("Extracting MS2 spectra.")
     idxMS2<-filt_ms2_by_prcs(ms2=ms2,mz=mz,errCoarse=errCoarse)
     message("Resampling MS2 spectra.")
-    # idxMS2<-add_ms2_prcs_scans(ms2,idxMS2)
+                                        # idxMS2<-add_ms2_prcs_scans(ms2,idxMS2)
     prsc<-pick_unique_precScans(idxMS2)
     vprsc<-verif_prec_fine(preSc=prsc,ms1=ms1,mz=mz,errFinePPM = errFinePPM)
     idxMS2<-refn_ms2_by_prec(idxMS2=idxMS2,preFine=vprsc)
@@ -461,17 +505,9 @@ extr_eic_ms1 <- function(tab,err) {
     ## running futures.
     files <- unique(tab$Files)
 
-    res <-lapply(files,function (fn) future::future(extr_fn(fn), lazy=T))
+    res <-lapply(files,function (fn) future::futur(extr_fn(fn), lazy=T))
     names(res) <- files
     res
-}
-
-extr_ms2 <- function(tab, err) {
-    ## Asynchronous extraction of MS2 spectra. The result is a list of
-    ## futures.
-    files <- unique(tab$Files)
-
-    
 }
 
 ##' @export
@@ -482,6 +518,8 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
     mz <- chunk$mz
     rt <- chunk$rt
     id <- chunk$ID
+    names(mz) <- id
+    names(rt) <- id
     mzerr <- err_coarse_fun(mz)
     mzrng <- gen_mz_range(mz=mz,err=mzerr)
     rtrng <- gen_rt_range(rt=rt,err=err_rt)
@@ -513,7 +551,11 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
     eic <- extr_ms1_eic(ms1)
     res <- list()
     res$ms1$eic <- eic
-    res$ms2$eic <- NULL #TODO
-    res$ms2$spectra <- NULL #TODO
+    res$ms2 <- extr_ms2(ms1=ms1,
+                        ms2=ms2,
+                        ids=id,
+                        mz=mz,
+                        err_coarse_fun=err_coarse_fun,
+                        err_fine_fun=err_fine_fun)
     res
 }

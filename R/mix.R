@@ -721,6 +721,7 @@ new_state <- function(conf=NULL,fn_conf="",GUI=F) {
            msg="Provide either conf, or fn_conf, not both, not none.")
     m <- list()
     m$conf <- if (!is.null(conf)) conf else read_conf(fn_conf)
+    if (is.null(m$conf$debug)) m$conf$debug <- F
     m$GUI <- GUI
     m$out$tab <- list()
     m$input$tab$mzml <- EMPTY_MZML
