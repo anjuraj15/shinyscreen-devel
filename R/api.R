@@ -172,10 +172,33 @@ verify_data <- function(conf,all_sets) {
 
 ## @export
 concurrency <- function(m) {
-    m$conf$workers <- if (!is.null(m$conf$workers)) m$conf$workers else NO_WORKERS
-    
-    future::plan("multiprocess",workers=m$conf$workers)
-    message("workers: ",m$conf$workers)
+    ## Reads the concurrency entry in the config. It is optional, if
+    ## not given, then it is up to the user to define the plan of the
+    ## futures package. If present, it contains at least the `plan'
+    ## specification. It can also contain `workers` entry specifying
+    ## the number of workers. If that entry is absent, the default
+    ## number of workers is NO_WORKERS from the resources.R.
+    workers <- m$conf$concurrency$workers
+    plan <- m$conf$concurrency$plan
+    if (!is.null(plan)) {
+        n <- if (!is.null(workers)) workers else NO_WORKERS
+        if (!is.na(n)) future::plan(plan,workers=workers) else future::plan(plan)
+        m$conf$concurrency$workers <- n
+
+    } else {
+        m$conf$concurrency$workers <- NA
+        m$conf$concurrency$plan <- "user"
+    }
+    message("plan: ",m$conf$concurrency$plan)
+    message("workers: ",m$conf$concurrency$workers)
+
+    ## So we can actually debug.
+    m$future <- if (!m$conf$debug)
+                    future::future
+                else {
+                    message("Debug: futures evaluate as identity")
+                    function(x,...) identity(x)
+                }
     m
 }
 
