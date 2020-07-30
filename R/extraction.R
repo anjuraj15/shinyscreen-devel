@@ -185,9 +185,9 @@ filt_ms2_fine <- function(ms1,ms2,ids,mz,err_coarse_fun,err_fine_fun) {
     legPcs<-pick_uniq_pscan(legMS2)
     legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,mzrng=mzrng_f)
     x<-Map(function (id,psn) {legMS2[id==legMS2$ID & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"])
-
-    x<-do.call(rbind,c(x,list(make.row.names=F,stringsAsFactors=F)))[c("ID","aN")]
-    rownames(x)<-NULL
+    x <- data.table::rbindlist(x)[,.(ID,aN)]
+    ## x<-do.call(rbind,c(x,list(make.row.names=F,stringsAsFactors=F)))[c("ID","aN")]
+    ## rownames(x)<-NULL
     x<-x[order(x$aN),]
     x
 }
@@ -203,14 +203,16 @@ extr_ms2<-function(ms1,ms2,ids,mz,err_coarse_fun, err_fine_fun) {
     uids<-unique(x$ID)
     acN<-MSnbase::acquisitionNum(ms2)
     res<-lapply(uids,function(id) {
-        x<-ms2[match(x[id==x$ID,"aN"],acN)]
-        res$eic <- dtable(CE=MSnbase::collisionEnergy(x),
-                          ID=id,
-                          rtm=MSnbase::rtime(x)/60.,
-                          maxI=sapply(MSnbase::intensity(x),max,USE.NAMES=F))
-
-        res$spec <- lapply(x,dtable(mz=MSnbase::mz(x),intensity=MSnbase::intensity(x)))
-        res
+        ans <- x[id==x$ID,]$aN
+        sp<-ms2[which(acN %in% ans)]
+        r<-list()
+        n <- length(sp)
+        r$eic <- dtable(CE=MSnbase::collisionEnergy(sp),
+                        ID=rep(id,n),
+                        rtm=MSnbase::rtime(sp)/60.,
+                        maspI=spectrapply(sp,function (s) max(MSnbase::intensity(s))))
+        r$spec <- MSnbase::spectrapply(sp,function (sss) I(dtable(mz=MSnbase::mz(sss),intensity=MSnbase::intensity(sss))))
+        r
     })
     names(res)<-uids
     res
