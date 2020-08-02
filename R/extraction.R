@@ -192,8 +192,9 @@ filt_ms2_fine <- function(ms1,ms2,mz,ids,adduct,err_coarse_fun,err_fine_fun) {
     legMS2<-tmp$leg
     legPcs<-pick_uniq_pscan(legMS2)
     legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,mzrng=mzrng_f,ids=ids,adduct=adduct)
-    x<-Map(function (id,psn,a) {legMS2[id==legMS2$ID & a==legMS2$adduct & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"],legPcs[,"adduct"])
-    x <- data.table::rbindlist(x)[,.(ID,adduct,aN)]
+    ## x<-Map(function (id,psn,a) {legMS2[id==legMS2$ID & a==legMS2$adduct & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"],legPcs[,"adduct"])
+    ## x <- data.table::rbindlist(x)[,.(ID,adduct,aN)]
+    x <- legMS2[legPcs[,.(ID,adduct,prec_scan)],on=c("ID","adduct","prec_scan")]
     ## x<-do.call(rbind,c(x,list(make.row.names=F,stringsAsFactors=F)))[c("ID","aN")]
     ## rownames(x)<-NULL
     x<-x[order(x$aN),]
@@ -550,7 +551,7 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
         eic <- MSnbase::chromatogram(ms1,mz=mzrng,msLevel=1,missing=0.0,rt=rtrng)
         eiccol <- lapply(eic,function (e) dtable(rt=MSnbase::rtime(e)/60.,intensity=MSnbase::intensity(e)))
         ## names(res) <- id
-        res <- dtable(ID=id,eicMS1=eiccol)
+        res <- dtable(ID=id,adduct=adduct,eicMS1=eiccol)
         message("Done extracting EICs from ", fn, " .")
         res
     }

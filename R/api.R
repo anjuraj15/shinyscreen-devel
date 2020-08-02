@@ -107,7 +107,7 @@ mk_comp_tab <- function(m) {
     mzml[,`:=`(wd=sapply(Files,add_wd_to_mzml,m$conf$project))]
     assert(nrow(cmpds)>0,msg="No compound lists have been provided.")
     message("Begin generation of the comprehensive table.")
-   
+    
     comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,Files,wd,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
     tab2file(tab=comp,file=paste0("setidmerge",".csv"))
     setkey(comp,known,set,ID)
@@ -139,7 +139,7 @@ verify_compounds <- function(conf) {
     ## ** Compound lists and sets
 
     assert(isThingFile(fn_cmpd_sets),
-                            msg=paste("Cannot find the compound sets file:",fn_cmpd_sets))
+           msg=paste("Cannot find the compound sets file:",fn_cmpd_sets))
 
     for (fn in fns_cmpds) {
         assert(isThingFile(fn), msg=paste("Cannot find compound list:",fn))
@@ -264,13 +264,28 @@ extr_data <- function(m) {
     vals <- rep(NA,length(cols))
     m$out$tab$data[,(cols) := .(rep(NA,.N))]
     files <- m$out$tab$data[,unique(Files)]
-    m$extr$tmp <- lapply(files,function(fn) m$future(extract(fn=fn,
-                                                             tab=m$out$tab$data[,.(Files,adduct,mz,rt,ID)],
-                                                             err_ms1_eic=m$extr$tol$eic,
-                                                             err_coarse_fun=m$extr$tol$coarse,
-                                                             err_fine_fun=m$extr$tol$fine,
-                                                             err_rt=m$extr$tol$rt),
-                                                     lazy = T))
+    ftags <- m$out$tab$data[,.(tag=unique(tag)),by=Files]
+    m$extr$tmp <- lapply(1:nrow(ftags),function(ii) {
+        fn <- ftags[ii,Files]
+        tag <- ftags[ii,tag]
+        x <- m$future(extract(fn=fn,
+                              tab=m$out$tab$data[,.(Files,adduct,mz,rt,ID)],
+                              err_ms1_eic=m$extr$tol$eic,
+                              err_coarse_fun=m$extr$tol$coarse,
+                              err_fine_fun=m$extr$tol$fine,
+                              err_rt=m$extr$tol$rt),
+                      lazy = T)
+        x$ms1$Files <- fn
+        x$ms1$tag <- tag
+        x$ms2$Files <- fn
+        x$ms2$tag <- tag
+        x
+
+    })
+    m$extr$ms1 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms1))
+    m$extr$ms2 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms2)) 
+    
+    m$extr$tmp <- NULL
     
     m
     
