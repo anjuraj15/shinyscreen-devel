@@ -75,10 +75,7 @@ gen_rt_range<-function(rt,err) {
     mat
 }
 
-filt_ms2_by_prcs <- function(ms2,mzrng) {
-
-    
-    ids<-rownames(mzrng)
+filt_ms2_by_prcs <- function(ms2,mzrng,ids,adduct) {
     pre<-MSnbase::precursorMz(ms2)
     psn<-MSnbase::precScanNum(ms2)
     acN<-MSnbase::acquisitionNum(ms2)
@@ -87,15 +84,20 @@ filt_ms2_by_prcs <- function(ms2,mzrng) {
     inRange<-function(i) {
         mp<-pre[[i]]
         x<-mzrng[,1]<mp & mp<mzrng[,2]
-        mRows<-which(x)
-        sids<-ids[mRows]
-        sids
+        ind<-which(x)
+        sids <- ids[ind]
+        add <- adduct[ind]
+        dtable(ID=sids,adduct=add)
     }
-    lst<-lapply(1:nR,function(i) list(n=i,prec_scan=psn[[i]],aN=acN[[i]],ids=inRange(i)))
+    lst<-lapply(1:nR,function(i) {
+        dt <- inRange(i)
+        list(n=i,prec_scan=psn[[i]],aN=acN[[i]],ids=dt$ID,adduct=dt$adduct)
+    })
     nemp<-sapply(lst,function(m) length(m$ids)>0)
     wrk<-lst[nemp]
     dfL<-sum(sapply(wrk,function(w) length(w$ids)))
     df<-dtable(ID=character(dfL),
+               adduct=character(dfL),
                prec_scan=integer(dfL),
                aN=integer(dfL),
                OK=logical(dfL))
@@ -105,16 +107,17 @@ filt_ms2_by_prcs <- function(ms2,mzrng) {
     for (m in wrk) {
         l<-length(m$ids)
         rng<-(offD+1):(offD+l)
-        df[rng,"ID"]<-m$ids
-        df[rng,"prec_scan"]=m$prec_scan
-        df[rng,"aN"]<-m$aN
+        df[rng,"ID"] <- m$ids
+        df[rng,"prec_scan"] <- m$prec_scan
+        df[rng,"aN"] <- m$aN
+        df[rng,"adduct"] <- m$adduct
         offD<-offD+l
     }
     df[order(df$aN),]
 }
 
-filt_ms2_by_prcs_ht<-function(ms2,mzrng) {
-    lgnd<-filt_ms2_by_prcs(ms2,mzrng=mzrng)
+filt_ms2_by_prcs_ht<-function(ms2,mzrng,ids,adduct) {
+    lgnd<-filt_ms2_by_prcs(ms2,mzrng=mzrng,ids=ids,adduct=adduct)
     scans<-unique(lgnd$aN)
     ns<-which(MSnbase::acquisitionNum(ms2) %in% scans)
     sms2<-ms2[ns]
@@ -125,30 +128,37 @@ filt_ms2_by_prcs_ht<-function(ms2,mzrng) {
 pick_unique_precScans<-function(idx) {
     ps<-unique(idx$prec_scan)
     mind<-match(ps,idx$prec_scan)
-    ids<-idx$ID[mind]
-    data.frame(prec_scan=idx$prec_scan[mind],ID=ids,stringsAsFactors=F)
+    data.frame(prec_scan=idx$prec_scan[mind],
+               ID=idx$ID[mind],
+               adduct=idx$adduct[mind],
+               stringsAsFactors=F)
     
 }
 
 pick_uniq_pscan<-function(leg) {
-    ids<-unique(leg$ID)
-    x<-lapply(ids,function(id) {ups<-unique(leg[id==leg$ID,"prec_scan"]);data.frame(ID=rep(id,length(ups)),prec_scan=ups,stringsAsFactors = F)})
-    res<-do.call(rbind,c(x,list(stringsAsFactors=F)))
-    res[order(res$prec_scan),]
+    res <- leg[,.(prec_scan=unique(prec_scan)),by=c("ID","adduct")]
+    res[order(prec_scan),]
+    ## ids<-unique(leg$ID)
+    ## x<-lapply(ids,function(id) {ups<-unique(leg[id==leg$ID,"prec_scan"]);data.frame(ID=rep(id,length(ups)),prec_scan=ups,stringsAsFactors = F)})
+    ## res<-do.call(rbind,c(x,list(stringsAsFactors=F)))
+    ## res[order(res$prec_scan),]
 }
 
-verif_prec_fine_ht<-function(preLeg,ms1,mz,mzrng) {
-    ## TODO FIXME Something goes wrong here, all mapply results are
-    ## not OK.
+verif_prec_fine_ht<-function(preLeg,ms1,mz,mzrng,ids,adduct) {
+    ## TODO FIXME TESTPHASE Something goes wrong here, all mapply results are
+    ## not OK. More testing needed.
     df<-preLeg
-    df$mz<-mz[df$ID]
-    mz1<-mzrng[df$ID,1]
-    mz2<-mzrng[df$ID,2]
-    ipns<-match(df$prec_scan,MSnbase::acquisitionNum(ms1))
-    rms1<-ms1[ipns]
-    mzsp<-MSnbase::mz(rms1)
-    df$OK<-mapply(function(m1,sp,m2) any((m1<sp) & (sp<m2)),mz1,mzsp,mz2)
-    df[df$OK,]     
+    xx <- dtable(adduct=adduct,ID=ids,mz=mz,mz1=mzrng[,1],mz2=mzrng[,2])
+    df <- preLeg[xx,on=c("ID","adduct")]
+    df$ipns<-match(df$prec_scan,MSnbase::acquisitionNum(ms1))
+    df[, ("mzsp") := .(lapply(ipns,function (ip) if (!is.na(ip)) MSnbase::mz(ms1[[ip]]) else NA_real_))]
+    df$OK<-mapply(function(m1,sp,m2) any((m1<sp) & (sp<m2)),df$mz1,df$mzsp,df$mz2)
+    res<-df[df$OK,]
+    res$ipns<-NULL
+    res$mz1<-NULL
+    res$mz2<-NULL
+    res$mzsp<-NULL
+    res
 }
 
 filt_ms2<-function(ms1,ms2,mz,errCoarse,errFinePPM) {
@@ -171,51 +181,50 @@ filt_ms2<-function(ms1,ms2,mz,errCoarse,errFinePPM) {
     names(res)<-uids
     res
 }
-filt_ms2_fine <- function(ms1,ms2,ids,mz,err_coarse_fun,err_fine_fun) {
+filt_ms2_fine <- function(ms1,ms2,mz,ids,adduct,err_coarse_fun,err_fine_fun) {
     ## This function is supposed to extract only those MS2 spectra for
     ## which it is proven that the precursor exists within the fine
     ## error range.
     mzrng_c <- gen_mz_range(mz,err_coarse_fun(mz))
     mzrng_f <- gen_mz_range(mz,err_fine_fun(mz))
-    rownames(mzrng_c) <- ids
-    rownames(mzrng_f) <- ids
-
-    tmp<-filt_ms2_by_prcs_ht(ms2,mzrng=mzrng_c)
+    
+    tmp<-filt_ms2_by_prcs_ht(ms2,mzrng=mzrng_c,ids=ids,adduct=adduct)
     legMS2<-tmp$leg
     legPcs<-pick_uniq_pscan(legMS2)
-    legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,mzrng=mzrng_f)
-    x<-Map(function (id,psn) {legMS2[id==legMS2$ID & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"])
-    x <- data.table::rbindlist(x)[,.(ID,aN)]
+    legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,mzrng=mzrng_f,ids=ids,adduct=adduct)
+    x<-Map(function (id,psn,a) {legMS2[id==legMS2$ID & a==legMS2$adduct & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"],legPcs[,"adduct"])
+    x <- data.table::rbindlist(x)[,.(ID,adduct,aN)]
     ## x<-do.call(rbind,c(x,list(make.row.names=F,stringsAsFactors=F)))[c("ID","aN")]
     ## rownames(x)<-NULL
     x<-x[order(x$aN),]
     x
 }
-extr_ms2<-function(ms1,ms2,ids,mz,err_coarse_fun, err_fine_fun) {
+extr_ms2<-function(ms1,ms2,ids,mz,adduct,err_coarse_fun, err_fine_fun) {
     ## Extraction of MS2 EICs and spectra.
     x <- filt_ms2_fine(ms1=ms1,
                        ms2=ms2,
-                       ids=ids,
                        mz=mz,
+                       ids=ids,
+                       adduct=adduct,
                        err_coarse_fun=err_coarse_fun,
                        err_fine_fun=err_fine_fun)
     
-    uids<-unique(x$ID)
+    uids <- unique(x$ID)
+    uadds <- unique(x$adduct)
     acN<-MSnbase::acquisitionNum(ms2)
-    res<-lapply(uids,function(id) {
-        ans <- x[id==x$ID,]$aN
+    chunks <- Map(function(id,ad) {
+        ans <- x[id==x$ID & ad==x$adduct,]$aN
         sp<-ms2[which(acN %in% ans)]
         r<-list()
         n <- length(sp)
-        r$eic <- dtable(CE=MSnbase::collisionEnergy(sp),
-                        ID=rep(id,n),
-                        rtm=MSnbase::rtime(sp)/60.,
-                        maspI=spectrapply(sp,function (s) max(MSnbase::intensity(s))))
-        r$spec <- MSnbase::spectrapply(sp,function (sss) I(dtable(mz=MSnbase::mz(sss),intensity=MSnbase::intensity(sss))))
-        r
-    })
-    names(res)<-uids
-    res
+        
+        dtable(ID=rep(id,n),
+               adduct=rep(ad,n),
+               CE=MSnbase::collisionEnergy(sp),
+               rt=MSnbase::rtime(sp)/60.,
+               maspI=spectrapply(sp,function (s) max(MSnbase::intensity(s))),
+               spec=MSnbase::spectrapply(sp,function (s) I(dtable(mz=MSnbase::mz(s),intensity=MSnbase::intensity(s)))))}, uids,uadds)
+    data.table::rbindlist(chunks)
 }
 
 
@@ -234,11 +243,6 @@ add_ms2_prcs_scans<-function(ms2,idx) {
     ## compound. However, the above approach is cool.
     df
 }
-
-
-
-
-
 
 refn_ms2_by_prec<-function(idxMS2,preFine) {
     pf<-preFine[preFine$OK,]
@@ -520,6 +524,7 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
     mz <- chunk$mz
     rt <- chunk$rt
     id <- chunk$ID
+    adduct <- chunk$adduct
     names(mz) <- id
     names(rt) <- id
     mzerr <- err_coarse_fun(mz)
@@ -543,21 +548,24 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
     extr_ms1_eic <- function(ms1) {
         message("Extracting EICs from ", fn, " .")
         eic <- MSnbase::chromatogram(ms1,mz=mzrng,msLevel=1,missing=0.0,rt=rtrng)
-        res <- lapply(eic,function (e) dtable(rt=MSnbase::rtime(e)/60.,intensity=MSnbase::intensity(e)))
-        names(res) <- id
+        eiccol <- lapply(eic,function (e) dtable(rt=MSnbase::rtime(e)/60.,intensity=MSnbase::intensity(e)))
+        ## names(res) <- id
+        res <- dtable(ID=id,eicMS1=eiccol)
         message("Done extracting EICs from ", fn, " .")
         res
     }
     ms1 <- read_ms1()
     ms2 <- read_ms2()
-    eic <- extr_ms1_eic(ms1)
     res <- list()
-    res$ms1$eic <- eic
+    res$ms1 <- extr_ms1_eic(ms1)
     res$ms2 <- extr_ms2(ms1=ms1,
                         ms2=ms2,
                         ids=id,
                         mz=mz,
+                        adduct=adduct,
                         err_coarse_fun=err_coarse_fun,
                         err_fine_fun=err_fine_fun)
+    
+    
     res
 }
