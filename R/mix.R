@@ -722,6 +722,7 @@ new_state <- function(conf=NULL,fn_conf="",GUI=F) {
     m <- list()
     m$conf <- if (!is.null(conf)) conf else read_conf(fn_conf)
     if (is.null(m$conf$debug)) m$conf$debug <- F
+    m$extr$fn <- file.path(m$conf$project,"extracted.rds")
     m$GUI <- GUI
     m$out$tab <- list()
     m$input$tab$mzml <- EMPTY_MZML

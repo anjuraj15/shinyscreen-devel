@@ -283,10 +283,13 @@ extr_data <- function(m) {
 
     })
     m$extr$ms1 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms1))
-    m$extr$ms2 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms2)) 
+    m$extr$ms2 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms2))
+
+    message('Saving extracted date to ', m$extr$fn)
+    saveRDS(object = m$extr, file = m$extr$fn)
+    message('Done saving extracted data.')
     
     m$extr$tmp <- NULL
-    
     m
     
 }
