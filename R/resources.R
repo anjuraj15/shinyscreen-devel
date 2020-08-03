@@ -158,4 +158,8 @@ EMPTY_CONF <- list(project="",
                                   "ms1 fine"=MS1_ERR_FINE,
                                   "eic"=EIC_ERR,
                                   "rt"=RT_EXTR_ERR),
+                   prescreen=list("ms1_int_thresh"=1e5,
+                                  "ms2_int_thresh"=2.5e3,
+                                  "noise_factor"=3,
+                                  "ret_time_shift_tol"=0.5),
                    extr=list(fn=""))
