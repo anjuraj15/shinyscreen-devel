@@ -26,7 +26,8 @@ FN_FTAB_BASE<-"ftable.base.csv"
 FN_FTAB_PP<-"ftable.pp.csv"
 FN_PP_OUT_PREF<-"PP.filetable"
 FN_FTAB_STATE<-"ftable_state.csv"
-FN_FTAB_DEF_OUT<-"ftable.csv"
+FN_FTAB <- "ftable.csv"
+FN_FTAB_DEF_OUT <- FN_FTAB
 FN_CMP_L<-"compounds.csv"
 FN_LOC_SETID <-"setid.csv"
 FN_COMP_TAB<-"comprehensive.csv"
@@ -151,7 +152,10 @@ EMPTY_CONF <- list(project="",
                    compounds=list(lists=list(),
                                   sets=""),
                    data="",
+                   fn_comp="",
+                   fn_ftab="",
                    tolerance=list("ms1 coarse"=MS1_ERR_COARSE,
                                   "ms1 fine"=MS1_ERR_FINE,
                                   "eic"=EIC_ERR,
-                                  "rt"=RT_EXTR_ERR))
+                                  "rt"=RT_EXTR_ERR),
+                   extr=list(fn=""))

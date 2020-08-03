@@ -121,7 +121,7 @@ mk_comp_tab <- function(m) {
     setnames(comp,names(COMP_NAME_MAP),
              function(o) COMP_NAME_MAP[[o]])
     setcolorder(comp,COMP_NAME_FIRST)
-    fn_out <- file.path(m$conf$project,FN_COMP_TAB)
+    fn_out <- m$conf$fn_comp
     tab2file(tab=comp,file=fn_out)
     message("Generation of comp table finished.")
     setkeyv(comp,c("set","tag","mz"))
