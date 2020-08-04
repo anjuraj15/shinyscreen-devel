@@ -559,20 +559,16 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
     ms2 <- read_ms2()
     res <- list()
     res$ms1 <- extr_ms1_eic(ms1)
-    res$ms1[,c("irtMS1"):=.(sapply(eicMS1,function(e) which.max(e$intensity)))]
-    res$ms1[length(irtMS1)==0,("irtMS1"):=NA_integer_]
-    res$ms1[,c("rtMS1","intMS1"):=.(NA_real_,NA_real_)]
-    res$ms1[!is.na(irtMS1),c("intMS1","rtMS1"):=.(mapply(function (e,i) e$intensity[[i]],eicMS1,irtMS1),
-                                                  mapply(function (e,i) e$rt[[i]],eicMS1,irtMS1))]
+    rms2full <- extr_ms2(ms1=ms1,
+                         ms2=ms2,
+                         ids=id,
+                         mz=mz,
+                         adduct=adduct,
+                         err_coarse_fun=err_coarse_fun,
+                         err_fine_fun=err_fine_fun)
+    
+    res$ms2 <- rms2full[,.(eicMS2=list(dtable(rt=.SD$rt,intensity=.SD$maspI)),spec=list(.SD$spec)),by=c("CE","adduct","ID")]
 
-
-    res$ms2 <- extr_ms2(ms1=ms1,
-                        ms2=ms2,
-                        ids=id,
-                        mz=mz,
-                        adduct=adduct,
-                        err_coarse_fun=err_coarse_fun,
-                        err_fine_fun=err_fine_fun)
     
     
     res
