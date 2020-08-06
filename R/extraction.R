@@ -557,8 +557,7 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
     }
     ms1 <- read_ms1()
     ms2 <- read_ms2()
-    res <- list()
-    res$ms1 <- extr_ms1_eic(ms1)
+    res_ms1 <- extr_ms1_eic(ms1)
     rms2full <- extr_ms2(ms1=ms1,
                          ms2=ms2,
                          ids=id,
@@ -567,9 +566,8 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
                          err_coarse_fun=err_coarse_fun,
                          err_fine_fun=err_fine_fun)
     
-    res$ms2 <- rms2full[,.(eicMS2=list(dtable(rt=.SD$rt,intensity=.SD$maspI)),spec=list(.SD$spec)),by=c("CE","adduct","ID")]
-
-    
-    
+    res_ms2 <- rms2full[,.(eicMS2=list(dtable(CE=.SD$CE,rt=.SD$rt,intensity=.SD$maspI)),spec=list(CE=.SD$CE,.SD$spec)),by=c("adduct","ID")]
+    res <- res_ms2[res_ms1,on=c("adduct","ID"),allow.cartesian=T]
+    res[sapply(eicMS2,is.null),c("eicMS2","spec"):=.(NA,NA)]
     res
 }

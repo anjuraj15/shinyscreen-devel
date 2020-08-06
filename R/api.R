@@ -265,7 +265,7 @@ extr_data <- function(m) {
     m$out$tab$data[,(cols) := .(rep(NA,.N))]
     files <- m$out$tab$data[,unique(Files)]
     ftags <- m$out$tab$data[,.(tag=unique(tag)),by=Files]
-    m$extr$tmp <- lapply(1:nrow(ftags),function(ii) {
+    tmp <- lapply(1:nrow(ftags),function(ii) {
         fn <- ftags[ii,Files]
         tag <- ftags[ii,tag]
         x <- m$future(extract(fn=fn,
@@ -275,15 +275,16 @@ extr_data <- function(m) {
                               err_fine_fun=m$extr$tol$fine,
                               err_rt=m$extr$tol$rt),
                       lazy = T)
-        x$ms1$Files <- fn
-        x$ms1$tag <- tag
-        x$ms2$Files <- fn
-        x$ms2$tag <- tag
+        ## x$ms1$Files <- fn
+        ## x$ms1$tag <- tag
+        ## x$ms2$Files <- fn
+        ## x$ms2$tag <- tag
+        x$Files <- fn
         x
 
     })
-    m$extr$ms1 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms1))
-    m$extr$ms2 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms2))
+    m$extr$ms <- data.table::rbindlist(tmp)
+    ## m$extr$ms2 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms2))
 
     message('Saving extracted date to ', m$extr$fn)
     saveRDS(object = m$extr, file = m$extr$fn)
