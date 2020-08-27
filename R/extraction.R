@@ -567,8 +567,6 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
                          adduct=adduct,
                          err_coarse_fun=err_coarse_fun,
                          err_fine_fun=err_fine_fun)
-    ## TODO: FIXME: NOT SURE IF spec list contains all the MS2
-    ## spectra.
     res_ms2 <- rms2full[,.(eicMS2=list(dtable(CE=.SD$CE,rt=.SD$rt,intensity=.SD$maspI)),
                            spec=list(spec)),by=c("adduct","ID")]
     res <- res_ms2[res_ms1,on=c("adduct","ID"),allow.cartesian=T]
