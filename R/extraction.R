@@ -218,13 +218,15 @@ extr_ms2<-function(ms1,ms2,ids,mz,adduct,err_coarse_fun, err_fine_fun) {
         sp<-ms2[which(acN %in% ans)]
         r<-list()
         n <- length(sp)
-        
         dtable(ID=rep(id,n),
                adduct=rep(ad,n),
                CE=MSnbase::collisionEnergy(sp),
                rt=MSnbase::rtime(sp)/60.,
                maspI=spectrapply(sp,function (s) max(MSnbase::intensity(s))),
-               spec=MSnbase::spectrapply(sp,function (s) I(dtable(mz=MSnbase::mz(s),intensity=MSnbase::intensity(s)))))}, uids,uadds)
+               spec=MSnbase::spectrapply(sp,function (s) list(spec=dtable(mz=MSnbase::mz(s),
+                                                                          intensity=MSnbase::intensity(s)),
+                                                              rt = MSnbase::rtime(s)/60.,
+                                                              CE = MSnbase::collisionEnergy(s))))}, uids,uadds)
     data.table::rbindlist(chunks)
 }
 
@@ -565,8 +567,10 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
                          adduct=adduct,
                          err_coarse_fun=err_coarse_fun,
                          err_fine_fun=err_fine_fun)
-    
-    res_ms2 <- rms2full[,.(eicMS2=list(dtable(CE=.SD$CE,rt=.SD$rt,intensity=.SD$maspI)),spec=list(CE=.SD$CE,.SD$spec)),by=c("adduct","ID")]
+    ## TODO: FIXME: NOT SURE IF spec list contains all the MS2
+    ## spectra.
+    res_ms2 <- rms2full[,.(eicMS2=list(dtable(CE=.SD$CE,rt=.SD$rt,intensity=.SD$maspI)),
+                           spec=list(spec)),by=c("adduct","ID")]
     res <- res_ms2[res_ms1,on=c("adduct","ID"),allow.cartesian=T]
     res[sapply(eicMS2,is.null),c("eicMS2","spec"):=.(NA,NA)]
     res
