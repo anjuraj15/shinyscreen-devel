@@ -160,6 +160,11 @@ EMPTY_CONF <- list(project="",
                                   "rt"=RT_EXTR_ERR),
                    prescreen=list("ms1_int_thresh"=1e5,
                                   "ms2_int_thresh"=2.5e3,
-                                  "noise_factor"=3,
+                                  "s2n"=3,
                                   "ret_time_shift_tol"=0.5),
                    extr=list(fn=""))
+
+## Input parameters for prescreening.
+CONF_PRES_NUM <- c("ms1_int_thresh","ms2_int_thresh","s2n")
+CONF_PRES_TU <- c("ret_time_shift_tol")
+

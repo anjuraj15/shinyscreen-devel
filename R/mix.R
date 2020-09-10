@@ -754,3 +754,29 @@ verify_cmpd_l <- function(dt,fn) {
     
     invisible(T)
 }
+
+
+## INPUT TRANSLATORS
+grab_unit <- function(entry,unit) {
+    what <- paste0("\\<",unit,"\\>$")
+    entry <- trimws(entry,which="both")
+    if (grepl(what,entry))
+        suppressWarnings(as.numeric(sub(paste0("^(.*)",unit),"\\1",entry))) else NA_real_
+}
+
+
+conf_trans_pres <- function(pres_list) {
+    ## Translate and validate prescreening input.
+    pres_list[CONF_PRES_NUM] <- sapply(pres_list[CONF_PRES_NUM],as.numeric)
+    for (par in CONF_PRES_NUM) {
+        assert(!suppressWarnings(is.na(pres_list[[par]])),msg=paste("Prescreen parameter",par,"is not a number."))
+    }
+    for (par in CONF_PRES_TU) {
+        xs <- grab_unit(pres_list[[par]],"s")
+        xm <- grab_unit(pres_list[[par]],"min")
+        x <- if (is.na(xm)) xs else xm
+        assert(!is.na(x),msg = paste("Time unit parameter error for",par,"Only s(econds) or min(utes) allowed."))
+        pres_list[[par]] <- x
+    }
+    pres_list
+}

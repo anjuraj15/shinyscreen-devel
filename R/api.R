@@ -180,7 +180,7 @@ concurrency <- function(m) {
     ## number of workers is NO_WORKERS from the resources.R.
     workers <- m$conf$concurrency$workers
     plan <- m$conf$concurrency$plan
-    if (!is.null(plan)) {
+    if (!is.null(plan) && plan!=user) {
         n <- if (!is.null(workers)) workers else NO_WORKERS
         if (!is.na(n)) future::plan(plan,workers=workers) else future::plan(plan)
         m$conf$concurrency$workers <- n
@@ -212,30 +212,22 @@ mk_tol_funcs <- function(m) {
 
     ## The mass error calculation functions and the retention time
     ## error in minutes are in m$extr$tol.
-    
-    grab <- function(entry,unit) {
-        what <- paste0("\\<",unit,"\\>$")
-        entry <- trimws(entry,which="both")
-        if (grepl(what,entry))
-            as.numeric(sub(paste0("^(.*)",unit),"\\1",entry)) else NA_real_
-    }
 
     asgn_mz_err <- function (entry, msg) {
-        eppm <- grab(entry,"ppm")
-        eda <- grab(entry,"Da")
+        eppm <- grab_unit(entry,"ppm")
+        eda <- grab_unit(entry,"Da")
         shinyscreen:::assert(xor(is.na(eda), is.na(eppm)), msg = msg)
         if (is.na(eda)) Vectorize(function(mz) eppm*1e-6*mz, USE.NAMES = F) else Vectorize(function(mz) eda, USE.NAMES = F)
     }
 
     asgn_t_err <- function (entry, msg) {
-        em <- grab(entry,"min")
-        es <- grab(entry,"s")
+        em <- grab_unit(entry,"min")
+        es <- grab_unit(entry,"s")
         shinyscreen:::assert(xor(is.na(em), is.na(es)), msg = msg)
         if (is.na(em)) es/60. else em
         
         
     }
-
     m$extr$tol$coarse <- asgn_mz_err(m$conf$tolerance[["ms1 coarse"]], msg = "ms1 coarse error: Only ppm, or Da units allowed.")
     m$extr$tol$fine <- asgn_mz_err(m$conf$tolerance[["ms1 fine"]], msg = "ms1 fine error: Only ppm, or Da units allowed.")
     m$extr$tol$eic <- asgn_mz_err(m$conf$tolerance$eic, msg = "eic error: Only ppm, or Da units allowed.")
@@ -245,6 +237,7 @@ mk_tol_funcs <- function(m) {
     m
     
 }
+
 
 ##' @export
 extr_data <- function(m) {
@@ -293,4 +286,10 @@ extr_data <- function(m) {
     m$extr$tmp <- NULL
     m
     
+}
+
+##' @export
+conf_trans <- function(conf) {
+    conf$prescreen <- conf_trans_pres(conf$prescreen)
+    conf
 }
