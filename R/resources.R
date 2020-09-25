@@ -57,7 +57,7 @@ DEFAULT_RT_RANGE=c(NA,NA)
 DEFAULT_INT_RANGE=c(NA,NA)
 DEFAULT_MZ_RANGE=c(NA,NA)
 
-QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
+## QANAMES <- c("MS1","MS2","Alignment","AboveNoise")
 PLOT_DEF_TAGS<-NA
 PLOT_DEF_SET<-NA
 
@@ -167,4 +167,19 @@ EMPTY_CONF <- list(project="",
 ## Input parameters for prescreening.
 CONF_PRES_NUM <- c("ms1_int_thresh","ms2_int_thresh","s2n")
 CONF_PRES_TU <- c("ret_time_shift_tol")
+
+
+## Prescreening columns
+QA_FLAGS <- c("qa_ms1_exists",
+              "qa_ms2_exists",
+              "qa_ms1_above_noise",
+              "qa_ms2_near",
+              "qa_ms2_good_int",
+              "qa_pass")
+
+QA_NUM_REAL <- c("int_ms1","rt_ms1","ms1_mean")
+
+QA_NUM_INT <- c("sel_ms2","ind_ms1_rt")
+
+QA_COLS <- c(QA_FLAGS,QA_NUM_REAL,QA_NUM_INT)
 
