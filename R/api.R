@@ -293,3 +293,14 @@ conf_trans <- function(conf) {
     conf$prescreen <- conf_trans_pres(conf$prescreen)
     conf
 }
+
+##' @export
+prescreen <- function(m) {
+    ## Top-level auto prescreening function.
+    m$qa <- create_qa_table(m$extr$ms,m$conf$prescreen)
+    mms1 <- assess_ms1(m)
+    m <- assess_ms2(mms1)
+    fields <- c("Files","adduct","ID",QA_COLS)
+    m$out$tab$ftab <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=c("Files","adduct","ID"))
+    m
+}
