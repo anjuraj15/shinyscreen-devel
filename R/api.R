@@ -15,7 +15,8 @@
 
 ##' @export
 run <- function(fn_conf) {
-    m <- new_state(fn_conf=fn_conf,
+    conf <- read_conf(fn_conf)
+    m <- new_state(conf=conf,
                    GUI=F)    
     dir.create(m$conf$project,
                showWarnings = F,
@@ -32,6 +33,7 @@ run_in_dir <- function(m) {
     m <- concurrency(m)
     m <- mk_comp_tab(m)
     m <- extr_data(m)
+    m <- prescreen(m)
     invisible(m)
     
 }

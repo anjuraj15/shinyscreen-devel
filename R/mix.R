@@ -710,8 +710,7 @@ read_conf <- function(fn) {
         
     }
     cf$compound$lists <- fnl
-
-    cf
+    conf_trans(cf)
 }
 
 new_conf <- function() EMPTY_CONF
