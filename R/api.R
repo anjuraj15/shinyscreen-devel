@@ -270,10 +270,7 @@ extr_data <- function(m) {
                               err_fine_fun=m$extr$tol$fine,
                               err_rt=m$extr$tol$rt),
                       lazy = T)
-        ## x$ms1$Files <- fn
-        ## x$ms1$tag <- tag
-        ## x$ms2$Files <- fn
-        ## x$ms2$tag <- tag
+
         x$Files <- fn
         x
 
@@ -296,8 +293,7 @@ extr_data <- function(m) {
         curr_done <- newly_done
     }
     m$extr$ms <- data.table::rbindlist(lapply(tmp,future::value))
-    ## m$extr$ms2 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms2))
-
+    
     message('Saving extracted date to ', m$extr$fn)
     saveRDS(object = m$extr, file = m$extr$fn)
     message('Done saving extracted data.')
