@@ -253,6 +253,23 @@ mkUI <- function(fnStyle) {
 
 
 
+    ## presPlotBox <- shinydashboard::box(title = "Plot",
+    ##                                    width = NULL,color = "olive",
+    ##                                    solidHeader = FALSE,
+    ##                                    collapsible = TRUE,
+    ##                                    shiny::plotOutput("chromGram",
+    ##                                                      width = "100%",
+    ##                                                      height = "750px",
+    ##                                                      click = NULL,
+    ##                                                      dblclick = NULL,
+    ##                                                      hover = NULL,
+    ##                                                      hoverDelay = NULL,
+    ##                                                      hoverDelayType = NULL,
+    ##                                                      brush = NULL,
+    ##                                                      clickId = NULL,
+    ##                                                      hoverId = NULL))
+
+    ## Marc Omar Warmoes fix for newer versions of R/Shiny.
     presPlotBox <- shinydashboard::box(title = "Plot",
                                        width = NULL,color = "olive",
                                        solidHeader = FALSE,
@@ -262,12 +279,7 @@ mkUI <- function(fnStyle) {
                                                          height = "750px",
                                                          click = NULL,
                                                          dblclick = NULL,
-                                                         hover = NULL,
-                                                         hoverDelay = NULL,
-                                                         hoverDelayType = NULL,
-                                                         brush = NULL,
-                                                         clickId = NULL,
-                                                         hoverId = NULL))
+                                                         hover = NULL))
 
     presChromPropMS1<-shinydashboard::box(title="Chromatogram (MS1)",
                                        width=NULL,
