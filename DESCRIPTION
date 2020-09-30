@@ -9,6 +9,14 @@ Authors@R:
              role = c("aut", "cre"),
              email = "todor.kondic@uni.lu",
              comment = c(ORCID = "https://orcid.org/0000-0001-6662-4375")),
+      person(given = "Adelene",
+             family = "Lai",
+	     email = "adelene.lai@uni.lu",
+	     role = c("ctb")),
+      person(given = "Emma",
+             family = "Schymanski",
+	     email = "emma.schymanski@uni.lu",
+	     role = c("ctb")),
       person(given = "Hiba Mohammed",
              family = "Taha",
              role = c("ctb"),
@@ -25,13 +33,10 @@ Authors@R:
              family = "Elapavalore",
              role = c("ctb"),
              email = "anjana.elapavalore@ext.uni.lu"),
-      person(given = "Adelene",
-             family = "Lai",
-	     email = "adelene.lai@uni.lu",
-	     role = c("ctb")),
-      person(given = "Emma",
-             family = "Schymanski",
-	     role = c("ctb")))
+      person(given = "Marc",
+             family = "Warmoes",
+	     role = c("ctb"),
+	     email = "marc.warmoes@uni.lu"))
 Description: Pre-screening of Mass Spectrometry Data.
 License: Apache License (>= 2.0)
 Encoding: UTF-8
