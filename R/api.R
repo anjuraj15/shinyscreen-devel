@@ -271,7 +271,6 @@ extr_data <- function(m) {
                               err_rt=m$extr$tol$rt),
                       lazy = T)
 
-        x$Files <- fn
         x
 
     })
@@ -292,8 +291,14 @@ extr_data <- function(m) {
         Sys.sleep(0.5)
         curr_done <- newly_done
     }
-    m$extr$ms <- data.table::rbindlist(lapply(tmp,future::value))
-    
+    ztmp <- lapply(tmp,future::value)
+
+    ## We need to add in Files (after futures are resolved).
+    for (nn in 1:nrow(ftags)) {
+        fn <- ftags[nn,Files]
+        ztmp[[nn]]$Files <- fn
+    }
+    m$extr$ms <- data.table::rbindlist(ztmp)
     message('Saving extracted date to ', m$extr$fn)
     saveRDS(object = m$extr, file = m$extr$fn)
     message('Done saving extracted data.')
