@@ -278,7 +278,24 @@ extr_data <- function(m) {
         x
 
     })
-    m$extr$ms <- data.table::rbindlist(tmp)
+
+    msk <- sapply(tmp,future::resolved)
+    curr_done <- which(msk)
+    names(msk) <- files
+    
+    for (x in curr_done) {
+        message("Done extraction for ", names(msk)[[x]])
+    }
+    while (!all(msk)) {
+        msk <- sapply(tmp,future::resolved)
+        newly_done <- which(msk)
+        for (x in setdiff(newly_done,curr_done)) {
+            message("Done extraction for ", names(msk)[[x]])
+        }
+        Sys.sleep(0.5)
+        curr_done <- newly_done
+    }
+    m$extr$ms <- data.table::rbindlist(lapply(tmp,future::value))
     ## m$extr$ms2 <- data.table::rbindlist(lapply(m$extr$tmp, function (e) e$ms2))
 
     message('Saving extracted date to ', m$extr$fn)
