@@ -172,7 +172,7 @@ verify_data <- function(conf,all_sets) {
     return(conf)
 }
 
-## @export
+#' @export
 concurrency <- function(m) {
     ## Reads the concurrency entry in the config. It is optional, if
     ## not given, then it is up to the user to define the plan of the
@@ -204,6 +204,7 @@ concurrency <- function(m) {
     m
 }
 
+#' @export
 mk_tol_funcs <- function(m) {
     ## Depending on units given when the user specified the errors,
     ## generate functions that calculate errors given the concrete
@@ -277,7 +278,7 @@ extr_data <- function(m) {
 
     msk <- sapply(tmp,future::resolved)
     curr_done <- which(msk)
-    names(msk) <- files
+    names(msk) <- ftags$Files
     
     for (x in curr_done) {
         message("Done extraction for ", names(msk)[[x]])
@@ -322,5 +323,15 @@ prescreen <- function(m) {
     m <- assess_ms2(mms1)
     fields <- c("Files","adduct","ID",QA_COLS)
     m$out$tab$ftab <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=c("Files","adduct","ID"))
+    m
+}
+
+##' @export
+sort_spectra <- function(m) {
+    ## Sorts the spectral table (ftab) in order specified either in
+    ## `order spectra` sublist of m$conf, or if that is null, the
+    ## DEF_ORDER_SPECTRA.
+    order <- if (!is.null(m$conf[["order spectra"]])) m$conf[["order spectra"]] else DEF_ORDER_SPECTRA
+    data.table::setkeyv(m$out$tab$ftab,order)
     m
 }
