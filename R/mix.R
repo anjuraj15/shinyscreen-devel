@@ -938,3 +938,18 @@ assess_ms2 <- function(m) {
 
     m    
 }
+
+gen_mz_err_f <- function(entry,msg) {
+    eppm <- grab_unit(entry,"ppm")
+    eda <- grab_unit(entry,"Da")
+    shinyscreen:::assert(xor(is.na(eda), is.na(eppm)), msg = msg)
+    if (is.na(eda)) function(mz) eppm*1e-6*mz else function (mz) eda
+}
+
+
+gen_rt_err <- function(entry,msg) {
+    em <- grab_unit(entry,"min")
+    es <- grab_unit(entry,"s")
+    shinyscreen:::assert(xor(is.na(em), is.na(es)), msg = msg)
+    if (is.na(em)) es/60. else em
+}

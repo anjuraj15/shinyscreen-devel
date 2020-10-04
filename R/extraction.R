@@ -520,9 +520,25 @@ extr_eic_ms1 <- function(tab,err) {
 }
 
 ##' @export
-extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
+extract <- function(fn,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
     ## Extracts MS1 and MS2 EICs, as well as MS2 spectra, subject to
     ## tolerance specifications.
+
+
+    ## TODO: Still detecting external references ... but which?
+    err_coarse_fun <- gen_mz_err_f(err_coarse,
+                                   "ms1 coarse error: Only ppm, or Da units allowed.")
+
+    err_fine_fun <- gen_mz_err_f(err_fine,
+                                 "ms1 fine error: Only ppm, or Da units allowed.")
+
+    err_ms1_eic <- gen_mz_err_f(err_ms1_eic.,
+                                "eic error: Only ppm, or Da units allowed.")
+
+    err_rt <- gen_rt_err(err_rt.,
+                         "rt error: Only s(econds), or min(utes) allowed.")
+    
+    tab <- data.table::as.data.table(tab)
     chunk <- tab[Files==fn]
     mz <- chunk$mz
     rt <- chunk$rt
@@ -571,5 +587,6 @@ extract <- function(fn,tab,err_ms1_eic,err_coarse_fun,err_fine_fun,err_rt) {
                            spec=list(spec)),by=c("adduct","ID")]
     res <- res_ms2[res_ms1,on=c("adduct","ID"),allow.cartesian=T]
     res[sapply(eicMS2,is.null),c("eicMS2","spec"):=.(NA,NA)]
+    res$Files <- fn
     res
 }

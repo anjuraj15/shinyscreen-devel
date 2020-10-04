@@ -216,27 +216,25 @@ mk_tol_funcs <- function(m) {
     ## The mass error calculation functions and the retention time
     ## error in minutes are in m$extr$tol.
 
-    asgn_mz_err <- function (entry, msg) {
-        eppm <- grab_unit(entry,"ppm")
-        eda <- grab_unit(entry,"Da")
-        shinyscreen:::assert(xor(is.na(eda), is.na(eppm)), msg = msg)
-        if (is.na(eda)) Vectorize(function(mz) eppm*1e-6*mz, USE.NAMES = F) else Vectorize(function(mz) eda, USE.NAMES = F)
-    }
+    ## TODO make these things compatible with futures.
 
-    asgn_t_err <- function (entry, msg) {
-        em <- grab_unit(entry,"min")
-        es <- grab_unit(entry,"s")
-        shinyscreen:::assert(xor(is.na(em), is.na(es)), msg = msg)
-        if (is.na(em)) es/60. else em
-        
-        
-    }
-    m$extr$tol$coarse <- asgn_mz_err(m$conf$tolerance[["ms1 coarse"]], msg = "ms1 coarse error: Only ppm, or Da units allowed.")
-    m$extr$tol$fine <- asgn_mz_err(m$conf$tolerance[["ms1 fine"]], msg = "ms1 fine error: Only ppm, or Da units allowed.")
-    m$extr$tol$eic <- asgn_mz_err(m$conf$tolerance$eic, msg = "eic error: Only ppm, or Da units allowed.")
 
-    m$extr$tol$rt <- asgn_t_err(m$conf$tolerance$rt, msg = "rt error: Only s(econds), or min(utes) allowed.")
 
+    m$extr$tol$coarse <- gen_mz_err_f(m$conf$tolerance[["ms1 coarse"]],
+                                      "ms1 coarse error: Only ppm, or Da units allowed."
+                                      )
+
+
+    m$extr$tol$fine <- gen_mz_err_f(m$conf$tolerance[["ms1 fine"]],
+                                    "ms1 fine error: Only ppm, or Da units allowed.")
+
+    m$extr$tol$eic <- gen_mz_err_f(m$conf$tolerance$eic,
+                                   "eic error: Only ppm, or Da units allowed.")
+
+ 
+    m$extr$tol$rt <- gen_rt_err(m$conf$tolerance$rt,
+                                "rt error: Only s(econds), or min(utes) allowed.")
+    
     m
     
 }
@@ -261,16 +259,34 @@ extr_data <- function(m) {
     m$out$tab$data[,(cols) := .(rep(NA,.N))]
     files <- m$out$tab$data[,unique(Files)]
     ftags <- m$out$tab$data[,.(tag=unique(tag)),by=Files]
+    futuref <- m$future
     tmp <- lapply(1:nrow(ftags),function(ii) {
         fn <- ftags[ii,Files]
         tag <- ftags[ii,tag]
-        x <- m$future(extract(fn=fn,
-                              tab=m$out$tab$data[,.(Files,adduct,mz,rt,ID)],
-                              err_ms1_eic=m$extr$tol$eic,
-                              err_coarse_fun=m$extr$tol$coarse,
-                              err_fine_fun=m$extr$tol$fine,
-                              err_rt=m$extr$tol$rt),
-                      lazy = T)
+        tab <- as.data.frame(data.table::copy(m$out$tab$data[,.(Files,adduct,mz,rt,ID)]))
+        ## err_ms1_eic <- m$extr$tol$eic
+        ## err_coarse_fun <- m$extr$tol$coarse
+        ## err_fine_fun <- m$extr$tol$fine
+        ## err_rt <- m$extr$tol$rt
+
+        err_coarse <- m$conf$tolerance[["ms1 coarse"]]
+
+
+        err_fine <- m$conf$tolerance[["ms1 fine"]]
+
+        
+        err_ms1_eic <- m$conf$tolerance$eic 
+        
+        
+        err_rt <- m$conf$tolerance$rt
+                                   
+        x <- futuref(extract(fn=fn,
+                             tab=tab,
+                             err_ms1_eic=err_ms1_eic,
+                             err_coarse = err_coarse,
+                             err_fine= err_fine,
+                             err_rt= err_rt),
+                     lazy = T)
 
         x
 
@@ -278,29 +294,28 @@ extr_data <- function(m) {
 
     msk <- sapply(tmp,future::resolved)
     curr_done <- which(msk)
-    names(msk) <- ftags$Files
     
     for (x in curr_done) {
-        message("Done extraction for ", names(msk)[[x]])
+        message("Done extraction for ", unique(future::value(tmp[[x]])$Files))
     }
     while (!all(msk)) {
         msk <- sapply(tmp,future::resolved)
         newly_done <- which(msk)
         for (x in setdiff(newly_done,curr_done)) {
-            message("Done extraction for ", names(msk)[[x]])
+            message("Done extraction for ", unique(future::value(tmp[[x]])$Files))
         }
         Sys.sleep(0.5)
         curr_done <- newly_done
     }
     ztmp <- lapply(tmp,future::value)
 
-    ## We need to add in Files (after futures are resolved).
-    for (nn in 1:nrow(ftags)) {
-        fn <- ftags[nn,Files]
-        ztmp[[nn]]$Files <- fn
-    }
+    ## ## We need to add in Files (after futures are resolved).
+    ## for (nn in 1:nrow(ftags)) {
+    ##     fn <- ftags[nn,Files]
+    ##     ztmp[[nn]]$Files <- fn
+    ## }
     m$extr$ms <- data.table::rbindlist(ztmp)
-    message('Saving extracted date to ', m$extr$fn)
+    message('Saving extracted data to ', m$extr$fn)
     saveRDS(object = m$extr, file = m$extr$fn)
     message('Done saving extracted data.')
     
@@ -321,7 +336,7 @@ prescreen <- function(m) {
     m$qa <- create_qa_table(m$extr$ms,m$conf$prescreen)
     mms1 <- assess_ms1(m)
     m <- assess_ms2(mms1)
-    fields <- c("Files","adduct","ID",QA_COLS)
+    fields <- c("Files","adduct","ID",QA_COLS,SPEC_DATA_COLS)
     m$out$tab$ftab <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=c("Files","adduct","ID"))
     m
 }
