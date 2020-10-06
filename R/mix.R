@@ -808,20 +808,20 @@ create_qa_table <- function(ms,conf_presc) {
 
     ## The columns in QA_NUM_REAL are:
     ## 
-    ## int_ms1 -- the maximum intensity of MS1 spectrum over the
+    ## ms1_int -- the maximum intensity of MS1 spectrum over the
     ## entire run;
     ##
-    ## rt_ms1 -- the retention time of the peak MS1.
+    ## ms1_rt -- the retention time of the peak MS1.
 
     ## The columns in QA_NUM_INT are:
     ##
-    ## sel_ms2 -- index of the selected MS2 spectrum; if not NA, the
+    ## ms2_sel -- index of the selected MS2 spectrum; if not NA, the
     ## associated spectrum passed all the checks (qa_pass == T); the
     ## spectrum itself is in one of the member sublists of the `spec'
-    ## column. The integer `sel_ms2' is then the index of the spectrum
+    ## column. The integer `ms2_sel' is then the index of the spectrum
     ## in that sublist.
     ##
-    ## ind_ms1_rt -- TODO (but not important to end users).
+    ## ms1_rt_ind -- TODO (but not important to end users).
     
     
     qa <- list(prescreen=conf_presc)
@@ -838,22 +838,22 @@ create_qa_table <- function(ms,conf_presc) {
 assess_ms1 <- function(m) {
     qa <- m$qa
     ## Calculate auxiliary variables and indices.
-    qa$ms[,c("ind_ms1_rt"):=.(sapply(eicMS1,function(e) which.max(e$intensity)))]
-    qa$ms[length(ind_ms1_rt)==0,("ind_ms1_rt"):=NA_integer_]
-    qa$ms[,c("rt_ms1","int_ms1","ms1_mean"):=.(NA_real_,NA_real_,NA_real_)]
-    qa$ms[!is.na(ind_ms1_rt),c("int_ms1","rt_ms1","ms1_mean"):=.(mapply(function (e,i) e$intensity[[i]],eicMS1,ind_ms1_rt),
-                                                          mapply(function (e,i) e$rt[[i]],eicMS1,ind_ms1_rt),
-                                                          mapply(function (e,i) mean(e$intensity),eicMS1,ind_ms1_rt))]
+    qa$ms[,c("ms1_rt_ind"):=.(sapply(eicMS1,function(e) which.max(e$intensity)))]
+    qa$ms[length(ms1_rt_ind)==0,("ms1_rt_ind"):=NA_integer_]
+    qa$ms[,c("ms1_rt","ms1_int","ms1_mean"):=.(NA_real_,NA_real_,NA_real_)]
+    qa$ms[!is.na(ms1_rt_ind),c("ms1_int","ms1_rt","ms1_mean"):=.(mapply(function (e,i) e$intensity[[i]],eicMS1,ms1_rt_ind),
+                                                          mapply(function (e,i) e$rt[[i]],eicMS1,ms1_rt_ind),
+                                                          mapply(function (e,i) mean(e$intensity),eicMS1,ms1_rt_ind))]
 
     check_ms1 <- function(qa) {
-        qa$ms[(!is.na(int_ms1)),"qa_ms1_exists" := .(int_ms1 > qa$prescreen$ms1_int_thresh)]
-        qa$ms[is.na(int_ms1),("qa_ms1_exists"):=F]
+        qa$ms[(!is.na(ms1_int)),"qa_ms1_exists" := .(ms1_int > qa$prescreen$ms1_int_thresh)]
+        qa$ms[is.na(ms1_int),("qa_ms1_exists"):=F]
         qa$ms[(!qa_ms1_exists),(QA_FLAGS):=F]
         qa
     }
 
     check_ms1_noise <- function(qa) {
-        qa$ms[(qa_ms1_exists==T),"qa_ms1_above_noise" := .(int_ms1 > qa$prescreen$s2n*ms1_mean)]
+        qa$ms[(qa_ms1_exists==T),"qa_ms1_above_noise" := .(ms1_int > qa$prescreen$s2n*ms1_mean)]
         qa$ms[(!qa_ms1_above_noise),c("qa_ms2_good_int","qa_ms2_near","qa_ms2_exists","qa_pass"):=F]
         qa
     }
@@ -900,7 +900,7 @@ assess_ms2 <- function(m) {
     ## List of lists of spec indices where MS2 are within the rt
     ## window.
     okind_rt_ms2 <- m$qa$ms[irows, ][, .(tmp=mapply(function (rt1,spl) pick_ms2_rtwin(rt1,spl,rt_win),
-                                                    rt_ms1,
+                                                    ms1_rt,
                                                     spec,
                                                     USE.NAMES=F,
                                                     SIMPLIFY=F))]$tmp
@@ -912,7 +912,7 @@ assess_ms2 <- function(m) {
     okind_int_ms2 <- m$qa$ms[irows, ][, .(tmp=mapply(pick_ms2_int,
                                                      spec,
                                                      m$conf$prescreen$ms2_int_thresh,
-                                                     int_ms1,
+                                                     ms1_int,
                                                      SIMPLIFY=F))]$tmp
 
     m$qa$ms[irows,"qa_ms2_good_int"] <- sapply(okind_int_ms2,function (x) length(x) > 0)
@@ -926,14 +926,14 @@ assess_ms2 <- function(m) {
     
     ## Throw out the possibly empty members.
     really_okind <- okind[m$qa$ms[irows, ]$qa_pass]
-    m$qa$ms[which(qa_pass),sel_ms2:=.(mapply(function (spl,inds,ms1rt) {
+    m$qa$ms[which(qa_pass),ms2_sel:=.(mapply(function (spl,inds,ms1rt) {
         rtdiff <- sapply(spl[inds],function (x) abs(x$rt-ms1rt))
         closest <- which.min(rtdiff)
         inds[[closest]]
     },
     spec,
     really_okind,
-    rt_ms1,
+    ms1_rt,
     SIMPLIFY=T))]
 
     m    

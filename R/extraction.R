@@ -524,7 +524,6 @@ extract <- function(fn,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
     ## Extracts MS1 and MS2 EICs, as well as MS2 spectra, subject to
     ## tolerance specifications.
 
-
     ## TODO: Still detecting external references ... but which?
     err_coarse_fun <- gen_mz_err_f(err_coarse,
                                    "ms1 coarse error: Only ppm, or Da units allowed.")
