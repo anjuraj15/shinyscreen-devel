@@ -183,7 +183,10 @@ QA_NUM_INT <- c("ms2_sel","ms1_rt_ind")
 
 QA_COLS <- c(QA_FLAGS,QA_NUM_REAL,QA_NUM_INT)
 
-SPEC_DATA_COLS <- c("eicMS1")
+## MS2 spectral table columns
+MS2_SPEC_COLS <- c("adduct","ID","CE","rt","Files","spec","ms2_max_int")
 
+## MS1 spectral table columns
+MS1_SPEC_COLS <- c("adduct","Files","ID","eicMS1","ms1_int","ms1_rt","ms1_mean")
 ## Default order of spectra in summary table
-DEF_ORDER_SPECTRA <- c("set","qa_pass","ms1_int","adduct","mz","tag")
+DEF_ORDER_SPECTRA <- c("qa_pass","ms1_int","adduct","mz","tag")

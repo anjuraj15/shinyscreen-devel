@@ -333,13 +333,53 @@ conf_trans <- function(conf) {
 ##' @export
 prescreen <- function(m) {
     ## Top-level auto prescreening function.
+
+
+    ## TODO need to fix max spec intensity
+    gen_ms2_spec_tab <- function(ms) {data.table::rbindlist(lapply(1:nrow(ms), function (nr) {
+        adduct <- ms$adduct[[nr]]
+        ID <- ms$ID[[nr]]
+        Files <- ms$Files[[nr]]
+        spec <- ms$spec[[nr]]
+        dt <- if (length(spec[[1]]) < 3)
+                  dtable(CE=NA_real_,
+                                       rt=NA_real_,
+                                       spec=list(dtable(mz=NA_real_,intensity=NA_real_))) else {
+                                                                                                            dtable(
+                                                                                                                              CE=sapply(spec,
+                                                                                                                                        function (x) x$CE),
+                                                                                                                              rt=sapply(spec,
+                                                                                                                                        function (x) x$rt),
+                                                                                                                              spec=lapply(spec,
+                                                                                                                                          function (x) x$spec))
+                                                                                                        }
+        dt$Files <- Files
+        dt$ID <- ID
+        dt$adduct <- adduct
+        dt[,ms2_max_int := .(sapply(spec,function (sp) sp[,max(intensity)]))] 
+        dt
+    }))}
+
+    gen_ms1_spec_tab <- function(ms) {
+        cols <- MS1_SPEC_COLS
+        ms[,..cols]
+    }
+
+
     m$qa <- create_qa_table(m$extr$ms,m$conf$prescreen)
     mms1 <- assess_ms1(m)
     m <- assess_ms2(mms1)
-    fields <- c("Files","adduct","ID",QA_COLS,SPEC_DATA_COLS)
+    fields <- c("Files","adduct","ID",QA_COLS)
+    m$out$tab$ms2_spec <- gen_ms2_spec_tab(m$qa$ms)
+    data.table::setkeyv(m$out$tab$ms2_spec,c("adduct","Files","ID"))
+    m$out$tab$ms1_spec <- gen_ms1_spec_tab(m$qa$ms)
+    data.table::setkeyv(m$out$tab$ms1_spec,c("adduct","Files","ID"))
     m$out$tab$summ <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=c("Files","adduct","ID"))
     m
 }
+
+
+
 
 ##' @export
 sort_spectra <- function(m) {
