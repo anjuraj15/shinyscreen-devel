@@ -185,5 +185,5 @@ QA_COLS <- c(QA_FLAGS,QA_NUM_REAL,QA_NUM_INT)
 
 SPEC_DATA_COLS <- c("eicMS1")
 
-## Default order of spectra in spectral table
+## Default order of spectra in summary table
 DEF_ORDER_SPECTRA <- c("set","qa_pass","ms1_int","adduct","mz","tag")

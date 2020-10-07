@@ -343,7 +343,7 @@ prescreen <- function(m) {
 
 ##' @export
 sort_spectra <- function(m) {
-    ## Sorts the spectral table (summ) in order specified either in
+    ## Sorts the summary table (summ) in order specified either in
     ## `order spectra` sublist of m$conf, or if that is null, the
     ## DEF_ORDER_SPECTRA.
     order <- if (!is.null(m$conf[["order spectra"]])) m$conf[["order spectra"]] else DEF_ORDER_SPECTRA
