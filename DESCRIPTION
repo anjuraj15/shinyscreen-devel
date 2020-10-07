@@ -48,7 +48,6 @@ Collate:
     'resources.R'
     'mix.R'
     'extraction.R'
-    'run.R'
     'api.R'
     'shiny-ui-base.R'
     'shiny-ui-config.R'
