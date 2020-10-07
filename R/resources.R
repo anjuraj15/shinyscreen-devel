@@ -22,12 +22,12 @@ CONF <- list(data=NA_character_,
                             sets=NA_character_))
 
 ## Constants
-FN_FTAB_BASE<-"ftable.base.csv"
-FN_FTAB_PP<-"ftable.pp.csv"
+FN_SUMM_BASE<-"summ.base.csv"
+FN_SUMM_PP<-"summ.pp.csv"
 FN_PP_OUT_PREF<-"PP.filetable"
-FN_FTAB_STATE<-"ftable_state.csv"
-FN_FTAB <- "ftable.csv"
-FN_FTAB_DEF_OUT <- FN_FTAB
+FN_SUMM_STATE<-"summ_state.csv"
+FN_SUMM <- "summ.csv"
+FN_SUMM_DEF_OUT <- FN_SUMM
 FN_CMP_L<-"compounds.csv"
 FN_LOC_SETID <-"setid.csv"
 FN_COMP_TAB<-"comprehensive.csv"
@@ -93,11 +93,11 @@ EXTR_MS2_DIR<-"MS2"
 EXTR_MS2_FLAG<-file.path(EXTR_MS2_DIR,'.ms2.DONE')
 
 
-FTAB_CHK_NONE<-'NONE'
+SUMM_CHK_NONE<-'NONE'
 
-FTAB_CHK_AUTO<-'AUTO'
+SUMM_CHK_AUTO<-'AUTO'
 
-FTAB_CHK_MANL<-'MANUAL'
+SUMM_CHK_MANL<-'MANUAL'
 
 
 MS1_ERR_COARSE<-0.5                     # Da
@@ -133,8 +133,8 @@ COMP_NAME_MAP <- list(RT="rt")
 COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","known","SMILES","Formula","Files","wd")
 
 ## File table properties
-FTAB_KEY=c("set","tag","mz")
-FTAB_NAMES=c("ID", "mz", "rt", "tag", "adduct", "set", "Name", "SMILES", "Files" , "wd","known")
+SUMM_KEY=c("set","tag","mz")
+SUMM_NAMES=c("ID", "mz", "rt", "tag", "adduct", "set", "Name", "SMILES", "Files" , "wd","known")
 
 ## Trivial data table
 EMPTY_MZML <- dtable(Files=character(0),
@@ -153,7 +153,7 @@ EMPTY_CONF <- list(project="",
                                   sets=""),
                    data="",
                    fn_comp="",
-                   fn_ftab="",
+                   fn_summ="",
                    tolerance=list("ms1 coarse"=MS1_ERR_COARSE,
                                   "ms1 fine"=MS1_ERR_FINE,
                                   "eic"=EIC_ERR,

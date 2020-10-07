@@ -148,23 +148,23 @@ get_col_from_cmp_l<-function(id,cname,cmpL) {
     
 }
 
-gen_clean_state_ftab<-function(ftable) {
-    ftable$Comments <- ""
-    ftable[c("MS1","MS2","Alignment","AboveNoise")] <- T
-    ftable["MS2rt"] <- NA_real_
-    ftable["iMS2rt"] <- NA_integer_
-    ftable["rt"]<-NA_real_
-    ftable["checked"]<-'NONE'
-    ftable
+gen_clean_state_summ<-function(summ) {
+    summ$Comments <- ""
+    summ[c("MS1","MS2","Alignment","AboveNoise")] <- T
+    summ["MS2rt"] <- NA_real_
+    summ["iMS2rt"] <- NA_integer_
+    summ["rt"]<-NA_real_
+    summ["checked"]<-'NONE'
+    summ
 }
 
-pp_touch_q<-function(ftab) {
+pp_touch_q<-function(summ) {
     ## Returns indices that are ok to be auto processed.
-    which(ftab$checked==FTAB_CHK_NONE | ftab$checked==FTAB_CHK_AUTO)
+    which(summ$checked==SUMM_CHK_NONE | summ$checked==SUMM_CHK_AUTO)
 }
 
-preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=5000.) {
-    wds<-unique(ftable$wd)
+preProc <- function (summ,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=5000.) {
+    wds<-unique(summ$wd)
     fn_spec<-function(wd) readRDS(file.path(wd,FN_SPEC))
     message("Loading RDS-es ...")
     allData<-lapply(wds,fn_spec)
@@ -190,10 +190,10 @@ preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=5
     ## during the dataframe generation stage. In this case, the file
     ## with the corresponding ID will not be there.
 
-    okinds<- pp_touch_q(ftable)
+    okinds<- pp_touch_q(summ)
     for (ind in okinds) {
-        wd <- ftable$wd[ind]
-        id <- ftable$ID[ind]
+        wd <- summ$wd[ind]
+        id <- summ$ID[ind]
         eics<-allData[[wd]]$eic
         nid<-id2name(id)
         ii<-match(nid,MSnbase::fData(eics)[["ID"]]) #id, because id-s, not nid-s are in fData for ms1 eics;
@@ -209,20 +209,20 @@ preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=5
         
         ms1MaxInd<-which.max(eic$intensity)
         maxInt<-eic$intensity[[ms1MaxInd]]
-        ftable[ind,"rt"]<-eic$rt[[ms1MaxInd]]
+        summ[ind,"rt"]<-eic$rt[[ms1MaxInd]]
         ##If MS1 does not exist, set entry to F.
         if (maxInt < intThreshMS1) {
-            ftable[ind,"MS1"] <- F
+            summ[ind,"MS1"] <- F
             ## Other checks automatically fail, too.
-            ftable[ind,"Alignment"] <- F
-            ftable[ind,"AboveNoise"] <- F
+            summ[ind,"Alignment"] <- F
+            summ[ind,"AboveNoise"] <- F
         } else {
             ## Noisy?
-            if (ftable[ind,"AboveNoise"]) {
+            if (summ[ind,"AboveNoise"]) {
                 mInt <- mean(eic$intensity)
                 if (maxInt < noiseFac*mInt) {
-                    ftable[ind,"AboveNoise"] <- F
-                    ftable[ind,"Alignment"] <- F ## If noisy, this is
+                    summ[ind,"AboveNoise"] <- F
+                    summ[ind,"Alignment"] <- F ## If noisy, this is
                                                  ## probably meaningles, so
                                                  ## F.
                 }
@@ -236,12 +236,12 @@ preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=5
         ms2<-allData[[wd]]$ms2
         ms2nids<-names(ms2)
         if (! (nid %in% ms2nids)) {
-            ftable[ind,"MS2"] <- F
-            ftable[ind,"Alignment"] <- F
+            summ[ind,"MS2"] <- F
+            summ[ind,"Alignment"] <- F
         } else {
             sp<-ms2[[nid]]
             ## Alignment still makes sense to be checked?
-            if (ftable[ind,"Alignment"]) {
+            if (summ[ind,"Alignment"]) {
                 ## rtInd <- ms1MaxInd #match(maxInt,eic$intensity)
                 rtMS1Peak <- eic$rt[[ms1MaxInd]]
                 msms<-MSnbase::fData(sp)[,c("rtm","maxI")]
@@ -260,17 +260,17 @@ preProc <- function (ftable,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=5
                 msmsInt<- msms$intensity[rtInd]
                 if (length(msmsRT) > 0) {
                     msmsRTind <- which.min(abs(msmsRT - rtMS1Peak))
-                    ftable[ind,"iMS2rt"] <- rtInd[msmsRTind]
-                    ftable[ind,"MS2rt"] <- msmsRT[msmsRTind]
+                    summ[ind,"iMS2rt"] <- rtInd[msmsRTind]
+                    summ[ind,"MS2rt"] <- msmsRT[msmsRTind]
                 } else {
-                    ftable[ind,"Alignment"] <- F
+                    summ[ind,"Alignment"] <- F
                 }
             }
         }
-        ftable[ind,"checked"]<-FTAB_CHK_AUTO
+        summ[ind,"checked"]<-SUMM_CHK_AUTO
     }
           
-    ftable
+    summ
 }
 
 smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
@@ -335,7 +335,7 @@ plot_id_msn <- function(ni,
                         mass,
                         smile,
                         tags,
-                        fTab,
+                        summ,
                         prop,
                         theme,
                         pal="Dark2",
@@ -584,7 +584,7 @@ getEntryFromComp<-function(entry,id,set,adduct,compTab) {
     res
         
 }
-## add_comp_ftab <- function(ft,ctab) {
+## add_comp_summ <- function(ft,ctab) {
 ##     nR<-nrow(ft)
 ##     mzCol<-rep(NA,nR)
 ##     nmCol<-rep("",nR)
@@ -724,7 +724,7 @@ new_state <- function(conf=NULL,fn_conf="",GUI=F) {
     m$conf <- if (!is.null(conf)) conf else read_conf(fn_conf)
     if (is.null(m$conf$debug)) m$conf$debug <- F
     m$conf$fn_comp <- file.path(m$conf$project, FN_COMP_TAB)
-    m$conf$fn_ftab <- file.path(m$conf$project, FN_FTAB)
+    m$conf$fn_summ <- file.path(m$conf$project, FN_SUMM)
     
     m$extr$fn <- file.path(m$conf$project, "extracted.rds")
     m$GUI <- GUI

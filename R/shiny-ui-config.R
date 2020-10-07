@@ -102,7 +102,7 @@ mk_ui_config <- function() {
                                                 confmzMLtab))
 
 
-    confTab <- shinydashboard::tabItem(tabName="config",
+    consumm <- shinydashboard::tabItem(tabName="config",
                                        shiny::h2(GUI_TAB_TITLE[["conf"]]),
                                        confLayout)
 
@@ -110,7 +110,7 @@ mk_ui_config <- function() {
                                              tabName="config",
                                              icon=shiny::icon("user-cog"))
 
-    return(list(tab=confTab,
+    return(list(tab=consumm,
                 side=confSideItem))
 }
 

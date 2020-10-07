@@ -337,16 +337,16 @@ prescreen <- function(m) {
     mms1 <- assess_ms1(m)
     m <- assess_ms2(mms1)
     fields <- c("Files","adduct","ID",QA_COLS,SPEC_DATA_COLS)
-    m$out$tab$ftab <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=c("Files","adduct","ID"))
+    m$out$tab$summ <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=c("Files","adduct","ID"))
     m
 }
 
 ##' @export
 sort_spectra <- function(m) {
-    ## Sorts the spectral table (ftab) in order specified either in
+    ## Sorts the spectral table (summ) in order specified either in
     ## `order spectra` sublist of m$conf, or if that is null, the
     ## DEF_ORDER_SPECTRA.
     order <- if (!is.null(m$conf[["order spectra"]])) m$conf[["order spectra"]] else DEF_ORDER_SPECTRA
-    data.table::setkeyv(m$out$tab$ftab,order)
+    data.table::setkeyv(m$out$tab$summ,order)
     m
 }

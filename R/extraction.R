@@ -471,42 +471,7 @@ extr_msnb_ht <-function(file,wd,mz,errEIC, errFinePPM,errCoarse,fnSpec,rt=NULL,e
     x
 }
 
-##' Extracts data from mzML files.
-##'
-##' @title Data Extraction from mzML Files
-##' @param fTab File table with Files,ID,wd,Name,mz and RT
-##'     columns. Column Files, as well as wd must have all rows
-##'     identical.
-##' @param extr_fun Extraction function from the backend.
-##' @param errEIC Absolute mz tolerance used to extract precursor EICs.
-##' @param errFinePPM Tolerance given in PPM used to associate input
-##'     masses with what the instrument assigned as precursors to MS2.
-##' @param errCoarse Absolute tolerance for preliminary association of
-##'     precursors (from precursorMZ), to MS2 spectra.
-##' @param errRT The half-width of the retention time window.
-##' @param fnSpec Output file specification.
-##' @return Nothing useful.
-##' @author Todor Kondić
-extract.old<-function(fTab,extr_fun,errEIC,errFinePPM,errCoarse,fnSpec,errRT) {
-    fnData<-fTab$Files[[1]]
-    wd<-fTab$wd[[1]]
-    ID<-fTab$ID
-    mz<-fTab$mz
-    rt<-fTab$rt
-    names(mz)<-id2name(ID)
-    if (!is.null(rt)) names(rt)<-ID
-    dir.create(wd,showWarnings=F)
-    extr_fun(file=fnData,
-             wd=wd,
-             mz=mz,
-             rt=rt,
-             errRT=errRT,
-             errEIC=errEIC,
-             errFinePPM=errFinePPM,
-             errCoarse=errCoarse,
-             fnSpec=fnSpec)
-    
-}
+
 
 
 extr_eic_ms1 <- function(tab,err) {
