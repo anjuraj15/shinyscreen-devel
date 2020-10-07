@@ -246,6 +246,7 @@ extr_data <- function(m) {
     ## Reduce the comp table to only unique masses (this is because
     ## different sets can have same masses).
     m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=c('adduct','tag','ID')]
+    m$out$tab$data[,set:=NULL] #This column is meaningless now.
     files <- m$out$tab$data[,unique(Files)]
     allCEs <- do.call(c,args=lapply(files,function(fn) {
         z <- MSnbase::readMSData(files=fn,msLevel = c(1,2),mode="onDisk")
