@@ -382,12 +382,68 @@ prescreen <- function(m) {
 
 
 
+##' Sets the key specified by DEF_KEY_SUMM and adds second indices,
+##' either from DEF_INDEX_SUMM, or user-specified in
+##' conf[["summary table"]]$order. The order entry is a list of
+##' strings with names of columns in summ, optionally prefixed with a
+##' minus(-) sign. Columns prefixed with the minus are going to be in
+##' ascending order.
+##'
+##' @title Sort the Summary Table 
+##' @param m 
+##' @return m
+##' @author Todor Kondić
 ##' @export
 sort_spectra <- function(m) {
     ## Sorts the summary table (summ) in order specified either in
     ## `order spectra` sublist of m$conf, or if that is null, the
-    ## DEF_ORDER_SPECTRA.
-    order <- if (!is.null(m$conf[["order spectra"]])) m$conf[["order spectra"]] else DEF_ORDER_SPECTRA
-    data.table::setkeyv(m$out$tab$summ,order)
+    ## DEF_INDEX_SUMM.
+
+    ## Here set default sorting keys.
+    data.table::setkeyv(m$out$tab$summ,DEF_KEY_SUMM)
+
+    ## Now, add secondary indexing.
+    cols <- if (!is.null(m$conf[["summary table"]]$order)) m$conf[["summary table"]]$order else DEF_INDEX_SUMM
+    
+    idx <- gsub("^\\s*-\\s*","",cols) #We need only column names for
+                                      #now, so remove minuses where
+                                      #needed.
+    assertthat::assert_that(all(idx %in% colnames(m$out$tab$summ)),msg = "Some column(s) in order key in conf file does not exist in the summary table.")
+
+    data.table::setindexv(m$out$tab$summ,idx)
+
+    ## Now we order based on either summary table order subkey, or
+    ## DEF_ORDER_SUMM
+    
+    tmp <- quote(data.table::setorder())
+    tmp[[2]] <- quote(m$out$tab$summ)
+    for (n in 1:length(cols)) tmp[[2+n]] <- parse(text=cols[[n]])[[1]]
+    message("Ordering expression: ",tmp)
+    eval(tmp) #Execute the setorder call
+
+    m
+}
+
+##' Subsets the summary table by applying conditions set out in the
+##' filter subkey of summary table key of the config. Each member of
+##' filter is an expression that and all of them are chained together
+##' using AND logical operation and applied to the summary table.
+##'
+##' 
+##' @title Subset the Summary Table
+##' @param m 
+##' @return m
+##' @author Todor Kondić
+##' @export
+subset_summary <- function(m) {
+    filt <- m$conf[["summary table"]]$filter
+    m$out$tab$flt_summ <- if (!is.null(filt)) {
+                              tmp <- lapply(filt, function (x) parse(text = x)[[1]])
+                              expr <- Reduce(function (x,y) {z<-call("&");z[[2]]<-x;z[[3]]<-y;z},x=tmp)
+                              message("Filtering with: ",deparse(bquote(m$out$tab$summ[.(expr)])))
+                              eval(bquote(m$out$tab$summ[.(expr)]))
+                              
+                              
+                          } else m$out$tab$summ
     m
 }

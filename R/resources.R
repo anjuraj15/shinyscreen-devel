@@ -188,5 +188,16 @@ MS2_SPEC_COLS <- c("adduct","ID","CE","rt","Files","spec","ms2_max_int")
 
 ## MS1 spectral table columns
 MS1_SPEC_COLS <- c("adduct","Files","ID","eicMS1","ms1_int","ms1_rt","ms1_mean")
-## Default order of spectra in summary table
-DEF_ORDER_SPECTRA <- c("set","qa_pass","ms1_int","adduct","mz","tag")
+
+## Default sorting keys of spectra in the summary table
+DEF_KEY_SUMM <- c("set","qa_pass","ms1_int","adduct","mz","tag")
+
+## Default secondary indexing in the summary table
+DEF_INDEX_SUMM <- c("set", "-qa_pass", "-ms1_int", "adduct","-mz")
+
+## Top-level directory to store the figures
+FIG_TOPDIR <- "figures"
+
+## Figure filter
+FIG_DEF_FILTER <- ""
+
