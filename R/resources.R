@@ -201,3 +201,8 @@ FIG_TOPDIR <- "figures"
 ## Figure filter
 FIG_DEF_FILTER <- ""
 
+FIG_DEF_SUBSET <- c("set","adduct","ID")
+
+
+REPORT_AUTHOR <- "Anonymous"
+REPORT_TITLE <- "Plots of EICs and MS2 Spectra"

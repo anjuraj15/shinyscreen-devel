@@ -953,3 +953,13 @@ gen_rt_err <- function(entry,msg) {
     shinyscreen:::assert(xor(is.na(em), is.na(es)), msg = msg)
     if (is.na(em)) es/60. else em
 }
+
+fig_path <- function(top,set,group,id,suff,ext="pdf") {
+    base <- paste("plot",set,group,id,suff,sep="_")
+    fn <- paste0(base,".",ext)
+    fn <- gsub("\\[","",fn)
+    fn <- gsub("\\]","",fn)
+    fn <- gsub("\\+","p",fn)
+    fn <- gsub("-","m",fn)
+    if (!is.null(top)) file.path(top,fn) else fn
+}
