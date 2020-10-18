@@ -88,6 +88,44 @@ txt_file_input <- function(inputId,input,fileB,label,volumes,default = "") {
     
 }
 
+##' @export
+mz_input <- function(input_mz,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_mz=0,def_unit="Da") {
+    style <- "display: inline-block; vertical-align:top; width: "
+    stylel <- "display: inline-block; vertical-align:top;"
+    style=paste0(style,width,"; ")
+    shiny::div(shiny::div(style=stylel,
+                          shiny::tags$label("+/-",`for`=input_mz)),
+               shiny::div(style=style,
+                          shiny::numericInput(input_mz,
+                                              label=NULL,
+                                              value = def_mz)),
+               shiny::div(style=style,
+                          shiny::selectInput(input_unit,
+                                             label=NULL,
+                                             c("ppm","Da"),
+                                             selected=def_unit)))
+}
+
+##' @export
+rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_rt=0,def_unit="min") {
+    style="display: inline-block; vertical-align:top; width: "
+    style=paste0(style,width,"; ")
+    stylel <- "display: inline-block; vertical-align:top;"
+    shiny::div(shiny::div(style=stylel,
+                          shiny::tags$label("+/-",`for`=input_rt)),
+               shiny::div(style=style,
+                          shiny::numericInput(input_rt,
+                                              label=NULL,
+                                              value = def_rt)),
+               shiny::div(style=style,
+                          shiny::selectInput(input_unit,
+                                             label=NULL,
+                                             c("min","s"),
+                                             selected=def_unit)))
+
+}
+
+
 rev2list <- function(rv) {
     ## Take reactive values structure and convert them to nested
     ## lists.
@@ -99,14 +137,6 @@ list2rev <- function(lst) {
     ## Take nested named list and create reactive values from it.
     if (class(lst)[[1]] != "list")
         lst else do.call(react_v,lapply(lst,list2rev))
-}
-
-new_rv_state <- function(project) {
-    p <- normalizePath(path=project,winslash = '/')
-    nc <- new_conf()
-    nc$project <- project
-    x <- react_v(m=list2rev(new_state(conf=nc,GUI=T)))
-    x
 }
 
 mk_roots <- function(wd) local({

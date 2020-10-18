@@ -14,10 +14,25 @@
 
 
 ##' @export
+new_state <- function() {
+    m <- new_conf()
+    init_state(m)
+}
+
+##' @export
+new_rv_state <- function() react_v(m=list2rev(new_state()))
+
+##' @export
+new_state_fn_conf <- function(fn_conf) {
+    m <- new_state()
+    m$conf <- read_conf(fn_conf)
+    init_state(m)
+}
+
+##' @export
 run <- function(fn_conf) {
-    conf <- read_conf(fn_conf)
-    m <- new_state(conf=conf,
-                   GUI=F)    
+    m <- new_state_fn_conf(fn_conf)
+    
     dir.create(m$conf$project,
                showWarnings = F,
                recursive = T)
@@ -27,13 +42,22 @@ run <- function(fn_conf) {
 
 
 ##' @export
-run_in_dir <- function(m) {
+setup_phase <- function(m) {
     m <- mk_tol_funcs(m)
     m <- load_inputs(m)
     m <- concurrency(m)
+    m
+}
+##' @export
+run_in_dir <- function(m) {
+    m <- setup_phase(m)
     m <- mk_comp_tab(m)
     m <- extr_data(m)
     m <- prescreen(m)
+    m <- sort_spectra(m)
+    m <- subset_summary(m)
+    m <- create_plots(m)
+    m <- save_plots(m)
     invisible(m)
     
 }
@@ -335,6 +359,7 @@ conf_trans <- function(conf) {
 prescreen <- function(m) {
     ## Top-level auto prescreening function.
 
+    confpres <- conf_trans_pres(m$conf$prescreen)
 
     ## TODO need to fix max spec intensity
     gen_ms2_spec_tab <- function(ms) {data.table::rbindlist(lapply(1:nrow(ms), function (nr) {
@@ -373,7 +398,7 @@ prescreen <- function(m) {
     }
 
 
-    m$qa <- create_qa_table(m$extr$ms,m$conf$prescreen)
+    m$qa <- create_qa_table(m$extr$ms,confpres)
     mms1 <- assess_ms1(m)
     m <- assess_ms2(mms1)
     fields <- c("Files","adduct","ID",QA_COLS)

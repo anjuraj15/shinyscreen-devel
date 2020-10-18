@@ -115,6 +115,7 @@ MS1_SN_FAC <- 3.0
 ## Shiny objects
 
 NUM_INP_WIDTH="15%"
+NUM_INP_HEIGHT="5%"
 
 
 
@@ -147,22 +148,6 @@ FN_DATA_TAB <- "data-files.csv"
 
 ## Default number of concurrent workers
 NO_WORKERS <- 2
-
-EMPTY_CONF <- list(project="",
-                   compounds=list(lists=list(),
-                                  sets=""),
-                   data="",
-                   fn_comp="",
-                   fn_summ="",
-                   tolerance=list("ms1 coarse"=MS1_ERR_COARSE,
-                                  "ms1 fine"=MS1_ERR_FINE,
-                                  "eic"=EIC_ERR,
-                                  "rt"=RT_EXTR_ERR),
-                   prescreen=list("ms1_int_thresh"=1e5,
-                                  "ms2_int_thresh"=2.5e3,
-                                  "s2n"=3,
-                                  "ret_time_shift_tol"=0.5),
-                   extr=list(fn=""))
 
 ## Input parameters for prescreening.
 CONF_PRES_NUM <- c("ms1_int_thresh","ms2_int_thresh","s2n")

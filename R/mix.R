@@ -710,24 +710,17 @@ read_conf <- function(fn) {
         
     }
     cf$compound$lists <- fnl
-    conf_trans(cf)
+    ## conf_trans(cf)
+    cf
 }
 
-new_conf <- function() EMPTY_CONF
 
-new_state <- function(conf=NULL,fn_conf="",GUI=F) {
-    assert(xor(!is.null(conf),nchar(fn_conf)!=0L),
-           msg="Provide either conf, or fn_conf, not both, not none.")
-    m <- list()
-
-    ## Conf setup
-    m$conf <- if (!is.null(conf)) conf else read_conf(fn_conf)
+init_state <- function(m) {
     if (is.null(m$conf$debug)) m$conf$debug <- F
     m$conf$fn_comp <- file.path(m$conf$project, FN_COMP_TAB)
     m$conf$fn_summ <- file.path(m$conf$project, FN_SUMM)
     
     m$extr$fn <- file.path(m$conf$project, "extracted.rds")
-    m$GUI <- GUI
     m$out$tab <- list()
     m$input$tab$mzml <- EMPTY_MZML
     lab <- gen_uniq_lab(list(),pref="L")
@@ -735,6 +728,41 @@ new_state <- function(conf=NULL,fn_conf="",GUI=F) {
     m$input$tab[[lab[[1]]]] <- EMPTY_CMPD_LIST
     m
 }
+
+base_conf <- function () {
+    m <- list()
+    m$conf <- list(project=getwd(),
+                   compounds=list(lists=list(),
+                                  sets="",
+                                  data="",
+                                  fn_comp="",
+                                  fn_summ=""),
+                   extr=list(fn=""))
+    m
+}
+
+extr_conf <- function(m) {
+    m$conf$tolerance <- list("ms1 coarse"=MS1_ERR_COARSE,
+                             "ms1 fine"=MS1_ERR_FINE,
+                             "eic"=EIC_ERR,
+                             "rt"=RT_EXTR_ERR)
+    m
+}
+
+presc_conf <- function(m) {
+    m$conf$prescreen <- list("ms1_int_thresh"=1e5,
+                             "ms2_int_thresh"=2.5e3,
+                             "s2n"=3,
+                             "ret_time_shift_tol"=0.5)
+    m
+}
+
+
+new_conf <- function() presc_conf(
+                           extr_conf(
+                               base_conf()))
+
+
 
 verify_cmpd_l <- function(dt,fn) {
     fields <- colnames(EMPTY_CMPD_LIST)
@@ -870,6 +898,8 @@ assess_ms1 <- function(m) {
 
 assess_ms2 <- function(m) {
 
+    presconf <- conf_trans_pres(m$conf$prescreen)
+
     ## This function takes a spectral list, looks for the members
     ## inside the retention time window and returns either the indices
     ## of those that are, or NA.
@@ -895,7 +925,7 @@ assess_ms2 <- function(m) {
     ## that the single entry in the sublist is not NA.
     m$qa$ms[qa_ms1_exists==T,qa_ms2_exists := .(sapply(spec,function (sl) length(sl)>1 || !is.na(sl[[1]])))]
     irows <- which(m$qa$ms$qa_ms1_exists & m$qa$ms$qa_ms2_exists)
-    rt_win <- 2 * m$conf$prescreen$ret_time_shift_tol
+    rt_win <- 2 * presconf$ret_time_shift_tol
 
     ## List of lists of spec indices where MS2 are within the rt
     ## window.
@@ -911,7 +941,7 @@ assess_ms2 <- function(m) {
     ## intensity range.
     okind_int_ms2 <- m$qa$ms[irows, ][, .(tmp=mapply(pick_ms2_int,
                                                      spec,
-                                                     m$conf$prescreen$ms2_int_thresh,
+                                                     presconf$ms2_int_thresh,
                                                      ms1_int,
                                                      SIMPLIFY=F))]$tmp
 
