@@ -36,7 +36,7 @@ run <- function(fn_conf) {
     dir.create(m$conf$project,
                showWarnings = F,
                recursive = T)
-    m <- withr::with_dir(new=conf$project,code = run_in_dir(m))
+    m <- withr::with_dir(new=m$conf$project,code = run_in_dir(m))
     return(invisible(m))
 }
 
