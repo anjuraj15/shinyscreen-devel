@@ -1,50 +1,59 @@
 ---
 output: html_document
-runtime: shiny #shiny_prerendered
-title: Shinyscreen
+runtime: shiny_prerendered
 author: Environmental Cheminformatics Group, LCSB, University of Luxembourg
+title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 ---
 
+```{r, include = "false"}
+options(browser='icecat')
+rend <- function() {
+    unlink(list.files(pattern = ".*html$"))
+    unlink(list.files(pattern = ".*Rmd"))
+    SHINYSCREEN_PATH <- "~/cabinet/shinyscreen"
+    FN_WORKDIR_STATE <- "conf-state.yaml"
+    load_package <- function(name,src=NULL,reload_pkgs=NULL) {
+
+        for (name in c(reload_pkgs,name)) {
+            pname <- paste0("package:",name)
+            if (pname %in% search()) eval(substitute(detach(pname,unload=T),list(pname=pname)))
+        }
+        if (!is.null(src)) devtools::install(src, upgrade = "never")
+
+        for (name in rev(c(reload_pkgs,name))) {
+            eval(substitute(library(name,list(name=name))))
+        }
+        invisible(NULL)
+    }
+
+    proj <- getwd()
+    setwd(proj)
+
+
+    dir.create("pkgs",showWarnings = F)
+    .libPaths(c("pkgs",.libPaths()))
+    Sys.setenv("R_LIBS_USER"="pkgs")
+    file.copy("~/cabinet/shinyscreen/inst/rmd/app.Rmd","./app_copy.Rmd")
+    load_package("shinyscreen",src="~/cabinet/shinyscreen")
+    rmarkdown::run(file = "app_copy.Rmd")
+
+    
+    
+}
+```
 
 ```{r, include = "false"}
 SHINYSCREEN_PATH <- "~/cabinet/shinyscreen"
 FN_WORKDIR_STATE <- "conf-state.yaml"
-load_package <- function(name,src=NULL,reload_pkgs=NULL) {
 
-    for (name in c(reload_pkgs,name)) {
-        pname <- paste0("package:",name)
-        if (pname %in% search()) eval(substitute(detach(pname,unload=T),list(pname=pname)))
-    }
-    if (!is.null(src)) devtools::install(src, upgrade = "never")
-
-    for (name in rev(c(reload_pkgs,name))) {
-        eval(substitute(library(name,list(name=name))))
-    }
-    invisible(NULL)
-}
-
-proj <- getwd()
-setwd(proj)
-
-
-dir.create("pkgs",showWarnings = F)
-.libPaths(c("pkgs",.libPaths()))
-Sys.setenv("R_LIBS_USER"="pkgs")
 ```
 
 ```{r, include="false"}
-load_package("shinyscreen",src="~/cabinet/shinyscreen")
-## library(shinyscreen)
-deps_path <- getwd() #Where includes are stored.
-fn_rmd_conf <- file.path(deps_path,'conf.Rmd')
+options(future.globals.onReference = "warn")
+future::plan('multiprocess',workers=4)
+## m <- run(fn_conf = FN_WORKDIR_STATE)
+
 ```
-
-
-
-<!-- ```{r, file=fn_rmd_conf, echo=F} -->
-
-                
-<!-- ``` -->
 
 ```{r, context='setup', echo=F}
 def_state <- new_state()
@@ -157,25 +166,26 @@ actionButton(inputId = "datafiles_b",
 #rv_conf$project
 #print(rv_conf)
 ## rv_conf$project <- b_project()
+session$onSessionEnded(function () stopApp())
 ```
 
 ## Extraction
 
 ### Spectra extraction based settings
 
-<details><summary>MS1 coarse error</summary> 
+<details><summary>MS1 coarse error</summary>
 
 Extract all entries matching the target mass within this error in the
 precursor table.
 </details>
 ```{r, echo=F}
 shinyscreen::mz_input(input_mz = "ms1_coarse",
-                      input_unit = "ms1_coarse_unit",
-                      def_mz = def_state$conf$tolerance[["ms1 coarse"]],
-                      def_unit = "Da")
+                       input_unit = "ms1_coarse_unit",
+                       def_mz = def_state$conf$tolerance[["ms1 coarse"]],
+                       def_unit = "Da")
 ```
 
-<details><summary>MS1 fine error</summary> 
+<details><summary>MS1 fine error</summary>
 
 The precursor table masses can be of lower accuracy. Once there is a
 match within the coarse error, it can be further checked versus the
@@ -189,7 +199,7 @@ shinyscreen::mz_input(input_mz = "ms1_fine",
                       def_unit = "ppm")
 ```
 
-<details><summary>MS1 EIC window</summary> 
+<details><summary>MS1 EIC window</summary>
 
 The mz interval over which the intensities are aggregated to generate
 a chromatogram.
@@ -203,7 +213,7 @@ shinyscreen::mz_input(input_mz = "ms1_eic",
 ```
 
 
-<details><summary>Retention time window</summary> 
+<details><summary>Retention time window</summary>
 
 If the expected retention time has been specified for the compound,
 then search for the MS1 signature inside the window defined by this
@@ -219,7 +229,7 @@ shinyscreen::rt_input(input_rt = "ms1_rt_win",
 
 ## Prescreening
 
-<details><summary>MS1 intensity threshold</summary> 
+<details><summary>MS1 intensity threshold</summary>
 
 Ignore MS1 signal below the threshold.
 
@@ -231,7 +241,7 @@ numericInput(inputId = "ms1_int_thresh",
              value = def_state$conf$prescreen$ms1_int_thresh)
 ```
 
-<details><summary>MS2 intensity threshold</summary> 
+<details><summary>MS2 intensity threshold</summary>
 
 Ignore MS2 signal below the threshold.
 
@@ -254,7 +264,7 @@ numericInput(inputId = "s2n",
 ```
 
 
-<details><summary>MS1/MS2 retention delay.</summary> 
+<details><summary>MS1/MS2 retention delay.</summary>
 
 Look for associated MS2 spectrum within this window around the MS1
 peak.
@@ -267,7 +277,80 @@ shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
                       def_unit = "min")
 ```
 
-## Subsetting and filtering
+## Filter and order the summary table
+
+<details><summary>Filter summary table</summary>
+
+Selection criteria for filtering entries in the summary table
+according to the QA criteria.
+
+* **qa_pass** : entries that passed all checks
+
+* **qa_ms1_exists** : MS1 intensity is above the MS1 threshold
+
+* **qa_ms2_exists** : those entries for which some MS2 spectra have been found
+
+* **qa_ms1_above_noise** : MS1 is intense enough and above the noise level
+
+* **qa_ms2_good_int** : MS2 intensity is above the MS2 threshold
+
+* **qa_ms2_near** : MS2 spectrum is close enough to the MS1 peak
+
+</details>
+
+
+
+<div style= "display: flex;">
+
+<div>
+
+```{r, echo=F}
+checkboxGroupInput("summ_subset",
+                   label=NULL,
+                   choiceNames = shinyscreen:::QA_FLAGS,
+                   choiceValues = shinyscreen:::QA_FLAGS)
+
+
+```
+
+</div>
+
+<div>
+
+<details><summary>Ordering by columns</summary>
+
+It is possible to order the summary table using columns (keys): 
+*`r paste(gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM), collapse = ',')`*.
+The sequence of columns in the table below describes the
+sequence of ordering steps -- the key in the first row sorts the
+entire summary table and subsequent keys break the ties.
+
+</details>
+
+```{r, echo=F}
+rhandsontable::rHandsontableOutput("order_summ")
+```
+
+</div>
+
+</div>
+
+
+
+
+<!-- <details><summary>Order entries</summary> -->
+
+<!-- Sequence of column a -->
+
+<!-- </details> -->
+<!-- ```{r, echo=F} -->
+<!-- checkboxGroupInput("summ_subset", -->
+<!--                    label=NULL, -->
+<!--                    choiceNames = shinyscreen:::QA_FLAGS, -->
+<!--                    choiceValues = 1:length(shinyscreen:::QA_FLAGS)) -->
+
+<!-- ``` -->
+
 
 ## Plots
 
@@ -292,3 +375,18 @@ actionButton(inputId = "extract",
 
 
 # Browse Results
+
+<!-- Server comes here  -->
+
+```{r, include="false", context='setup'}
+ord_nms <- gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM)
+ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
+ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
+def_ord_summ <- shinyscreen:::dtable("Column names"=ord_nms,"Direction"=ord_asc)
+```
+```{r, include="false", context='server'}
+
+output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsontable(def_ord_summ,
+                                                                                     manualRowMove = T))
+
+```
