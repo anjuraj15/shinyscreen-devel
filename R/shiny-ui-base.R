@@ -125,7 +125,7 @@ rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIG
 
 }
 
-
+##'@export
 rev2list <- function(rv) {
     ## Take reactive values structure and convert them to nested
     ## lists.
@@ -133,6 +133,7 @@ rev2list <- function(rv) {
         rv else lapply(shiny::reactiveValuesToList(rv),rev2list)
 }
 
+##' @export
 list2rev <- function(lst) {
     ## Take nested named list and create reactive values from it.
     if (class(lst)[[1]] != "list")

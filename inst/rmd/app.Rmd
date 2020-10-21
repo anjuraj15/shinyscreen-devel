@@ -57,6 +57,7 @@ future::plan('multiprocess',workers=4)
 
 ```{r, context='setup', echo=F}
 def_state <- new_state()
+rv_state <- list2rev(def_state)
 ```
 
 # Configuration {.tabset}
@@ -368,7 +369,13 @@ shinyscreen::rt_input(input_rt = "plot_rt_max",
 
 ## Report
 
+```{r, echo=F}
+shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state$conf$report$author)
+shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title)
+```
+
 # Extract Data and Prescreen
+
 <details><summary>Extract spectra from data files.</summary>
 
 After Shinyscreen is configured, the compound and setid lists loaded, it
@@ -397,6 +404,14 @@ ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascendi
 def_ord_summ <- shinyscreen:::dtable("Column names"=ord_nms,"Direction"=ord_asc)
 ```
 ```{r, include="false", context='server'}
+
+observeEvent(input$extract,{
+    tmp <- rev2list(rv_state)
+    fn_c_state <- file.path(tmp$conf$project,
+                            shinyscreen:::FN_CONF)
+    yaml::write_yaml(x=tmp$conf,file=fn_c_state)
+    message("(extract) Config written to ", fn_c_state)
+})
 
 output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsontable(def_ord_summ,
                                                                                      manualRowMove = T))
