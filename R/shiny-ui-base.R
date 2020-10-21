@@ -89,12 +89,12 @@ txt_file_input <- function(inputId,input,fileB,label,volumes,default = "") {
 }
 
 ##' @export
-mz_input <- function(input_mz,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_mz=0,def_unit="Da") {
+mz_input <- function(input_mz,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_mz=0,def_unit="Da",pref="+/-") {
     style <- "display: inline-block; vertical-align:top; width: "
     stylel <- "display: inline-block; vertical-align:top;"
     style=paste0(style,width,"; ")
     shiny::div(shiny::div(style=stylel,
-                          shiny::tags$label("+/-",`for`=input_mz)),
+                          shiny::tags$label(pref,`for`=input_mz)),
                shiny::div(style=style,
                           shiny::numericInput(input_mz,
                                               label=NULL,
@@ -107,12 +107,12 @@ mz_input <- function(input_mz,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIG
 }
 
 ##' @export
-rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_rt=0,def_unit="min") {
+rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_rt=0,def_unit="min",pref="+/-") {
     style="display: inline-block; vertical-align:top; width: "
     style=paste0(style,width,"; ")
     stylel <- "display: inline-block; vertical-align:top;"
     shiny::div(shiny::div(style=stylel,
-                          shiny::tags$label("+/-",`for`=input_rt)),
+                          shiny::tags$label(pref,`for`=input_rt)),
                shiny::div(style=style,
                           shiny::numericInput(input_rt,
                                               label=NULL,
