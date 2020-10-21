@@ -278,9 +278,9 @@ shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
 ```
 
 ## Filter and order the summary table
-
+<div style= "display: flex; vertical-align:top; ">
+<div>
 <details><summary>Filter summary table</summary>
-
 Selection criteria for filtering entries in the summary table
 according to the QA criteria.
 
@@ -295,15 +295,7 @@ according to the QA criteria.
 * **qa_ms2_good_int** : MS2 intensity is above the MS2 threshold
 
 * **qa_ms2_near** : MS2 spectrum is close enough to the MS1 peak
-
 </details>
-
-
-
-<div style= "display: flex;">
-
-<div>
-
 ```{r, echo=F}
 checkboxGroupInput("summ_subset",
                    label=NULL,
@@ -312,13 +304,9 @@ checkboxGroupInput("summ_subset",
 
 
 ```
-
 </div>
-
 <div>
-
 <details><summary>Ordering by columns</summary>
-
 It is possible to order the summary table using columns (keys): 
 *`r paste(gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM), collapse = ',')`*.
 The sequence of columns in the table below describes the
@@ -353,6 +341,30 @@ rhandsontable::rHandsontableOutput("order_summ")
 
 
 ## Plots
+
+### Logarithmic axis
+
+```{r, echo=F}
+checkboxGroupInput("plot_log",
+                   label=NULL,
+                   choiceNames = c("MS1 EIC","MS2 EIC","MS2 Spectrum"),
+                   choiceValues = c(F,F,F))
+```
+
+### Global retention time range
+```{r, echo=F}
+shinyscreen::rt_input(input_rt = "plot_rt_min",
+                      input_unit = "plot_rt_min_unit",
+                      def_rt = NA_real_,
+                      def_unit = "min",
+                      pref = "min:")
+
+shinyscreen::rt_input(input_rt = "plot_rt_max",
+                      input_unit = "plot_rt_max_unit",
+                      def_rt = NA_real_,
+                      def_unit = "min",
+                      pref = "max:")
+```
 
 ## Report
 
