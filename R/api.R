@@ -48,6 +48,7 @@ setup_phase <- function(m) {
     m <- concurrency(m)
     m
 }
+
 ##' @export
 run_in_dir <- function(m) {
     m <- setup_phase(m)
@@ -61,6 +62,8 @@ run_in_dir <- function(m) {
     invisible(m)
     
 }
+
+
 
 
 

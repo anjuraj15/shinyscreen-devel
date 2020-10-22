@@ -5,10 +5,24 @@ author: Environmental Cheminformatics Group, LCSB, University of Luxembourg
 title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 ---
 
-```{r, context='setup', echo=F}
+```{r, context='setup', include='false'}
 def_state <- new_state()
+
+def_datafiles <- shinyscreen:::dtable("File"=character(0),
+                                      "tag"=character(0))
+
+def_tags <- shinyscreen:::dtable("tag"=factor(),
+                                 "adduct"=factor(levels=shinyscreen:::DISP_ADDUCTS),
+                                 "set"=factor())
+
+def_state$input$datafiles <- def_datafiles
+def_state$input$tab$tags <- def_tags
 rv_state <- list2rev(def_state)
+compl_sets <- eventReactive(rv_state$input$tab$setid,
+                            rv_state$input$tab$setid[,unique(set)])
+
 ```
+
 
 # Configuration {.tabset}
 
@@ -80,6 +94,8 @@ actionButton(inputId = "comp_list_b",
 
 ```
 
+`r htmlOutput("comp_lists")`
+
 <details><summary>Load compound set list (_setid_ table)</summary>
 The compound lists can contain more entries than is necessary. Using
 the _setid_ lists, it is possible to create _compound sets_ which
@@ -97,12 +113,15 @@ actionButton(inputId = "setid_b",
 
 ```
 
+`r htmlOutput("setids", inline=T)`
+
+## Data files
 <details><summary>Load data files</summary>
-Shinyscreen currently supports only the ***mzML*** file format. After
+Shinyscreen currently supports only the **mzML** file format. After
 loading the files, set file tags in the file table (column
-***tag***). Additionally, specify a set of compounds that is supposed
-to be extracted from the file using the ***set*** column. Finally,
-specify the ***adduct*** in the adduct column. In case of compounds
+**tag**). Additionally, specify a set of compounds that is supposed
+to be extracted from the file using the **set** column. Finally,
+specify the **adduct** in the adduct column. In case of compounds
 with unknown structure and formula, the adduct is ignored for obvious
 reasons.
 </details>
@@ -112,15 +131,29 @@ actionButton(inputId = "datafiles_b",
 
 ```
 
-```{r, context='server', echo=FALSE}
-## b_project <- eventReactive(input$project, {
-##     #
-##     ""
-## })
-#rv_conf$project
-#print(rv_conf)
-## rv_conf$project <- b_project()
-session$onSessionEnded(function () stopApp())
+
+
+
+<details><summary>Assign tags to data files.</summary>
+Each tag designates an unique file. Use the table below to assign
+tags.
+</details>
+
+```{r, echo=FALSE}
+rhandsontable::rHandsontableOutput("datafiles")
+
+```
+
+
+
+
+<details><summary>Assign sets to tags.</summary>
+For each tag, assign a set and an adduct (if the structure information
+exists, otherwise _adduct_ column is ignored).
+</details>
+
+```{r, echo=F}
+rhandsontable::rHandsontableOutput("datatab")
 ```
 
 ## Extraction
@@ -165,7 +198,6 @@ shinyscreen::mz_input(input_mz = "ms1_eic",
                       def_mz = def_state$conf$tolerance[["eic"]],
                       def_unit = "Da")
 ```
-
 
 <details><summary>Retention time window</summary>
 
@@ -348,13 +380,27 @@ actionButton(inputId = "extract",
 
 # Browse Results
 
-<!-- Server comes here  -->
+<!-- Setup is here  -->
 
 ```{r, include="false", context='setup'}
+
 ord_nms <- gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM)
 ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
 ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
 def_ord_summ <- shinyscreen:::dtable("Column names"=ord_nms,"Direction"=ord_asc)
+
+
+
+## reactive functions
+
+rv_setup_phase <- reactive({
+    rv_state$conf$
+    state < rev2
+    
+})
+
+
+
 ```
 ```{r, include="false", context='server'}
 
@@ -365,6 +411,24 @@ observeEvent(input$project_b,{
     rv_state$conf$project <- wd
 })
 
+observeEvent(input$comp_list_b, {
+    filters <- matrix(c("CSV files", ".csv",
+                        "All files", "*"),
+                       2, 2, byrow = TRUE)
+    compfiles <- tcltk::tk_choose.files(filters=filters)
+    message("(config) Selected compound lists: ", paste(compfiles,collapse = ","))
+    rv_state$conf$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
+})
+
+observeEvent(input$setid_b, {
+    filters <- matrix(c("CSV files", ".csv",
+                        "All files", "*"),
+                       2, 2, byrow = TRUE)
+    setids <- tcltk::tk_choose.files(filters=filters)
+    message("(config) Selected compound sets (setid): ", paste(setids,collapse = ","))
+    rv_state$conf$compounds$sets <- if (length(setids)>0 && nchar(setids[[1]])>0) setids else "Nothing selected."
+})
+
 observeEvent(input$extract,{
     tmp <- rev2list(rv_state)
     fn_c_state <- file.path(tmp$conf$project,
@@ -373,7 +437,35 @@ observeEvent(input$extract,{
     message("(extract) Config written to ", fn_c_state)
 })
 
+observeEvent(input$datafiles_b, {
+    filters <- matrix(c("mzML files", ".mzML",
+                        "All files", "*"),
+                       2, 2, byrow = TRUE)
+    mzMLs <- tcltk::tk_choose.files(filters=filters)
+    message("(config) Selected data files: ", paste(mzMLs,collapse = ","))
+    newf <- setdiff(mzMLs,rv_state$input$datafiles$File)
+    nr <- NROW(rv_state$input$datafiles)
+    tmp <- if (length(newf)>0) shinyscreen:::dtable(File=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(File=character(),tag=character())
+    rv_state$input$datafiles <- rbind(rv_state$input$datafiles,
+                                      tmp)
+})
 
+observeEvent(rv_state$input$datafiles,
+{
+    oldt <- rv_state$input$tab$tags$tag
+    otagch <- as.character(oldt)
+    tagl <- rv_state$input$datafiles$tag
+    
+    diff <- setdiff(tagl,
+                    otagch)
+    
+    tmp <- shinyscreen:::dtable(tag=factor(diff,levels=tagl),
+                                adduct=factor(levels = shinyscreen:::DISP_ADDUCTS),
+                                set=factor())
+    
+    rv_state$input$tab$tags <- rbind(rv_state$input$tab$tags,
+                                     tmp)
+})
 
 ```
 
@@ -381,6 +473,43 @@ observeEvent(input$extract,{
 ```{r, include="false", context="server"}
 output$project <- renderText(rv_state$conf$project)
 
+output$comp_lists <- renderText({
+    lsts <- rev2list(rv_state$conf$compounds$lists)
+    if (length(lsts) > 0 &&
+        isTruthy(lsts) &&
+        lsts != "Nothing selected.") {
+        paste(c("<ul>",
+                sapply(lsts,
+                       function (x) paste("<li>",x,"</li>")),
+                "</ul>"))
+    } else "No compound list selected yet."
+})
+
+output$setids <- renderText({
+    sets <- rv_state$conf$compounds$sets
+    if (isTruthy(sets) && sets != "Nothing selected.")
+        paste("selected <em>setid</em> table:",
+              sets) else "No <em>setid</em> table selected."
+})
+
 output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsontable(def_ord_summ,
                                                                                      manualRowMove = T))
+
+output$datafiles <- rhandsontable::renderRHandsontable(
+{
+    validate(need(NROW(rv_state$input$tab$setid)>0, message = "Please load the setid table first."))
+    rhandsontable::rhandsontable(rv_state$input$datafiles,
+                                 width = "50%",height = "25%")
+})
+
+output$datatab <- rhandsontable::renderRHandsontable(
+{
+    validate(need(NROW(rv_state$input$datafiles)>0, message = "Please load some data files first."))
+    rhandsontable::rhandsontable(rv_state$input$tab$tags,
+                                 stretchH="all")
+})
+```
+
+```{r, echo=F, context = 'server'}
+session$onSessionEnded(function () stopApp())
 ```

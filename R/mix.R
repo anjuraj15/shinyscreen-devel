@@ -734,6 +734,7 @@ get_fn_extr <- function(m) {
 
 init_state <- function(m) {
     m$out$tab <- list()
+    m$input$datafiles <- NULL
     m$input$tab$mzml <- EMPTY_MZML
     lab <- gen_uniq_lab(list(),pref="L")
     m$input$tab$lists <- list()
@@ -746,9 +747,7 @@ base_conf <- function () {
     m$conf <- list(project=getwd(),
                    compounds=list(lists=list(),
                                   sets="",
-                                  data="",
-                                  fn_comp="",
-                                  fn_summ=""),
+                                  data=""),
                    extr=list(fn=""),
                    debug = F)
     m
