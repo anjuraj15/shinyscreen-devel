@@ -147,7 +147,7 @@ mk_comp_tab <- function(m) {
     setnames(comp,names(COMP_NAME_MAP),
              function(o) COMP_NAME_MAP[[o]])
     setcolorder(comp,COMP_NAME_FIRST)
-    fn_out <- m$conf$fn_comp
+    fn_out <- get_fn_comp(m)
     tab2file(tab=comp,file=fn_out)
     message("Generation of comp table finished.")
     setkeyv(comp,c("set","tag","mz"))
@@ -340,8 +340,9 @@ extr_data <- function(m) {
     ##     ztmp[[nn]]$Files <- fn
     ## }
     m$extr$ms <- data.table::rbindlist(ztmp)
-    message('Saving extracted data to ', m$extr$fn)
-    saveRDS(object = m$extr, file = m$extr$fn)
+    fn_ex <- get_fn_extr(m)
+    message('Saving extracted data to ', fn_ex)
+    saveRDS(object = m$extr, file = fn_ex)
     message('Done saving extracted data.')
     
     m$extr$tmp <- NULL
@@ -776,4 +777,13 @@ report <- function(m) {
     m$out$report <- doc
     m$out$report$export('report.pdf')
     m
+}
+
+
+#' @export
+app <- function() {
+    unlink(list.files(pattern = "app_run.*html$"))
+    unlink(list.files(pattern = "app_run.*Rmd$"))
+    file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),"app_run.Rmd")
+    rmarkdown::run(file = "app_run.Rmd")
 }

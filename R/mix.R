@@ -715,12 +715,24 @@ read_conf <- function(fn) {
 }
 
 
+
+##' @export
+get_fn_comp <- function(m) {
+    file.path(m$conf$project,FN_COMP_TAB)
+}
+
+##' @export
+get_fn_summ <- function(m) {
+    file.path(m$conf$project, FN_SUMM)
+}
+
+##' @export
+get_fn_extr <- function(m) {
+    file.path(m$conf$project, "extracted.rds")
+}
+
+
 init_state <- function(m) {
-    if (is.null(m$conf$debug)) m$conf$debug <- F
-    m$conf$fn_comp <- file.path(m$conf$project, FN_COMP_TAB)
-    m$conf$fn_summ <- file.path(m$conf$project, FN_SUMM)
-    
-    m$extr$fn <- file.path(m$conf$project, "extracted.rds")
     m$out$tab <- list()
     m$input$tab$mzml <- EMPTY_MZML
     lab <- gen_uniq_lab(list(),pref="L")
@@ -737,7 +749,8 @@ base_conf <- function () {
                                   data="",
                                   fn_comp="",
                                   fn_summ=""),
-                   extr=list(fn=""))
+                   extr=list(fn=""),
+                   debug = F)
     m
 }
 
