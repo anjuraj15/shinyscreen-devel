@@ -5,56 +5,6 @@ author: Environmental Cheminformatics Group, LCSB, University of Luxembourg
 title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 ---
 
-```{r, include = "false"}
-options(browser='icecat')
-rend <- function() {
-    unlink(list.files(pattern = ".*html$"))
-    unlink(list.files(pattern = ".*Rmd"))
-    SHINYSCREEN_PATH <- "~/cabinet/shinyscreen"
-    FN_WORKDIR_STATE <- "conf-state.yaml"
-    load_package <- function(name,src=NULL,reload_pkgs=NULL) {
-
-        for (name in c(reload_pkgs,name)) {
-            pname <- paste0("package:",name)
-            if (pname %in% search()) eval(substitute(detach(pname,unload=T),list(pname=pname)))
-        }
-        if (!is.null(src)) devtools::install(src, upgrade = "never")
-
-        for (name in rev(c(reload_pkgs,name))) {
-            eval(substitute(library(name,list(name=name))))
-        }
-        invisible(NULL)
-    }
-
-    proj <- getwd()
-    setwd(proj)
-
-
-    dir.create("pkgs",showWarnings = F)
-    .libPaths(c("pkgs",.libPaths()))
-    Sys.setenv("R_LIBS_USER"="pkgs")
-    file.copy("~/cabinet/shinyscreen/inst/rmd/app.Rmd","./app_copy.Rmd")
-    load_package("shinyscreen",src="~/cabinet/shinyscreen")
-    rmarkdown::run(file = "app_copy.Rmd")
-
-    
-    
-}
-```
-
-```{r, include = "false"}
-SHINYSCREEN_PATH <- "~/cabinet/shinyscreen"
-FN_WORKDIR_STATE <- "conf-state.yaml"
-
-```
-
-```{r, include="false"}
-options(future.globals.onReference = "warn")
-future::plan('multiprocess',workers=4)
-## m <- run(fn_conf = FN_WORKDIR_STATE)
-
-```
-
 ```{r, context='setup', echo=F}
 def_state <- new_state()
 rv_state <- list2rev(def_state)
@@ -75,6 +25,9 @@ actionButton(inputId = "project_b",
              label= "Project")
 
 ```
+
+Current project directory is `r textOutput("project", inline=T)`
+
 
 
 Load the config file if needed.
@@ -161,7 +114,7 @@ actionButton(inputId = "datafiles_b",
 
 ```{r, context='server', echo=FALSE}
 ## b_project <- eventReactive(input$project, {
-##     #dir <- tk_choose.dir(,caption = "Select project directory")
+##     #
 ##     ""
 ## })
 #rv_conf$project
@@ -405,6 +358,13 @@ def_ord_summ <- shinyscreen:::dtable("Column names"=ord_nms,"Direction"=ord_asc)
 ```
 ```{r, include="false", context='server'}
 
+observeEvent(input$project_b,{
+    wd <- tcltk::tk_choose.dir(default = getwd(),
+                               caption = "Choose project directory")
+    message("Set project dir to ", wd)
+    rv_state$conf$project <- wd
+})
+
 observeEvent(input$extract,{
     tmp <- rev2list(rv_state)
     fn_c_state <- file.path(tmp$conf$project,
@@ -413,7 +373,14 @@ observeEvent(input$extract,{
     message("(extract) Config written to ", fn_c_state)
 })
 
+
+
+```
+
+<!-- Render -->
+```{r, include="false", context="server"}
+output$project <- renderText(rv_state$conf$project)
+
 output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsontable(def_ord_summ,
                                                                                      manualRowMove = T))
-
 ```
