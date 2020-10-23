@@ -48,7 +48,7 @@ ADDUCTS$Name <- the_ifelse(ADDUCTS$Charge>0,paste0("[",ADDUCTS$Name,"]+"),paste0
 ##     paste0("[",nm,"]",suff)
 ## })
 ## ADDUCTS$Name <- names(ADDUCTMAP)
-DISP_ADDUCTS <- c("UNSET",ADDUCTS$Name)
+DISP_ADDUCTS <- ADDUCTS$Name
 TAG_NA <- "::UNSET::"
 SET_NA <- "::UNSET::"
 TAG_DEF <- TAG_NA

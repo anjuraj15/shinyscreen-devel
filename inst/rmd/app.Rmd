@@ -7,19 +7,17 @@ title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 
 ```{r, context='setup', include='false'}
 def_state <- new_state()
-
-def_datafiles <- shinyscreen:::dtable("File"=character(0),
-                                      "tag"=character(0))
-
-def_tags <- shinyscreen:::dtable("tag"=factor(),
-                                 "adduct"=factor(levels=shinyscreen:::DISP_ADDUCTS),
-                                 "set"=factor())
-
-def_state$input$datafiles <- def_datafiles
-def_state$input$tab$tags <- def_tags
+def_datafiles <- shinyscreen:::dtable(File=character(0),
+                                      tag=character(0))
+def_datatab <- shinyscreen:::dtable("tag"=factor(),
+                                    "adduct"=factor(levels=shinyscreen:::DISP_ADDUCTS),
+                                    "set"=factor())
+## def_state$input$tab$tags <- def_datatab
 rv_state <- list2rev(def_state)
 compl_sets <- eventReactive(rv_state$input$tab$setid,
                             rv_state$input$tab$setid[,unique(set)])
+## Reactive values to support some of the UI elements.
+## rv_ui <- reactiveValues(datatab=def_tags)
 
 ```
 
@@ -359,6 +357,19 @@ shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state
 shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title)
 ```
 
+# View compound Lists and Sets {.tabset}
+
+## Compound List
+
+```{r, echo=F}
+DT::dataTableOutput("comp_table")
+```
+
+## Setid Table
+```{r, echo=F}
+DT::dataTableOutput("setid_table")
+```
+
 # Extract Data and Prescreen
 
 <details><summary>Extract spectra from data files.</summary>
@@ -389,19 +400,81 @@ ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
 ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
 def_ord_summ <- shinyscreen:::dtable("Column names"=ord_nms,"Direction"=ord_asc)
 
+```
 
-
+```{r, include="false", context='server'}
 ## reactive functions
 
-rv_setup_phase <- reactive({
-    rv_state$conf$
-    state < rev2
-    
+rf_compound_input_state <- reactive({
+    sets <- rv_state$conf$compounds$sets
+    lst <- as.list(rv_state$conf$compounds$lists)
+    validate(need(length(lst)>0,
+                  message = "Load the compound lists(s) first."))
+    validate(need(nchar(sets)>0,
+                  message = "Load the setid table first."))
+    isolate({
+        state <- rev2list(rv_state)
+        m <- load_compound_input(state)
+        ## Side effect! This is because my pipeline logic does not
+        ## work nicely with reactive stuff.
+        rv_state$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
+        rv_state$input$tab$setid <- m$input$tab$setid
+        m
+        })
 })
 
+rf_get_dfiles <- reactive({
+    input$datafiles_b
+    if (input$datafiles_b > 0) {
+        filters <- matrix(c("mzML files", ".mzML",
+                            "All files", "*"),
+                          2, 2, byrow = TRUE)
+        mzMLs <- tcltk::tk_choose.files(filters=filters)
+        message("(config) Selected data files: ", paste(mzMLs,collapse = ","))
+        mzMLs
+    } else character(0)
+})
 
+rf_dfiles_tab <- reactive({
+    mzMLs <- rf_get_dfiles()
+    isolate({oldtab <- data.table::as.data.table(rhandsontable::hot_to_r(input$datafiles))})
+    newf <- setdiff(mzMLs,oldtab$File)
+    nr <- NROW(oldtab)
+    tmp <- if (length(newf)>0) shinyscreen:::dtable(File=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(File=character(),tag=character())
+    rbind(oldtab,
+          tmp)
+})
+rf_tag_tab <- reactive({
+    state <- rf_compound_input_state()
+    isolate({oldtab <- rhandsontable::hot_to_r(input$datatab)})
+    oldt <- oldtab$tag
+    sets <- compl_sets()
+    sets <- if (length(sets)==1) sets <- c(sets,"invalid") #Just
+                                                           #because
+                                                           #when one
+                                                           #level,
+                                                           #rhandsontable
+                                                           #has issues
+                                                           #displaying
+                                                           #it.
 
+    otagch <- as.character(oldt)
+    df_tab <- rhandsontable::hot_to_r(input$datafiles)
+    tagl <- df_tab$tag
+    diff <- setdiff(tagl,
+                    otagch)
+    if (length(diff)!=0) {
+        tmp <- shinyscreen:::dtable(tag=factor(diff,levels=tagl),
+                                    adduct=factor(levels = shinyscreen:::DISP_ADDUCTS),
+                                    set=factor(levels = sets))
+
+        dt <-data.table::as.data.table(rbind(as.data.frame(oldtab),
+                                             as.data.frame(tmp)))
+        dt[tag %in% df_tab$tag,]
+    } else oldtab
+})
 ```
+
 ```{r, include="false", context='server'}
 
 observeEvent(input$project_b,{
@@ -437,35 +510,7 @@ observeEvent(input$extract,{
     message("(extract) Config written to ", fn_c_state)
 })
 
-observeEvent(input$datafiles_b, {
-    filters <- matrix(c("mzML files", ".mzML",
-                        "All files", "*"),
-                       2, 2, byrow = TRUE)
-    mzMLs <- tcltk::tk_choose.files(filters=filters)
-    message("(config) Selected data files: ", paste(mzMLs,collapse = ","))
-    newf <- setdiff(mzMLs,rv_state$input$datafiles$File)
-    nr <- NROW(rv_state$input$datafiles)
-    tmp <- if (length(newf)>0) shinyscreen:::dtable(File=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(File=character(),tag=character())
-    rv_state$input$datafiles <- rbind(rv_state$input$datafiles,
-                                      tmp)
-})
 
-observeEvent(rv_state$input$datafiles,
-{
-    oldt <- rv_state$input$tab$tags$tag
-    otagch <- as.character(oldt)
-    tagl <- rv_state$input$datafiles$tag
-    
-    diff <- setdiff(tagl,
-                    otagch)
-    
-    tmp <- shinyscreen:::dtable(tag=factor(diff,levels=tagl),
-                                adduct=factor(levels = shinyscreen:::DISP_ADDUCTS),
-                                set=factor())
-    
-    rv_state$input$tab$tags <- rbind(rv_state$input$tab$tags,
-                                     tmp)
-})
 
 ```
 
@@ -497,16 +542,51 @@ output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsont
 
 output$datafiles <- rhandsontable::renderRHandsontable(
 {
-    validate(need(NROW(rv_state$input$tab$setid)>0, message = "Please load the setid table first."))
-    rhandsontable::rhandsontable(rv_state$input$datafiles,
-                                 width = "50%",height = "25%")
+    res <- if (length(rf_get_dfiles())>0) {
+               rf_dfiles_tab()
+
+           } else def_datafiles
+    rhandsontable::rhandsontable(as.data.frame(res),
+                                 width = "50%",
+                                 height = "25%",
+                                 allowInvalid=F)
 })
 
 output$datatab <- rhandsontable::renderRHandsontable(
 {
-    validate(need(NROW(rv_state$input$datafiles)>0, message = "Please load some data files first."))
-    rhandsontable::rhandsontable(rv_state$input$tab$tags,
-                                 stretchH="all")
+    df <- rhandsontable::hot_to_r(input$datafiles)
+    res <- if (NROW(rv_state$input$tab$setid) > 0 &&
+               NROW(df) > 0) rf_tag_tab() else def_datatab
+
+    rhandsontable::rhandsontable(res,stretchH="all",
+                                 allowInvalid=F)
+})
+
+output$comp_table <- DT::renderDataTable({
+    state <- rf_compound_input_state()
+
+
+    DT::datatable(state$input$tab$cmpds,
+                  style = 'bootstrap',
+                  class = 'table-condensed',
+                  extensions = 'Scroller',
+                  options = list(scrollX = T,
+                                 scrollY = 200,
+                                 deferRender = T,
+                                 scroller = T))
+})
+
+output$setid_table <- DT::renderDataTable({
+    state <- rf_compound_input_state()
+
+    DT::datatable(state$input$tab$setid,
+                  style = 'bootstrap',
+                  class = 'table-condensed',
+                  extensions = 'Scroller',
+                  options = list(scrollX = T,
+                                 scrollY = 200,
+                                 deferRender = T,
+                                 scroller = T))
 })
 ```
 

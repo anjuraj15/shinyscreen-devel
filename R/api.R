@@ -75,7 +75,7 @@ load_compound_input <- function(m) {
     fns <- m$conf$compounds$lists
     for (l in 1:length(fns)) {
         fn <- fns[[l]]
-        fnfields <- colnames(fn)
+        # fnfields <- somehow read the file columns in
         dt <- file2tab(fn, colClasses=c(ID="character",
                                         SMILES="character",
                                         Formula="character",
@@ -83,8 +83,8 @@ load_compound_input <- function(m) {
                                         RT="numeric",
                                         mz="numeric"))
         verify_cmpd_l(dt=dt,fn=fn)
-        nonexist <- setdiff(fnfields,fields)
-        coll[[l]] <- if (length(nonexist)==0) dt else dt[,(nonexist) := NULL]
+        # nonexist <- setdiff(fnfields,fields)
+        coll[[l]] <- dt #if (length(nonexist)==0) dt else dt[,(nonexist) := NULL]
         coll[[l]]$ORIG <- fn
         
     }
@@ -101,6 +101,9 @@ load_compound_input <- function(m) {
         fndupID <- paste(dupIDs[inds], collapse = ',')
         msg <- paste(paste('Duplicate IDs', fndupID,'found in',fn),msg,sep = '\n')
     }
+
+    ## TODO: Should we just kick out the duplicates, instead of
+    ## erroring?
 
     assert(all(!dups), msg = msg)
     
