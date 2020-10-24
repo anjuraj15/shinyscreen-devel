@@ -701,7 +701,7 @@ write_state <- function(m,fn_conf) {
 read_conf <- function(fn) {
     cf <- yaml::yaml.load_file(fn)
     fnl <- cf$compound$lists
-    if (!is.null(fnl)) {
+    if (length(fnl)>0) {
         nms <- character(0)
         for (i in 1:length(fnl)) {
             nms <- gen_uniq_lab(nms,pref = 'L')
