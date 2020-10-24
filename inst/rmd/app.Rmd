@@ -464,7 +464,16 @@ rf_tag_tab <- reactive({
     diff <- setdiff(tagl,
                     otagch)
     if (length(diff)!=0) {
-        tmp <- shinyscreen:::dtable(tag=factor(diff,levels=tagl),
+        ## Only change the tag names in the old ones.
+        pos_tag <- 1:length(tagl)
+        pos_old <- 1:NROW(oldtab)
+        pos_mod <- intersect(pos_tag,pos_old)
+        new_tag <- tagl[pos_mod]
+        if (NROW(oldtab)>0) oldtab[pos_mod,tag := ..new_tag]
+
+        ## Now add tags for completely new files, if any.
+        rest_new <- if (NROW(oldtab) > 0) setdiff(diff,new_tag) else diff
+        tmp <- shinyscreen:::dtable(tag=factor(rest_new,levels=tagl),
                                     adduct=factor(levels = shinyscreen:::DISP_ADDUCTS),
                                     set=factor(levels = sets))
 
