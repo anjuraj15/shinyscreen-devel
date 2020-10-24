@@ -340,8 +340,8 @@ rhandsontable::rHandsontableOutput("order_summ")
 ```{r, echo=F}
 checkboxGroupInput("plot_log",
                    label=NULL,
-                   choiceNames = c("MS1 EIC","MS2 EIC","MS2 Spectrum"),
-                   choiceValues = c(F,F,F))
+                   choices = c("MS1 EIC","MS2 EIC","MS2 Spectrum"),
+                   selected = character(0))
 ```
 
 ### Global retention time range
@@ -533,21 +533,16 @@ rf_conf_proj <- reactive({
 
 rf_conf_state <- reactive({
     state <- rf_conf_proj()
-    message("L 1")
     mzml1 <- tryCatch(rhandsontable::hot_to_r(input$datatab),
                       error = function(e) def_datatab)
-    message("L 2")
     mzml2 <- tryCatch(rhandsontable::hot_to_r(input$datafiles),
                       error = function(e) def_datafiles)
-    message("L 3")
     mzml <- mzml1[mzml2,on="tag"]
     setnames(mzml,"File","Files")
     ftab <- get_fn_ftab(state)
     state$conf$data <- ftab
     state$input$tab$mzml <- mzml
-    message("L 4")
     state$conf[["summary table"]]$filter <- rf_get_subset()
-    message("L 5")
     state$conf[["summary table"]]$order <- rf_get_order()
     state
 })
@@ -611,24 +606,37 @@ observeEvent(input$conf_file_save_b,
 observeEvent(input$conf_file_load_b,
 {
     upd_unit <- function(entry,inp_val,inp_unit,choices) {
-        cntnt <- strsplit(entry,split = "[[:space:]]+")[[1]]
-        cntnt <- cntnt[nchar(cntnt) > 0]
-        if (length(cntnt)!=2) stop("(upd_unit) ","Unable to interpret ", entry)
-        val <- cntnt[[1]]
-        unit <- cntnt[[2]]
-        updateNumericInput(session = session,
-                           inputId = inp_val,
-                           value = as.numeric(val))
-        updateSelectInput(session = session,
-                          inputId = inp_unit,
-                          selected = unit,
-                          choices = choices)
+        if (isTruthy(entry)) {
+            cntnt <- strsplit(entry,split = "[[:space:]]+")[[1]]
+            cntnt <- cntnt[nchar(cntnt) > 0]
+            if (length(cntnt)!=2) stop("(upd_unit) ","Unable to interpret ", entry)
+            val <- cntnt[[1]]
+            unit <- cntnt[[2]]
+            updateNumericInput(session = session,
+                               inputId = inp_val,
+                               value = as.numeric(val))
+            updateSelectInput(session = session,
+                              inputId = inp_unit,
+                              selected = unit,
+                              choices = choices)
+        }
     }
 
     upd_num <- function(entry,inp_val) {
-        updateNumericInput(session = session,
-                           inputId = inp_val,
-                           value = as.numeric(entry))
+        if (isTruthy(entry)) {
+            updateNumericInput(session = session,
+                               inputId = inp_val,
+                               value = as.numeric(entry))
+        }
+    }
+
+    upd_sel <- function(inputId,selected,choices) {
+        if (isTruthy(selected)) {
+            updateSelectInput(session = session,
+                              inputId = inputId,
+                              selected = selected,
+                              choices = choices)
+        }
     }
 
     filters <- matrix(c("YAML files", ".yaml",
@@ -673,6 +681,36 @@ observeEvent(input$conf_file_load_b,
                      "ret_time_shift_tol",
                      "ret_time_shift_tol_unit",
                      choices=c("min","s"))
+
+            ## Figures
+            upd_unit(conf$figures$rt_min,
+                     "plot_rt_min",
+                     "plot_rt_min_unit",
+                     choices=c("min","s"))
+            
+            upd_unit(conf$figures$rt_max,
+                     "plot_rt_max",
+                     "plot_rt_max_unit",
+                     choices=c("min","s"))
+
+            logentry <- conf$figures$logaxes
+            logchoice <- logical(0)
+            logchoice <- mapply(function(cn,uin) if (cn %in% logentry) uin else NA,
+                                c("ms1_eic_int","ms2_eic_int","ms2_spec_int"),
+                                c("MS1 EIC","MS2 EIC","MS2 Spectrum"),USE.NAMES = F)
+            logchoice <- logchoice[!is.na(logchoice)]
+            
+            updateCheckboxGroupInput(session = session,
+                                     inputId = "plot_log",
+                                     choices = c("MS1 EIC",
+                                                 "MS2 EIC",
+                                                 "MS2 Spectrum"),
+                                     selected = logchoice)
+            ## Report
+            if (isTruthy(conf$report$author)) updateTextInput(session,"rep_aut",value = conf$report$author)
+            if (isTruthy(conf$report$title)) updateTextInput(session,"rep_tit",value = conf$report$title)
+
+            
         })
         
     }
@@ -724,6 +762,31 @@ observe({
 
 })
 ```
+<!-- Plotting -->
+```{r, include='false', context = 'server'}
+observe({
+    vals <- input$plot_log
+    checked <- c("MS1 EIC"=F,
+                 "MS2 EIC"=F,
+                 "MS2 Spectrum"=F)
+    if (length(vals)!=0) checked[vals] <- T
+    l <- list()
+    l <- c(if (checked[["MS1 EIC"]]) "ms1_eic_int" else NULL,l)
+    l <- c(if (checked[["MS2 EIC"]]) "ms2_eic_int" else NULL,l)
+    l <- c(if (checked[["MS2 Spectrum"]]) "ms2_spec_int" else NULL,l)
+    rv_state$conf$figures[["logaxes"]] <- l[!sapply(l,is.null)]
+	
+	rv_state$conf$figures$rt_min <- uni_ass("plot_rt_min","plot_rt_min_unit")
+	rv_state$conf$figures$rt_max <- uni_ass("plot_rt_max","plot_rt_max_unit")
+})
+```
+<!-- Report -->
+```{r, include='false', context = 'server'}
+observe({
+	rv_state$conf$report$author <- input$rep_aut
+	rv_state$conf$report$title <- input$rep_tit
+})
+```
 
 <!-- Render -->
 ```{r, include="false", context="server"}
@@ -768,8 +831,6 @@ output$datatab <- rhandsontable::renderRHandsontable(
     df <- rhandsontable::hot_to_r(input$datafiles)
     setid <- rv_state$input$tab$setid
     
-    message("NROW setid:",NROW(setid))
-    message("NROW df:",NROW(df))
     res <- if (NROW(setid) > 0 &&
                NROW(df) > 0) rf_tag_tab() else def_datatab
 
