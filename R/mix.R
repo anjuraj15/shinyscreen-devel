@@ -687,7 +687,7 @@ read_setid <- function(fn,cmpds) {
 
 
 write_conf <- function(m,fn) {
-    m$conf$data <- file.path(m$conf$project,FN_DATA_TAB)
+    m$conf$data <- get_fn_ftab(m)
     yaml::write_yaml(x=m$conf,file=fn)
     
     
@@ -731,6 +731,16 @@ get_fn_extr <- function(m) {
     file.path(m$conf$project, "extracted.rds")
 }
 
+##' @export
+get_fn_conf <- function(m) {
+    file.path(m$conf$project, FN_CONF)
+}
+
+
+##' @export
+get_fn_ftab <- function(m) {
+    file.path(m$conf$project, FN_DATA_TAB)
+}
 
 init_state <- function(m) {
     m$out$tab <- list()
