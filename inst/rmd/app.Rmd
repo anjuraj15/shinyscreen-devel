@@ -608,6 +608,78 @@ observeEvent(input$conf_file_save_b,
     message("Written config to ",fconf)
 })
 
+observeEvent(input$conf_file_load_b,
+{
+    upd_unit <- function(entry,inp_val,inp_unit,choices) {
+        cntnt <- strsplit(entry,split = "[[:space:]]+")[[1]]
+        cntnt <- cntnt[nchar(cntnt) > 0]
+        if (length(cntnt)!=2) stop("(upd_unit) ","Unable to interpret ", entry)
+        val <- cntnt[[1]]
+        unit <- cntnt[[2]]
+        updateNumericInput(session = session,
+                           inputId = inp_val,
+                           value = as.numeric(val))
+        updateSelectInput(session = session,
+                          inputId = inp_unit,
+                          selected = unit,
+                          choices = choices)
+    }
+
+    upd_num <- function(entry,inp_val) {
+        updateNumericInput(session = session,
+                           inputId = inp_val,
+                           value = as.numeric(entry))
+    }
+
+    filters <- matrix(c("YAML files", ".yaml",
+                        "All files", "*"),
+                      2, 2, byrow = TRUE)
+    fn <- tcltk::tk_choose.files(filters=filters,
+                                 multi = F)
+    message("(config) Loading config from: ", paste(fn,collapse = ","))
+    fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
+    if (nchar(fn) > 0) {
+        state <- new_state_fn_conf(fn)
+        conf <- state$conf
+        isolate({
+            ## Tolerance
+            
+            upd_unit(conf$tolerance[["ms1 fine"]],
+                     "ms1_fine",
+                     "ms1_fine_unit",
+                     choices=c("ppm","Da"))
+            upd_unit(conf$tolerance[["ms1 coarse"]],
+                     "ms1_coarse",
+                     "ms1_coarse_unit",
+                     choices=c("ppm","Da"))
+
+            upd_unit(conf$tolerance[["eic"]],
+                     "ms1_eic",
+                     "ms1_eic_unit",
+                     choices=c("ppm","Da"))
+            upd_unit(conf$tolerance[["rt"]],
+                     "ms1_rt_win",
+                     "ms1_rt_win_unit",
+                     choices=c("min","s"))
+
+            ## Prescreen
+            upd_num(conf$prescreen[["ms1_int_thresh"]],
+                    "ms1_int_thresh")
+            upd_num(conf$prescreen[["ms2_int_thresh"]],
+                    "ms2_int_thresh")
+            upd_num(conf$prescreen[["s2n"]],
+                    "s2n")
+            upd_unit(conf$prescreen[["ret_time_shift_tol"]],
+                     "ret_time_shift_tol",
+                     "ret_time_shift_tol_unit",
+                     choices=c("min","s"))
+        })
+        
+    }
+
+    
+})
+
 
 
 ```
