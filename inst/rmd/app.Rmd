@@ -12,6 +12,11 @@ def_datafiles <- shinyscreen:::dtable(File=character(0),
 def_datatab <- shinyscreen:::dtable("tag"=factor(),
                                     "adduct"=factor(levels=shinyscreen:::DISP_ADDUCTS),
                                     "set"=factor())
+
+def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
+                                        "Select"=factor("il irrilevante",levels=c("il irrilevante",
+                                                                                  "il buono",
+                                                                                  "il cattivo")))
 ## def_state$input$tab$tags <- def_datatab
 rv_state <- list2rev(def_state)
 compl_sets <- eventReactive(rv_state$input$tab$setid,
@@ -39,16 +44,6 @@ actionButton(inputId = "project_b",
 ```
 
 Current project directory is `r textOutput("project", inline=T)`
-
-
-
-Load the config file if needed.
-
-```{r, echo=FALSE}
-actionButton(inputId = "conf_file_b",
-             label= "Load config")
-
-```
 
 <details><summary>Load the compound list(s)</summary>
 A compound list is composed of entries describing compounds. This
@@ -257,16 +252,17 @@ peak.
 ```{r, echo=F}
 shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
                       input_unit = "ret_time_shift_tol_unit",
-                      def_rt = def_state$conf$tolerance[["ret_time_shift_tol"]],
+                      def_rt = def_state$conf$prescreen[["ret_time_shift_tol"]],
                       def_unit = "min")
 ```
 
 ## Filter and order the summary table
 <div style= "display: flex; vertical-align:top; ">
-<div>
+
+<div style="padding-right: 0.5em">
 <details><summary>Filter summary table</summary>
-Selection criteria for filtering entries in the summary table
-according to the QA criteria.
+
+Filter entries in the summary table according to the QA criteria.
 
 * **qa_pass** : entries that passed all checks
 
@@ -279,17 +275,30 @@ according to the QA criteria.
 * **qa_ms2_good_int** : MS2 intensity is above the MS2 threshold
 
 * **qa_ms2_near** : MS2 spectrum is close enough to the MS1 peak
+
+For those who do not speak Italian (and do not dig the bad Sergio
+Leone pun):
+
+* **il irrelevante** : ignore QA criterion
+* **il buono** : entry passed QA
+* **il cattivo** : entry failed QA
+
 </details>
 ```{r, echo=F}
-checkboxGroupInput("summ_subset",
-                   label=NULL,
-                   choiceNames = shinyscreen:::QA_FLAGS,
-                   choiceValues = shinyscreen:::QA_FLAGS)
+
+rhandsontable::rHandsontableOutput("summ_subset")
+
+## checkboxGroupInput("summ_subset",
+##                    label=NULL,
+##                    choiceNames = shinyscreen:::QA_FLAGS,
+##                    choiceValues = shinyscreen:::QA_FLAGS)
 
 
 ```
 </div>
-<div>
+
+<div style="padding-left: 0.5em">
+
 <details><summary>Ordering by columns</summary>
 It is possible to order the summary table using columns (keys): 
 *`r paste(gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM), collapse = ',')`*.
@@ -370,6 +379,26 @@ DT::dataTableOutput("comp_table")
 DT::dataTableOutput("setid_table")
 ```
 
+# Save and Restore Config
+
+Load the config file if needed.
+
+```{r, echo=FALSE}
+actionButton(inputId = "conf_file_load_b",
+             label= "Load project config")
+
+```
+
+
+
+Save the config file if needed.
+
+```{r, echo=FALSE}
+actionButton(inputId = "conf_file_save_b",
+             label= "Save config")
+
+```
+
 # Extract Data and Prescreen
 
 <details><summary>Extract spectra from data files.</summary>
@@ -398,12 +427,23 @@ actionButton(inputId = "extract",
 ord_nms <- gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM)
 ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
 ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
-def_ord_summ <- shinyscreen:::dtable("Column names"=ord_nms,"Direction"=ord_asc)
+def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
 
 ```
 
 ```{r, include="false", context='server'}
 ## reactive functions
+
+observeEvent(input$setid_b, {
+    filters <- matrix(c("CSV files", ".csv",
+                        "All files", "*"),
+                       2, 2, byrow = TRUE)
+    setids <- tcltk::tk_choose.files(filters=filters)
+    message("(config) Selected compound sets (setid): ", paste(setids,collapse = ","))
+    rv_state$conf$compounds$sets <- if (length(setids)>0 && nchar(setids[[1]])>0) setids else "Nothing selected."
+})
+
+
 
 rf_compound_input_state <- reactive({
     sets <- rv_state$conf$compounds$sets
@@ -482,6 +522,52 @@ rf_tag_tab <- reactive({
         dt[tag %in% df_tab$tag,]
     } else oldtab
 })
+
+rf_conf_proj <- reactive({
+   
+    state <- rev2list(rv_state)
+    dir.create(state$conf$project,showWarnings = F)
+    state
+    
+})
+
+rf_conf_state <- reactive({
+    state <- rf_conf_proj()
+    message("L 1")
+    mzml1 <- tryCatch(rhandsontable::hot_to_r(input$datatab),
+                      error = function(e) def_datatab)
+    message("L 2")
+    mzml2 <- tryCatch(rhandsontable::hot_to_r(input$datafiles),
+                      error = function(e) def_datafiles)
+    message("L 3")
+    mzml <- mzml1[mzml2,on="tag"]
+    setnames(mzml,"File","Files")
+    ftab <- get_fn_ftab(state)
+    state$conf$data <- ftab
+    state$input$tab$mzml <- mzml
+    message("L 4")
+    state$conf[["summary table"]]$filter <- rf_get_subset()
+    message("L 5")
+    state$conf[["summary table"]]$order <- rf_get_order()
+    state
+})
+
+rf_get_subset <- reactive({
+    dt <- tryCatch(rhandsontable::hot_to_r(input$summ_subset),
+                   error = function(e) def_summ_subset)
+    dt[Select == "il buono", extra := T]
+    dt[Select == "il cattivo", extra := F]
+    sdt <- dt[!is.na(extra)]
+    if (NROW(sdt) > 0) {
+        sdt[,paste0(`QA Column`," == ",extra)]
+    } else NULL
+})
+
+rf_get_order <- reactive({
+    dt <- tryCatch(rhandsontable::hot_to_r(input$order_summ),error = function(e) def_ord_summ)
+    dt[Direction == "descending",`Column Name` := paste0("-",`Column Name`)]
+    dt[,`Column Name`]
+})
 ```
 
 ```{r, include="false", context='server'}
@@ -502,15 +588,6 @@ observeEvent(input$comp_list_b, {
     rv_state$conf$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
 })
 
-observeEvent(input$setid_b, {
-    filters <- matrix(c("CSV files", ".csv",
-                        "All files", "*"),
-                       2, 2, byrow = TRUE)
-    setids <- tcltk::tk_choose.files(filters=filters)
-    message("(config) Selected compound sets (setid): ", paste(setids,collapse = ","))
-    rv_state$conf$compounds$sets <- if (length(setids)>0 && nchar(setids[[1]])>0) setids else "Nothing selected."
-})
-
 observeEvent(input$extract,{
     tmp <- rev2list(rv_state)
     fn_c_state <- file.path(tmp$conf$project,
@@ -519,8 +596,61 @@ observeEvent(input$extract,{
     message("(extract) Config written to ", fn_c_state)
 })
 
+observeEvent(input$conf_file_save_b,
+{
+    state <- rf_conf_state()
+    ftab <- get_fn_ftab(state)
+    fconf <- get_fn_conf(state)
+    yaml::write_yaml(state$conf,
+                     file = fconf)
+    shinyscreen:::tab2file(tab=state$input$tab$mzml,file=ftab)
+    message("Written data-file table to ",ftab)
+    message("Written config to ",fconf)
+})
 
 
+
+```
+
+<!-- Tolerance -->
+```{r, include='false', context = 'server'}
+uni_ass <- function(val,unit) {
+    paste(input[[val]],
+          input[[unit]])
+}
+observe({
+    
+    rv_state$conf$tolerance[["ms1 fine"]] <- uni_ass("ms1_fine",
+                                                     "ms1_fine_unit")
+    
+    rv_state$conf$tolerance[["ms1 coarse"]] <- uni_ass("ms1_coarse",
+                                                       "ms1_coarse_unit")
+
+    rv_state$conf$tolerance[["eic"]] <- uni_ass("ms1_eic",
+                                                "ms1_eic_unit")
+
+    rv_state$conf$tolerance[["rt"]] <- uni_ass("ms1_rt_win",
+                                               "ms1_rt_win_unit")
+
+
+})
+```
+
+<!-- Prescreen -->
+```{r, include='false', context = 'server'}
+## uni_ass <- function(val,unit) {
+##     paste(input[[val]],
+##           input[[unit]])
+## }
+observe({
+    
+    rv_state$conf$prescreen[["ms1_int_thresh"]] <- input[["ms1_int_thresh"]]
+    rv_state$conf$prescreen[["ms2_int_thresh"]] <- input[["ms2_int_thresh"]]
+    rv_state$conf$prescreen[["s2n"]] <- input$s2n
+    rv_state$conf$prescreen[["ret_time_shift_tol"]] <- uni_ass("ret_time_shift_tol",
+                                                               "ret_time_shift_tol_unit")
+
+})
 ```
 
 <!-- Render -->
@@ -564,7 +694,11 @@ output$datafiles <- rhandsontable::renderRHandsontable(
 output$datatab <- rhandsontable::renderRHandsontable(
 {
     df <- rhandsontable::hot_to_r(input$datafiles)
-    res <- if (NROW(rv_state$input$tab$setid) > 0 &&
+    setid <- rv_state$input$tab$setid
+    
+    message("NROW setid:",NROW(setid))
+    message("NROW df:",NROW(df))
+    res <- if (NROW(setid) > 0 &&
                NROW(df) > 0) rf_tag_tab() else def_datatab
 
     rhandsontable::rhandsontable(res,stretchH="all",
@@ -596,6 +730,12 @@ output$setid_table <- DT::renderDataTable({
                                  scrollY = 200,
                                  deferRender = T,
                                  scroller = T))
+})
+
+output$summ_subset <- rhandsontable::renderRHandsontable({
+    
+
+    rhandsontable::rhandsontable(def_summ_subset)
 })
 ```
 
