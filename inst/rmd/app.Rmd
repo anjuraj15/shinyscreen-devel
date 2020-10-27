@@ -492,12 +492,8 @@ rf_conf_state <- reactive({
     mzml1[,`:=`(tag=as.character(tag),
                 set=as.character(set),
                 adduct=as.character(adduct))]
-    mzml2 <- tryCatch(rhandsontable::hot_to_r(input$datafiles),
-                      error = function(e) def_datafiles)
+    mzml2 <- rf_get_inp_datafiles()
     
-
-    mzml2$tag <- as.character(mzml2$tag)
-   
     mzml <- mzml1[mzml2,on="tag"]
     data.table::setnames(mzml,"File","Files")
     ftab <- get_fn_ftab(state)
@@ -529,10 +525,19 @@ rf_get_inp_datatab <- eventReactive(input$datatab,{
     z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datatab)),
                                    error = function(e) def_datatab)
 
-    message(colnames(z))
+    
     z[,.(tag=as.character(tag),
          adduct=as.character(adduct),
          set=as.character(set)), with = T]
+})
+
+rf_get_inp_datafiles <- eventReactive(input$datafiles,{
+    z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datafiles)),
+                                   error = function(e) def_datafiles)
+
+    
+    z[,.(File,
+         tag=as.character(tag)), with = T]
 })
 ```
 
@@ -562,8 +567,7 @@ observeEvent(input$datafiles_b,{
     message("(config) Selected data files: ", paste(fns,collapse = ","))
     ## Did the user choose any files?
     if (length(fns) > 0) {
-        oldtab <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datafiles)),
-                                            error = function(e) def_datafiles)
+        oldtab <- rf_get_inp_datafiles()
         
         newf <- setdiff(fns,oldtab$File)
         nr <- NROW(oldtab)
@@ -576,8 +580,7 @@ observeEvent(input$datafiles_b,{
 })
 
 observe({
-    input$datafiles
-    df_tab <- tryCatch(rhandsontable::hot_to_r(input$datafiles), error = function (e) def_datafiles)
+    df_tab <- rf_get_inp_datafiles()
     state <- rf_compound_input_state()
     
     isolate(oldtab <- rf_get_inp_datatab())
