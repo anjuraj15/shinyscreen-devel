@@ -6,6 +6,8 @@ title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 ---
 
 ```{r, context='setup', include='false'}
+library(data.table)
+library(shinyscreen)
 def_state <- new_state()
 def_datafiles <- shinyscreen:::dtable(File=character(0),
                                       tag=character(0))
@@ -17,12 +19,22 @@ def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
                                         "Select"=factor("il irrilevante",levels=c("il irrilevante",
                                                                                   "il buono",
                                                                                   "il cattivo")))
+## RMassBank masks shiny::validate. Unmask it.
+validate <- shiny::validate
 ## def_state$input$tab$tags <- def_datatab
 rv_state <- list2rev(def_state)
 compl_sets <- eventReactive(rv_state$input$tab$setid,
                             rv_state$input$tab$setid[,unique(set)])
 ## Reactive values to support some of the UI elements.
 ## rv_ui <- reactiveValues(datatab=def_tags)
+
+## Update with data-files.
+rv_dfiles <- reactiveVal(def_datafiles)
+
+## Data-file table when loading.
+rv_datatab <- reactiveVal(def_datatab)
+
+
 
 ```
 
@@ -413,14 +425,17 @@ to subset that data, look at the plots and publish a report.
 
 </details>
 ```{r, echo=FALSE}
-actionButton(inputId = "extract",
+actionButton(inputId = "extract_b",
              label = "Extract")
 ```
 
 
 # Browse Results
 
-<!-- Setup is here  -->
+
+<!-- ENGINE -->
+
+<!-- setup is here  -->
 
 ```{r, include="false", context='setup'}
 
@@ -437,7 +452,7 @@ def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
 observeEvent(input$setid_b, {
     filters <- matrix(c("CSV files", ".csv",
                         "All files", "*"),
-                       2, 2, byrow = TRUE)
+                      2, 2, byrow = TRUE)
     setids <- tcltk::tk_choose.files(filters=filters)
     message("(config) Selected compound sets (setid): ", paste(setids,collapse = ","))
     rv_state$conf$compounds$sets <- if (length(setids)>0 && nchar(setids[[1]])>0) setids else "Nothing selected."
@@ -450,7 +465,7 @@ rf_compound_input_state <- reactive({
     lst <- as.list(rv_state$conf$compounds$lists)
     validate(need(length(lst)>0,
                   message = "Load the compound lists(s) first."))
-    validate(need(nchar(sets)>0,
+    validate(need(length(sets)>0 && nchar(sets)>0,
                   message = "Load the setid table first."))
     isolate({
         state <- rev2list(rv_state)
@@ -460,71 +475,11 @@ rf_compound_input_state <- reactive({
         rv_state$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
         rv_state$input$tab$setid <- m$input$tab$setid
         m
-        })
-})
-
-rf_get_dfiles <- reactive({
-    input$datafiles_b
-    if (input$datafiles_b > 0) {
-        filters <- matrix(c("mzML files", ".mzML",
-                            "All files", "*"),
-                          2, 2, byrow = TRUE)
-        mzMLs <- tcltk::tk_choose.files(filters=filters)
-        message("(config) Selected data files: ", paste(mzMLs,collapse = ","))
-        mzMLs
-    } else character(0)
-})
-
-rf_dfiles_tab <- reactive({
-    mzMLs <- rf_get_dfiles()
-    isolate({oldtab <- data.table::as.data.table(rhandsontable::hot_to_r(input$datafiles))})
-    newf <- setdiff(mzMLs,oldtab$File)
-    nr <- NROW(oldtab)
-    tmp <- if (length(newf)>0) shinyscreen:::dtable(File=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(File=character(),tag=character())
-    rbind(oldtab,
-          tmp)
-})
-rf_tag_tab <- reactive({
-    state <- rf_compound_input_state()
-    isolate({oldtab <- rhandsontable::hot_to_r(input$datatab)})
-    oldt <- oldtab$tag
-    sets <- compl_sets()
-    sets <- if (length(sets)==1) sets <- c(sets,"invalid") #Just
-                                                           #because
-                                                           #when one
-                                                           #level,
-                                                           #rhandsontable
-                                                           #has issues
-                                                           #displaying
-                                                           #it.
-
-    otagch <- as.character(oldt)
-    df_tab <- rhandsontable::hot_to_r(input$datafiles)
-    tagl <- df_tab$tag
-    diff <- setdiff(tagl,
-                    otagch)
-    if (length(diff)!=0) {
-        ## Only change the tag names in the old ones.
-        pos_tag <- 1:length(tagl)
-        pos_old <- 1:NROW(oldtab)
-        pos_mod <- intersect(pos_tag,pos_old)
-        new_tag <- tagl[pos_mod]
-        if (NROW(oldtab)>0) oldtab[pos_mod,tag := ..new_tag]
-
-        ## Now add tags for completely new files, if any.
-        rest_new <- if (NROW(oldtab) > 0) setdiff(diff,new_tag) else diff
-        tmp <- shinyscreen:::dtable(tag=factor(rest_new,levels=tagl),
-                                    adduct=factor(levels = shinyscreen:::DISP_ADDUCTS),
-                                    set=factor(levels = sets))
-
-        dt <-data.table::as.data.table(rbind(as.data.frame(oldtab),
-                                             as.data.frame(tmp)))
-        dt[tag %in% df_tab$tag,]
-    } else oldtab
+    })
 })
 
 rf_conf_proj <- reactive({
-   
+    
     state <- rev2list(rv_state)
     dir.create(state$conf$project,showWarnings = F)
     state
@@ -533,12 +488,18 @@ rf_conf_proj <- reactive({
 
 rf_conf_state <- reactive({
     state <- rf_conf_proj()
-    mzml1 <- tryCatch(rhandsontable::hot_to_r(input$datatab),
-                      error = function(e) def_datatab)
+    mzml1 <- rf_get_inp_datatab()
+    mzml1[,`:=`(tag=as.character(tag),
+                set=as.character(set),
+                adduct=as.character(adduct))]
     mzml2 <- tryCatch(rhandsontable::hot_to_r(input$datafiles),
                       error = function(e) def_datafiles)
+    
+
+    mzml2$tag <- as.character(mzml2$tag)
+   
     mzml <- mzml1[mzml2,on="tag"]
-    setnames(mzml,"File","Files")
+    data.table::setnames(mzml,"File","Files")
     ftab <- get_fn_ftab(state)
     state$conf$data <- ftab
     state$input$tab$mzml <- mzml
@@ -563,6 +524,15 @@ rf_get_order <- reactive({
     dt[Direction == "descending",`Column Name` := paste0("-",`Column Name`)]
     dt[,`Column Name`]
 })
+
+rf_get_inp_datatab <- eventReactive(input$datatab,{
+    z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datafiles)),
+                                   error = function(e) def_datafiles)
+       
+    z[,.(tag=as.character(tag),
+         adduct=as.character(adduct),
+         set=as.character(set)), with = T]
+})
 ```
 
 ```{r, include="false", context='server'}
@@ -577,18 +547,86 @@ observeEvent(input$project_b,{
 observeEvent(input$comp_list_b, {
     filters <- matrix(c("CSV files", ".csv",
                         "All files", "*"),
-                       2, 2, byrow = TRUE)
+                      2, 2, byrow = TRUE)
     compfiles <- tcltk::tk_choose.files(filters=filters)
     message("(config) Selected compound lists: ", paste(compfiles,collapse = ","))
     rv_state$conf$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
 })
 
-observeEvent(input$extract,{
-    tmp <- rev2list(rv_state)
+observeEvent(input$datafiles_b,{
+    filters <- matrix(c("mzML files", ".mzML",
+                        "All files", "*"),
+                      2, 2, byrow = TRUE)
+    fns <- tcltk::tk_choose.files(filters=filters)
+    message("(config) Selected data files: ", paste(fns,collapse = ","))
+    ## Did the user choose any files?
+    if (length(fns) > 0) {
+        oldtab <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datafiles)),
+                                            error = function(e) def_datafiles)
+        
+        newf <- setdiff(fns,oldtab$File)
+        nr <- NROW(oldtab)
+        tmp <- if (length(newf)>0) shinyscreen:::dtable(File=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(File=character(),tag=character())
+
+        z <- rbind(oldtab, tmp)
+        z[,tag:=as.character(tag)]
+        rv_dfiles(z)
+    }
+})
+
+observe({
+    input$datafiles
+    df_tab <- tryCatch(rhandsontable::hot_to_r(input$datafiles), error = function (e) def_datafiles)
+    state <- rf_compound_input_state()
+    
+    isolate(oldtab <- rf_get_inp_datatab())
+
+    oldt <- oldtab$tag
+
+    tagl <- df_tab$tag
+    diff <- setdiff(tagl,
+                    oldt)
+    
+    res <- if (length(diff)!=0) {
+               ## Only change the tag names in the old ones.
+               pos_tag <- 1:length(tagl)
+               pos_old <- 1:NROW(oldtab)
+               pos_mod <- intersect(pos_tag,pos_old)
+               new_tag <- tagl[pos_mod]
+               if (NROW(oldtab)>0) oldtab[pos_mod,tag := ..new_tag]
+
+               ## Now add tags for completely new files, if any.
+               rest_new <- if (NROW(oldtab) > 0) setdiff(diff,new_tag) else diff
+               tmp <- shinyscreen:::dtable(tag=rest_new,
+                                           adduct=character(0),
+                                           set=character(0))
+
+               dt <-data.table::as.data.table(rbind(as.data.frame(oldtab),
+                                                    as.data.frame(tmp)))
+               dt[tag %in% df_tab$tag,]
+           } else oldtab
+    
+    rv_datatab(res)
+})
+
+
+
+
+observeEvent(input$extract_b,{
+    tmp <- rf_conf_state()
     fn_c_state <- file.path(tmp$conf$project,
-                            shinyscreen:::FN_CONF)
+                            paste0("extract.",shinyscreen:::FN_CONF))
     yaml::write_yaml(x=tmp$conf,file=fn_c_state)
     message("(extract) Config written to ", fn_c_state)
+    state <- withr::with_dir(new=tmp$conf$project,
+                             code = {
+                                 m <- setup_phase(tmp)
+                                 m <- mk_comp_tab(tmp)
+                                 extr_data(tmp)
+                             })
+    message("(extract) Done extracting.")
+    rv_state <- list2rev(state)
+    
 })
 
 observeEvent(input$conf_file_save_b,
@@ -650,6 +688,12 @@ observeEvent(input$conf_file_load_b,
         state <- new_state_fn_conf(fn)
         conf <- state$conf
         isolate({
+            rv_state$conf$project <- conf$project
+            rv_state$conf$data <- conf$data
+            ## Lists
+            rv_state$conf$compounds$lists <- conf$compounds$lists
+            rv_state$conf$compounds$sets <- conf$compounds$sets
+            
             ## Tolerance
             
             upd_unit(conf$tolerance[["ms1 fine"]],
@@ -682,7 +726,16 @@ observeEvent(input$conf_file_load_b,
                      "ret_time_shift_tol_unit",
                      choices=c("min","s"))
 
-            ## Figures
+            ## Files
+            df <- shinyscreen:::file2tab(conf$data)
+            
+            rv_dfiles(df[,.(File=Files,tag)])
+            nms <- colnames(df)
+            nms <- nms[nms!="Files"]
+            fdt <- df[,..nms]
+            rv_datatab(fdt)
+
+            ## figures
             upd_unit(conf$figures$rt_min,
                      "plot_rt_min",
                      "plot_rt_min_unit",
@@ -816,10 +869,7 @@ output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsont
 
 output$datafiles <- rhandsontable::renderRHandsontable(
 {
-    res <- if (length(rf_get_dfiles())>0) {
-               rf_dfiles_tab()
-
-           } else def_datafiles
+    res <- rv_dfiles()
     rhandsontable::rhandsontable(as.data.frame(res),
                                  width = "50%",
                                  height = "25%",
@@ -828,11 +878,22 @@ output$datafiles <- rhandsontable::renderRHandsontable(
 
 output$datatab <- rhandsontable::renderRHandsontable(
 {
-    df <- rhandsontable::hot_to_r(input$datafiles)
     setid <- rv_state$input$tab$setid
-    
-    res <- if (NROW(setid) > 0 &&
-               NROW(df) > 0) rf_tag_tab() else def_datatab
+    res <- rv_datatab()
+    message("-----------")
+    print(res)
+    message("wwwwwwwwwww")
+    if (NROW(res)>0) {
+        res$tag <- factor(res$tag,
+                          levels = c(unique(res$tag),
+                                              "invalid"))
+        res$set <- factor(res$set,
+                          levels = c(unique(setid$set),
+                                             "invalid"))
+        res$adduct <- factor(res$adduct,
+                             levels = shinyscreen:::DISP_ADDUCTS)
+    }
+
 
     rhandsontable::rhandsontable(res,stretchH="all",
                                  allowInvalid=F)
