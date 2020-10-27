@@ -880,9 +880,7 @@ output$datatab <- rhandsontable::renderRHandsontable(
 {
     setid <- rv_state$input$tab$setid
     res <- rv_datatab()
-    message("-----------")
-    print(res)
-    message("wwwwwwwwwww")
+    
     if (NROW(res)>0) {
         res$tag <- factor(res$tag,
                           levels = c(unique(res$tag),
