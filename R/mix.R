@@ -89,7 +89,7 @@ calc_mz_from_formula <- function(chform,adduct,id) {
                                                       charge=Charge),on=""])
     names(uadds) <- uad
     adds <- rbindlist(l=lapply(adduct,function(a) uadds[[a]]))
-    
+
     merger <- function (mol_form,add,ded) {
         res <- numeric(length(mol_form))
         both_ind <- which(add != 'FALSE' & ded != 'FALSE')
@@ -106,6 +106,19 @@ calc_mz_from_formula <- function(chform,adduct,id) {
         res
     }
     forms  <- merger(mol_form,adds$add,adds$ded)
+    
+    ## Check if formulas actually calculated.
+    bad_idx <- which(forms=="0")
+    bad_adducts <- adduct[bad_idx]
+    bad_ids <- id[bad_idx]
+    non_dups <- !duplicated(bad_idx)
+    bad_ids <- bad_ids[non_dups]
+    bad_adducts <- bad_adducts[non_dups]
+    if (length(bad_idx)>0) stop(paste0("Unable to process the adducts:\n",
+                                        paste(bad_adducts,collapse = ","),
+                                        "\nfor id-s:",
+                                        paste(bad_ids,collapse = ",")))
+    
     mz <- the_ifelse(!is.na(forms),
                      mapply(function(ff,ch) enviPat::isopattern(ISOTOPES,chemforms = ff,
                                                                 charge = ch, verbose = F)[[1]][1],

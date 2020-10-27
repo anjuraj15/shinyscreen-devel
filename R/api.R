@@ -143,7 +143,7 @@ mk_comp_tab <- function(m) {
     comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,Files,wd,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
     tab2file(tab=comp,file=paste0("setidmerge",".csv"))
     setkey(comp,known,set,ID)
-
+    
     ## Known structure.
     ## comp[,`:=`(mz=mapply(calc_mz_from_smiles,SMILES,adduct,ID,USE.NAMES = F))]
     comp[known=="structure",`:=`(mz=calc_mz_from_smiles(SMILES,adduct,ID))]
@@ -275,6 +275,7 @@ extr_data <- function(m) {
 
     ## Reduce the comp table to only unique masses (this is because
     ## different sets can have same masses).
+    
     m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=c('adduct','tag','ID')]
     m$out$tab$data[,set:=NULL] #This column is meaningless now.
     files <- m$out$tab$data[,unique(Files)]
@@ -352,6 +353,9 @@ extr_data <- function(m) {
     message('Done saving extracted data.')
     
     m$extr$tmp <- NULL
+    timetag <- format(Sys.time(), "%Y%m%d_%H%M%S")
+    saveRDS(object = m, file = file.path(m$conf$project,
+                                         paste0(timetag,"_",FN_EXTR_STATE)))
     m
     
 }

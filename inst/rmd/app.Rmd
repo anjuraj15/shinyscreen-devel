@@ -300,12 +300,6 @@ Leone pun):
 
 rhandsontable::rHandsontableOutput("summ_subset")
 
-## checkboxGroupInput("summ_subset",
-##                    label=NULL,
-##                    choiceNames = shinyscreen:::QA_FLAGS,
-##                    choiceValues = shinyscreen:::QA_FLAGS)
-
-
 ```
 </div>
 
@@ -327,23 +321,6 @@ rhandsontable::rHandsontableOutput("order_summ")
 </div>
 
 </div>
-
-
-
-
-<!-- <details><summary>Order entries</summary> -->
-
-<!-- Sequence of column a -->
-
-<!-- </details> -->
-<!-- ```{r, echo=F} -->
-<!-- checkboxGroupInput("summ_subset", -->
-<!--                    label=NULL, -->
-<!--                    choiceNames = shinyscreen:::QA_FLAGS, -->
-<!--                    choiceValues = 1:length(shinyscreen:::QA_FLAGS)) -->
-
-<!-- ``` -->
-
 
 ## Plots
 
@@ -488,17 +465,16 @@ rf_conf_proj <- reactive({
 
 rf_conf_state <- reactive({
     state <- rf_conf_proj()
-    mzml1 <- rf_get_inp_datatab()
-    mzml1[,`:=`(tag=as.character(tag),
-                set=as.character(set),
-                adduct=as.character(adduct))]
-    mzml2 <- rf_get_inp_datafiles()
+    ## mzml1 <- rf_get_inp_datatab()
+    ## mzml1[,`:=`(tag=as.character(tag),
+    ##             set=as.character(set),
+    ##             adduct=as.character(adduct))]
+    ## mzml2 <- rf_get_inp_datafiles()
     
-    mzml <- mzml1[mzml2,on="tag"]
-    data.table::setnames(mzml,"File","Files")
+    ## mzml <- mzml1[mzml2,on="tag"]
+    
     ftab <- get_fn_ftab(state)
     state$conf$data <- ftab
-    state$input$tab$mzml <- mzml
     state$conf[["summary table"]]$filter <- rf_get_subset()
     state$conf[["summary table"]]$order <- rf_get_order()
     state
@@ -517,8 +493,8 @@ rf_get_subset <- reactive({
 
 rf_get_order <- reactive({
     dt <- tryCatch(rhandsontable::hot_to_r(input$order_summ),error = function(e) def_ord_summ)
-    dt[Direction == "descending",`Column Name` := paste0("-",`Column Name`)]
-    dt[,`Column Name`]
+    tmp <- dt[Direction == "descending",.(`Column Name`=paste0("-",`Column Name`))]
+    tmp[,`Column Name`]
 })
 
 rf_get_inp_datatab <- eventReactive(input$datatab,{
@@ -582,11 +558,9 @@ observeEvent(input$datafiles_b,{
 observe({
     df_tab <- rf_get_inp_datafiles()
     state <- rf_compound_input_state()
-    
     isolate(oldtab <- rf_get_inp_datatab())
-
+    
     oldt <- oldtab$tag
-
     tagl <- df_tab$tag
     diff <- setdiff(tagl,
                     oldt)
@@ -613,20 +587,39 @@ observe({
     rv_datatab(res)
 })
 
+observe({
+    dtab <- rv_datatab()
+    dfiles <- rv_dfiles()
 
+    message("(config) Generating mzml from rv.")
+    isolate(rv_state$input$tab$mzml <- dtab[dfiles,on="tag"])
 
+    
+}, label = "mzml_from_rv")
+
+observe({
+    dtab <- rf_get_inp_datatab()
+    dfiles <- rf_get_inp_datafiles()
+
+    message("(config) Generating mzml from inputs.")
+    res <- dtab[dfiles,on="tag"]
+    data.table::setnames(res,"File","Files")
+    isolate(rv_state$input$tab$mzml <- res)
+
+    
+}, label = "mzml_from_inp")
 
 observeEvent(input$extract_b,{
-    tmp <- rf_conf_state()
-    fn_c_state <- file.path(tmp$conf$project,
+    m <- rf_conf_state()
+    fn_c_state <- file.path(m$conf$project,
                             paste0("extract.",shinyscreen:::FN_CONF))
-    yaml::write_yaml(x=tmp$conf,file=fn_c_state)
+    yaml::write_yaml(x=m$conf,file=fn_c_state)
     message("(extract) Config written to ", fn_c_state)
-    state <- withr::with_dir(new=tmp$conf$project,
+    state <- withr::with_dir(new=m$conf$project,
                              code = {
-                                 m <- setup_phase(tmp)
-                                 m <- mk_comp_tab(tmp)
-                                 extr_data(tmp)
+                                 m <- setup_phase(m)
+                                 m <- mk_comp_tab(m)
+                                 extr_data(m)
                              })
     message("(extract) Done extracting.")
     rv_state <- list2rev(state)
@@ -732,7 +725,7 @@ observeEvent(input$conf_file_load_b,
 
             ## Files
             df <- shinyscreen:::file2tab(conf$data)
-            
+            df[,tag:=as.character(tag),with=T]
             rv_dfiles(df[,.(File=Files,tag)])
             nms <- colnames(df)
             nms <- nms[nms!="Files"]
