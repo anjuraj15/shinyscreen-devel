@@ -34,6 +34,7 @@ FN_COMP_TAB<-"comprehensive.csv"
 FN_SPEC<-"specdata.rds"
 FN_CONF <- "conf-state.yaml"
 FN_EXTR_STATE <- "state_after_extraction.rds"
+
 .envp <- new.env(parent = emptyenv())
 data(adducts,package = "enviPat", envir = .envp)
 data(isotopes,package = "enviPat", envir = .envp)

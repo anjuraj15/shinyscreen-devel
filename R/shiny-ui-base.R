@@ -162,3 +162,41 @@ mk_roots <- function(wd) local({
              res
          })
 })
+
+#' @export
+merge2rev <- function(rev,lst) {
+    crawllist <- function(lst,currname=""){
+    cls <- class(lst)
+
+    if (cls[[1]]=="list" && length(names(lst)) > 0)
+        invisible(lapply(names(lst),
+                         function (nm)
+                             crawllist(lst[[nm]],
+                                       currname=paste0(currname,'[["',nm,'"]]'))))
+        
+    else {
+            currname
+        }
+    }
+
+    vars <- unlist(crawllist(lst),recursive = T)
+    vars
+    pref_r <- deparse(substitute(rev))
+    pref_l <- deparse(substitute(lst))
+    lhs <- paste0(pref_r,vars)
+    rhs <- paste0(pref_l,vars)
+    exprs <- Map(function (a,b) call("<-",
+                                     parse(text=a)[[1]],
+                                     parse(text=b)[[1]]),
+                 lhs,
+                 rhs)
+    code <- quote({})
+    for (n in 1:length(exprs)) {
+        code[[n+1]] <- exprs[[n]]
+        
+    }
+    code
+    
+}
+
+
