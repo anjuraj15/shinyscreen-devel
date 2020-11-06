@@ -291,7 +291,7 @@ Filter entries in the summary table according to the QA criteria.
 For those who do not speak Italian (and do not dig the bad Sergio
 Leone pun):
 
-* **il irrelevante** : ignore QA criterion
+* **l'irrelevante** : ignore QA criterion
 * **il buono** : entry passed QA
 * **il cattivo** : entry failed QA
 
@@ -442,6 +442,57 @@ DT::dataTableOutput("summ_table")
 
 # Browse Results
 
+Generate plots.
+
+```{r, echo=F}
+
+uiOutput("plot_b_ctrl")
+
+```
+<div style="display: flex; ">
+
+<div>
+```{r, echo=F}
+
+uiOutput("plot_set_b_ctrl")
+
+## selectInput(inputId = "plot_set_b",
+##             label = "Select set",
+##             choices = c("uninitialised"=0))
+```
+</div>
+
+<div style="vertical-align: bottom; ">
+```{r, echo=F}
+
+uiOutput("plot_id_b_ctrl")
+## selectInput(inputId = "plot_id_b",
+##             label = "Select ID",
+##             choices = c("uninitialised"=0))
+```
+</div>
+
+</div>
+
+
+<div style="display: flex; ">
+
+<div style="vertical-align: bottom; ">
+```{r, echo=F}
+actionButton(inputId = "plot_next_b",
+             label = "Previous")
+```
+</div>
+
+<div style="vertical-align: bottom; ">
+```{r, echo=F}
+actionButton(inputId = "plot_prev_b",
+             label = "Next")
+```
+</div>
+
+
+</div>
 
 <!-- ENGINE -->
 
@@ -801,6 +852,26 @@ observeEvent(input$presc_b,{
     
 })
 
+observeEvent(input$plot_b,{
+    validate(need(NROW(rv_state$out$tab$flt_summ) > 0,
+                  message = "Perform prescreening first."))
+    m <- rev2list(rv_state)
+
+    fn_c_state <- file.path(m$conf$project,
+                            paste0("genplot.",shinyscreen:::FN_CONF))
+    yaml::write_yaml(x=m$conf,file=fn_c_state)
+    message("(generate plots) Config written to ", fn_c_state)
+    state <- withr::with_dir(new=m$conf$project,
+                             code = {
+                                 m <- create_plots(m)
+                                 save_plots(m)
+                             })
+    message("(generate plots) Done generating plots.")
+    
+    z <- shinyscreen::merge2rev(rv_state,lst = state)
+    eval(z)
+})
+
 observeEvent(input$conf_file_save_b,
 {
     state <- rf_conf_state()
@@ -1015,9 +1086,12 @@ output$summ_subset <- rhandsontable::renderRHandsontable({
 
 output$summ_table <- DT::renderDataTable({
 
-    tab <- rv_state$out$tab$flt_summ[,.(Files=NULL)]
+    
+    tab <- rv_state$out$tab$flt_summ
+    nms <- colnames(tab)
+    dpl_nms <- nms[nms!="Files"]
     validate(need(NROW(tab)>0, message = "Please prescreen the data first."))
-    DT::datatable(tab,
+    DT::datatable(tab[,..dpl_nms],
                   style = 'bootstrap',
                   class = 'table-condensed',
                   extensions = 'Scroller',
@@ -1026,8 +1100,23 @@ output$summ_table <- DT::renderDataTable({
                                  deferRender = T,
                                  scroller = T))
 })
-```
 
+output$plot_set_b_ctrl <- renderUI({
+    tab <- rv_state$out$tab$flt_summ
+    req(NROW(tab)>0)
+    selectInput(inputId = "plot_set_b",
+                label = "Select set",
+                choices = c("uninitialised"=0))
+})
+
+output$plot_b_ctrl <- renderUI({
+    tab <- rv_state$out$tab$flt_summ
+    req(NROW(tab)>0)
+    actionButton(inputId = "plot_b",
+             label= "Generate plots")
+    
+})
+```
 
 
 ```{r, echo=F, context = 'server'}

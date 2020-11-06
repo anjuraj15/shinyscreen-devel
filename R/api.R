@@ -500,7 +500,6 @@ create_plots <- function(m) {
     y <- m$out$tab$flt_summ
     
 
-
     ## Logarithmic, or linear y axis?
     scale_y_ms1_eic <- if (shiny::isTruthy(m$conf$logaxes$ms1_eic_int))
                            ggplot2::scale_y_log10 else ggplot2::scale_y_continuous
@@ -511,6 +510,8 @@ create_plots <- function(m) {
     scale_y_ms2_spec <- if (shiny::isTruthy(m$conf$logaxes$ms2_spec_int))
                             ggplot2::scale_y_log10 else ggplot2::scale_y_continuous
 
+    scale_x <- function(...) ggplot2::scale_x_continuous(...,limits=DEFAULT_RT_RANGE)
+
     ## Colour palette.
     tags <- y[,unique(tag)]
     getpal <- colorRampPalette(RColorBrewer::brewer.pal(8,"Dark2"))
@@ -518,10 +519,10 @@ create_plots <- function(m) {
     names(col_all_vals) <- tags
     scale_colour <- function(values=col_all_vals,...) ggplot2::scale_colour_manual(values = values,name=m$conf$figures[["legend title"]],...)
 
-
-    rt_lim <- DEFAULT_RT_RANGE
-    if (!is.null(m$conf$figures$rt_min)) rt_lim[[1]] <- m$conf$figures$rt_min
-    if (!is.null(m$conf$figures$rt_max)) rt_lim[[2]] <- m$conf$figures$rt_max
+    rt_new_lim <- c(rt_in_min(m$conf$figures$rt_min),
+                    rt_in_min(m$conf$figures$rt_max))
+    rt_lim <- get_coord_lim(rt_new_lim,DEFAULT_RT_RANGE)
+    
     
     my_coord <- ggplot2::coord_cartesian(xlim = rt_lim)
     conf_psub <- m$conf$figures[["plot subset"]]
@@ -556,6 +557,7 @@ create_plots <- function(m) {
                           ) +
             scale_y_ms1_eic(labels=sci10) +
             scale_colour(values=col_all_vals[as.character(tags)]) +
+            scale_x() +
             my_coord +
             my_theme()
     }
@@ -574,6 +576,7 @@ create_plots <- function(m) {
                           ) +
             scale_y_ms2_eic(labels=sci10) +
             scale_colour(values=col_all_vals[as.character(ddf$tag)]) +
+            scale_x() +
             my_coord +
             my_theme()
     }
@@ -602,6 +605,7 @@ create_plots <- function(m) {
                           ## title=mk_title("MS2 spectrum for precursor",mz)
                           ) +
             scale_y_ms2_spec(labels=sci10) +
+            scale_x() +
             scale_colour(values=col_all_vals[as.character(tags)]) +
             my_theme()
     }
@@ -671,8 +675,8 @@ save_plots <- function(m) {
     dir.create(topdir,showWarnings = F)
 
     rt_lim <- DEFAULT_RT_RANGE
-    if (!is.null(m$conf$figures$rt_min)) rt_lim[[1]] <- m$conf$figures$rt_min
-    if (!is.null(m$conf$figures$rt_max)) rt_lim[[2]] <- m$conf$figures$rt_max
+    if (isTruthy(m$conf$figures$rt_min)) rt_lim[[1]] <- rt_in_min(m$conf$figures$rt_min)
+    if (isTruthy(m$conf$figures$rt_max)) rt_lim[[2]] <- rt_in_min(m$conf$figures$rt_max)
     
     my_theme <- function(...) ggplot2::theme(legend.position = "none",...)
 
@@ -695,6 +699,7 @@ save_plots <- function(m) {
             ids <- asdf[,unique(ID)]
             for (id in ids) {
                 message("Image ","set: ",s," group: ", g, " id: ",id)
+                
                 tab <- asdf[ID==id,.(tag,ms1_int,ms1_rt,adduct,mz)]
                 ms1_figs <- m$out$tab$ms1_plot_eic[set==s & adduct==g & ID==id,.(fig,structfig)]
                 ms2_figs <- m$out$tab$ms2_plot[set==s & adduct==g & ID==id,.(fig_eic,fig_spec)]

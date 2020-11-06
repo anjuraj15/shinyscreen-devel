@@ -819,6 +819,8 @@ verify_cmpd_l <- function(dt,fn) {
 
 
 ## INPUT TRANSLATORS
+
+#' @export
 grab_unit <- function(entry,unit) {
     what <- paste0("\\<",unit,"\\>$")
     entry <- trimws(entry,which="both")
@@ -826,6 +828,13 @@ grab_unit <- function(entry,unit) {
         suppressWarnings(as.numeric(sub(paste0("^(.*)",unit),"\\1",entry))) else NA_real_
 }
 
+
+rt_in_min <- function(entry) {
+    xs <- grab_unit(entry,"s")
+    xm <- grab_unit(entry,"min")
+    x <- if (is.na(xm)) xs/60. else xm
+    x
+}
 
 conf_trans_pres <- function(pres_list) {
     ## Translate and validate prescreening input.
@@ -1027,4 +1036,12 @@ fig_path <- function(top,set,group,id,suff,ext="pdf") {
     fn <- gsub("\\+","p",fn)
     fn <- gsub("-","m",fn)
     if (!is.null(top)) file.path(top,fn) else fn
+}
+
+get_coord_lim <- function(new,def) {
+    if (is.null(new)) return(def)
+    res <- new
+    if (length(new[[1]])==0) res[[1]]<-def[[1]]
+    if (length(new[[2]])==0) res[[2]]<-def[[2]]
+    res
 }
