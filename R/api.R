@@ -491,9 +491,57 @@ subset_summary <- function(m) {
     m
 }
 
-
 #' @export
 create_plots <- function(m) {
+    ## Empty ms1_plot table.
+    
+
+    ## Select the data nedeed for plotting.
+    x <- m$out$tab$flt_summ
+    ms1_plot_data <- gen_base_ms1_plot_tab(summ=x,
+                                           ms1_spec=m$out$tab$ms1_spec)
+
+    group_data <- m$conf$figures$grouping
+    plot_group <- group_data$group
+    plot_plot <- group_data$plot
+    plot_label <- group_data$label
+    plot_index <- c(plot_group,plot_plot,plot_label)
+
+    ## All the possible curve labels.
+    all_labels <- x[,unique(.SD),.SDcols=plot_label][[plot_label]]
+    
+    ## Plot styling.
+    style_eic_ms1 <- plot_decor(m,m$conf$logaxes$ms1_eic_int,
+                                all_labels=all_labels,
+                                legend_name=plot_label)
+    style_eic_ms2 <- plot_decor(m,m$conf$logaxes$ms2_eic_int,
+                                all_labels=all_labels,
+                                legend_name=plot_label)
+    style_spec_ms2 <- plot_decor(m,m$conf$logaxes$ms2_spec_int,
+                                 all_labels=all_labels,
+                                 legend_name = plot_label)
+
+    ## Generate MS1 EIC plots.
+    ms1_plot <- ms1_plot_data[,.(fig={
+        df <- .SD[,data.table::rbindlist(Map(function (a,b,c,d) {
+            s <- a[[1]]
+            s$plot_label <- b
+            s$rt_peak <- c
+            s$mz <- d
+            s},
+            eicMS1,
+            .SD[[..plot_label]],
+            rt_peak,
+            mz))]
+        list(plot_eic_ms1(df,style_fun = style_eic_ms1,
+                          plot_label = ..plot_label))
+        
+    }),by=c(plot_group,plot_plot)]
+    m$out$tab$ms1_plot <- ms1_plot
+    m
+}
+
+create_plots_old <- function(m) {
     ## Helpers
     textf <- ggplot2::element_text
     x <- m$out$tab$ms1_spec

@@ -174,7 +174,7 @@ QA_COLS <- c(QA_FLAGS,QA_NUM_REAL,QA_NUM_INT)
 MS2_SPEC_COLS <- c("adduct","ID","CE","rt","Files","spec","ms2_max_int")
 
 ## MS1 spectral table columns
-MS1_SPEC_COLS <- c("adduct","Files","ID","eicMS1","ms1_int","ms1_rt","ms1_mean")
+MS1_SPEC_COLS <- c("adduct","ID","eicMS1","ms1_int","ms1_rt","ms1_mean","Files")
 
 ## Default sorting keys of spectra in the summary table
 DEF_KEY_SUMM <- c("set","qa_pass","ms1_int","adduct","mz","tag")
@@ -193,3 +193,14 @@ FIG_DEF_SUBSET <- c("set","adduct","ID")
 
 REPORT_AUTHOR <- "Anonymous"
 REPORT_TITLE <- "Plots of EICs and MS2 Spectra"
+
+
+PLOT_FEATURES <- c("set",
+                   "adduct",
+                   "tag",
+                   "ID",
+                   "CE")
+
+## Select the most fundamental group of entries. Within this group,
+## each ID is unique.
+BASE_KEY <- c("adduct","Files","ID")

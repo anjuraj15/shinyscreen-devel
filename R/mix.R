@@ -1045,3 +1045,70 @@ get_coord_lim <- function(new,def) {
     if (length(new[[2]])==0) res[[2]]<-def[[2]]
     res
 }
+
+
+
+gen_base_ms1_plot_tab <- function(summ,ms1_spec) {
+    
+    ident <- c("set",
+               "adduct",
+               "tag",
+               "ID",
+               "mz",
+               "Files")
+    
+    res <- summ[ms1_spec,c(.SD,
+                           list(rt_peak=i.ms1_rt,
+                                eicMS1=lapply(i.eicMS1,list))),
+                           .SDcols=ident,
+                           on=BASE_KEY,
+                nomatch=NULL]
+    setkeyv(res,cols=BASE_KEY)
+    res
+}
+plot_decor <- function(m,islog,all_labels,legend_name) {
+    textf <- ggplot2::element_text
+
+    ## Logarithmic, or linear y axis?
+    scale_y <- if (shiny::isTruthy(islog))
+                       ggplot2::scale_y_log10 else ggplot2::scale_y_continuous
+
+    rt_new_lim <- c(rt_in_min(m$conf$figures$rt_min),
+                    rt_in_min(m$conf$figures$rt_max))
+    rt_lim <- get_coord_lim(rt_new_lim,DEFAULT_RT_RANGE)
+
+    my_theme <- function (...) ggplot2::theme()
+
+    getpal <- colorRampPalette(RColorBrewer::brewer.pal(8,"Dark2"))
+    
+    col_all_vals <- getpal(length(all_labels))
+    names(col_all_vals) <- all_labels
+    scale_colour <- function(breaks, labels, ...) ggplot2::scale_colour_manual(values = col_all_vals,
+                                                                               breaks = breaks,
+                                                                               labels = labels,
+                                                                               name = legend_name,...)
+    
+    my_coord <- ggplot2::coord_cartesian(xlim = rt_lim)
+
+    function(plot,breaks,labels) plot + my_coord + scale_colour(breaks=breaks,
+                                                                labels=labels) + scale_y() + my_theme() 
+}
+
+
+plot_eic_ms1 <- function(df,style_fun,plot_label) {
+    mk_leg_lab<-function(tag,rt) {if (length(tag) > 0) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else character(0)}
+
+    mz <- df[,unique(mz)]
+    tbl <- df[,.(verb_labs=mk_leg_lab(plot_label,rt_peak),plot_label),
+              by=c("plot_label","rt_peak")]
+    verb_labs <- tbl[,verb_labs]
+    labs <- tbl[,plot_label]
+    df[,plot_label:=factor(plot_label)]
+    style_fun(ggplot2::ggplot(df,ggplot2::aes(x=rt,y=intensity,colour=plot_label)),
+              breaks=labs,
+              labels=verb_labs) +
+        ggplot2::geom_line(key_glyph=KEY_GLYPH) +
+        ggplot2::labs(x=CHR_GRAM_X,
+                      y=CHR_GRAM_Y)
+}
+
