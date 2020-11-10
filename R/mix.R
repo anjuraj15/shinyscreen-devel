@@ -1066,6 +1066,26 @@ gen_base_ms1_plot_tab <- function(summ,ms1_spec) {
     setkeyv(res,cols=BASE_KEY)
     res
 }
+
+gen_base_ms2_plot_tab <- function(summ,ms2_spec) {
+    ident <- c("set",
+               "adduct",
+               "tag",
+               "ID",
+               "mz",
+               "Files")
+    res <- summ[ms2_spec,c(.SD,
+                           list(CE=i.CE,
+                                rt_peak = i.rt,
+                                int_peak = ms2_max_int,
+                                spec = i.spec,
+                                ms2_sel = i.ms2_sel)),
+                .SDcols=ident,
+                on=BASE_KEY,
+                nomatch=NULL]
+    setkeyv(res,cols=BASE_KEY)
+    res
+}
 plot_decor <- function(m,islog,all_labels,legend_name) {
     textf <- ggplot2::element_text
 
@@ -1110,5 +1130,49 @@ plot_eic_ms1 <- function(df,style_fun,plot_label) {
         ggplot2::geom_line(key_glyph=KEY_GLYPH) +
         ggplot2::labs(x=CHR_GRAM_X,
                       y=CHR_GRAM_Y)
+}
+
+plot_eic_ms2 <- function(df,style_fun,plot_label) {
+    mz <- df[,unique(mz)]
+    ddf <- df[!is.na(rt_peak)==T]
+    
+    mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
+    tbl <- ddf[,.(verb_labs=mk_leg_lab(plot_label,.SD[ms2_sel==T,rt_peak],any(ms2_sel)),plot_label),
+               by="plot_label"]
+    verb_labs <- tbl[,verb_labs]
+    labs <- tbl[,plot_label]
+
+    plot <- style_fun(ggplot2::ggplot(ddf,ggplot2::aes(x=rt_peak,ymin=0,ymax=int_peak,color=plot_label)),
+                      breaks=labs,
+                      labels=verb_labs)
+    plot + ggplot2::geom_linerange(key_glyph=KEY_GLYPH) +
+        ggplot2::labs(x=CHR_GRAM_X,
+                      y=CHR_GRAM_Y)
+
+}
+
+
+plot_spec_ms2 <- function(df,style_fun,plot_label) {
+    mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
+    ddf <- df[ms2_sel == T]
+    mz <- ddf[,unique(mz)]
+    labels <- ddf[,plot_label]
+    specs <- ddf[,spec]
+    rts <- ddf[,rt_peak]
+    lst <- Map(function(d,t) {d$plot_label<-t;d},specs,labels)
+    data <- dtable(mz=numeric(0),intensity=numeric(0),plot_label=factor(0))
+    data <- rbind(data,
+                  data.table::rbindlist(lst),
+                  fill=T)
+    data <- data[!(is.na(mz)),]
+
+    leglabs <- mk_leg_lab(labels,rts,T)
+    plot <- style_fun(ggplot2::ggplot(data,ggplot2::aes(x=mz,ymin=0,ymax=intensity,color=plot_label)),
+                      labels=leglabs,
+                      breaks=labels)
+    plot +
+        ggplot2::geom_linerange(key_glyph=KEY_GLYPH) +
+        ggplot2::labs(x="mz", y="intensity")
+
 }
 
