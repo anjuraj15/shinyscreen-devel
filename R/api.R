@@ -503,6 +503,7 @@ create_plots <- function(m) {
                                            ms1_spec=m$out$tab$ms1_spec)
     ms2_plot_data <- gen_base_ms2_plot_tab(summ=x,
                                            ms2_spec=m$out$tab$ms2_spec)
+    
     message("Done generating plot data.")
 
     group_data <- m$conf$figures$grouping
@@ -537,6 +538,13 @@ create_plots <- function(m) {
                                  legend_name_ms1 = plot_ms1_label,
                                  legend_name_ms2 = "CE")
 
+    style_ms2_leg <- plot_decor(m,m$conf$logaxes$ms2_spec_int,
+                                all_ms1_labels = all_ms1_labels,
+                                all_ms2_labels = all_ms2_ce_labels,
+                                legend_name_ms1 = plot_ms1_label,
+                                legend_name_ms2 = "CE",
+                                ms1_legend_info = F)
+
     
     message("Create MS1 EIC plots.")
     ## Generate MS1 EIC plots.
@@ -565,7 +573,9 @@ create_plots <- function(m) {
                               .(fig_eic=list(plot_eic_ms2(df=.SD,
                                                           style_fun = style_eic_ms2)),
                                 fig_spec=list(plot_spec_ms2(df=.SD,
-                                                            style_fun = style_spec_ms2))),
+                                                            style_fun = style_spec_ms2)),
+                                fig_leg= list(plot_leg_ms2(df=.SD,
+                                                           style_fun = style_ms2_leg))),
                               .SDcols=c("rt_peak","int_peak",
                                         plot_ms1_label,
                                         "parent_label",
@@ -599,7 +609,7 @@ create_plots <- function(m) {
         structimg,
         fig_eic))]
         ms1_plot[,structimg:=NULL]
-    }
+    } else ms1_plot$fig_struct <- NA
     m$out$tab$ms2_plot <- ms2_plot
     m$out$tab$ms1_plot <- ms1_plot
     m
@@ -610,9 +620,9 @@ save_plots <- function(m) {
     topdir <- FIG_TOPDIR 
     dir.create(topdir,showWarnings = F)
 
-    rt_lim <- DEFAULT_RT_RANGE
-    if (isTruthy(m$conf$figures$rt_min)) rt_lim[[1]] <- rt_in_min(m$conf$figures$rt_min)
-    if (isTruthy(m$conf$figures$rt_max)) rt_lim[[2]] <- rt_in_min(m$conf$figures$rt_max)
+    ## rt_lim <- DEFAULT_RT_RANGE
+    ## if (isTruthy(m$conf$figures$rt_min)) rt_lim[[1]] <- rt_in_min(m$conf$figures$rt_min)
+    ## if (isTruthy(m$conf$figures$rt_max)) rt_lim[[2]] <- rt_in_min(m$conf$figures$rt_max)
     
     my_theme <- function(...) ggplot2::theme(legend.position = "none",...)
 
@@ -625,62 +635,116 @@ save_plots <- function(m) {
         c(x1,x2)
     }
 
+    get_ms2_leg <- m$aux$get_ms2_leg
+
     grouping <- m$conf$figures$grouping
     plot_group <- grouping$group
     plot_plot <- grouping$plot
-    plot_ms1_label <- grouping$ms1_label
-    plot_ms2_label <- grouping$ms2_label
+    plot_ms1_label <- grouping$label
+    plot_ms2_label <- "CE"
+    doplot <- function(eic_ms1,eic_ms2,spec_ms2,leg_ms2,struct,group,plot) {
+        ## Produce the filename.
+        fn <- paste0(paste(group,plot,"all",sep = "_"),".pdf")
+        fn <- gsub("\\[","",fn)
+        fn <- gsub("\\]","",fn)
+        fn <- gsub("\\+","p",fn)
+        fn <- gsub("-","m",fn)
+        fn <- if (!is.null(topdir)) file.path(topdir,fn) else fn
 
-    groups <- m$out$tab$ms1_plot[,unique(.SD[[1]]),.SDcols=plot_group]
-    for (s in groups) {
-        sdf <- m$out$tab$flt_summ[.SD[[1]]==s,.SDcols=plot_group]
-        plot_group <- sdf[,unique(.SD[[1]]),.SDcols=plot_plot]
-        for (g in plot_group) {
-            asdf <- sdf[.SD[[1]]==g,.SDcols=plot_plot] 
-            ids <- asdf[,unique(ID)]
-            for (id in ids) {
-                message("Image ","set: ",s," group: ", g, " id: ",id)
-                
-                tab <- asdf[ID==id,.(tag,ms1_int,ms1_rt,adduct,mz)]
-                ms1_figs <- m$out$tab$ms1_plot_eic[set==s & adduct==g & ID==id,.(fig,structfig)]
-                ms2_figs <- m$out$tab$ms2_plot[set==s & adduct==g & ID==id,.(fig_eic,fig_spec)]
-                ms1_eic <- ms1_figs$fig[[1]]
-                rt_rng <- range(ms1_eic$data[,rt])
-                if (!is.na(rt_lim[[1]])) rt_rng[[1]] <- rt_lim[[1]]
-                if (!is.na(rt_lim[[2]])) rt_rng[[2]] <- rt_lim[[2]]
-                my_coord <- ggplot2::coord_cartesian(xlim = rt_rng)
-                ms2_eic <- ms2_figs$fig_eic[[1]]+my_coord #ggplot2::coord_cartesian(xlim = rt_rng)
-                ms2_spec <- ms2_figs$fig_spec[[1]]
-                xxdf <- ms1_figs$fig[[1]]$data[,.(rt=rt,intensity=intensity)]
-                empty_fig <- ggplot2::ggplot(xxdf,ggplot2::aes(x=rt,y=intensity)) +
-                    ggplot2::geom_blank() +
-                    ggplot2::theme_void()
+        ## Create an empty figure.
+        
+        xxdf <- eic_ms1$data[,.(rt=rt,intensity=intensity)]
+        empty_fig <- ggplot2::ggplot(xxdf,ggplot2::aes(x=rt,y=intensity)) +
+            ggplot2::geom_blank() +
+            ggplot2::theme_void()
+        leg1 <- cowplot::get_legend(eic_ms1)
+        leg2 <- empty_fig
+        if (NROW(eic_ms2$data) == 0)
+            eic_ms2 <- empty_fig else {
+                                     leg2 <- leg_ms2
+                                 }
+        if (NROW(spec_ms2$data) == 0) spec_ms2 <- empty_fig
+        if (is.na(struct)) struct <- empty_fig
+        big_fig <- cowplot::plot_grid(eic_ms1+my_theme(),
+                                      struct,
+                                      eic_ms2+my_theme(),
+                                      leg2,
+                                      spec_ms2+my_theme(),
+                                      leg1,
+                                      align = "hv",
+                                      axis='l',
+                                      ncol = 2,
+                                      nrow = 3,
+                                      rel_widths = c(2,1))
 
-                ## if (id == 1078) browser()
-                if (NROW(ms2_eic$data) == 0) ms2_eic <- empty_fig
-                if (NROW(ms2_spec$data) == 0) ms2_spec <- empty_fig
-                leg <- cowplot::get_legend(ms1_eic)
-                big_fig <- cowplot::plot_grid(ms1_eic+my_theme(),
-                                              ms1_figs$structfig[[1]],
-                                              ms2_eic+my_theme(),
-                                              empty_fig,
-                                              ms2_spec+my_theme(),leg,
-                                              align = "hv",
-                                              axis='l',
-                                              ncol = 2,
-                                              nrow = 3,
-                                              rel_widths = c(2,1))
-                ggplot2::ggsave(plot=big_fig,filename = fig_path(top=topdir,
-                                                                 set=s,
-                                                                 group=g,
-                                                                 id=id,
-                                                                 suff="all"))
-                
-                
-            }
-            
-        }
+        message("Saving plot: ",group,", ",plot," to ",fn)
+        ggplot2::ggsave(plot=big_fig,filename = fn)
+        
+        
+        
     }
+
+    
+    m$out$tab$ms2_plot[m$out$tab$ms1_plot,Map(doplot,
+                                      i.fig_eic,
+                                      x.fig_eic,
+                                      x.fig_spec,
+                                      x.fig_leg,
+                                      i.fig_struct,
+                                      .SD[[1]],
+                                      .SD[[2]]),
+                       on=c(plot_group,plot_plot),
+                       .SDcols=c(plot_group,plot_plot)]
+    ## groups <- m$out$tab$ms1_plot[,unique(.SD[[1]]),.SDcols=plot_group]
+    ## for (s in groups) {
+    ##     sdf <- m$out$tab$ms1_plot[,.SD[[1]]==s && ,.SDcols=c(plot_group,plot_plot)]
+    ##     plot_group <- sdf[,unique(.SD[[1]]),.SDcols=plot_plot]
+    ##     for (g in plot_group) {
+    ##         asdf <- sdf[.SD[[1]]==g,.SDcols=plot_plot] 
+    ##         ids <- asdf[,unique(ID)]
+    ##         for (id in ids) {
+    ##             message("Image ","set: ",s," group: ", g, " id: ",id)
+                
+    ##             tab <- asdf[ID==id,.(tag,ms1_int,ms1_rt,adduct,mz)]
+    ##             ms1_figs <- m$out$tab$ms1_plot_eic[set==s & adduct==g & ID==id,.(fig,structfig)]
+    ##             ms2_figs <- m$out$tab$ms2_plot[set==s & adduct==g & ID==id,.(fig_eic,fig_spec)]
+    ##             ms1_eic <- ms1_figs$fig[[1]]
+    ##             rt_rng <- range(ms1_eic$data[,rt])
+    ##             if (!is.na(rt_lim[[1]])) rt_rng[[1]] <- rt_lim[[1]]
+    ##             if (!is.na(rt_lim[[2]])) rt_rng[[2]] <- rt_lim[[2]]
+    ##             my_coord <- ggplot2::coord_cartesian(xlim = rt_rng)
+    ##             ms2_eic <- ms2_figs$fig_eic[[1]]+my_coord #ggplot2::coord_cartesian(xlim = rt_rng)
+    ##             ms2_spec <- ms2_figs$fig_spec[[1]]
+    ##             xxdf <- ms1_figs$fig[[1]]$data[,.(rt=rt,intensity=intensity)]
+    ##             empty_fig <- ggplot2::ggplot(xxdf,ggplot2::aes(x=rt,y=intensity)) +
+    ##                 ggplot2::geom_blank() +
+    ##                 ggplot2::theme_void()
+
+    ##             ## if (id == 1078) browser()
+    ##             if (NROW(ms2_eic$data) == 0) ms2_eic <- empty_fig
+    ##             if (NROW(ms2_spec$data) == 0) ms2_spec <- empty_fig
+    ##             leg <- cowplot::get_legend(ms1_eic)
+    ##             big_fig <- cowplot::plot_grid(ms1_eic+my_theme(),
+    ##                                           ms1_figs$structfig[[1]],
+    ##                                           ms2_eic+my_theme(),
+    ##                                           empty_fig,
+    ##                                           ms2_spec+my_theme(),leg,
+    ##                                           align = "hv",
+    ##                                           axis='l',
+    ##                                           ncol = 2,
+    ##                                           nrow = 3,
+    ##                                           rel_widths = c(2,1))
+    ##             ggplot2::ggsave(plot=big_fig,filename = fig_path(top=topdir,
+    ##                                                              set=s,
+    ##                                                              group=g,
+    ##                                                              id=id,
+    ##                                                              suff="all"))
+                
+                
+    ##         }
+            
+    ##     }
+    ## }
 
     m
 

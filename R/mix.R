@@ -1140,6 +1140,29 @@ plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="C
 }
 
 
+gen_get_ms2_legend <- function(m,legend_name_ms2="CE",all_ms2_labels) {
+    shape_all_vals <- 1:length(all_ms2_labels)
+    scale_ms2 <- if (length(shape_all_vals)>0) {
+                     names(shape_all_vals) <- all_ms2_labels
+                     function(breaks, labels, ...)  ggplot2::scale_shape_manual(values = shape_all_vals,
+                                                                                breaks = breaks,
+                                                                                labels = labels,
+                                                                                name = legend_name_ms2, ...)
+                 } else {
+                     function(breaks=NULL, labels=NULL, ...) NULL
+                     
+                     
+                 }
+    function(plot,breaks,labels) {
+        thing <- plot + scale_ms2(breaks=breaks,
+                                  labels=labels)
+
+        cowplot::get_legend(thing)
+        
+    }
+}
+
+
 plot_eic_ms1 <- function(df,style_fun,plot_label) {
     mk_leg_lab<-function(tag,rt) {if (length(tag) > 0) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else character(0)}
 
@@ -1182,7 +1205,6 @@ plot_eic_ms2 <- function(df,style_fun) {
 
 }
 
-
 plot_spec_ms2 <- function(df,style_fun) {
     mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
     ddf <- df[ms2_sel == T]
@@ -1214,3 +1236,24 @@ plot_spec_ms2 <- function(df,style_fun) {
 
 }
 
+plot_leg_ms2 <- function(df,style_fun) {
+    mz <- df[,unique(mz)]
+    ddf <- df[!is.na(rt_peak)==T]
+    
+    mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
+    tbl <- ddf[,.(verb_labs=mk_leg_lab(plot_label,.SD[ms2_sel==T,rt_peak],any(ms2_sel)),plot_label),
+               by="plot_label"]
+    ms2_verb_labs <- tbl[,verb_labs]
+    ms2_labs <- tbl[,plot_label]
+    ms1_labs <- ddf[,levels(parent_label)]
+    blah <- ggplot2::ggplot(ddf,ggplot2::aes(shape = plot_label,y=int_peak,x=rt_peak)) + ggplot2::geom_point()
+    
+    
+    plot <- style_fun(blah,
+                      breaks=ms1_labs,
+                      labels=ms1_labs,
+                      ms2_breaks=ms2_labs,
+                      ms2_labels=ms2_verb_labs)
+    cowplot::get_legend(plot)
+
+}
