@@ -75,7 +75,7 @@ load_compound_input <- function(m) {
     fns <- m$conf$compounds$lists
     for (l in 1:length(fns)) {
         fn <- fns[[l]]
-        # fnfields <- somehow read the file columns in
+                                        # fnfields <- somehow read the file columns in
         dt <- file2tab(fn, colClasses=c(ID="character",
                                         SMILES="character",
                                         Formula="character",
@@ -83,7 +83,7 @@ load_compound_input <- function(m) {
                                         RT="numeric",
                                         mz="numeric"))
         verify_cmpd_l(dt=dt,fn=fn)
-        # nonexist <- setdiff(fnfields,fields)
+                                        # nonexist <- setdiff(fnfields,fields)
         coll[[l]] <- dt #if (length(nonexist)==0) dt else dt[,(nonexist) := NULL]
         coll[[l]]$ORIG <- fn
         
@@ -261,7 +261,7 @@ mk_tol_funcs <- function(m) {
     m$extr$tol$eic <- gen_mz_err_f(m$conf$tolerance$eic,
                                    "eic error: Only ppm, or Da units allowed.")
 
- 
+    
     m$extr$tol$rt <- gen_rt_err(m$conf$tolerance$rt,
                                 "rt error: Only s(econds), or min(utes) allowed.")
     
@@ -311,7 +311,7 @@ extr_data <- function(m) {
         
         
         err_rt <- m$conf$tolerance$rt
-                                   
+        
         x <- futuref(extract(fn=fn,
                              tab=tab,
                              err_ms1_eic=err_ms1_eic,
@@ -384,15 +384,15 @@ prescreen <- function(m) {
                          rt=NA_real_,
                          spec=list(dtable(mz=NA_real_,intensity=NA_real_)),
                          ms2_sel=NA) else {
-                                                                                dtable(
-                                                                                    CE=sapply(spec,
-                                                                                              function (x) x$CE),
-                                                                                    rt=sapply(spec,
-                                                                                              function (x) x$rt),
-                                                                                    spec=lapply(spec,
-                                                                                                function (x) x$spec),
-                                                                                    ms2_sel=F)
-                                      }
+                                         dtable(
+                                             CE=sapply(spec,
+                                                       function (x) x$CE),
+                                             rt=sapply(spec,
+                                                       function (x) x$rt),
+                                             spec=lapply(spec,
+                                                         function (x) x$spec),
+                                             ms2_sel=F)
+                                     }
         if (!is.na(ms2_sel)) dt$ms2_sel[[ms2_sel]] <- T
         
         
@@ -449,8 +449,8 @@ sort_spectra <- function(m) {
     cols <- if (!is.null(m$conf[["summary table"]]$order)) m$conf[["summary table"]]$order else DEF_INDEX_SUMM
     
     idx <- gsub("^\\s*-\\s*","",cols) #We need only column names for
-                                      #now, so remove minuses where
-                                      #needed.
+                                        #now, so remove minuses where
+                                        #needed.
     assertthat::assert_that(all(idx %in% colnames(m$out$tab$summ)),msg = "Some column(s) in order key in conf file does not exist in the summary table.")
 
     data.table::setindexv(m$out$tab$summ,idx)
@@ -493,8 +493,8 @@ subset_summary <- function(m) {
 
 #' @export
 create_plots <- function(m) {
-    ## Empty ms1_plot table.
-    
+    ## Produce plots of EICs and spectra and group them acording to
+    ## conf$figures$grouping.
 
     ## Select the data nedeed for plotting.
     x <- m$out$tab$flt_summ
@@ -508,29 +508,36 @@ create_plots <- function(m) {
     group_data <- m$conf$figures$grouping
     plot_group <- if (!shiny::isTruthy(group_data$group)) FIG_DEF_CONF$grouping$group else group_data$group
     plot_plot <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$plot else group_data$plot
-    plot_ms1_label <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$ms1_label else group_data$ms1_label
-    plot_ms2_label <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$ms2_label else group_data$ms2_label
-    message("plot_group:",plot_group)
-    message("plot_plot:",plot_plot)
-    message("plot_ms1_label",plot_ms1_label)
-    message("plot_ms2_label",plot_ms2_label)
+    plot_ms1_label <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$ms1_label else group_data$label
+    plot_ms2_label <- "CE"
+
+    message("plot_group: ",plot_group)
+    message("plot_plot: ",plot_plot)
+    message("plot_ms1_label: ",plot_ms1_label)
+    message("plot_ms2_label: ",plot_ms2_label)
+    
     plot_index <- c(plot_group,plot_plot)
 
     ## All the possible curve labels.
     all_ms1_labels <- ms1_plot_data[,unique(.SD),.SDcols=plot_ms1_label][[plot_ms1_label]]
-    all_ms2_labels <- ms2_plot_data[,unique(.SD),.SDcols=plot_ms2_label][[plot_ms2_label]]
+    all_ms2_ce_labels <- ms2_plot_data[,unique(CE)]
     
     ## Plot styling.
     style_eic_ms1 <- plot_decor(m,m$conf$logaxes$ms1_eic_int,
-                                all_labels=all_ms1_labels,
-                                legend_name=plot_ms1_label)
+                                all_ms1_labels=all_ms1_labels,
+                                legend_name_ms1=plot_ms1_label)
     style_eic_ms2 <- plot_decor(m,m$conf$logaxes$ms2_eic_int,
-                                all_labels=all_ms2_labels,
-                                legend_name=plot_ms2_label)
+                                all_ms1_labels = all_ms1_labels,
+                                all_ms2_labels = all_ms2_ce_labels,
+                                legend_name_ms1 = plot_ms1_label,
+                                legend_name_ms2 = "CE")
     style_spec_ms2 <- plot_decor(m,m$conf$logaxes$ms2_spec_int,
-                                 all_labels=all_ms2_labels,
-                                 legend_name = plot_ms2_label)
+                                 all_ms1_labels = all_ms1_labels,
+                                 all_ms2_labels = all_ms2_ce_labels,
+                                 legend_name_ms1 = plot_ms1_label,
+                                 legend_name_ms2 = "CE")
 
+    
     message("Create MS1 EIC plots.")
     ## Generate MS1 EIC plots.
     ms1_plot <- ms1_plot_data[,.(fig_eic={
@@ -552,22 +559,23 @@ create_plots <- function(m) {
     message("Done creating MS1 EIC plots.")
     ## Generate MS2 EIC plots.
     message("Create MS2 EIC plots.")
-    ms2_plot_data[,plot_label:=factor(.SD[[1]]),.SDcols=plot_ms2_label]
-    ms2_plot <- ms2_plot_data[,.(fig_eic=list(plot_eic_ms2(df=.SD,
-                                                           style_fun = style_eic_ms2,
-                                                           plot_label = plot_ms2_label)),
-                                 fig_spec=list(plot_spec_ms2(df=.SD,
-                                                             style_fun = style_spec_ms2,
-                                                             plot_label = plot_ms2_label))),
+    ms2_plot_data[,parent_label:=factor(.SD[[1]]),.SDcols=plot_ms1_label]
+    ms2_plot_data[,plot_label:=factor(CE)]
+    ms2_plot <- ms2_plot_data[,
+                              .(fig_eic=list(plot_eic_ms2(df=.SD,
+                                                          style_fun = style_eic_ms2)),
+                                fig_spec=list(plot_spec_ms2(df=.SD,
+                                                            style_fun = style_spec_ms2))),
                               .SDcols=c("rt_peak","int_peak",
-                                        plot_ms2_label,
+                                        plot_ms1_label,
+                                        "parent_label",
                                         "plot_label",
                                         "spec",
                                         "ms2_sel",
                                         "mz"),
                               by = plot_index]
     message("Done creating MS1 EIC plots.")
-
+    
     ## Generate structure plots.
     structab <- ms1_plot_data[,.(ID=unique(ID))]
     structab <- m$out$tab$comp[known=="structure",][structab,.(ID=i.ID,SMILES=SMILES),on="ID",nomatch=NULL,mult="first"]
@@ -617,13 +625,18 @@ save_plots <- function(m) {
         c(x1,x2)
     }
 
-    
-    sets <- m$out$tab$flt_summ[,unique(set)]
-    for (s in sets) {
-        sdf <- m$out$tab$flt_summ[set==s,]
-        group <- sdf[,unique(adduct)]
-        for (g in group) {
-            asdf <- sdf[adduct==g,] 
+    grouping <- m$conf$figures$grouping
+    plot_group <- grouping$group
+    plot_plot <- grouping$plot
+    plot_ms1_label <- grouping$ms1_label
+    plot_ms2_label <- grouping$ms2_label
+
+    groups <- m$out$tab$ms1_plot[,unique(.SD[[1]]),.SDcols=plot_group]
+    for (s in groups) {
+        sdf <- m$out$tab$flt_summ[.SD[[1]]==s,.SDcols=plot_group]
+        plot_group <- sdf[,unique(.SD[[1]]),.SDcols=plot_plot]
+        for (g in plot_group) {
+            asdf <- sdf[.SD[[1]]==g,.SDcols=plot_plot] 
             ids <- asdf[,unique(ID)]
             for (id in ids) {
                 message("Image ","set: ",s," group: ", g, " id: ",id)

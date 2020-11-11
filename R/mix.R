@@ -1086,7 +1086,8 @@ gen_base_ms2_plot_tab <- function(summ,ms2_spec) {
     setkeyv(res,cols=BASE_KEY)
     res
 }
-plot_decor <- function(m,islog,all_labels,legend_name) {
+plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="CE",all_ms2_labels=NULL,
+                       ms1_legend_info=T) {
     textf <- ggplot2::element_text
 
     ## Logarithmic, or linear y axis?
@@ -1101,17 +1102,41 @@ plot_decor <- function(m,islog,all_labels,legend_name) {
 
     getpal <- colorRampPalette(RColorBrewer::brewer.pal(8,"Dark2"))
     
-    col_all_vals <- getpal(length(all_labels))
-    names(col_all_vals) <- all_labels
-    scale_colour <- function(breaks, labels, ...) ggplot2::scale_colour_manual(values = col_all_vals,
-                                                                               breaks = breaks,
-                                                                               labels = labels,
-                                                                               name = legend_name,...)
+    col_all_vals <- getpal(length(all_ms1_labels))
+    names(col_all_vals) <- all_ms1_labels
+   
+    scale_colour <- if (ms1_legend_info) {
+                        function(breaks, labels, ...) ggplot2::scale_colour_manual(values = col_all_vals,
+                                                                                   breaks = breaks,
+                                                                                   labels = labels,
+                                                                                   name = legend_name_ms1,...)
+                    } else {
+                        function(breaks=NULL, labels=NULL, ...) NULL
+                    }
+
+    
+    shape_all_vals <- 1:length(all_ms2_labels)
+    scale_ms2 <- if (length(shape_all_vals)>0) {
+                     names(shape_all_vals) <- all_ms2_labels
+                     function(breaks, labels, ...)  ggplot2::scale_shape_manual(values = shape_all_vals,
+                                                                                breaks = breaks,
+                                                                                labels = labels,
+                                                                                name = legend_name_ms2, ...)
+                 } else {
+                     function(breaks=NULL, labels=NULL, ...) NULL
+                     
+                     
+                 }
     
     my_coord <- ggplot2::coord_cartesian(xlim = rt_lim)
 
-    function(plot,breaks,labels) plot + my_coord + scale_colour(breaks=breaks,
-                                                                labels=labels) + scale_y() + my_theme() 
+    function(plot,breaks,labels,
+             ms2_breaks=NULL,ms2_labels=NULL) plot + my_coord +
+                                                  scale_colour(breaks=breaks,
+                                                               labels=labels) +
+                                                  scale_ms2(breaks=ms2_breaks,
+                                                            labels=ms2_labels) +
+                                                  scale_y() + my_theme() 
 }
 
 
@@ -1132,46 +1157,59 @@ plot_eic_ms1 <- function(df,style_fun,plot_label) {
                       y=CHR_GRAM_Y)
 }
 
-plot_eic_ms2 <- function(df,style_fun,plot_label) {
+plot_eic_ms2 <- function(df,style_fun) {
     mz <- df[,unique(mz)]
     ddf <- df[!is.na(rt_peak)==T]
     
     mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
     tbl <- ddf[,.(verb_labs=mk_leg_lab(plot_label,.SD[ms2_sel==T,rt_peak],any(ms2_sel)),plot_label),
                by="plot_label"]
-    verb_labs <- tbl[,verb_labs]
-    labs <- tbl[,plot_label]
-
-    plot <- style_fun(ggplot2::ggplot(ddf,ggplot2::aes(x=rt_peak,ymin=0,ymax=int_peak,color=plot_label)),
-                      breaks=labs,
-                      labels=verb_labs)
+    ms2_verb_labs <- tbl[,verb_labs]
+    ms2_labs <- tbl[,plot_label]
+    ms1_labs <- ddf[,levels(parent_label)]
+    
+    plot <- style_fun(ggplot2::ggplot(ddf,ggplot2::aes(x = rt_peak,ymin = 0,ymax = int_peak,
+                                                       y = int_peak,
+                                                       color = parent_label, shape = plot_label)),
+                      breaks=ms1_labs,
+                      labels=ms1_labs,
+                      ms2_breaks=ms2_labs,
+                      ms2_labels=ms2_verb_labs)
     plot + ggplot2::geom_linerange(key_glyph=KEY_GLYPH) +
+        ggplot2::geom_point() +
         ggplot2::labs(x=CHR_GRAM_X,
                       y=CHR_GRAM_Y)
 
 }
 
 
-plot_spec_ms2 <- function(df,style_fun,plot_label) {
+plot_spec_ms2 <- function(df,style_fun) {
     mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
     ddf <- df[ms2_sel == T]
     mz <- ddf[,unique(mz)]
     labels <- ddf[,plot_label]
+    parent_labels <- ddf[,parent_label]
     specs <- ddf[,spec]
     rts <- ddf[,rt_peak]
-    lst <- Map(function(d,t) {d$plot_label<-t;d},specs,labels)
-    data <- dtable(mz=numeric(0),intensity=numeric(0),plot_label=factor(0))
+    lst <- Map(function(d,t,pt) {d$plot_label<-t;d$parent_label <- pt;d},specs,labels,parent_labels)
+    data <- dtable(mz=numeric(0),intensity=numeric(0),plot_label=factor(0),parent_label=factor(0))
     data <- rbind(data,
                   data.table::rbindlist(lst),
                   fill=T)
     data <- data[!(is.na(mz)),]
 
     leglabs <- mk_leg_lab(labels,rts,T)
-    plot <- style_fun(ggplot2::ggplot(data,ggplot2::aes(x=mz,ymin=0,ymax=intensity,color=plot_label)),
-                      labels=leglabs,
-                      breaks=labels)
+    plot <- style_fun(ggplot2::ggplot(data,ggplot2::aes(x=mz,ymin=0,ymax=intensity,
+                                                        y = intensity,
+                                                        color=plot_label,
+                                                        shape=parent_label)),
+                      labels=parent_labels,
+                      breaks=parent_labels,
+                      ms2_breaks=labels,
+                      ms2_labels=leglabs)
     plot +
         ggplot2::geom_linerange(key_glyph=KEY_GLYPH) +
+        ggplot2::geom_point() +
         ggplot2::labs(x="mz", y="intensity")
 
 }
