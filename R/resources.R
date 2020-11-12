@@ -207,5 +207,4 @@ BASE_KEY <- c("adduct","Files","ID")
 
 FIG_DEF_CONF <-list(grouping=list(group="set",
                                   plot="ID",
-                                  ms1_label="tag",
-                                  ms2_label="CE"))
+                                  label="tag"))

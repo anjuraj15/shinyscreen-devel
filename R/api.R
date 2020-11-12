@@ -509,7 +509,7 @@ create_plots <- function(m) {
     group_data <- m$conf$figures$grouping
     plot_group <- if (!shiny::isTruthy(group_data$group)) FIG_DEF_CONF$grouping$group else group_data$group
     plot_plot <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$plot else group_data$plot
-    plot_ms1_label <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$ms1_label else group_data$label
+    plot_ms1_label <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$label else group_data$label
     plot_ms2_label <- "CE"
 
     message("plot_group: ",plot_group)
