@@ -1094,17 +1094,13 @@ plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="C
     scale_y <- if (shiny::isTruthy(islog))
                        ggplot2::scale_y_log10 else ggplot2::scale_y_continuous
 
-    rt_new_lim <- c(rt_in_min(m$conf$figures$rt_min),
-                    rt_in_min(m$conf$figures$rt_max))
-    rt_lim <- get_coord_lim(rt_new_lim,DEFAULT_RT_RANGE)
-
     my_theme <- function (...) ggplot2::theme()
 
     getpal <- colorRampPalette(RColorBrewer::brewer.pal(8,"Dark2"))
     
     col_all_vals <- getpal(length(all_ms1_labels))
     names(col_all_vals) <- all_ms1_labels
-   
+    
     scale_colour <- if (ms1_legend_info) {
                         function(breaks, labels, ...) ggplot2::scale_colour_manual(values = col_all_vals,
                                                                                    breaks = breaks,
@@ -1128,10 +1124,9 @@ plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="C
                      
                  }
     
-    my_coord <- ggplot2::coord_cartesian(xlim = rt_lim)
+    
 
-    function(plot,breaks,labels,
-             ms2_breaks=NULL,ms2_labels=NULL) plot + my_coord +
+    function(plot, breaks, labels, ms2_breaks=NULL, ms2_labels=NULL) plot +
                                                   scale_colour(breaks=breaks,
                                                                labels=labels) +
                                                   scale_ms2(breaks=ms2_breaks,
