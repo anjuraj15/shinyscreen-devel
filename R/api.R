@@ -566,6 +566,7 @@ create_plots <- function(m) {
     message("Done creating MS1 EIC plots.")
     ## Generate MS2 EIC plots.
     message("Create MS2 EIC plots.")
+    
     ms2_plot_data[,parent_label:=factor(.SD[[1]]),.SDcols=plot_ms1_label]
     ms2_plot_data[,plot_label:=factor(CE)]
     ms2_plot <- ms2_plot_data[,

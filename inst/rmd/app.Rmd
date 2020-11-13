@@ -34,7 +34,8 @@ rv_dfiles <- reactiveVal(def_datafiles)
 ## Data-file table when loading.
 rv_datatab <- reactiveVal(def_datatab)
 
-
+## Re-definitions.
+PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
 
 ```
 
@@ -352,10 +353,16 @@ shinyscreen::rt_input(input_rt = "plot_rt_max",
 
 <details><summary>How to group plots?</summary> 
 
-The _Select plot group_ and _Select plot label_ controls control how
-the data is visually grouped together. The _plot group_ groups
-together multiple curves in a single graph. Each curve in a graph is
-designated by the _plot label_.
+Plots are organised according to three categories: _plot group_,
+_label group_ and _label_. Category _label_ represents a line in a
+plot (for example, data from a specific file designated by _tag_ key
+in the file table). Category _label group_ defines how different
+labels are grouped together onto a graph (for continuing from the
+previous example, if _label group_ is _ID_ then all _tag_s connected
+to a single _ID_ are going to be plotted together on a graph). Lastly,
+Different _label group_s are going to be organised into _plot group_s.
+
+Keys in different categores must be different.
 
 </details>
 
@@ -363,10 +370,22 @@ designated by the _plot label_.
 
 <div style="padding-right:0.5em;">
 ```{r, echo=F}
-p_feats <- 1:length(shinyscreen:::PLOT_FEATURES)
-names(p_feats) <- shinyscreen:::PLOT_FEATURES
+p_feats <- 1:length(PLOT_FEATURES)
+names(p_feats) <- PLOT_FEATURES
+selectInput(inputId = "plot_grp",
+            label = "Group plots",
+            choices = p_feats,
+            selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["group"]]]],
+            width  = "100%")
+```
+</div>
+
+<div style="padding-right:0.5em;padding-left:0.5em;">
+```{r, echo=F}
+p_feats <- 1:length(PLOT_FEATURES)
+names(p_feats) <- PLOT_FEATURES
 selectInput(inputId = "plot_grp_plot",
-            label = "Select plot group",
+            label = "Group labels",
             choices = p_feats,
             selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["plot"]]]],
             width  = "100%")
@@ -375,10 +394,10 @@ selectInput(inputId = "plot_grp_plot",
 
 <div style="padding-left:0.5em;">
 ```{r, echo=F}
-p_feats <- 1:length(shinyscreen:::PLOT_FEATURES)
-names(p_feats) <- shinyscreen:::PLOT_FEATURES
+p_feats <- 1:length(PLOT_FEATURES)
+names(p_feats) <- PLOT_FEATURES
 selectInput(inputId = "plot_label",
-            label = "Select plot label",
+            label = "Label",
             choices = p_feats,
             selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["label"]]]],
             width = "100%")
@@ -991,6 +1010,17 @@ observe({
 ```
 <!-- Plotting -->
 ```{r, include='false', context = 'server'}
+observe({
+    plot_group <- PLOT_FEATURES[[as.integer(input$plot_grp)]]
+    plot_plot <- PLOT_FEATURES[[as.integer(input$plot_grp_plot)]]
+    plot_label <-PLOT_FEATURES[[as.integer(input$plot_label)]]
+    isolate({
+        rv_state$conf$figures$grouping$group <- plot_group
+        rv_state$conf$figures$grouping$plot <- plot_plot
+        rv_state$conf$figures$grouping$label <- plot_label
+    })
+
+}, label = "plot-grouping")
 observe({
     vals <- input$plot_log
     checked <- c("MS1 EIC"=F,
