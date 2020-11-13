@@ -414,13 +414,13 @@ also be used from the script.
 
 ```{r, echo=FALSE}
 actionButton(inputId = "state_file_load_b",
-             label= "Restore project state")
+             label= "Restore project")
 
 ```
 
 ```{r, echo=FALSE}
 actionButton(inputId = "state_file_save_b",
-             label= "Save project state")
+             label= "Save project")
 
 ```
 
@@ -606,7 +606,8 @@ update_gui <- function(in_conf, session) {
         ## Files
         df <- shinyscreen:::file2tab(in_conf$data)
         df[,tag:=as.character(tag),with=T]
-        rv_dfiles(df[,.(File=Files,tag),by=c("Files","tag"),mult="first"])
+        rv_dfiles(df[,.(File=Files,tag),by=c("Files","tag"),mult="first"][,Files:=NULL])
+        print(rv_dfiles)
         nms <- colnames(df)
         nms <- nms[nms!="Files"]
         fdt <- df[,..nms]

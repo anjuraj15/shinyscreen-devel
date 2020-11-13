@@ -341,11 +341,10 @@ extr_data <- function(m) {
     }
     ztmp <- lapply(tmp,future::value)
 
-    ## ## We need to add in Files (after futures are resolved).
-    ## for (nn in 1:nrow(ftags)) {
-    ##     fn <- ftags[nn,Files]
-    ##     ztmp[[nn]]$Files <- fn
-    ## }
+    message("WWWWWWWEEERERREEEEHEWERERRREEEE")
+    for (x in ztmp) {
+        message(colnames(x))
+    }
     m$extr$ms <- data.table::rbindlist(ztmp)
     fn_ex <- get_fn_extr(m)
     message('Saving extracted data to ', fn_ex)

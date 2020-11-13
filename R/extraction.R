@@ -209,7 +209,7 @@ extr_ms2<-function(ms1,ms2,ids,mz,adduct,err_coarse_fun, err_fine_fun) {
                        adduct=adduct,
                        err_coarse_fun=err_coarse_fun,
                        err_fine_fun=err_fine_fun)
-    
+
     uids <- unique(x$ID)
     uadds <- unique(x$adduct)
     acN<-MSnbase::acquisitionNum(ms2)
@@ -227,7 +227,8 @@ extr_ms2<-function(ms1,ms2,ids,mz,adduct,err_coarse_fun, err_fine_fun) {
                                                                           intensity=MSnbase::intensity(s)),
                                                               rt = MSnbase::rtime(s)/60.,
                                                               CE = MSnbase::collisionEnergy(s))))}, uids,uadds)
-    data.table::rbindlist(chunks)
+    res <- data.table::rbindlist(chunks,fill = T)
+    res
 }
 
 
