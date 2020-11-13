@@ -701,6 +701,7 @@ read_setid <- function(fn,cmpds) {
 
 write_conf <- function(m,fn) {
     m$conf$data <- get_fn_ftab(m)
+    if (NROW(m$input$tab$mzml)>0) tab2file(tab=m$input$tab$mzml,file=file.path(m$conf$project,FN_DATA_TAB))
     yaml::write_yaml(x=m$conf,file=fn)
     
     
@@ -1251,4 +1252,22 @@ plot_leg_ms2 <- function(df,style_fun) {
                       ms2_labels=ms2_verb_labs)
     cowplot::get_legend(plot)
 
+}
+
+#' @export
+tk_save_file <-  function (default = "", caption = "Select files", filters = NULL, index = 1) {
+    args <- list("tk_getSaveFile", title = caption)
+    if (nzchar(default)) 
+        args <- c(args, initialdir = dirname(default), initialfile = basename(default))
+    if (!is.null(filters)) {
+        if (!is.character(filters) || length(dim(filters)) != 
+            2 || ncol(filters) != 2) 
+            stop("'filters' must be a 2-column character matrix")
+        f <- filters
+        f[] <- paste0("{", filters, "}")
+        ff <- apply(f, 1, paste, collapse = " ")
+        fff <- paste0("{", ff, "}")
+        args <- c(args, filetypes = paste(fff, collapse = " "))
+    }
+    as.character(do.call(tcltk::tcl, args))
 }

@@ -198,8 +198,7 @@ REPORT_TITLE <- "Plots of EICs and MS2 Spectra"
 PLOT_FEATURES <- c("set",
                    "adduct",
                    "tag",
-                   "ID",
-                   "CE")
+                   "ID")
 
 ## Select the most fundamental group of entries. Within this group,
 ## each ID is unique.
