@@ -210,25 +210,29 @@ extr_ms2<-function(ms1,ms2,ids,mz,adduct,err_coarse_fun, err_fine_fun) {
                        err_coarse_fun=err_coarse_fun,
                        err_fine_fun=err_fine_fun)
 
-    uids <- unique(x$ID)
-    uadds <- unique(x$adduct)
+    ## This was here before and obviously wrong when multiple adducts
+    ## correspond to the same ID:
+    ## 
+    ## uids <- unique(x$ID)
+    ## uadds <- unique(x$adduct)
+    idadd <- x[,unique(.SD),.SDcols=c("ID","adduct")]
     acN<-MSnbase::acquisitionNum(ms2)
     chunks <- Map(function(id,ad) {
+
+        
         ans <- x[id==x$ID & ad==x$adduct,]$aN
         sp<-ms2[which(acN %in% ans)]
-        r<-list()
-        n <- length(sp)
-        dtable(ID=rep(id,n),
-               adduct=rep(ad,n),
-               CE=MSnbase::collisionEnergy(sp),
-               rt=MSnbase::rtime(sp)/60.,
-               maspI=spectrapply(sp,function (s) max(MSnbase::intensity(s))),
-               spec=MSnbase::spectrapply(sp,function (s) list(spec=dtable(mz=MSnbase::mz(s),
-                                                                          intensity=MSnbase::intensity(s)),
-                                                              rt = MSnbase::rtime(s)/60.,
-                                                              CE = MSnbase::collisionEnergy(s))))}, uids,uadds)
-    res <- data.table::rbindlist(chunks,fill = T)
-    res
+
+        message("id:",id,"ad:",ad)
+        res <- gen_ms2_spec_blk(sp)
+        res$ID <- id
+        res$adduct <- ad
+        res
+    },
+    idadd$ID,idadd$adduct)
+
+    data.table::rbindlist(chunks,fill = T)
+    
 }
 
 
@@ -486,11 +490,12 @@ extr_eic_ms1 <- function(tab,err) {
 }
 
 ##' @export
-extract <- function(fn,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
+extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
     ## Extracts MS1 and MS2 EICs, as well as MS2 spectra, subject to
     ## tolerance specifications.
 
     ## TODO: Still detecting external references ... but which?
+    ## However, the results check out, compared to sequential access.
     err_coarse_fun <- gen_mz_err_f(err_coarse,
                                    "ms1 coarse error: Only ppm, or Da units allowed.")
 
@@ -504,11 +509,11 @@ extract <- function(fn,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
                          "rt error: Only s(econds), or min(utes) allowed.")
     
     tab <- data.table::as.data.table(tab)
-    chunk <- tab[Files==fn]
-    mz <- chunk$mz
-    rt <- chunk$rt
-    id <- chunk$ID
-    adduct <- chunk$adduct
+    ## chunk <- tab[Files==fn]
+    mz <- tab$mz
+    rt <- tab$rt
+    id <- tab$ID
+    adduct <- tab$adduct
     names(mz) <- id
     names(rt) <- id
     mzerr <- err_coarse_fun(mz)
@@ -517,41 +522,68 @@ extract <- function(fn,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
     mzmin <- min(mzrng)
     mzmax <- max(mzrng)
     read_ms1 <- function() {
-        message("Opening ", fn, " to read MS1")
         ms1 <- MSnbase::readMSData(file=fn,msLevel=1,mode="onDisk")
         ms1 <- MSnbase::filterMz(ms1,c(mzmin,mzmax))
-        message("Done opening ", fn, " to read MS1.")
         ms1
     }
     read_ms2 <- function() {
-        message("Opening ", fn, " to read MS2")
         ms2 <- MSnbase::readMSData(file=fn,msLevel=2,mode="onDisk")
-        message("Done opening ", fn, " to read MS2.")
         ms2
     }
     extr_ms1_eic <- function(ms1) {
-        message("Extracting EICs from ", fn, " .")
         eic <- MSnbase::chromatogram(ms1,mz=mzrng,msLevel=1,missing=0.0,rt=rtrng)
-        eiccol <- lapply(eic,function (e) dtable(rt=MSnbase::rtime(e)/60.,intensity=MSnbase::intensity(e)))
-        ## names(res) <- id
-        res <- dtable(ID=id,adduct=adduct,eicMS1=eiccol)
-        message("Done extracting EICs from ", fn, " .")
+        bits <- dtable(N=sapply(eic,NROW))
+        bigN <- bits[,sum(N)]
+        bits[,idx:=paste0('I',.I)]
+        bits$ID <- id
+        bits$adduct <- adduct
+        bits$tag <- tag
+        
+        res<-dtable(rt=numeric(bigN),
+                    intensity=numeric(bigN),
+                    tag=tag,
+                    adduct=bits[,rep(adduct,N)],
+                    ID=bits[,rep(ID,N)],
+                    idx=bits[,rep(idx,N)])
+        data.table::setkey(res,idx)
+        names(eic)<-bits$idx
+        res[,c("rt","intensity") :=
+                 .(MSnbase::rtime(eic[[idx]])/60.,
+                   MSnbase::intensity(eic[[idx]])),
+                   by=idx]
+
+        data.table::setkeyv(res,BASE_KEY)
         res
     }
     ms1 <- read_ms1()
     ms2 <- read_ms2()
     res_ms1 <- extr_ms1_eic(ms1)
-    rms2full <- extr_ms2(ms1=ms1,
-                         ms2=ms2,
-                         ids=id,
-                         mz=mz,
-                         adduct=adduct,
-                         err_coarse_fun=err_coarse_fun,
-                         err_fine_fun=err_fine_fun)
-    res_ms2 <- rms2full[,.(eicMS2=list(dtable(CE=.SD$CE,rt=.SD$rt,intensity=.SD$maspI)),
-                           spec=list(spec)),by=c("adduct","ID")]
-    res <- res_ms2[res_ms1,on=c("adduct","ID"),allow.cartesian=T]
-    res[sapply(eicMS2,is.null),c("eicMS2","spec"):=.(NA,NA)]
-    res$Files <- fn
+    res_ms2 <- extr_ms2(ms1=ms1,
+                        ms2=ms2,
+                        ids=id,
+                        mz=mz,
+                        adduct=adduct,
+                        err_coarse_fun=err_coarse_fun,
+                        err_fine_fun=err_fine_fun)
+    res_ms2[,"tag":=tag]
+
+    res <- list(ms1=res_ms1,
+                ms2=res_ms2)
     res
+}
+
+gen_ms2_spec_blk <- function(spectra) {
+
+    dt <- dtable(mz=MSnbase::mz(spectra),
+                 intensity=MSnbase::intensity(spectra),
+                 rt = lapply(MSnbase::rtime(spectra),function (z) z/60.),
+                 CE = MSnbase::collisionEnergy(spectra),
+                 an = MSnbase::acquisitionNum(spectra))
+    
+    dt[,maspI:=sapply(intensity,function (zz) max(zz))]
+    data.table::rbindlist(apply(dt,1,function(row) dtable(intensity=row[["intensity"]],
+                                                          rt = row[["rt"]],
+                                                          mz = row[["mz"]],
+                                                          CE = row[["CE"]],
+                                                          an = row[["an"]])))
 }

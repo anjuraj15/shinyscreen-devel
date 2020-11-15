@@ -30,13 +30,39 @@ new_state_fn_conf <- function(fn_conf) {
 }
 
 ##' @export
-run <- function(fn_conf) {
-    m <- new_state_fn_conf(fn_conf)
+run <- function(fn_conf="",m=NULL,phases=NULL,help=F) {
+    all_phases=list(setup=setup_phase,
+                    comptab=mk_comp_tab,
+                    extract=extr_data,
+                    prescreen=prescreen,
+                    sort=sort_spectra,
+                    subset=subset_summary,
+                    plot=create_plots,
+                    saveplot=save_plots)
+
+    if (help) {
+        message("(run): You can run some of the following, or all the phases:")
+        message(paste(paste0("(run): ",names(all_phases)),collapse = "\n"))
+        return(invisible(NULL))
+    }
+    the_phases <- if (is.null(phases)) all_phases else {
+                                                      x <- setdiff(phases,names(all_phases))
+                                                      if (length(x)>0) {
+                                                          message("(run): Error. Unknown phases:")
+                                                          message(paste(paste0("(run): ",x),collapse = "\n"))
+                                                          stop("Aborting.")
+                                                      }
+                                                      all_phases[phases]
+                                                  }
+    
+    m <- if (nchar(fn_conf)!=0) new_state_fn_conf(fn_conf) else if (!is.null(m)) m else stop("(run): Either the YAML config file (fn_conf),\n or the starting state (m) must be provided\n as the argument to the run function.")
     
     dir.create(m$conf$project,
                showWarnings = F,
                recursive = T)
-    m <- withr::with_dir(new=m$conf$project,code = run_in_dir(m))
+    m <- withr::with_dir(new=m$conf$project,code = Reduce(function (prev,f) f(prev),
+                                                          x = the_phases,
+                                                          init = m))
     return(invisible(m))
 }
 
@@ -73,15 +99,21 @@ load_compound_input <- function(m) {
     coll <- list()
     fields <- colnames(EMPTY_CMPD_LIST)
     fns <- m$conf$compounds$lists
+    coltypes <- c(ID="character",
+                  SMILES="character",
+                  Formula="character",
+                  Name="character",
+                  RT="numeric",
+                  mz="numeric")
     for (l in 1:length(fns)) {
         fn <- fns[[l]]
-                                        # fnfields <- somehow read the file columns in
-        dt <- file2tab(fn, colClasses=c(ID="character",
-                                        SMILES="character",
-                                        Formula="character",
-                                        Name="character",
-                                        RT="numeric",
-                                        mz="numeric"))
+
+        ## Figure out column headers.
+        nms <- colnames(file2tab(fn,nrows=0))
+
+        ## Read the table. Knowing column headers prevents unnecessary
+        ## warnings.
+        dt <- file2tab(fn, colClasses=coltypes[nms])
         verify_cmpd_l(dt=dt,fn=fn)
                                         # nonexist <- setdiff(fnfields,fields)
         coll[[l]] <- dt #if (length(nonexist)==0) dt else dt[,(nonexist) := NULL]
@@ -117,6 +149,7 @@ load_compound_input <- function(m) {
 ##' @export
 load_data_input <- function(m) {
     m$input$tab$mzml <- file2tab(m$conf$data)
+    assert(all(unique(m$input$tab$mzml[,.N,by=c("adduct","tag")]$N)<=1),msg="Some rows in the data table contain multiple entries with same tag and adduct fields.")
     m
 
 }
@@ -136,11 +169,11 @@ mk_comp_tab <- function(m) {
     setkey(mzml,set)
     cmpds<-m$input$tab$cmpds
     setkey(cmpds,ID)
-    mzml[,`:=`(wd=sapply(Files,add_wd_to_mzml,m$conf$project))]
+    ## mzml[,`:=`(wd=sapply(Files,add_wd_to_mzml,m$conf$project))]
     assert(nrow(cmpds)>0,msg="No compound lists have been provided.")
     message("Begin generation of the comprehensive table.")
     
-    comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,Files,wd,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
+    comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,Files,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
     tab2file(tab=comp,file=paste0("setidmerge",".csv"))
     setkey(comp,known,set,ID)
     
@@ -210,19 +243,24 @@ concurrency <- function(m) {
     ## specification. It can also contain `workers` entry specifying
     ## the number of workers. If that entry is absent, the default
     ## number of workers is NO_WORKERS from the resources.R.
-    workers <- m$conf$concurrency$workers
-    plan <- m$conf$concurrency$plan
-    if (!is.null(plan) && plan!=user) {
-        n <- if (!is.null(workers)) workers else NO_WORKERS
-        if (!is.na(n)) future::plan(plan,workers=workers) else future::plan(plan)
-        m$conf$concurrency$workers <- n
 
-    } else {
-        m$conf$concurrency$workers <- NA
-        m$conf$concurrency$plan <- "user"
-    }
-    message("plan: ",m$conf$concurrency$plan)
-    message("workers: ",m$conf$concurrency$workers)
+    ## TODO: Needs a rework to be useful. But, this is not a problem,
+    ## because the user controls concurrency settings from the outside
+    ## using future::plan.
+    
+    ## workers <- m$conf$concurrency$workers
+    ## plan <- m$conf$concurrency$plan
+    ## if (!is.null(plan) && plan!=user) {
+    ##     n <- if (!is.null(workers)) workers else NO_WORKERS
+    ##     if (!is.na(n)) future::plan(plan,workers=workers) else future::plan(plan)
+    ##     m$conf$concurrency$workers <- n
+
+    ## } else {
+    ##     m$conf$concurrency$workers <- NA
+    ##     m$conf$concurrency$plan <- "user"
+    ## }
+    ## message("plan: ",m$conf$concurrency$plan)
+    ## message("workers: ",m$conf$concurrency$workers)
 
     ## So we can actually debug.
     m$future <- if (!m$conf$debug)
@@ -294,8 +332,9 @@ extr_data <- function(m) {
     futuref <- m$future
     tmp <- lapply(1:nrow(ftags),function(ii) {
         fn <- ftags[ii,Files]
-        tag <- ftags[ii,tag]
-        tab <- as.data.frame(data.table::copy(m$out$tab$data[,.(Files,adduct,mz,rt,ID)]))
+        the_tag <- ftags[ii,tag]
+        message("(extract): Commencing extraction for tag: ", the_tag, "; file: ",fn)
+        tab <- as.data.frame(data.table::copy(m$out$tab$data[tag==the_tag,.(Files,tag,adduct,mz,rt,ID)]))
         ## err_ms1_eic <- m$extr$tol$eic
         ## err_coarse_fun <- m$extr$tol$coarse
         ## err_fine_fun <- m$extr$tol$fine
@@ -313,12 +352,13 @@ extr_data <- function(m) {
         err_rt <- m$conf$tolerance$rt
         
         x <- futuref(extract(fn=fn,
+                             tag=the_tag,
                              tab=tab,
                              err_ms1_eic=err_ms1_eic,
                              err_coarse = err_coarse,
                              err_fine= err_fine,
                              err_rt= err_rt),
-                     lazy = T)
+                     lazy = F)
 
         x
 
@@ -328,7 +368,7 @@ extr_data <- function(m) {
     curr_done <- which(msk)
     
     for (x in curr_done) {
-        message("Done extraction for ", unique(future::value(tmp[[x]])$Files))
+        message("Done extraction for ", unique(future::value(tmp[[x]])$ms1$tag))
     }
     while (!all(msk)) {
         msk <- sapply(tmp,future::resolved)
@@ -339,19 +379,14 @@ extr_data <- function(m) {
         Sys.sleep(0.5)
         curr_done <- newly_done
     }
-    ztmp <- lapply(tmp,future::value)
-
-    message("WWWWWWWEEERERREEEEHEWERERRREEEE")
-    for (x in ztmp) {
-        message(colnames(x))
-    }
-    m$extr$ms <- data.table::rbindlist(ztmp)
-    fn_ex <- get_fn_extr(m)
-    message('Saving extracted data to ', fn_ex)
-    saveRDS(object = m$extr, file = fn_ex)
-    message('Done saving extracted data.')
     
-    m$extr$tmp <- NULL
+    ztmp <- lapply(tmp,future::value)
+    m$extr$ms1 <- data.table::rbindlist(lapply(ztmp,function(x) x$ms1))
+    m$extr$ms2 <- data.table::rbindlist(lapply(ztmp,function(x) x$ms2))
+    data.table::setkeyv(m$extr$ms1,BASE_KEY)
+    data.table::setkeyv(m$extr$ms2,c(BASE_KEY,"CE"))
+
+    fn_ex <- get_fn_extr(m)
     timetag <- format(Sys.time(), "%Y%m%d_%H%M%S")
     saveRDS(object = m, file = file.path(m$conf$project,
                                          paste0(timetag,"_",FN_EXTR_STATE)))
@@ -371,33 +406,39 @@ prescreen <- function(m) {
 
     confpres <- conf_trans_pres(m$conf$prescreen)
 
-    ## TODO need to fix max spec intensity
+    ## TODO need to fix max spec intensity [is this still relevant? i think not.]
     gen_ms2_spec_tab <- function(ms) {data.table::rbindlist(lapply(1:nrow(ms), function (nr) {
         adduct <- ms$adduct[[nr]]
         ID <- ms$ID[[nr]]
-        Files <- ms$Files[[nr]]
-        spec <- ms$spec[[nr]]
+        tag <- ms$tag[[nr]]
+        spec <- ms$specs_by_an[[nr]]
         ms2_sel <- ms$ms2_sel[[nr]]
-        dt <- if (length(spec[[1]]) < 3)
+        dt <- if (NROW(spec[[1]]) == 0)
                   dtable(CE=NA_real_,
                          rt=NA_real_,
                          spec=list(dtable(mz=NA_real_,intensity=NA_real_)),
                          ms2_sel=NA) else {
-                                         dtable(
-                                             CE=sapply(spec,
-                                                       function (x) x$CE),
-                                             rt=sapply(spec,
-                                                       function (x) x$rt),
-                                             spec=lapply(spec,
-                                                         function (x) x$spec),
-                                             ms2_sel=F)
+                                         spec[,.(CE=head(CE,1),
+                                                 rt=head(rt,1),
+                                                 spec=list(.SD)),by="an",.SDcols=c("mz","intensity")]
+                                         spec[, ms2_sel := F]
+                                         ## dtable(
+                                         ##     CE=sapply(spec,
+                                         ##               function (x) x$CE),
+                                         ##     rt=sapply(spec,
+                                         ##               function (x) x$rt),
+                                         ##     spec=lapply(spec,
+                                         ##                 function (x) x$spec),
+                                         ##     ms2_sel=F)
+                                        
                                      }
         if (!is.na(ms2_sel)) dt$ms2_sel[[ms2_sel]] <- T
         
         
-        dt$Files <- Files
+        
         dt$ID <- ID
         dt$adduct <- adduct
+        dt$tag <- tag
         dt[,ms2_max_int := .(sapply(spec,function (sp) sp[,max(intensity)]))] 
         dt
     }))}
@@ -408,16 +449,20 @@ prescreen <- function(m) {
     }
 
 
-    m$qa <- create_qa_table(m$extr$ms,confpres)
-    mms1 <- assess_ms1(m)
-    m <- assess_ms2(mms1)
-    fields <- c("Files","adduct","ID",QA_COLS)
-    m$out$tab$ms2_spec <- gen_ms2_spec_tab(m$qa$ms)
-    m$out$tab$ms1_spec <- gen_ms1_spec_tab(m$qa$ms)
-    m$out$tab$summ <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=c("Files","adduct","ID"))
-    data.table::setkeyv(m$out$tab$ms2_spec,c("adduct","Files","ID"))
-    data.table::setkeyv(m$out$tab$ms1_spec,c("adduct","Files","ID"))
+    m$qa <- create_qa_table(m$extr,confpres)
+    ## m$qa$prescreen <- confpres
+    ## TODO UNCOMMENT mms1 <- assess_ms1(m)
+    m1 <- assess_ms1(m)
+    m <- assess_ms2(m1)
     
+
+    ## m <- assess_ms2(mms1)
+    ## fields <- c(BASE_KEY,QA_COLS)
+    ## m$out$tab$ms2_spec <- gen_ms2_spec_tab(m$qa$ms)
+    ## m$out$tab$ms1_spec <- gen_ms1_spec_tab(m$qa$ms)
+    ## m$out$tab$summ <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=BASE_KEY)
+    ## data.table::setkeyv(m$out$tab$ms2_spec,BASE_KEY)
+    ## data.table::setkeyv(m$out$tab$ms1_spec,BASE_KEY)
     m
 }
 
@@ -487,6 +532,9 @@ subset_summary <- function(m) {
                               
                               
                           } else m$out$tab$summ
+
+    m$out$tab$flt_summ[,wd:=NULL] # TODO: Handle this more gracefully
+                                  #       somewhere upstream.
     m
 }
 
@@ -759,7 +807,7 @@ report <- function(m) {
                 message("Image ","set: ",s," group: ", g, " id: ",id)
                 doc$add(pander::pandoc.header.return(paste('ID',id),level = 3))
                 tab <- asdf[ID==id,.(tag,ms1_int,ms1_rt,adduct,mz,Files)]
-                ms2info <- m$out$tab$ms2_spec[adduct==g & ID==id,.(Files,ID,rt,ms2_max_int)]
+                ms2info <- m$out$tab$ms2_spec[adduct==g & ID==id,.(tag,ID,rt,ms2_max_int,Files)]
                 tab2 <- tab[ms2info,on="Files"][,.(tag,mz,adduct,"$RT_{ms1}$[min]"=ms1_rt,"$RT_{ms2}$[min]"=rt,"$I{ms1}$"=formatC(ms1_int, format="e",digits = 2), "$I(ms2)$"= formatC(ms2_max_int, format="e",digits = 2))]
                 data.table::setorderv(tab2,c("$I{ms1}$","$I(ms2)$"),c(-1,-1))
                 doc$add.paragraph("")

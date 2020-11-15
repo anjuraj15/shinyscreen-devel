@@ -133,7 +133,7 @@ EMPTY_CMPD_LIST <- dtable(ID=character(),
 COMP_LIST_COLS <- c("ID","Name","SMILES","Formula","RT","mz")
 ## Comprehensive table properties
 COMP_NAME_MAP <- list(RT="rt")
-COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","known","SMILES","Formula","Files","wd")
+COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","known","SMILES","Formula","Files")
 
 ## File table properties
 SUMM_KEY=c("set","tag","mz")
@@ -159,6 +159,7 @@ CONF_PRES_TU <- c("ret_time_shift_tol")
 ## Prescreening columns
 QA_FLAGS <- c("qa_ms1_exists",
               "qa_ms2_exists",
+              "qa_ms1_good_int"
               "qa_ms1_above_noise",
               "qa_ms2_near",
               "qa_ms2_good_int",
@@ -171,10 +172,10 @@ QA_NUM_INT <- c("ms2_sel","ms1_rt_ind")
 QA_COLS <- c(QA_FLAGS,QA_NUM_REAL,QA_NUM_INT)
 
 ## MS2 spectral table columns
-MS2_SPEC_COLS <- c("adduct","ID","CE","rt","Files","spec","ms2_max_int")
+MS2_SPEC_COLS <- c("adduct","tag","ID","CE","rt","Files","spec","ms2_max_int")
 
 ## MS1 spectral table columns
-MS1_SPEC_COLS <- c("adduct","ID","eicMS1","ms1_int","ms1_rt","ms1_mean","Files")
+MS1_SPEC_COLS <- c("adduct","tag","ID","eicMS1","ms1_int","ms1_rt","ms1_mean")
 
 ## Default sorting keys of spectra in the summary table
 DEF_KEY_SUMM <- c("set","qa_pass","ms1_int","adduct","mz","tag")
@@ -202,7 +203,8 @@ PLOT_FEATURES <- c("set",
 
 ## Select the most fundamental group of entries. Within this group,
 ## each ID is unique.
-BASE_KEY <- c("adduct","Files","ID")
+BASE_KEY <- c("adduct","tag","ID")
+BASE_KEY_MS2 <- c("adduct","tag","ID","CE")
 
 FIG_DEF_CONF <-list(grouping=list(group="set",
                                   plot="ID",

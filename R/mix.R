@@ -855,7 +855,7 @@ conf_trans_pres <- function(pres_list) {
 
 ## PRESCREENING
 
-create_qa_table <- function(ms,conf_presc) {
+create_qa_table <- function(extr,conf_presc) {
     ## The first input argument is the extracted `ms`, table
     ## containing MS1 and MS2 spectra. The argument `conf_presc` is
     ## m$conf$prescreen, the prescreening parameters given in the conf
@@ -898,119 +898,82 @@ create_qa_table <- function(ms,conf_presc) {
     
     
     qa <- list(prescreen=conf_presc)
-    qa$ms <- data.table::copy(ms)
-    qa$ms[,(QA_FLAGS):=T]               # All checks true by default. Dangerous,
-                                        # but we need to believe in our
-                                        # filters. Also, the humans who check the
-                                        # results. :)
-    qa$ms[,(QA_NUM_INT):=NA_integer_]
-    qa$ms[,(QA_NUM_REAL):=NA_real_]
+    
+    checks <- extr$ms2[,{
+        z <-..QA_FLAGS
+        z[1:length(z)]<-F
+        names(z)<-..QA_FLAGS
+        z
+    },keyby=BASE_KEY_MS2]
+    checks[,(QA_NUM_INT):=NA_integer_]
+    checks[,(QA_NUM_REAL):=NA_real_]
+    setkeyv(checks,BASE_KEY_MS2)
+    qa$checks <- checks
     qa
 }
 
 assess_ms1 <- function(m) {
     qa <- m$qa
+    ms1 <- m$extr$ms1
     ## Calculate auxiliary variables and indices.
-    qa$ms[,c("ms1_rt_ind"):=.(sapply(eicMS1,function(e) which.max(e$intensity)))]
-    qa$ms[length(ms1_rt_ind)==0,("ms1_rt_ind"):=NA_integer_]
-    qa$ms[,c("ms1_rt","ms1_int","ms1_mean"):=.(NA_real_,NA_real_,NA_real_)]
-    qa$ms[!is.na(ms1_rt_ind),c("ms1_int","ms1_rt","ms1_mean"):=.(mapply(function (e,i) e$intensity[[i]],eicMS1,ms1_rt_ind),
-                                                          mapply(function (e,i) e$rt[[i]],eicMS1,ms1_rt_ind),
-                                                          mapply(function (e,i) mean(e$intensity),eicMS1,ms1_rt_ind))]
-
-    check_ms1 <- function(qa) {
-        qa$ms[(!is.na(ms1_int)),"qa_ms1_exists" := .(ms1_int > qa$prescreen$ms1_int_thresh)]
-        qa$ms[is.na(ms1_int),("qa_ms1_exists"):=F]
-        qa$ms[(!qa_ms1_exists),(QA_FLAGS):=F]
-        qa
-    }
-
-    check_ms1_noise <- function(qa) {
-        qa$ms[(qa_ms1_exists==T),"qa_ms1_above_noise" := .(ms1_int > qa$prescreen$s2n*ms1_mean)]
-        qa$ms[(!qa_ms1_above_noise),c("qa_ms2_good_int","qa_ms2_near","qa_ms2_exists","qa_pass"):=F]
-        qa
-    }
+    qa_ms1 <- ms1[,.(ms1_rt_ind=which.max(intensity)),keyby=BASE_KEY]
+    qa_ms1 <- ms1[qa_ms1,.(ms1_rt_ind=ms1_rt_ind,
+                           ms1_int=intensity[[ms1_rt_ind]],
+                           ms1_rt=rt[[ms1_rt_ind]],
+                           ms1_mean=mean(intensity)),on=BASE_KEY,by=.EACHI]
 
     
+    qa_ms1[,qa_ms1_good_int := ms1_int > qa$prescreen$ms1_int_thresh]
+    qa_ms1[,qa_ms1_above_noise := F]
+    qa_ms1[qa_ms1_good_int==T,qa_ms1_above_noise := .(ms1_int > qa$prescreen$s2n*ms1_mean)]
+    
+    
+    
 
-    qa <- check_ms1_noise(check_ms1(qa))
-    m$qa <- qa
+    
+    ## checks[(!qa_ms1_above_noise),c("qa_ms2_good_int","qa_ms2_near","qa_ms2_exists","qa_pass"):=F]
+    ## qa_ms1 <- check_ms1_noise(check_ms1(qa_ms1))
+    m$qa$ms1 <- qa_ms1
     m
-    
-    
-    
 }
 
 assess_ms2 <- function(m) {
 
     presconf <- conf_trans_pres(m$conf$prescreen)
 
-    ## This function takes a spectral list, looks for the members
-    ## inside the retention time window and returns either the indices
-    ## of those that are, or NA.
-    pick_ms2_rtwin <- function(rtMS1,sp_list,rt_win) {
-        rt <- sapply(sp_list,function (x) x$rt)
+    ms1 <- m$extr$ms1
+    ms2 <- m$extr$ms2
+    qa_ms1 <- m$qa$ms1
+    qa_ms2 <- ms2[qa_ms1[qa_ms1_above_noise==T],.(CE=unique(CE),
+                                                  pc_rt=i.ms1_rt,
+                                                  pc_int=i.ms1_int,
+                                                  an=unique(an)),on=BASE_KEY,by=.EACHI,nomatch=NULL]
 
-        rtl <- rtMS1 - rt_win/2.
-        rtr <- rtMS1 + rt_win/2.
-        which(rt > rtl & rt < rtr)
-    }
+    rt_win2 <- presconf$ret_time_shift_tol
+    qa_ms2 <- ms2[qa_ms2,.(pc_rt=pc_rt,
+                           pc_int=pc_int,
+                           ms2_int=max(intensity),
+                           rt=unique(rt),
+                           qa_ms2_near=head(rt,1) < pc_rt + rt_win2 & head(rt,1) > pc_rt - rt_win2),
+                  by=.EACHI,on=c(BASE_KEY_MS2,"an")]
 
-    ## Only return the index which satisfies the intensity
-    ## range.
-    pick_ms2_int <- function(sp_list,int_lo,int_hi) {
-        ints <- sapply(sp_list,function (x) max(x$spec$intensity))
-        which(int_lo < ints & ints < int_hi)
-    }
+    qa_ms2$qa_ms2_good_int <-F
+    qa_ms2[qa_ms2_near==T,
+           qa_ms2_good_int := ms2_int > presconf$ms2_int_thresh & ms2_int < pc_int,
+           by=c(BASE_KEY_MS2,"an")]
 
-    
-    ## Test only rows that passed MS1 checks and have MS2 spec. To
-    ## test existence of MS2, it is only necessary to make sure that
-    ## either spec member sublist has more than one entry, or if not,
-    ## that the single entry in the sublist is not NA.
-    m$qa$ms[qa_ms1_exists==T,qa_ms2_exists := .(sapply(spec,function (sl) length(sl)>1 || !is.na(sl[[1]])))]
-    irows <- which(m$qa$ms$qa_ms1_exists & m$qa$ms$qa_ms2_exists)
-    rt_win <- 2 * presconf$ret_time_shift_tol
 
-    ## List of lists of spec indices where MS2 are within the rt
-    ## window.
-    okind_rt_ms2 <- m$qa$ms[irows, ][, .(tmp=mapply(function (rt1,spl) pick_ms2_rtwin(rt1,spl,rt_win),
-                                                    ms1_rt,
-                                                    spec,
-                                                    USE.NAMES=F,
-                                                    SIMPLIFY=F))]$tmp
-    m$qa$ms[irows,"qa_ms2_near"] <- sapply(okind_rt_ms2,function (x) length(x) > 0)
-    m$qa$ms[-irows,"qa_ms2_near"] <- F
-    
-    ## List of lists of spec indices where MS2 are within the desired
-    ## intensity range.
-    okind_int_ms2 <- m$qa$ms[irows, ][, .(tmp=mapply(pick_ms2_int,
-                                                     spec,
-                                                     presconf$ms2_int_thresh,
-                                                     ms1_int,
-                                                     SIMPLIFY=F))]$tmp
-
-    m$qa$ms[irows,"qa_ms2_good_int"] <- sapply(okind_int_ms2,function (x) length(x) > 0)
-    m$qa$ms[-irows,"qa_ms2_good_int"] <- F
-
-    ## Candidates for the MS2 choices.
-    okind <- mapply(intersect,okind_int_ms2,okind_rt_ms2)
-
-    m$qa$ms[irows,"qa_pass"] <- sapply(okind,function (x) length(x) > 0)
-    m$qa$ms[-irows,"qa_pass"] <- F
-    
-    ## Throw out the possibly empty members.
-    really_okind <- okind[m$qa$ms[irows, ]$qa_pass]
-    m$qa$ms[which(qa_pass),ms2_sel:=.(mapply(function (spl,inds,ms1rt) {
-        rtdiff <- sapply(spl[inds],function (x) abs(x$rt-ms1rt))
-        closest <- which.min(rtdiff)
-        inds[[closest]]
-    },
-    spec,
-    really_okind,
-    ms1_rt,
-    SIMPLIFY=T))]
-
+    qa_ms2$qa_pass <- F
+    qa_ms2[qa_ms2_good_int==T,qa_pass:=T]
+    qa_ms2$ms2_sel <- F
+    qa_ms2[qa_pass==T,ms2_sel:={
+        ind<-which.min(abs(rt-pc_rt))
+        z<-ms2_sel
+        z[[ind]]<-T
+        z
+    },by=BASE_KEY_MS2]
+    setkeyv(qa_ms2,BASE_KEY_MS2)
+    m$qa$ms2 <- qa_ms2
     m    
 }
 
