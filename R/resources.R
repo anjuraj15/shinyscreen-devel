@@ -175,8 +175,7 @@ MS2_SPEC_COLS <- c("adduct","tag","ID","CE","rt","Files","spec","ms2_max_int")
 ## MS1 spectral table columns
 MS1_SPEC_COLS <- c("adduct","tag","ID","eicMS1","ms1_int","ms1_rt","ms1_mean")
 
-## Default sorting keys of spectra in the summary table
-DEF_KEY_SUMM <- c("set","qa_pass","ms1_int","adduct","mz","tag")
+
 
 ## Default secondary indexing in the summary table
 DEF_INDEX_SUMM <- c("set", "-qa_pass", "-ms1_int", "adduct","-mz")
@@ -239,3 +238,6 @@ EMPTY_SUMM <- data.table::data.table(set=character(0),
                                      Files=character(0),
                                      known=character(0),
                                      Comments=character(0))
+
+## Default sorting keys of spectra in the summary table
+DEF_KEY_SUMM <- c(BASE_KEY_MS2,"an")

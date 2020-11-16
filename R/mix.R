@@ -189,6 +189,7 @@ gen_summ <- function(comp,qa_ms1,qa_ms2) {
     summ[,qa_ms2_exists:=the_ifelse(!is.na(CE),T,F)]
     summ[,qa_pass:=apply(.SD,1,all),.SDcols=QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]]
     summ$Comments<-""
+    data.table::setkeyv(summ,DEF_KEY_SUMM)
     data.table::setcolorder(summ,SUMM_COLS)
     summ
 }

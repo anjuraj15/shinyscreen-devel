@@ -406,58 +406,10 @@ prescreen <- function(m) {
 
     confpres <- conf_trans_pres(m$conf$prescreen)
 
-    ## TODO need to fix max spec intensity [is this still relevant? i think not.]
-    gen_ms2_spec_tab <- function(ms) {data.table::rbindlist(lapply(1:nrow(ms), function (nr) {
-        adduct <- ms$adduct[[nr]]
-        ID <- ms$ID[[nr]]
-        tag <- ms$tag[[nr]]
-        spec <- ms$specs_by_an[[nr]]
-        ms2_sel <- ms$ms2_sel[[nr]]
-        dt <- if (NROW(spec[[1]]) == 0)
-                  dtable(CE=NA_real_,
-                         rt=NA_real_,
-                         spec=list(dtable(mz=NA_real_,intensity=NA_real_)),
-                         ms2_sel=NA) else {
-                                         spec[,.(CE=head(CE,1),
-                                                 rt=head(rt,1),
-                                                 spec=list(.SD)),by="an",.SDcols=c("mz","intensity")]
-                                         spec[, ms2_sel := F]
-                                         ## dtable(
-                                         ##     CE=sapply(spec,
-                                         ##               function (x) x$CE),
-                                         ##     rt=sapply(spec,
-                                         ##               function (x) x$rt),
-                                         ##     spec=lapply(spec,
-                                         ##                 function (x) x$spec),
-                                         ##     ms2_sel=F)
-                                        
-                                     }
-        if (!is.na(ms2_sel)) dt$ms2_sel[[ms2_sel]] <- T
-        
-        
-        
-        dt$ID <- ID
-        dt$adduct <- adduct
-        dt$tag <- tag
-        dt[,ms2_max_int := .(sapply(spec,function (sp) sp[,max(intensity)]))] 
-        dt
-    }))}
-
-    gen_ms1_spec_tab <- function(ms) {
-        cols <- MS1_SPEC_COLS
-        ms[,..cols]
-    }
-
-
     m$qa <- create_qa_table(m$extr,confpres)
-    ## m$qa$prescreen <- confpres
-    ## TODO UNCOMMENT mms1 <- assess_ms1(m)
     m1 <- assess_ms1(m)
     m <- assess_ms2(m1)
-    
     m$out$tab$summ <- gen_summ(m$out$tab$comp,m$qa$ms1,m$qa$ms2)
-    ## data.table::setkeyv(m$out$tab$ms2_spec,BASE_KEY)
-    ## data.table::setkeyv(m$out$tab$ms1_spec,BASE_KEY)
     m
 }
 
@@ -481,9 +433,6 @@ sort_spectra <- function(m) {
     ## `order spectra` sublist of m$conf, or if that is null, the
     ## DEF_INDEX_SUMM.
 
-    ## Here set default sorting keys.
-    data.table::setkeyv(m$out$tab$summ,DEF_KEY_SUMM)
-
     ## Now, add secondary indexing.
     cols <- if (!is.null(m$conf[["summary table"]]$order)) m$conf[["summary table"]]$order else DEF_INDEX_SUMM
     
@@ -500,7 +449,7 @@ sort_spectra <- function(m) {
     tmp <- quote(data.table::setorder())
     tmp[[2]] <- quote(m$out$tab$summ)
     for (n in 1:length(cols)) tmp[[2+n]] <- parse(text=cols[[n]])[[1]]
-    message("Ordering expression: ",tmp)
+    message("Ordering expression: \n",deparse(tmp))
     eval(tmp) #Execute the setorder call
 
     m
@@ -527,9 +476,6 @@ subset_summary <- function(m) {
                               
                               
                           } else m$out$tab$summ
-
-    m$out$tab$flt_summ[,wd:=NULL] # TODO: Handle this more gracefully
-                                  #       somewhere upstream.
     m
 }
 
