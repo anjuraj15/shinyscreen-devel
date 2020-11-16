@@ -455,12 +455,7 @@ prescreen <- function(m) {
     m1 <- assess_ms1(m)
     m <- assess_ms2(m1)
     
-
-    ## m <- assess_ms2(mms1)
-    ## fields <- c(BASE_KEY,QA_COLS)
-    ## m$out$tab$ms2_spec <- gen_ms2_spec_tab(m$qa$ms)
-    ## m$out$tab$ms1_spec <- gen_ms1_spec_tab(m$qa$ms)
-    ## m$out$tab$summ <- merge(m$out$tab$comp,m$qa$ms[,..fields],by=BASE_KEY)
+    m$out$tab$summ <- gen_summ(m$out$tab$comp,m$qa$ms1,m$qa$ms2)
     ## data.table::setkeyv(m$out$tab$ms2_spec,BASE_KEY)
     ## data.table::setkeyv(m$out$tab$ms1_spec,BASE_KEY)
     m

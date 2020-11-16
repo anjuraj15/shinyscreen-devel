@@ -170,7 +170,28 @@ gen_clean_state_summ<-function(summ) {
     summ["checked"]<-'NONE'
     summ
 }
+gen_empty_summ <- function() {
+    EMPTY_SUMM
+}
 
+gen_summ <- function(comp,qa_ms1,qa_ms2) {
+    comp_cols <- intersect(SUMM_COLS,colnames(comp))
+    summ <- comp[,..comp_cols]
+    data.table::setkeyv(summ,BASE_KEY)
+    ms1_cols <- intersect(SUMM_COLS,colnames(qa_ms1))
+    ms1_cols <- setdiff(ms1_cols,colnames(summ))
+    summ <- qa_ms1[summ,c(..comp_cols,..ms1_cols),on=BASE_KEY]
+    ms2_cols <- intersect(colnames(qa_ms2),SUMM_COLS)
+    ms2_cols <- setdiff(ms2_cols,colnames(summ))
+    summ <- qa_ms2[summ,c(..comp_cols,..ms1_cols,..ms2_cols),on=BASE_KEY]
+    data.table::setkeyv(summ,c(BASE_KEY_MS2,"an"))
+    summ[,qa_ms1_exists:=the_ifelse(!is.na(qa_ms1_good_int),T,F)]
+    summ[,qa_ms2_exists:=the_ifelse(!is.na(CE),T,F)]
+    summ[,qa_pass:=apply(.SD,1,all),.SDcols=QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]]
+    summ$Comments<-""
+    data.table::setcolorder(summ,SUMM_COLS)
+    summ
+}
 pp_touch_q<-function(summ) {
     ## Returns indices that are ok to be auto processed.
     which(summ$checked==SUMM_CHK_NONE | summ$checked==SUMM_CHK_AUTO)
@@ -953,7 +974,7 @@ assess_ms2 <- function(m) {
     qa_ms2 <- ms2[qa_ms2,.(pc_rt=pc_rt,
                            pc_int=pc_int,
                            ms2_int=max(intensity),
-                           rt=unique(rt),
+                           ms2_rt=unique(rt),
                            qa_ms2_near=head(rt,1) < pc_rt + rt_win2 & head(rt,1) > pc_rt - rt_win2),
                   by=.EACHI,on=c(BASE_KEY_MS2,"an")]
 
@@ -963,11 +984,11 @@ assess_ms2 <- function(m) {
            by=c(BASE_KEY_MS2,"an")]
 
 
-    qa_ms2$qa_pass <- F
-    qa_ms2[qa_ms2_good_int==T,qa_pass:=T]
+    ## qa_ms2$qa_pass <- F
+    ## qa_ms2[qa_ms2_good_int==T,qa_pass:=T]
     qa_ms2$ms2_sel <- F
-    qa_ms2[qa_pass==T,ms2_sel:={
-        ind<-which.min(abs(rt-pc_rt))
+    qa_ms2[qa_ms2_good_int==T,ms2_sel:={
+        ind<-which.min(abs(ms2_rt-pc_rt))
         z<-ms2_sel
         z[[ind]]<-T
         z

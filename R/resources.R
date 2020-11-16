@@ -135,9 +135,7 @@ COMP_LIST_COLS <- c("ID","Name","SMILES","Formula","RT","mz")
 COMP_NAME_MAP <- list(RT="rt")
 COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","known","SMILES","Formula","Files")
 
-## File table properties
-SUMM_KEY=c("set","tag","mz")
-SUMM_NAMES=c("ID", "mz", "rt", "tag", "adduct", "set", "Name", "SMILES", "Files" , "wd","known")
+
 
 ## Trivial data table
 EMPTY_MZML <- dtable(Files=character(0),
@@ -159,7 +157,7 @@ CONF_PRES_TU <- c("ret_time_shift_tol")
 ## Prescreening columns
 QA_FLAGS <- c("qa_ms1_exists",
               "qa_ms2_exists",
-              "qa_ms1_good_int"
+              "qa_ms1_good_int",
               "qa_ms1_above_noise",
               "qa_ms2_near",
               "qa_ms2_good_int",
@@ -209,3 +207,35 @@ BASE_KEY_MS2 <- c("adduct","tag","ID","CE")
 FIG_DEF_CONF <-list(grouping=list(group="set",
                                   plot="ID",
                                   label="tag"))
+
+
+## File table properties
+SUMM_COLS=c("set",BASE_KEY_MS2,"an","mz","ms1_rt", "ms1_int", "ms2_rt", "ms2_int",
+            "ms1_mean",QA_FLAGS,"Name", "SMILES", "Formula", "Files","known","Comments")
+
+## Empty summary table.
+EMPTY_SUMM <- data.table::data.table(set=character(0),
+                                     adduct=character(0),
+                                     tag=character(0),
+                                     ID=character(0),
+                                     CE=character(0),
+                                     an=integer(0),
+                                     mz=numeric(0),
+                                     ms1_rt=numeric(0),
+                                     ms1_int=numeric(0),
+                                     ms2_rt=numeric(0),
+                                     ms2_int=numeric(0),
+                                     ms1_mean=numeric(0),
+                                     qa_ms1_exists=logical(0),
+                                     qa_ms2_exists=logical(0),
+                                     qa_ms1_good_int=logical(0),
+                                     qa_ms1_above_noise=logical(0),
+                                     qa_ms2_near=logical(0),
+                                     qa_ms2_good_int=logical(0),
+                                     qa_pass=logical(0),
+                                     Name=character(0),
+                                     SMILES=character(0),
+                                     Formula=character(0),
+                                     Files=character(0),
+                                     known=character(0),
+                                     Comments=character(0))

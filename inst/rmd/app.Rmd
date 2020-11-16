@@ -16,9 +16,9 @@ def_datatab <- shinyscreen:::dtable("tag"=factor(),
                                     "set"=factor())
 
 def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
-                                        "Select"=factor("il irrilevante",levels=c("il irrilevante",
-                                                                                  "il buono",
-                                                                                  "il cattivo")))
+                                        "Select"=factor("ignore",levels=c("ignore",
+                                                                          "take the good ones",
+                                                                          "take the bad ones")))
 ## RMassBank masks shiny::validate. Unmask it.
 validate <- shiny::validate
 ## def_state$input$tab$tags <- def_datatab
