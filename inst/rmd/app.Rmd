@@ -508,11 +508,6 @@ uiOutput("plot_b_ctrl")
 <div>
 ```{r, echo=F}
 
-uiOutput("plot_set_b_ctrl")
-
-## selectInput(inputId = "plot_set_b",
-##             label = "Select set",
-##             choices = c("uninitialised"=0))
 ```
 </div>
 
@@ -527,6 +522,16 @@ uiOutput("plot_id_b_ctrl")
 </div>
 
 </div>
+
+
+```{r, echo=FALSE}
+DT::dataTableOutput("plot_sel")
+```
+
+```{r, echo=FALSE}
+wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height: 600px","Blah")
+```
+
 
 
 <div style="display: flex; ">
@@ -1180,12 +1185,22 @@ output$summ_table <- DT::renderDataTable({
                                  scroller = T))
 })
 
-output$plot_set_b_ctrl <- renderUI({
+
+output$plot_sel <- DT::renderDataTable({
+
+    
     tab <- rv_state$out$tab$flt_summ
-    req(NROW(tab)>0)
-    selectInput(inputId = "plot_set_b",
-                label = "Select set",
-                choices = c("uninitialised"=0))
+    nms <- colnames(tab)
+    dpl_nms <- nms[nms!="Files"]
+    validate(need(NROW(tab)>0, message = "Please prescreen the data first."))
+    DT::datatable(tab[,..dpl_nms],
+                  style = 'bootstrap',
+                  class = 'table-condensed',
+                  extensions = 'Scroller',
+                  options = list(scrollX = T,
+                                 scrollY = 200,
+                                 deferRender = T,
+                                 scroller = T))
 })
 
 output$plot_b_ctrl <- renderUI({
