@@ -16,9 +16,7 @@ def_datatab <- shinyscreen:::dtable("tag"=factor(),
                                     "set"=factor())
 
 def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
-                                        "Select"=factor("ignore",levels=c("ignore",
-                                                                          "take the good ones",
-                                                                          "take the bad ones")))
+                                        "Select"=factor("ignore",levels=shinyscreen:::SUBSET_VALS))
 ## RMassBank masks shiny::validate. Unmask it.
 validate <- shiny::validate
 ## def_state$input$tab$tags <- def_datatab
@@ -289,12 +287,11 @@ Filter entries in the summary table according to the QA criteria.
 
 * **qa_ms2_near** : MS2 spectrum is close enough to the MS1 peak
 
-For those who do not speak Italian (and do not dig the bad Sergio
-Leone pun):
+Values:
 
-* **l'irrelevante** : ignore QA criterion
-* **il buono** : entry passed QA
-* **il cattivo** : entry failed QA
+* **ignore** : ignore QA criterion
+* **take the good ones** : entry passed QA
+* **take the bad ones** : entry failed QA
 
 </details>
 ```{r, echo=F}
@@ -473,10 +470,24 @@ the summary table_ configuration subsection.
 </details>
 
 </details>
+
+<div style="display: flex; vertical-align: top;">
+
+<div>
 ```{r, echo=FALSE}
 actionButton(inputId = "presc_b",
-             label = "Prescreen and filter")
+             label = "Prescreen")
 ```
+</div>
+
+<div>
+```{r, echo=FALSE}
+actionButton(inputId = "sortsubset_b",
+             label = "Sort and subset")
+```
+</div>
+
+</div>
 
 ```{r, echo=FALSE}
 DT::dataTableOutput("summ_table")
@@ -624,6 +635,7 @@ update_gui <- function(in_conf, session) {
 
         ## Files
         df <- shinyscreen:::file2tab(in_conf$data)
+        if ("File" %in% colnames(df)) {df$Files<-df$File;df$File<-NULL}
         df[,tag:=as.character(tag),with=T]
         rv_dfiles(df[,.(File=Files,tag),by=c("Files","tag"),mult="first"][,Files:=NULL])
         print(rv_dfiles)
@@ -724,10 +736,11 @@ rf_conf_state <- reactive({
 })
 
 rf_get_subset <- reactive({
+    input$summ_subset
     dt <- tryCatch(rhandsontable::hot_to_r(input$summ_subset),
                    error = function(e) def_summ_subset)
-    dt[Select == "il buono", extra := T]
-    dt[Select == "il cattivo", extra := F]
+    dt[Select == shinyscreen:::SUBSET_VALS[["GOOD"]], extra := T]
+    dt[Select == shinyscreen:::SUBSET_VALS[["BAD"]], extra := F]
     sdt <- dt[!is.na(extra)]
     if (NROW(sdt) > 0) {
         sdt[,paste0(`QA Column`," == ",extra)]
@@ -766,6 +779,7 @@ observeEvent(input$project_b,{
     wd <- tcltk::tk_choose.dir(default = getwd(),
                                caption = "Choose project directory")
     message("Set project dir to ", wd)
+    dir.create(wd,recursive = T,showWarnings = F)
     rv_state$conf$project <- wd
 })
 
@@ -831,12 +845,18 @@ observe({
 })
 
 observe({
+    mc <- rf_conf_state()
+    rv_state$conf <- mc$conf
+}, label = "conf_state")
+
+observe({
     dtab <- rv_datatab()
     dfiles <- rv_dfiles()
     print(dtab)
     print(dfiles)
     message("(config) Generating mzml from rv.")
     isolate(rv_state$input$tab$mzml <- dtab[dfiles,on="tag"])
+    message("(config) Done generating mzml from rv.")
 
     
 }, label = "mzml_from_rv")
@@ -849,6 +869,7 @@ observe({
     res <- dtab[dfiles,on="tag"]
     data.table::setnames(res,"File","Files")
     isolate(rv_state$input$tab$mzml <- res)
+    message("(config) Generating mzml from inputs.")
 
     
 }, label = "mzml_from_inp")
@@ -859,21 +880,17 @@ observeEvent(input$extract_b,{
                             paste0("extract.",shinyscreen:::FN_CONF))
     yaml::write_yaml(x=m$conf,file=fn_c_state)
     message("(extract) Config written to ", fn_c_state)
-    state <- withr::with_dir(new=m$conf$project,
-                             code = {
-                                 m <- setup_phase(m)
-                                 m <- mk_comp_tab(m)
-                                 extr_data(m)
-                             })
+    state <- shinyscreen::run(m=m,
+                              phases=c("setup",
+                                       "comptab",
+                                       "extract"))
     message("(extract) Done extracting.")
     z <- shinyscreen::merge2rev(rv_state,lst = state)
-    eval(z)
-    ## rv_state <<- list2rev(state)
-    
+    eval(z)   
 })
 
 observeEvent(input$presc_b,{
-    validate(need(NROW(rv_state$extr$ms) > 0,
+    validate(need(NROW(rv_state$extr$ms1) > 0,
                   message = "Perform extraction first."))
     m <- rev2list(rv_state)
 
@@ -881,13 +898,27 @@ observeEvent(input$presc_b,{
                             paste0("presc.",shinyscreen:::FN_CONF))
     yaml::write_yaml(x=m$conf,file=fn_c_state)
     message("(prescreen) Config written to ", fn_c_state)
-    state <- withr::with_dir(new=m$conf$project,
-                             code = {
-                                 m <- prescreen(m)
-                                 m <- sort_spectra(m)
-                                 subset_summary(m)
-                             })
+    state <- shinyscreen::run(m=m,
+                              phases=c("prescreen"))
     message("(prescreen) Done prescreening.")
+    
+    z <- shinyscreen::merge2rev(rv_state,lst = state)
+    eval(z)
+    
+    
+})
+
+observeEvent(input$sortsubset_b,{
+    m <- rev2list(rv_state)
+
+    fn_c_state <- file.path(m$conf$project,
+                            paste0("sortsubset.",shinyscreen:::FN_CONF))
+    yaml::write_yaml(x=m$conf,file=fn_c_state)
+    message("(sortsubset) Config written to ", fn_c_state)
+    state <- shinyscreen::run(m=m,
+                              phases=c("sort",
+                                       "subset"))
+    message("(sortsubset) Done with sorting and subsetting.")
     
     z <- shinyscreen::merge2rev(rv_state,lst = state)
     eval(z)
@@ -904,11 +935,9 @@ observeEvent(input$plot_b,{
                             paste0("genplot.",shinyscreen:::FN_CONF))
     yaml::write_yaml(x=m$conf,file=fn_c_state)
     message("(generate plots) Config written to ", fn_c_state)
-    state <- withr::with_dir(new=m$conf$project,
-                             code = {
-                                 m <- create_plots(m)
-                                 save_plots(m)
-                             })
+    state <- shinyscreen::run(m=m,
+                              phases=c("plot",
+                                       "saveplot"))
     message("(generate plots) Done generating plots.")
     
     z <- shinyscreen::merge2rev(rv_state,lst = state)

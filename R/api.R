@@ -403,13 +403,14 @@ conf_trans <- function(conf) {
 ##' @export
 prescreen <- function(m) {
     ## Top-level auto prescreening function.
-
+    message("(prescreen): Start.")
     confpres <- conf_trans_pres(m$conf$prescreen)
 
     m$qa <- create_qa_table(m$extr,confpres)
     m1 <- assess_ms1(m)
     m <- assess_ms2(m1)
     m$out$tab$summ <- gen_summ(m$out$tab$comp,m$qa$ms1,m$qa$ms2)
+    message("(prescreen): End.")
     m
 }
 
@@ -540,7 +541,7 @@ create_plots <- function(m) {
     data.table::setkeyv(iflt_squish,plot_index)
     ms1_plot <- m$extr$ms1[iflt_squish,
                            .(fig_eic={
-                               message("Progress: ",.GRP,"/",z.NGRP)
+                               message("Progress: ",.GRP,"/",.NGRP)
                                df<-.SD
                                df$plot_label <- .SD[[..plot_ms1_label]]
                                res <- i.chunk[[1]][df,on=..plot_ms1_label]

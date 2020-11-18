@@ -241,3 +241,8 @@ EMPTY_SUMM <- data.table::data.table(set=character(0),
 
 ## Default sorting keys of spectra in the summary table
 DEF_KEY_SUMM <- c(BASE_KEY_MS2,"an")
+
+
+SUBSET_VALS <- c(IGNORE="ignore",
+                 GOOD="take the good ones",
+                 BAD="take the bad ones")
