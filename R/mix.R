@@ -258,14 +258,14 @@ preProc <- function (summ,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=500
                 if (maxInt < noiseFac*mInt) {
                     summ[ind,"AboveNoise"] <- F
                     summ[ind,"Alignment"] <- F ## If noisy, this is
-                                                 ## probably meaningles, so
-                                                 ## F.
+                    ## probably meaningles, so
+                    ## F.
                 }
                 
             }
         }
         
-    
+        
 
         ## MS2 checks.
         ms2<-allData[[wd]]$ms2
@@ -304,20 +304,20 @@ preProc <- function (summ,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=500
         }
         summ[ind,"checked"]<-SUMM_CHK_AUTO
     }
-          
+    
     summ
 }
 
 smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
-                              zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
-                              showTitle=FALSE, smaLimit=100, sma=NULL) {
-  dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
-                      abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
-                      sma = NULL)
+                       zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
+                       showTitle=FALSE, smaLimit=100, sma=NULL) {
+    dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
+                              abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
+                              sma = NULL)
 
-  mol <- RMassBank::getMolecule(smiles)
-  z<-rcdk::view.image.2d(mol, depictor=dep)
-  grid::rasterGrob(z)
+    mol <- RMassBank::getMolecule(smiles)
+    z<-rcdk::view.image.2d(mol, depictor=dep)
+    grid::rasterGrob(z)
 }
 
 gen_ms2_spec_data <- function(id,tag,iMS2rt,data,luckyN=NA) {
@@ -500,11 +500,11 @@ plot_id_msn <- function(ni,
         ggobj+
             ggplot2::geom_linerange(ggplot2::aes(colour=legend),key_glyph=KEY_GLYPH)+
             ggplot2::coord_cartesian(xlim = rrtMS2,
-                                                     ylim = rintMS2)+
+                                     ylim = rintMS2)+
             ggplot2::labs(x=CHR_GRAM_X,y=CHR_GRAM_Y,title=NULL,subtitle = "MS2",tag = "   ")+
             scale_y(labels=sci10)+
 
-            ggplot2::labs(colour=PLOT_MS2_LEG_TIT)+theme()
+    ggplot2::labs(colour=PLOT_MS2_LEG_TIT)+theme()
 
     }
 
@@ -518,7 +518,7 @@ plot_id_msn <- function(ni,
         ggobj+
             ggplot2::geom_linerange(ggplot2::aes(colour=tag),key_glyph=KEY_GLYPH)+
             ggplot2::coord_cartesian(xlim = rmzSpMS2,
-                                                     ylim = rintSpMS2)+
+                                     ylim = rintSpMS2)+
             ggplot2::labs(subtitle="MS2",y="intensity")+
             scale_y(labels=sci10)+theme()
     }
@@ -527,7 +527,7 @@ plot_id_msn <- function(ni,
     ## MS1 time series.
     plMS1<- if(is.data.frame(dfChrMS1) && nrow(dfChrMS1)>0) {
                 ch_ms1_deco(ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity,group=legend)))
-                } else NULL
+            } else NULL
 
     ## Empty
     plEmpty<-ggplot2::ggplot(data=dfChrMS1,ggplot2::aes(x=rt,y=intensity))+ggplot2::theme_void()
@@ -539,9 +539,9 @@ plot_id_msn <- function(ni,
              } else plEmpty
 
 
-        
+    
 
-            
+    
 
     ## Structure
     if (!is.null(smile) && !is.na(smile) && !nchar(smile)<1) {
@@ -554,14 +554,14 @@ plot_id_msn <- function(ni,
     ## MS2 Spectrum
     if (!all(sapply(dfsChrMS2,is.null))) {
         plSpecMS2<-if (is.data.frame(dfSpecMS2)) { #sometimes
-                                                   #dfSpecMS2 ends up
-                                                   #as a list of
-                                                   #logicals; this
-                                                   #probably happens
-                                                   #when either MS2 is
-                                                   #bad in some way,
-                                                   #or the RT
-                                                   #intervals are
+                                        #dfSpecMS2 ends up
+                                        #as a list of
+                                        #logicals; this
+                                        #probably happens
+                                        #when either MS2 is
+                                        #bad in some way,
+                                        #or the RT
+                                        #intervals are
                                         #mismatched.
                        ch_spec_deco(ggplot2::ggplot(data=dfSpecMS2,
                                                     ggplot2::aes(x=mz,
@@ -584,7 +584,7 @@ plot_id_msn <- function(ni,
     ##           str(df)
     ##           message("---DF")
     ##           gridExtra::tableGrob(df) #+ggplot2::labs(subtitle="Top m/z")
-              
+    
     ##       } else NULL
 
     res<- if (!is.null(plMS1)) cowplot::plot_grid(plMS1,plStruc,plMS2,plEmpty,plSpecMS2,align = "hv",axis='l',ncol = 2,nrow=3,rel_widths=c(3,1)) else NULL
@@ -617,14 +617,14 @@ getEntryFromComp<-function(entry,id,set,adduct,compTab) {
     res
     names(res)<-entry
     res
-        
+    
 }
 ## add_comp_summ <- function(ft,ctab) {
 ##     nR<-nrow(ft)
 ##     mzCol<-rep(NA,nR)
 ##     nmCol<-rep("",nR)
 ##     rtCol<-rep(NA,nR)
-    
+
 ##     for (ir in 1:nR) {
 ##         id<-ft[ir,"ID"]
 ##         set<-ft[ir,"set"]
@@ -835,7 +835,7 @@ verify_cmpd_l <- function(dt,fn) {
     exst <- ess[pres]
     x <- lapply(exst,function (nm) do.call(all,as.list(is.na(dt[[nm]]))))
     assert(!do.call(all,x), msg = paste('At least one of', paste(exst,collapse = ','),
-                                '\nmust contain some values in compound list from',fn))
+                                        '\nmust contain some values in compound list from',fn))
     
     invisible(T)
 }
@@ -1046,8 +1046,8 @@ gen_base_ms1_plot_tab <- function(summ,ms1_spec) {
     res <- summ[ms1_spec,c(.SD,
                            list(rt_peak=i.ms1_rt,
                                 eicMS1=lapply(i.eicMS1,list))),
-                           .SDcols=ident,
-                           on=BASE_KEY,
+                .SDcols=ident,
+                on=BASE_KEY,
                 nomatch=NULL]
     setkeyv(res,cols=BASE_KEY)
     res
@@ -1075,10 +1075,10 @@ gen_base_ms2_plot_tab <- function(summ,ms2_spec) {
 plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="CE",all_ms2_labels=NULL,
                        ms1_legend_info=T) {
     textf <- ggplot2::element_text
-
+    sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
     ## Logarithmic, or linear y axis?
     scale_y <- if (shiny::isTruthy(islog))
-                       ggplot2::scale_y_log10 else ggplot2::scale_y_continuous
+                   ggplot2::scale_y_log10 else ggplot2::scale_y_continuous
 
     my_theme <- function (...) ggplot2::theme()
 
@@ -1112,12 +1112,19 @@ plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="C
     
     
 
-    function(plot, breaks, labels, ms2_breaks=NULL, ms2_labels=NULL) plot +
-                                                  scale_colour(breaks=breaks,
-                                                               labels=labels) +
-                                                  scale_ms2(breaks=ms2_breaks,
-                                                            labels=ms2_labels) +
-                                                  scale_y() + my_theme() 
+    function(plot, breaks, labels, ms2_breaks=NULL, ms2_labels=NULL) {
+        plot +
+            scale_colour(breaks=breaks,
+                         labels=labels) +
+            scale_ms2(breaks=ms2_breaks,
+                      labels=ms2_labels) +
+            scale_y() + my_theme()
+        ## plot +
+        ##     scale_colour(breaks=breaks,
+        ##                  labels=labels) +
+        ##     scale_y(labels=sci10) +
+        ##     my_theme()
+    } 
 }
 
 
@@ -1165,55 +1172,76 @@ plot_eic_ms2 <- function(df,style_fun) {
     mz <- df[,unique(mz)]
     ddf <- df[!is.na(rt_peak)==T]
     
-    mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
-    tbl <- ddf[,.(verb_labs=mk_leg_lab(plot_label,.SD[ms2_sel==T,rt_peak],any(ms2_sel)),plot_label),
-               by="plot_label"]
-    ms2_verb_labs <- tbl[,verb_labs]
-    ms2_labs <- tbl[,plot_label]
+    ## mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
+    ## tbl <- ddf[,.(verb_labs=mk_leg_lab(plot_label,.SD[ms2_sel==T,rt_peak],any(ms2_sel)),plot_label),
+    ##            by="plot_label"]
+    ## ms2_verb_labs <- tbl[,verb_labs] TODO: This is nonsense for
+    ## multi-CE and multi-other-label.
+    ms2_labs <- ddf[,plot_label]
     ms1_labs <- ddf[,levels(parent_label)]
     
-    plot <- style_fun(ggplot2::ggplot(ddf,ggplot2::aes(x = rt_peak,ymin = 0,ymax = int_peak,
-                                                       y = int_peak,
-                                                       color = parent_label, shape = plot_label)),
-                      breaks=ms1_labs,
-                      labels=ms1_labs,
-                      ms2_breaks=ms2_labs,
-                      ms2_labels=ms2_verb_labs)
-    plot + ggplot2::geom_linerange(key_glyph=KEY_GLYPH) +
-        ggplot2::geom_point() +
-        ggplot2::labs(x=CHR_GRAM_X,
-                      y=CHR_GRAM_Y)
+    res <- if (NROW(ddf)>0) {
+               plot <- style_fun(ggplot2::ggplot(ddf,ggplot2::aes(x = rt_peak,ymin = 0,ymax = int_peak,
+                                                                  y = int_peak,
+                                                                  color = parent_label, shape = plot_label)),
+                                 breaks=ms1_labs,
+                                 labels=ms1_labs,
+                                 ms2_breaks=ms2_labs,
+                                 ms2_labels=ms2_labs)
+               plot + ggplot2::geom_linerange(key_glyph=KEY_GLYPH) +
+                   ggplot2::geom_point() +
+                   ggplot2::labs(x=CHR_GRAM_X,
+                                 y=CHR_GRAM_Y)
+           } else {
+               p <- ggplot2::ggplot(ddf,ggplot2::aes(x=1:10,y=1:10))+ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+               p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="NO MS2 SPECTRA", color="black")+ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                                                                                                                          axis.ticks.x=ggplot2::element_blank(),
+                                                                                                                          axis.text.y=ggplot2::element_blank(),
+                                                                                                                          axis.ticks.y=ggplot2::element_blank())
+           }
 
+    res
 }
 
 plot_spec_ms2 <- function(df,style_fun) {
     mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
-    ddf <- df[ms2_sel == T]
-    mz <- ddf[,unique(mz)]
-    labels <- ddf[,plot_label]
-    parent_labels <- ddf[,parent_label]
-    specs <- ddf[,spec]
-    rts <- ddf[,rt_peak]
-    lst <- Map(function(d,t,pt) {d$plot_label<-t;d$parent_label <- pt;d},specs,labels,parent_labels)
-    data <- dtable(mz=numeric(0),intensity=numeric(0),plot_label=factor(0),parent_label=factor(0))
-    data <- rbind(data,
-                  data.table::rbindlist(lst),
-                  fill=T)
-    data <- data[!(is.na(mz)),]
+    
+    
+    labels <- df[,unique(plot_label)]
+    parent_labels <- df[,unique(parent_label)]
+    rts <- df[,unique(rt_peak)]
+    
 
-    leglabs <- mk_leg_lab(labels,rts,T)
-    plot <- style_fun(ggplot2::ggplot(data,ggplot2::aes(x=mz,ymin=0,ymax=intensity,
-                                                        y = intensity,
-                                                        color=plot_label,
-                                                        shape=parent_label)),
-                      labels=parent_labels,
-                      breaks=parent_labels,
-                      ms2_breaks=labels,
-                      ms2_labels=leglabs)
-    plot +
-        ggplot2::geom_linerange(key_glyph=KEY_GLYPH) +
-        ggplot2::geom_point() +
-        ggplot2::labs(x="mz", y="intensity")
+    ms2_labs <- df[,levels(plot_label)]
+    ms1_labs <- df[,levels(parent_label)]
+    leglabs <- mk_leg_lab(ms1_labs,rts,T)
+    plot <- if (NROW(df)>0) {
+                ddf <- df[,.(mz,intensity,parent_label,plot_label)]
+                plot <-style_fun(ggplot2::ggplot(ddf,
+                                                 ggplot2::aes(x=mz,ymin=0,ymax=intensity,
+                                                              y = intensity,
+                                                              color=parent_label,
+                                                              shape=plot_label)),
+                                 labels=leglabs,
+                                 breaks=ms1_labs,
+                                 ms2_breaks=ms2_labs,
+                                 ms2_labels=ms2_labs)
+
+                plot + ggplot2::geom_linerange(key_glyph=KEY_GLYPH) +
+                    ggplot2::geom_point() +
+                    ggplot2::labs(x="mz", y="intensity")
+        
+            } else {
+                p <- ggplot2::ggplot(df,ggplot2::aes(x=1:10,y=1:10))+ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+                p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="NO MS2 SPECTRA", color="black")+ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                                                                                                                           axis.ticks.x=ggplot2::element_blank(),
+                                                                                                                           axis.text.y=ggplot2::element_blank(),
+                                                                                                                           axis.ticks.y=ggplot2::element_blank())
+                
+            }
+
+    plot
+    
 
 }
 

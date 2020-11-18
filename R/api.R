@@ -314,7 +314,7 @@ extr_data <- function(m) {
     ## Reduce the comp table to only unique masses (this is because
     ## different sets can have same masses).
     
-    m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=c('adduct','tag','ID')]
+    m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=BASE_KEY]
     m$out$tab$data[,set:=NULL] #This column is meaningless now.
     files <- m$out$tab$data[,unique(Files)]
     allCEs <- do.call(c,args=lapply(files,function(fn) {
@@ -451,7 +451,6 @@ sort_spectra <- function(m) {
     for (n in 1:length(cols)) tmp[[2+n]] <- parse(text=cols[[n]])[[1]]
     message("Ordering expression: \n",deparse(tmp))
     eval(tmp) #Execute the setorder call
-
     m
 }
 
@@ -476,6 +475,7 @@ subset_summary <- function(m) {
                               
                               
                           } else m$out$tab$summ
+
     m
 }
 
@@ -485,14 +485,7 @@ create_plots <- function(m) {
     ## conf$figures$grouping.
 
     ## Select the data nedeed for plotting.
-    x <- m$out$tab$flt_summ
-    message("Generate plot data.")
-    ms1_plot_data <- gen_base_ms1_plot_tab(summ=x,
-                                           ms1_spec=m$out$tab$ms1_spec)
-    ms2_plot_data <- gen_base_ms2_plot_tab(summ=x,
-                                           ms2_spec=m$out$tab$ms2_spec)
-    
-    message("Done generating plot data.")
+    flt_summ <- m$out$tab$flt_summ
 
     group_data <- m$conf$figures$grouping
     plot_group <- if (!shiny::isTruthy(group_data$group)) FIG_DEF_CONF$grouping$group else group_data$group
@@ -508,9 +501,11 @@ create_plots <- function(m) {
     plot_index <- c(plot_group,plot_plot)
 
     ## All the possible curve labels.
-    all_ms1_labels <- ms1_plot_data[,unique(.SD),.SDcols=plot_ms1_label][[plot_ms1_label]]
-    all_ms2_ce_labels <- ms2_plot_data[,unique(CE)]
-    
+    all_ms1_labels <- flt_summ[,unique(.SD),.SDcols=plot_ms1_label][[plot_ms1_label]]
+    all_ms1_labels <- sort(all_ms1_labels[!is.na(all_ms1_labels)])
+    all_ms2_ce_labels <- flt_summ[,unique(CE)]
+    all_ms2_ce_labels <- sort(all_ms2_ce_labels[!is.na(all_ms2_ce_labels)])
+
     ## Plot styling.
     style_eic_ms1 <- plot_decor(m,m$conf$logaxes$ms1_eic_int,
                                 all_ms1_labels=all_ms1_labels,
@@ -534,50 +529,73 @@ create_plots <- function(m) {
                                 ms1_legend_info = F)
 
     
-    message("Create MS1 EIC plots.")
+    
+    
     ## Generate MS1 EIC plots.
-    ms1_plot <- ms1_plot_data[,.(fig_eic={
-        df <- .SD[,data.table::rbindlist(Map(function (a,b,c,d) {
-            s <- a[[1]]
-            s$plot_label <- b
-            s$rt_peak <- c
-            s$mz <- d
-            s},
-            eicMS1,
-            .SD[[..plot_ms1_label]],
-            rt_peak,
-            mz))]
-        list(plot_eic_ms1(df,style_fun = style_eic_ms1,
-                          plot_label = ..plot_ms1_label))
-        
-    }),by = plot_index]
-    m$out$tab$ms1_plot <- ms1_plot
+    
+    iflt <- flt_summ[,.(mz,rt_peak=ms1_rt),keyby=c(plot_index,plot_ms1_label)]
+    fml <- formula(paste0(plot_group,"+",plot_plot,"~",plot_ms1_label))
+    iflt_squish <- iflt[,.(chunk=list(unique(.SD))),.SDcols=c(plot_ms1_label,"mz","rt_peak"),by=plot_index]
+    ## iflt.dc <- data.table::dcast(iflt,fml, fun.aggregate = function(x) if (length(x)>0) head(x,1) else NA_real_, value.var = c("mz","rt_peak"))
+    data.table::setkeyv(iflt_squish,plot_index)
+    ms1_plot <- m$extr$ms1[iflt_squish,
+                           .(fig_eic={
+                               message("Progress: ",.GRP,"/",z.NGRP)
+                               df<-.SD
+                               df$plot_label <- .SD[[..plot_ms1_label]]
+                               res <- i.chunk[[1]][df,on=..plot_ms1_label]
+                               list(plot_eic_ms1(res,
+                                                 style_fun = style_eic_ms1,
+                                                 plot_label = ..plot_ms1_label))
+                           }),
+                           on=plot_index,
+                           by=.EACHI,
+                           .SDcols=c("rt","intensity",
+                                     plot_ms1_label)]
+
     message("Done creating MS1 EIC plots.")
+
     ## Generate MS2 EIC plots.
     message("Create MS2 EIC plots.")
-    
-    ms2_plot_data[,parent_label:=factor(.SD[[1]]),.SDcols=plot_ms1_label]
-    ms2_plot_data[,plot_label:=factor(CE)]
-    ms2_plot <- ms2_plot_data[,
-                              .(fig_eic=list(plot_eic_ms2(df=.SD,
-                                                          style_fun = style_eic_ms2)),
-                                fig_spec=list(plot_spec_ms2(df=.SD,
-                                                            style_fun = style_spec_ms2)),
-                                fig_leg= list(plot_leg_ms2(df=.SD,
-                                                           style_fun = style_ms2_leg))),
-                              .SDcols=c("rt_peak","int_peak",
-                                        plot_ms1_label,
-                                        "parent_label",
-                                        "plot_label",
-                                        "spec",
-                                        "ms2_sel",
-                                        "mz"),
-                              by = plot_index]
+    iflt <- flt_summ[,.(mz,rt_peak=ms2_rt,int_peak=ms2_int,ms2_sel),
+                     keyby=c(plot_index,plot_ms1_label,plot_ms2_label)]
+    iflt_squish <- iflt[,.(chunk=list(unique(.SD))),.SDcols=c(plot_ms1_label,
+                                                              plot_ms2_label,
+                                                              "ms2_sel",
+                                                              "mz",
+                                                              "rt_peak",
+                                                              "int_peak"),by=plot_index]
+
+    ms2_plot <- m$extr$ms2[iflt_squish,{
+        df <- i.chunk[[1]]
+        df <- df[ms2_sel==T,]
+        df$parent_label <- df[[..plot_ms1_label]]
+        df$plot_label <- df[[..plot_ms2_label]]
+        spdf<-.SD[df,on=c(..plot_ms1_label,..plot_ms2_label),nomatch=NULL]
+        spdf[,plot_label:=factor(plot_label)]
+        spdf[,parent_label:=factor(parent_label)]
+        df[,parent_label:=factor(parent_label)]
+        df[,plot_label:=factor(plot_label)]
+        df <- df[!is.na(plot_label) & !is.na(parent_label),]
+        spdf <- spdf[!is.na(plot_label) & !is.na(parent_label),]
+
+        message("Progress: ",.GRP,"/",.NGRP)
+        .(fig_eic=list(plot_eic_ms2(df=df,
+                                    style_fun = style_eic_ms2)),
+          fig_spec=list(plot_spec_ms2(df=spdf,
+                                      style_fun = style_spec_ms2))
+         ,
+          fig_leg= list(plot_leg_ms2(df=df,
+                                     style_fun = style_ms2_leg))
+          )
+    },
+    .SDcols = c("adduct","tag","ID","CE","mz","intensity"),
+    on = plot_index,
+    by = .EACHI]
     message("Done creating MS1 EIC plots.")
     
     ## Generate structure plots.
-    structab <- ms1_plot_data[,.(ID=unique(ID))]
-    structab <- m$out$tab$comp[known=="structure",][structab,.(ID=i.ID,SMILES=SMILES),on="ID",nomatch=NULL,mult="first"]
+    structab <- m$out$tab$comp[known=="structure",unique(.SD),.SDcols=c("ID","SMILES")]
     message("Start generating structures.")
     structab[,structimg:=.({tmp <- lapply(SMILES,function (sm) smiles2img(sm,width = 500,height = 500, zoom = 4.5))
         tmp})]
@@ -586,7 +604,7 @@ create_plots <- function(m) {
     ## We need to check if we have multiplots grouped by ID in order
     ## for structure generation to make sense.
     if (plot_plot == "ID") {
-        ms1_plot <- structab[ms1_plot,on="ID"][,c("fig_struct") := .(Map(function (st,eic) {
+        ms1_plot <- structab[ms1_plot,on="ID"][,fig_struct := .(Map(function (st,eic) {
             df <- eic[[1]]$data
             ddf <- dtable(x=df$rt,
                           y=df$intensity)

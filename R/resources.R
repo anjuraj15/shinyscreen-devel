@@ -155,13 +155,13 @@ CONF_PRES_TU <- c("ret_time_shift_tol")
 
 
 ## Prescreening columns
-QA_FLAGS <- c("qa_ms1_exists",
+QA_FLAGS <- c("qa_pass",
+              "qa_ms1_exists",
               "qa_ms2_exists",
               "qa_ms1_good_int",
               "qa_ms1_above_noise",
               "qa_ms2_near",
-              "qa_ms2_good_int",
-              "qa_pass")
+              "qa_ms2_good_int")
 
 QA_NUM_REAL <- c("ms1_int","ms1_rt","ms1_mean")
 
@@ -193,24 +193,23 @@ REPORT_AUTHOR <- "Anonymous"
 REPORT_TITLE <- "Plots of EICs and MS2 Spectra"
 
 
-PLOT_FEATURES <- c("set",
-                   "adduct",
+PLOT_FEATURES <- c("adduct",
                    "tag",
                    "ID")
 
 ## Select the most fundamental group of entries. Within this group,
 ## each ID is unique.
 BASE_KEY <- c("adduct","tag","ID")
-BASE_KEY_MS2 <- c("adduct","tag","ID","CE")
+BASE_KEY_MS2 <- c(BASE_KEY,"CE")
 
-FIG_DEF_CONF <-list(grouping=list(group="set",
+FIG_DEF_CONF <-list(grouping=list(group="adduct",
                                   plot="ID",
                                   label="tag"))
 
 
 ## File table properties
 SUMM_COLS=c("set",BASE_KEY_MS2,"an","mz","ms1_rt", "ms1_int", "ms2_rt", "ms2_int",
-            "ms1_mean",QA_FLAGS,"Name", "SMILES", "Formula", "Files","known","Comments")
+            "ms1_mean","ms2_sel",QA_FLAGS,"Name", "SMILES", "Formula", "known","Comments","Files")
 
 ## Empty summary table.
 EMPTY_SUMM <- data.table::data.table(set=character(0),
@@ -225,19 +224,20 @@ EMPTY_SUMM <- data.table::data.table(set=character(0),
                                      ms2_rt=numeric(0),
                                      ms2_int=numeric(0),
                                      ms1_mean=numeric(0),
+                                     ms2_sel=logical(0),
+                                     qa_pass=logical(0),
                                      qa_ms1_exists=logical(0),
                                      qa_ms2_exists=logical(0),
                                      qa_ms1_good_int=logical(0),
                                      qa_ms1_above_noise=logical(0),
                                      qa_ms2_near=logical(0),
                                      qa_ms2_good_int=logical(0),
-                                     qa_pass=logical(0),
                                      Name=character(0),
                                      SMILES=character(0),
                                      Formula=character(0),
-                                     Files=character(0),
                                      known=character(0),
-                                     Comments=character(0))
+                                     Comments=character(0),
+                                     Files=character(0))
 
 ## Default sorting keys of spectra in the summary table
 DEF_KEY_SUMM <- c(BASE_KEY_MS2,"an")
