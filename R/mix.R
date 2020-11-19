@@ -785,6 +785,10 @@ init_state <- function(m) {
     lab <- gen_uniq_lab(list(),pref="L")
     m$input$tab$lists <- list()
     m$input$tab[[lab[[1]]]] <- EMPTY_CMPD_LIST
+
+    m$out$tab$ms1_plot <- EMPTY_MS1_PLOT_TAB
+    m$out$tab$ms2_plot <- EMPTY_MS2_PLOT_TAB
+    m$out$tab$comp <- EMPTY_COMP_TAB
     m
 }
 

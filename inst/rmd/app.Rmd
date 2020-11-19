@@ -489,69 +489,28 @@ actionButton(inputId = "sortsubset_b",
 
 </div>
 
+
+# Browse Results
+
+## Summary table
 ```{r, echo=FALSE}
 DT::dataTableOutput("summ_table")
 ```
 
-
-# Browse Results
-
-Generate plots.
 
 ```{r, echo=F}
 
 uiOutput("plot_b_ctrl")
 
 ```
-<div style="display: flex; ">
 
-<div>
+## Visualisation
+
 ```{r, echo=F}
-
-```
-</div>
-
-<div style="vertical-align: bottom; ">
-```{r, echo=F}
-
-uiOutput("plot_id_b_ctrl")
-## selectInput(inputId = "plot_id_b",
-##             label = "Select ID",
-##             choices = c("uninitialised"=0))
-```
-</div>
-
-</div>
-
-
-```{r, echo=FALSE}
 DT::dataTableOutput("plot_sel")
 ```
 
-```{r, echo=FALSE}
-wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height: 600px","Blah")
-```
-
-
-
-<div style="display: flex; ">
-
-<div style="vertical-align: bottom; ">
-```{r, echo=F}
-actionButton(inputId = "plot_next_b",
-             label = "Previous")
-```
-</div>
-
-<div style="vertical-align: bottom; ">
-```{r, echo=F}
-actionButton(inputId = "plot_prev_b",
-             label = "Next")
-```
-</div>
-
-
-</div>
+## Ching
 
 <!-- ENGINE -->
 
@@ -684,18 +643,7 @@ update_gui <- function(in_conf, session) {
 ```
 
 ```{r, include="false", context='server'}
-## reactive functions
-
-observeEvent(input$setid_b, {
-    filters <- matrix(c("CSV files", ".csv",
-                        "All files", "*"),
-                      2, 2, byrow = TRUE)
-    setids <- tcltk::tk_choose.files(filters=filters)
-    message("(config) Selected compound sets (setid): ", paste(setids,collapse = ","))
-    rv_state$conf$compounds$sets <- if (length(setids)>0 && nchar(setids[[1]])>0) setids else "Nothing selected."
-})
-
-
+## REACTIVE FUNCTIONS
 
 rf_compound_input_state <- reactive({
     sets <- rv_state$conf$compounds$sets
@@ -776,9 +724,45 @@ rf_get_inp_datafiles <- eventReactive(input$datafiles,{
     z[,.(File,
          tag=as.character(tag)), with = T]
 })
+
+rf_summ_table_rows <- eventReactive(input$summ_table_rows_all,{
+    input$summ_table_rows_all
+    
+})
+
+rf_gen_sel_plot_tab <- reactive({
+    validate(need(NROW(rv_state$out$tab$ms1_plot) > 0 ||
+                  NROW(rv_state$out$tab$ms2_plot) > 0,
+                  message = "No plots found. Did you generate them?"),
+             need(NROW(rv_state$out$tab$comp) > 0,
+                  message = "Data extraction needs to be performed first."))
+
+    rows <- rf_summ_table_rows()
+    mp1 <- rv_state$out$tab$ms1_plot
+    mp2 <- rv_state$out$tab$ms2_plot
+    comp <- rv_state$out$tab$comp
+
+    plot_group <- rv_state$conf$figures$grouping$group
+    plot_plot <- rv_state$conf$figures$grouping$plot
+    plot_label <- rv_state$conf$figures$grouping$label
+
+    summt<-rv_state$out$tab$flt_summ[rows,unique(.SD),.SDcols=c(plot_group,plot_plot)]
+    summt
+})
 ```
 
+<!-- OBSERVERS -->
+
 ```{r, include="false", context='server'}
+
+observeEvent(input$setid_b, {
+    filters <- matrix(c("CSV files", ".csv",
+                        "All files", "*"),
+                      2, 2, byrow = TRUE)
+    setids <- tcltk::tk_choose.files(filters=filters)
+    message("(config) Selected compound sets (setid): ", paste(setids,collapse = ","))
+    rv_state$conf$compounds$sets <- if (length(setids)>0 && nchar(setids[[1]])>0) setids else "Nothing selected."
+})
 
 observeEvent(input$project_b,{
     wd <- tcltk::tk_choose.dir(default = getwd(),
@@ -1187,21 +1171,18 @@ output$summ_table <- DT::renderDataTable({
 
 
 output$plot_sel <- DT::renderDataTable({
-
-    
-    tab <- rv_state$out$tab$flt_summ
-    nms <- colnames(tab)
-    dpl_nms <- nms[nms!="Files"]
-    validate(need(NROW(tab)>0, message = "Please prescreen the data first."))
-    DT::datatable(tab[,..dpl_nms],
+    tab <- rf_gen_sel_plot_tab()
+    DT::datatable(tab,
                   style = 'bootstrap',
                   class = 'table-condensed',
                   extensions = 'Scroller',
+                  selection = 'single',
                   options = list(scrollX = T,
                                  scrollY = 200,
                                  deferRender = T,
                                  scroller = T))
 })
+
 
 output$plot_b_ctrl <- renderUI({
     tab <- rv_state$out$tab$flt_summ

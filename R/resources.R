@@ -244,5 +244,34 @@ DEF_KEY_SUMM <- c(BASE_KEY_MS2,"an")
 
 
 SUBSET_VALS <- c(IGNORE="ignore",
-                 GOOD="take the good ones",
-                 BAD="take the bad ones")
+                 GOOD="select good",
+                 BAD="select bad")
+
+
+## Empty plotting tables.
+EMPTY_MS1_PLOT_TAB <- dtable(ID=character(),
+                             SMILES=character(),
+                             tag=character(),
+                             fig_eic=list(),
+                             fig_struct=list())
+
+EMPTY_MS2_PLOT_TAB <- dtable(tag=character(),
+                             ID=character(),
+                             fig_eic=list(),
+                             fig_spec=list(),
+                             fig_leg=list())
+
+
+## Empty comprehensive table.
+EMPTY_COMP_TAB <- dtable(ID=character(),
+                         mz=numeric(),
+                         rt=numeric(),
+                         adduct=character(),
+                         tag=character(),
+                         set=character(),
+                         Name=character(),
+                         known=character(),
+                         SMILES=character(),
+                         Formula=character(),
+                         Files=character())
+
