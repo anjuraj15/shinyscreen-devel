@@ -1045,7 +1045,7 @@ gen_base_ms1_plot_tab <- function(summ,ms1_spec) {
                "tag",
                "ID",
                "mz",
-               "Files")
+               "file")
     
     res <- summ[ms1_spec,c(.SD,
                            list(rt_peak=i.ms1_rt,
@@ -1063,7 +1063,7 @@ gen_base_ms2_plot_tab <- function(summ,ms2_spec) {
                "tag",
                "ID",
                "mz",
-               "Files")
+               "file")
     res <- summ[ms2_spec,c(.SD,
                            list(CE=i.CE,
                                 rt_peak = i.rt,

@@ -169,11 +169,11 @@ mk_comp_tab <- function(m) {
     setkey(mzml,set)
     cmpds<-m$input$tab$cmpds
     setkey(cmpds,ID)
-    ## mzml[,`:=`(wd=sapply(Files,add_wd_to_mzml,m$conf$project))]
+    ## mzml[,`:=`(wd=sapply(file,add_wd_to_mzml,m$conf$project))]
     assert(nrow(cmpds)>0,msg="No compound lists have been provided.")
     message("Begin generation of the comprehensive table.")
     
-    comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,Files,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
+    comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,file,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
     tab2file(tab=comp,file=paste0("setidmerge",".csv"))
     setkey(comp,known,set,ID)
     
@@ -218,10 +218,10 @@ verify_compounds <- function(conf) {
 }
 
 verify_data_df <- function(mzml,all_sets) {
-    no_files <- which(mzml[,!file.exists(Files)])
+    no_file <- which(mzml[,!file.exists(file)])
     no_adducts <- which(mzml[,!(adduct %in% names(ADDUCTMAP))])
     no_sets <- which(mzml[,!(set %in% all_sets)])
-    assert(length(no_files)==0,msg = paste("Non-existent data files at rows:",paste(no_files,collapse = ',')))
+    assert(length(no_file)==0,msg = paste("Non-existent data files at rows:",paste(no_file,collapse = ',')))
     assert(length(no_adducts)==0,msg = paste("Unrecognised adducts at rows:",paste(no_adducts,collapse = ',')))
     assert(length(no_sets)==0,msg = paste("Unknown sets at rows:",paste(no_sets,collapse = ',')))
 }
@@ -316,8 +316,8 @@ extr_data <- function(m) {
     
     m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=BASE_KEY]
     m$out$tab$data[,set:=NULL] #This column is meaningless now.
-    files <- m$out$tab$data[,unique(Files)]
-    allCEs <- do.call(c,args=lapply(files,function(fn) {
+    file <- m$out$tab$data[,unique(file)]
+    allCEs <- do.call(c,args=lapply(file,function(fn) {
         z <- MSnbase::readMSData(files=fn,msLevel = c(1,2),mode="onDisk")
         unique(MSnbase::collisionEnergy(z),fromLast=T)
         
@@ -327,14 +327,14 @@ extr_data <- function(m) {
     cols <-paste('CE',allCEs,sep = '')
     vals <- rep(NA,length(cols))
     m$out$tab$data[,(cols) := .(rep(NA,.N))]
-    files <- m$out$tab$data[,unique(Files)]
-    ftags <- m$out$tab$data[,.(tag=unique(tag)),by=Files]
+    file <- m$out$tab$data[,unique(file)]
+    ftags <- m$out$tab$data[,.(tag=unique(tag)),by=file]
     futuref <- m$future
     tmp <- lapply(1:nrow(ftags),function(ii) {
-        fn <- ftags[ii,Files]
+        fn <- ftags[ii,file]
         the_tag <- ftags[ii,tag]
         message("(extract): Commencing extraction for tag: ", the_tag, "; file: ",fn)
-        tab <- as.data.frame(data.table::copy(m$out$tab$data[tag==the_tag,.(Files,tag,adduct,mz,rt,ID)]))
+        tab <- as.data.frame(data.table::copy(m$out$tab$data[tag==the_tag,.(file,tag,adduct,mz,rt,ID)]))
         ## err_ms1_eic <- m$extr$tol$eic
         ## err_coarse_fun <- m$extr$tol$coarse
         ## err_fine_fun <- m$extr$tol$fine
@@ -374,7 +374,7 @@ extr_data <- function(m) {
         msk <- sapply(tmp,future::resolved)
         newly_done <- which(msk)
         for (x in setdiff(newly_done,curr_done)) {
-            message("Done extraction for ", unique(future::value(tmp[[x]])$Files))
+            message("Done extraction for ", unique(future::value(tmp[[x]])$file))
         }
         Sys.sleep(0.5)
         curr_done <- newly_done
@@ -766,9 +766,9 @@ report <- function(m) {
             for (id in ids) {
                 message("Image ","set: ",s," group: ", g, " id: ",id)
                 doc$add(pander::pandoc.header.return(paste('ID',id),level = 3))
-                tab <- asdf[ID==id,.(tag,ms1_int,ms1_rt,adduct,mz,Files)]
-                ms2info <- m$out$tab$ms2_spec[adduct==g & ID==id,.(tag,ID,rt,ms2_max_int,Files)]
-                tab2 <- tab[ms2info,on="Files"][,.(tag,mz,adduct,"$RT_{ms1}$[min]"=ms1_rt,"$RT_{ms2}$[min]"=rt,"$I{ms1}$"=formatC(ms1_int, format="e",digits = 2), "$I(ms2)$"= formatC(ms2_max_int, format="e",digits = 2))]
+                tab <- asdf[ID==id,.(tag,ms1_int,ms1_rt,adduct,mz,file)]
+                ms2info <- m$out$tab$ms2_spec[adduct==g & ID==id,.(tag,ID,rt,ms2_max_int,file)]
+                tab2 <- tab[ms2info,on="file"][,.(tag,mz,adduct,"$RT_{ms1}$[min]"=ms1_rt,"$RT_{ms2}$[min]"=rt,"$I{ms1}$"=formatC(ms1_int, format="e",digits = 2), "$I(ms2)$"= formatC(ms2_max_int, format="e",digits = 2))]
                 data.table::setorderv(tab2,c("$I{ms1}$","$I(ms2)$"),c(-1,-1))
                 doc$add.paragraph("")
                 figpath <- fig_path(top=figtopdir,set=s,group=g,id=id,suff="all",ext="pdf")

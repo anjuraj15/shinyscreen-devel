@@ -133,12 +133,12 @@ EMPTY_CMPD_LIST <- dtable(ID=character(),
 COMP_LIST_COLS <- c("ID","Name","SMILES","Formula","RT","mz")
 ## Comprehensive table properties
 COMP_NAME_MAP <- list(RT="rt")
-COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","known","SMILES","Formula","Files")
+COMP_NAME_FIRST <- c("ID","mz","rt","adduct","tag","set","Name","known","SMILES","Formula","file")
 
 
 
 ## Trivial data table
-EMPTY_MZML <- dtable(Files=character(0),
+EMPTY_MZML <- dtable(file=character(0),
                      tag=character(0),
                      adduct=character(0),
                      set=character(0))
@@ -170,7 +170,7 @@ QA_NUM_INT <- c("ms2_sel","ms1_rt_ind")
 QA_COLS <- c(QA_FLAGS,QA_NUM_REAL,QA_NUM_INT)
 
 ## MS2 spectral table columns
-MS2_SPEC_COLS <- c("adduct","tag","ID","CE","rt","Files","spec","ms2_max_int")
+MS2_SPEC_COLS <- c("adduct","tag","ID","CE","rt","file","spec","ms2_max_int")
 
 ## MS1 spectral table columns
 MS1_SPEC_COLS <- c("adduct","tag","ID","eicMS1","ms1_int","ms1_rt","ms1_mean")
@@ -209,7 +209,7 @@ FIG_DEF_CONF <-list(grouping=list(group="adduct",
 
 ## File table properties
 SUMM_COLS=c("set",BASE_KEY_MS2,"an","mz","ms1_rt", "ms1_int", "ms2_rt", "ms2_int",
-            "ms1_mean","ms2_sel",QA_FLAGS,"Name", "SMILES", "Formula", "known","Comments","Files")
+            "ms1_mean","ms2_sel",QA_FLAGS,"Name", "SMILES", "Formula", "known","Comments","file")
 
 ## Empty summary table.
 EMPTY_SUMM <- data.table::data.table(set=character(0),
@@ -237,7 +237,7 @@ EMPTY_SUMM <- data.table::data.table(set=character(0),
                                      Formula=character(0),
                                      known=character(0),
                                      Comments=character(0),
-                                     Files=character(0))
+                                     file=character(0))
 
 ## Default sorting keys of spectra in the summary table
 DEF_KEY_SUMM <- c(BASE_KEY_MS2,"an")
@@ -273,5 +273,5 @@ EMPTY_COMP_TAB <- dtable(ID=character(),
                          known=character(),
                          SMILES=character(),
                          Formula=character(),
-                         Files=character())
+                         file=character())
 

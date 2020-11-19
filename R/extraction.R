@@ -482,10 +482,10 @@ extr_msnb_ht <-function(file,wd,mz,errEIC, errFinePPM,errCoarse,fnSpec,rt=NULL,e
 extr_eic_ms1 <- function(tab,err) {
     ## Asynchronous extraction of ms1 spectra. The result is a list of
     ## running futures.
-    files <- unique(tab$Files)
+    file <- unique(tab$file)
 
-    res <-lapply(files,function (fn) future::futur(extr_fn(fn), lazy=T))
-    names(res) <- files
+    res <-lapply(file,function (fn) future::futur(extr_fn(fn), lazy=T))
+    names(res) <- file
     res
 }
 
@@ -509,7 +509,7 @@ extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
                          "rt error: Only s(econds), or min(utes) allowed.")
     
     tab <- data.table::as.data.table(tab)
-    ## chunk <- tab[Files==fn]
+    ## chunk <- tab[file==fn]
     mz <- tab$mz
     rt <- tab$rt
     id <- tab$ID

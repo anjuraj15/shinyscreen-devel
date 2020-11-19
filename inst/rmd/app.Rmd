@@ -9,7 +9,7 @@ title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 library(data.table)
 library(shinyscreen)
 def_state <- new_state()
-def_datafiles <- shinyscreen:::dtable(File=character(0),
+def_datafiles <- shinyscreen:::dtable(file=character(0),
                                       tag=character(0))
 def_datatab <- shinyscreen:::dtable("tag"=factor(),
                                     "adduct"=factor(levels=shinyscreen:::DISP_ADDUCTS),
@@ -27,7 +27,7 @@ compl_sets <- eventReactive(rv_state$input$tab$setid,
 ## rv_ui <- reactiveValues(datatab=def_tags)
 
 ## Update with data-files.
-rv_dfiles <- reactiveVal(def_datafiles)
+rv_dfile <- reactiveVal(def_datafiles)
 
 ## Data-file table when loading.
 rv_datatab <- reactiveVal(def_datatab)
@@ -627,11 +627,10 @@ update_gui <- function(in_conf, session) {
 
         ## Files
         df <- shinyscreen:::file2tab(in_conf$data)
-        if ("File" %in% colnames(df)) {df$Files<-df$File;df$File<-NULL}
         df[,tag:=as.character(tag),with=T]
-        rv_dfiles(df[,.(File=Files,tag),by=c("Files","tag"),mult="first"][,Files:=NULL])
+        rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
         nms <- colnames(df)
-        nms <- nms[nms!="Files"]
+        nms <- nms[nms!="file"]
         fdt <- df[,..nms]
         rv_datatab(fdt)
 
@@ -748,7 +747,7 @@ rf_get_inp_datafiles <- eventReactive(input$datafiles,{
                                    error = function(e) def_datafiles)
 
     
-    z[,.(File,
+    z[,.(file,
          tag=as.character(tag)), with = T]
 })
 
@@ -818,9 +817,9 @@ observeEvent(input$datafiles_b,{
     if (length(fns) > 0) {
         oldtab <- rf_get_inp_datafiles()
         
-        newf <- setdiff(fns,oldtab$File)
+        newf <- setdiff(fns,oldtab$file)
         nr <- NROW(oldtab)
-        tmp <- if (length(newf)>0) shinyscreen:::dtable(File=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(File=character(),tag=character())
+        tmp <- if (length(newf)>0) shinyscreen:::dtable(file=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(file=character(),tag=character())
 
         z <- rbind(oldtab, tmp)
         z[,tag:=as.character(tag)]
@@ -881,7 +880,6 @@ observe({
 
     message("(config) Generating mzml from inputs.")
     res <- dtab[dfiles,on="tag"]
-    data.table::setnames(res,"File","Files")
     isolate(rv_state$input$tab$mzml <- res)
     message("(config) Generating mzml from inputs.")
 
@@ -1182,7 +1180,7 @@ output$summ_table <- DT::renderDataTable({
     
     tab <- rv_state$out$tab$flt_summ
     nms <- colnames(tab)
-    dpl_nms <- nms[nms!="Files"]
+    dpl_nms <- nms[nms!="file"]
     validate(need(NROW(tab)>0, message = "Please prescreen the data first."))
     DT::datatable(tab[,..dpl_nms],
                   style = 'bootstrap',

@@ -237,7 +237,7 @@
     | 999 | mixC |    |
 
 
-***  Data Files
+***  Data files
     These should be in mzML format.
 ** Sets, Tags, Adducts, Files and IDs
    Each file is labelled by a tag, adduct and set. Sets are defined in
