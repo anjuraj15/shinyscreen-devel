@@ -506,11 +506,29 @@ uiOutput("plot_b_ctrl")
 
 ## Visualisation
 
+### Plot selection
+
 ```{r, echo=F}
 DT::dataTableOutput("plot_sel")
 ```
 
-## Ching
+### Chromatograms and spectra
+
+
+```{r, echo=F}
+plotOutput("plot_ms1_eic")
+```
+
+
+```{r,echo=F}
+plotOutput("plot_ms2_eic")
+```
+
+```{r,echo=F}
+plotOutput("plot_ms2_spec")
+```
+
+
 
 <!-- ENGINE -->
 
@@ -522,6 +540,16 @@ ord_nms <- gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM)
 ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
 ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
 def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
+
+
+plot2rend <- function(plottab,seltab,row,plot_group,plot_plot,fig) {
+    req(row)
+    req(NROW(seltab)>0)
+    req(NROW(plottab)>0)
+    sel_grp <- seltab[row,.SD,.SDcols=c(plot_group,plot_plot)]
+    fig <- plottab[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL][[fig]][[1]]
+    fig
+}
 
 update_gui <- function(in_conf, session) {
     upd_unit <- function(entry,inp_val,inp_unit,choices) {
@@ -602,7 +630,6 @@ update_gui <- function(in_conf, session) {
         if ("File" %in% colnames(df)) {df$Files<-df$File;df$File<-NULL}
         df[,tag:=as.character(tag),with=T]
         rv_dfiles(df[,.(File=Files,tag),by=c("Files","tag"),mult="first"][,Files:=NULL])
-        print(rv_dfiles)
         nms <- colnames(df)
         nms <- nms[nms!="Files"]
         fdt <- df[,..nms]
@@ -841,8 +868,6 @@ observe({
 observe({
     dtab <- rv_datatab()
     dfiles <- rv_dfiles()
-    print(dtab)
-    print(dfiles)
     message("(config) Generating mzml from rv.")
     isolate(rv_state$input$tab$mzml <- dtab[dfiles,on="tag"])
     message("(config) Done generating mzml from rv.")
@@ -1063,7 +1088,7 @@ observe({
 })
 ```
 
-<!-- Render -->
+<!-- RENDER -->
 ```{r, include="false", context="server"}
 output$project <- renderText(rv_state$conf$project)
 
@@ -1189,6 +1214,72 @@ output$plot_b_ctrl <- renderUI({
     req(NROW(tab)>0)
     actionButton(inputId = "plot_b",
              label= "Generate plots")
+    
+})
+
+output$plot_ms1_eic <- renderPlot({
+    tab <- rf_gen_sel_plot_tab()
+
+    plot_group <- rv_state$conf$figures$grouping$group
+    plot_plot <- rv_state$conf$figures$grouping$plot
+    ms1_plot <- rv_state$out$tab$ms1_plot
+    ms1_plot <- rv_state$out$tab$ms1_plot
+    row <- input$plot_sel_cell_clicked[["row"]]
+    plot2rend(plottab=ms1_plot,
+              seltab=tab,
+              row=row,
+              plot_group=plot_group,
+              plot_plot=plot_plot,
+              "fig_eic")
+    
+    
+    ## req(row)
+    ## req(NROW(tab)>0)
+    ## req(NROW(ms1_plot)>0)
+    ## sel_grp <- tab[row,.SD,.SDcols=c(plot_group,plot_plot)]
+    ## fig_eic <- ms1_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]$fig_eic[[1]]
+    ## fig_eic
+})
+
+output$plot_ms2_eic <- renderPlot({
+    tab <- rf_gen_sel_plot_tab()
+
+    plot_group <- rv_state$conf$figures$grouping$group
+    plot_plot <- rv_state$conf$figures$grouping$plot
+    ms2_plot <- rv_state$out$tab$ms2_plot
+    ms2_plot <- rv_state$out$tab$ms2_plot
+    row <- input$plot_sel_cell_clicked[["row"]]
+    plot2rend(plottab=ms2_plot,
+              seltab=tab,
+              row=row,
+              plot_group=plot_group,
+              plot_plot=plot_plot,
+              "fig_eic")
+    
+    
+    ## req(row)
+    ## req(NROW(tab)>0)
+    ## req(NROW(ms1_plot)>0)
+    ## sel_grp <- tab[row,.SD,.SDcols=c(plot_group,plot_plot)]
+    ## fig_eic <- ms1_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]$fig_eic[[1]]
+    ## fig_eic
+})
+
+output$plot_ms2_spec <- renderPlot({
+    tab <- rf_gen_sel_plot_tab()
+
+    plot_group <- rv_state$conf$figures$grouping$group
+    plot_plot <- rv_state$conf$figures$grouping$plot
+    ms2_plot <- rv_state$out$tab$ms2_plot
+    ms2_plot <- rv_state$out$tab$ms2_plot
+    row <- input$plot_sel_cell_clicked[["row"]]
+    plot2rend(plottab=ms2_plot,
+              seltab=tab,
+              row=row,
+              plot_group=plot_group,
+              plot_plot=plot_plot,
+              "fig_spec")
+    
     
 })
 ```
