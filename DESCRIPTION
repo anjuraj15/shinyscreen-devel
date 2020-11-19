@@ -50,18 +50,12 @@ Collate:
     'extraction.R'
     'api.R'
     'shiny-ui-base.R'
-    'shiny-ui-config.R'
-    'shiny-ui-cmpd.R'
-    'shiny-ui-sets.R'
-    'shiny-ui-gen.R'
-    'shiny-ui-top.R'
 Depends:
     RMassBank,
     RChemMass
 Imports:
     tools,
     scales,
-    parallel,
     future,
     yaml,
     mzR,
@@ -77,4 +71,6 @@ Imports:
     shiny,
     shinydashboard,
     shinyFiles,
-    rhandsontable
+    rhandsontable,
+    DT,
+    tcltk
