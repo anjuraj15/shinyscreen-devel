@@ -1288,3 +1288,16 @@ tk_save_file <-  function (default = "", caption = "Select files", filters = NUL
     }
     as.character(do.call(tcltk::tcl, args))
 }
+
+get_rt_interval <- function(data_ms1,data_ms2,conf_figures) {
+    rt_new_lim <- c(rt_in_min(conf_figures$rt_min),
+                    rt_in_min(conf_figures$rt_max))
+    rt_lim <- get_coord_lim(rt_new_lim,DEFAULT_RT_RANGE)
+
+    ms1_lim <- range(data_ms1$rt)
+    ms2_lim <- if (NROW(data_ms2)>0) range(data_ms2$rt_peak) else c(NA,NA)
+    
+    rlim <- min(rt_lim[[2]],ms1_lim[[2]],ms2_lim[[2]],na.rm = T)
+    llim <- max(rt_lim[[1]],ms1_lim[[1]],ms2_lim[[1]],na.rm = T)
+    c(llim-0.5,rlim+0.5)
+}

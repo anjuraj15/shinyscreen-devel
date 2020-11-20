@@ -8,6 +8,7 @@ title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 ```{r, context='setup', include='false'}
 library(data.table)
 library(shinyscreen)
+library(ggplot2)
 def_state <- new_state()
 def_datafiles <- shinyscreen:::dtable(file=character(0),
                                       tag=character(0))
@@ -34,6 +35,12 @@ rv_datatab <- reactiveVal(def_datatab)
 
 ## Re-definitions.
 PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
+
+## Plotting parameters.
+
+## Transient rt range.
+rv_rtrange <- reactiveValues(min=def_state$conf$rt_min,
+                             max=def_state$conf$rt_max)
 
 ```
 
@@ -542,12 +549,13 @@ ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascendi
 def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
 
 
-plot2rend <- function(plottab,seltab,row,plot_group,plot_plot,fig) {
+plot2rend <- function(plottab,seltab,row,plot_group,plot_plot,fig,x_range=NULL) {
     req(row)
     req(NROW(seltab)>0)
     req(NROW(plottab)>0)
     sel_grp <- seltab[row,.SD,.SDcols=c(plot_group,plot_plot)]
     fig <- plottab[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL][[fig]][[1]]
+    if (!is.null(x_range)) fig <- fig+coord_cartesian(xlim=x_range)
     fig
 }
 
@@ -757,23 +765,43 @@ rf_summ_table_rows <- eventReactive(input$summ_table_rows_all,{
 })
 
 rf_gen_sel_plot_tab <- reactive({
-    validate(need(NROW(rv_state$out$tab$ms1_plot) > 0 ||
-                  NROW(rv_state$out$tab$ms2_plot) > 0,
-                  message = "No plots found. Did you generate them?"),
-             need(NROW(rv_state$out$tab$comp) > 0,
-                  message = "Data extraction needs to be performed first."))
+    validate(need(NROW(rv_state$out$tab$ms1_plot) > 0,
+                  message = "No plots found. Did you generate them?"))
 
     rows <- rf_summ_table_rows()
-    mp1 <- rv_state$out$tab$ms1_plot
-    mp2 <- rv_state$out$tab$ms2_plot
-    comp <- rv_state$out$tab$comp
-
+    
     plot_group <- rv_state$conf$figures$grouping$group
     plot_plot <- rv_state$conf$figures$grouping$plot
     plot_label <- rv_state$conf$figures$grouping$label
 
     summt<-rv_state$out$tab$flt_summ[rows,unique(.SD),.SDcols=c(plot_group,plot_plot)]
     summt
+})
+
+rf_get_rtrange <- eventReactive(input$plot_sel_cell_clicked,{
+    ## Determine the plotting RT range.
+    
+    ptab <- rf_gen_sel_plot_tab()
+    plot_group <- rv_state$conf$figures$grouping$group
+    plot_plot <- rv_state$conf$figures$grouping$plot
+    ms1_plot <- rv_state$out$tab$ms1_plot
+    ms2_plot <- rv_state$out$tab$ms2_plot
+    row <- input$plot_sel_cell_clicked[["row"]]
+    req(row)
+    sel_grp <- ptab[row,.SD,.SDcols=c(plot_group,plot_plot)]
+    mpl1 <- ms1_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]
+    mpl2 <- ms2_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]
+
+    message('sel_grp')
+    print(sel_grp)
+
+    res <- shinyscreen:::get_rt_interval(mpl1$fig_eic[[1]]$data,mpl2$fig_eic[[1]]$data,rv_state$conf$figures)
+    message("RES:")
+    print(res)
+    print(class(res))
+    res
+    
+    
 })
 ```
 
@@ -1005,8 +1033,6 @@ observeEvent(input$state_file_save_b,{
     }
 })
 
-
-
 ```
 
 <!-- Tolerance -->
@@ -1223,20 +1249,14 @@ output$plot_ms1_eic <- renderPlot({
     ms1_plot <- rv_state$out$tab$ms1_plot
     ms1_plot <- rv_state$out$tab$ms1_plot
     row <- input$plot_sel_cell_clicked[["row"]]
+    rt_range <- rf_get_rtrange()
     plot2rend(plottab=ms1_plot,
               seltab=tab,
               row=row,
               plot_group=plot_group,
               plot_plot=plot_plot,
+              x_range=rt_range,
               "fig_eic")
-    
-    
-    ## req(row)
-    ## req(NROW(tab)>0)
-    ## req(NROW(ms1_plot)>0)
-    ## sel_grp <- tab[row,.SD,.SDcols=c(plot_group,plot_plot)]
-    ## fig_eic <- ms1_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]$fig_eic[[1]]
-    ## fig_eic
 })
 
 output$plot_ms2_eic <- renderPlot({
@@ -1247,20 +1267,15 @@ output$plot_ms2_eic <- renderPlot({
     ms2_plot <- rv_state$out$tab$ms2_plot
     ms2_plot <- rv_state$out$tab$ms2_plot
     row <- input$plot_sel_cell_clicked[["row"]]
+    rt_range <- rf_get_rtrange()
     plot2rend(plottab=ms2_plot,
               seltab=tab,
               row=row,
               plot_group=plot_group,
               plot_plot=plot_plot,
+              x_range=rt_range,
               "fig_eic")
-    
-    
-    ## req(row)
-    ## req(NROW(tab)>0)
-    ## req(NROW(ms1_plot)>0)
-    ## sel_grp <- tab[row,.SD,.SDcols=c(plot_group,plot_plot)]
-    ## fig_eic <- ms1_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]$fig_eic[[1]]
-    ## fig_eic
+
 })
 
 output$plot_ms2_spec <- renderPlot({
@@ -1271,6 +1286,7 @@ output$plot_ms2_spec <- renderPlot({
     ms2_plot <- rv_state$out$tab$ms2_plot
     ms2_plot <- rv_state$out$tab$ms2_plot
     row <- input$plot_sel_cell_clicked[["row"]]
+    rt_range <- rf_get_rtrange()
     plot2rend(plottab=ms2_plot,
               seltab=tab,
               row=row,

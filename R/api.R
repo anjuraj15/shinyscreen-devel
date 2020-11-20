@@ -647,20 +647,6 @@ save_plots <- function(m) {
     plot_ms1_label <- grouping$label
     plot_ms2_label <- "CE"
 
-    get_rt_interval <- function(data_ms1,data_ms2,conf_figures) {
-        rt_new_lim <- c(rt_in_min(conf_figures$rt_min),
-                        rt_in_min(conf_figures$rt_max))
-        rt_lim <- get_coord_lim(rt_new_lim,DEFAULT_RT_RANGE)
-
-        rtms1 <- data_ms1$rt
-        rtms2 <- if (length(data_ms2)>0 && !is.na(data_ms2)) data_ms2$rt else c(NA,NA)
-        ms1_lim <- range(data_ms1$rt)
-        ms2_lim <- range(data_ms2$rt)
-        rlim <- min(rt_lim[[2]],ms1_lim[[2]],ms2_lim[[2]],na.rm = T)
-        llim <- max(rt_lim[[1]],ms1_lim[[1]],ms2_lim[[1]],na.rm = T)
-        c(llim-0.5,rlim+0.5)
-    }
-    
     doplot <- function(eic_ms1,eic_ms2,spec_ms2,leg_ms2,struct,group,plot,t_group="",t_plot="",print_labs=T) {
         ## Produce the filename.
         fn <- paste0(paste(t_group,group,t_plot,plot,sep = "_"),".pdf")
