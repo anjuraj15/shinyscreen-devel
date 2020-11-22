@@ -42,6 +42,10 @@ PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
 rv_rtrange <- reactiveValues(min=def_state$conf$rt_min,
                              max=def_state$conf$rt_max)
 
+## Transient mz range.
+rv_mzrange <- reactiveValues(min=NA,
+                             max=NA)
+
 ```
 <style type="text/css">
 .main-container {
@@ -559,7 +563,7 @@ plotOutput("plot_ms2_spec",
            hover = hoverOpts(id="plot_hover",
                              delayType = "throttle",
                              delay=100),
-           brush = "plot_brush")
+           brush = brushOpts(id="plot_mz_brush"))
 ```
 </div>
 
@@ -812,7 +816,7 @@ rf_gen_sel_plot_tab <- reactive({
     summt
 })
 
-rf_get_rtrange <- eventReactive(input$plot_sel_cell_clicked,{
+rf_rtrange_from_data <- eventReactive(input$plot_sel_cell_clicked,{
     ## Determine the plotting RT range.
     
     ptab <- rf_gen_sel_plot_tab()
@@ -1067,6 +1071,30 @@ observeEvent(input$state_file_save_b,{
     }
 })
 
+observe({
+    res <- rf_rtrange_from_data()
+    rv_rtrange$min <- res[[1]]
+    rv_rtrange$max <- res[[2]]
+},label = "rt_from_data")
+
+observeEvent(input$plot_brush,{
+    xmin <- input$plot_brush[["xmin"]]
+    xmax <- input$plot_brush[["xmax"]]
+    if (!is.null(xmin)) rv_rtrange$min <- xmin
+    if (!is.null(xmin)) rv_rtrange$max <- xmax
+    session$resetBrush("plot_brush")
+    
+})
+
+observeEvent(input$plot_mz_brush,{
+    xmin <- input$plot_mz_brush[["xmin"]]
+    xmax <- input$plot_mz_brush[["xmax"]]
+    if (!is.null(xmin)) rv_mzrange$min <- xmin
+    if (!is.null(xmin)) rv_mzrange$max <- xmax
+    session$resetBrush("plot_mz_brush")
+    
+})
+
 ```
 
 <!-- Tolerance -->
@@ -1283,7 +1311,8 @@ output$plot_ms1_eic <- renderPlot({
     ms1_plot <- rv_state$out$tab$ms1_plot
     ms1_plot <- rv_state$out$tab$ms1_plot
     row <- input$plot_sel_cell_clicked[["row"]]
-    rt_range <- rf_get_rtrange()
+    rt_range <- c(rv_rtrange$min,
+                  rv_rtrange$max)
     plot2rend(plottab=ms1_plot,
               seltab=tab,
               row=row,
@@ -1301,7 +1330,8 @@ output$plot_ms2_eic <- renderPlot({
     ms2_plot <- rv_state$out$tab$ms2_plot
     ms2_plot <- rv_state$out$tab$ms2_plot
     row <- input$plot_sel_cell_clicked[["row"]]
-    rt_range <- rf_get_rtrange()
+    rt_range <- c(rv_rtrange$min,
+                  rv_rtrange$max)
     plot2rend(plottab=ms2_plot,
               seltab=tab,
               row=row,
@@ -1320,12 +1350,14 @@ output$plot_ms2_spec <- renderPlot({
     ms2_plot <- rv_state$out$tab$ms2_plot
     ms2_plot <- rv_state$out$tab$ms2_plot
     row <- input$plot_sel_cell_clicked[["row"]]
-    rt_range <- rf_get_rtrange()
+    mz_range <- c(rv_mzrange$min,
+                  rv_mzrange$max)
     plot2rend(plottab=ms2_plot,
               seltab=tab,
               row=row,
               plot_group=plot_group,
               plot_plot=plot_plot,
+              x_range = mz_range,
               "fig_spec")
     
     
