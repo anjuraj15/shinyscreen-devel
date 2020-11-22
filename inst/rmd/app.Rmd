@@ -43,6 +43,14 @@ rv_rtrange <- reactiveValues(min=def_state$conf$rt_min,
                              max=def_state$conf$rt_max)
 
 ```
+<style type="text/css">
+.main-container {
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
 
 
 # Configuration {.tabset}
@@ -521,25 +529,45 @@ DT::dataTableOutput("plot_sel")
 
 ### Chromatograms and spectra
 
+<div style="display: flex;">
+
+<div style="width:100%;">
 
 ```{r, echo=F}
 plotOutput("plot_ms1_eic",
-           hover = "plot_hover",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
            brush = "plot_brush")
 ```
 
 
 ```{r,echo=F}
 plotOutput("plot_ms2_eic",
-           hover = "plot_hover",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
            brush = "plot_brush")
 ```
 
+
+</div>
+
+<div style="width:100%;">
 ```{r,echo=F}
 plotOutput("plot_ms2_spec",
-           hover = "plot_hover",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
            brush = "plot_brush")
 ```
+</div>
+
+</div>
+
+```{r,echo=F}
+verbatimTextOutput("plot_hover_out")
+````
 
 
 
@@ -1302,6 +1330,14 @@ output$plot_ms2_spec <- renderPlot({
     
     
 })
+
+output$plot_hover_out <- renderText({
+    pr <- "graph coords: "
+    paste0(pr,'(',
+           format(input$plot_hover[[1]],digits=5),
+           ',',
+           format(input$plot_hover[[2]],digits=2,scientific=T),
+           ')')})
 ```
 
 
