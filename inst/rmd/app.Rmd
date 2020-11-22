@@ -851,7 +851,7 @@ observeEvent(input$datafiles_b,{
 
         z <- rbind(oldtab, tmp)
         z[,tag:=as.character(tag)]
-        rv_dfiles(z)
+        rv_dfile(z)
     }
 })
 
@@ -894,7 +894,7 @@ observe({
 
 observe({
     dtab <- rv_datatab()
-    dfiles <- rv_dfiles()
+    dfiles <- rv_dfile()
     message("(config) Generating mzml from rv.")
     isolate(rv_state$input$tab$mzml <- dtab[dfiles,on="tag"])
     message("(config) Done generating mzml from rv.")
@@ -1140,7 +1140,7 @@ output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsont
 
 output$datafiles <- rhandsontable::renderRHandsontable(
 {
-    res <- rv_dfiles()
+    res <- rv_dfile()
     rhandsontable::rhandsontable(as.data.frame(res),
                                  width = "50%",
                                  height = "25%",

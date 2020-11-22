@@ -395,8 +395,6 @@ plot_id_msn <- function(ni,
                                ")",sep='')
     mk_leg_lab<-function(tag,rt) {paste(tag,"; rt= ",formatC(rt[[tag]],format='f',digits=rt_digits),"min")}
 
-    sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
-
 
     i<-name2id(ni)
 
@@ -1076,15 +1074,71 @@ gen_base_ms2_plot_tab <- function(summ,ms2_spec) {
     setkeyv(res,cols=BASE_KEY)
     res
 }
+
+## Format the y labels.
+sci10 <- function(x) {
+    prefmt <- formatC(x,format="e",digits=2)
+    bits <- strsplit(prefmt,split="e")
+    bits1 <-sapply(bits,function(x) {
+        if (length(x) > 1) {
+            res <- x[[1]]
+            sub(" ","~",res)
+        } else {
+            x
+        }
+    })
+    bits2 <-sapply(bits,function(x) if (length(x)>1) paste0(" %*% 10^","'",sub("[+]"," ",x[[2]]),"'") else "")
+    txt <- mapply(function(b1,b2) if (nchar(b2)!=0) {paste0("'",b1,"'",b2)} else NA,
+                  bits1,
+                  bits2,
+                  SIMPLIFY = F)
+    names(txt) <- NULL
+    txt <- gsub(pattern = "^'0\\.00'.*$","  0",x=txt)
+    parse(text=txt)
+    
+    
+
+}
+
+sci10_old <- function(x) {
+    if (length(x)!=0) {
+        x<-sapply(x,function(x) if(x!=0) x else "0")
+        ifelse(x==0,"0",{
+            prefmt <- formatC(x,format="e",digits=2)
+            bits <- strsplit(prefmt,split="e")
+            bits1 <-sapply(bits,function(x) {
+                if (length(x) > 1) {
+                    res <- x[[1]]
+                    sub(" ","~",res)
+                } else {
+                    x
+                }
+            })
+            print(bits1)
+            bits2 <-sapply(bits,function(x) if (length(x)>1) paste0(" %*% 10^",sub("[+]","~",x[[2]])) else "")
+            txt <- mapply(function(b1,b2) if (nchar(b2)!=0) {paste0(b1,b2)} else NA,
+                                 bits1,
+                                 bits2,
+                          SIMPLIFY = F)
+            names(txt) <- NULL
+            message("---------")
+            print(txt)
+            message("________")
+            ## parse(text=txt)})
+            txt})
+        
+     } else ""
+}
 plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="CE",all_ms2_labels=NULL,
                        ms1_legend_info=T) {
     textf <- ggplot2::element_text
-    sci10<-function(x) {ifelse(x==0, "0", parse(text=gsub("[+]", "", gsub("e", " %*% 10^", scales::scientific_format()(x)))))}
+    
     ## Logarithmic, or linear y axis?
     scale_y <- if (shiny::isTruthy(islog))
                    ggplot2::scale_y_log10 else ggplot2::scale_y_continuous
 
-    my_theme <- function (...) ggplot2::theme()
+    my_theme <- function (...) ggplot2::theme(plot.margin = unit(c(0,0,0,0),"cm"),
+                                              legend.position = "none")
 
     getpal <- colorRampPalette(RColorBrewer::brewer.pal(8,"Dark2"))
     
@@ -1122,7 +1176,7 @@ plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="C
                          labels=labels) +
             scale_ms2(breaks=ms2_breaks,
                       labels=ms2_labels) +
-            scale_y() + my_theme()
+            scale_y(labels=sci10) + my_theme()
         ## plot +
         ##     scale_colour(breaks=breaks,
         ##                  labels=labels) +
