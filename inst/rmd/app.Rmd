@@ -533,34 +533,57 @@ DT::dataTableOutput("plot_sel")
 
 ### Chromatograms and spectra
 
-<details><summary>Plots</summary>
-
 Each plot supports zooming by selecting an area within the plot. The
 zoom can be reset by double clicking on the plot surface.
 
-</details>
+```{r,echo=F}
+verbatimTextOutput("plot_hover_out")
+````
+```{r, echo=F}
+wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height: 100%; width: 100%;",
+          column(6,
+                 plotOutput("plot_ms1_eic",
+                            hover = hoverOpts(id="plot_hover",
+                                              delayType = "throttle",
+                                              delay=100),
+                            dblclick = "plot_rt_click",
+                            brush = "plot_brush"),
+                 plotOutput("plot_ms2_eic",
+                            hover = hoverOpts(id="plot_hover",
+                                              delayType = "throttle",
+                                              delay=100),
+                            dblclick = "plot_rt_click",
+                            brush = "plot_brush")),
+          column(6,
+                 plotOutput("plot_ms2_spec",
+                            hover = hoverOpts(id="plot_hover",
+                                              delayType = "throttle",
+                                              delay=100),
+                            dblclick = "plot_mz_click",
+                            brush = brushOpts(id="plot_mz_brush"))))
+## plotOutput("plot_ms1_eic",
+##            hover = hoverOpts(id="plot_hover",
+##                              delayType = "throttle",
+##                              delay=100),
+##            dblclick = "plot_rt_click",
+##            brush = "plot_brush")
+```
+
 
 <div style="display: flex;">
 
 <div style="width:100%;">
 
-```{r, echo=F}
-plotOutput("plot_ms1_eic",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_rt_click",
-           brush = "plot_brush")
-```
+
 
 
 ```{r,echo=F}
-plotOutput("plot_ms2_eic",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_rt_click",
-           brush = "plot_brush")
+## plotOutput("plot_ms2_eic",
+##            hover = hoverOpts(id="plot_hover",
+##                              delayType = "throttle",
+##                              delay=100),
+##            dblclick = "plot_rt_click",
+##            brush = "plot_brush")
 ```
 
 
@@ -568,20 +591,18 @@ plotOutput("plot_ms2_eic",
 
 <div style="width:100%;">
 ```{r,echo=F}
-plotOutput("plot_ms2_spec",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_mz_click",
-           brush = brushOpts(id="plot_mz_brush"))
+## plotOutput("plot_ms2_spec",
+##            hover = hoverOpts(id="plot_hover",
+##                              delayType = "throttle",
+##                              delay=100),
+##            dblclick = "plot_mz_click",
+##            brush = brushOpts(id="plot_mz_brush"))
 ```
 </div>
 
 </div>
 
-```{r,echo=F}
-verbatimTextOutput("plot_hover_out")
-````
+
 
 
 
@@ -1387,7 +1408,7 @@ output$plot_ms2_spec <- renderPlot({
 })
 
 output$plot_hover_out <- renderText({
-    pr <- "graph coords: "
+    pr <- "Pointer position: "
     paste0(pr,'(',
            format(input$plot_hover[[1]],digits=5),
            ',',
