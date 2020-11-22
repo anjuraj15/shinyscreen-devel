@@ -533,6 +533,13 @@ DT::dataTableOutput("plot_sel")
 
 ### Chromatograms and spectra
 
+<details><summary>Plots</summary>
+
+Each plot supports zooming by selecting an area within the plot. The
+zoom can be reset by double clicking on the plot surface.
+
+</details>
+
 <div style="display: flex;">
 
 <div style="width:100%;">
@@ -542,6 +549,7 @@ plotOutput("plot_ms1_eic",
            hover = hoverOpts(id="plot_hover",
                              delayType = "throttle",
                              delay=100),
+           dblclick = "plot_rt_click",
            brush = "plot_brush")
 ```
 
@@ -551,6 +559,7 @@ plotOutput("plot_ms2_eic",
            hover = hoverOpts(id="plot_hover",
                              delayType = "throttle",
                              delay=100),
+           dblclick = "plot_rt_click",
            brush = "plot_brush")
 ```
 
@@ -563,6 +572,7 @@ plotOutput("plot_ms2_spec",
            hover = hoverOpts(id="plot_hover",
                              delayType = "throttle",
                              delay=100),
+           dblclick = "plot_mz_click",
            brush = brushOpts(id="plot_mz_brush"))
 ```
 </div>
@@ -1084,6 +1094,19 @@ observeEvent(input$plot_brush,{
     if (!is.null(xmin)) rv_rtrange$max <- xmax
     session$resetBrush("plot_brush")
     
+})
+
+observeEvent(input$plot_rt_click,
+{
+    res <- rf_rtrange_from_data()
+    rv_rtrange$min <- res[[1]]
+    rv_rtrange$max <- res[[2]]
+})
+
+observeEvent(input$plot_mz_click,
+{
+    rv_mzrange$min <- NA
+    rv_mzrange$max <- NA
 })
 
 observeEvent(input$plot_mz_brush,{
