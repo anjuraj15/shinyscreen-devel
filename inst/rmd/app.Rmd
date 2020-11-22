@@ -540,7 +540,7 @@ zoom can be reset by double clicking on the plot surface.
 verbatimTextOutput("plot_hover_out")
 ````
 ```{r, echo=F}
-wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height: 100%; width: 100%;",
+wellPanel(id = "tPanel",style = "overflow-y:scroll;max-height:80vh; width: 100%; background: white",
           column(6,
                  plotOutput("plot_ms1_eic",
                             hover = hoverOpts(id="plot_hover",
@@ -561,50 +561,7 @@ wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height: 100%; width: 100
                                               delay=100),
                             dblclick = "plot_mz_click",
                             brush = brushOpts(id="plot_mz_brush"))))
-## plotOutput("plot_ms1_eic",
-##            hover = hoverOpts(id="plot_hover",
-##                              delayType = "throttle",
-##                              delay=100),
-##            dblclick = "plot_rt_click",
-##            brush = "plot_brush")
 ```
-
-
-<div style="display: flex;">
-
-<div style="width:100%;">
-
-
-
-
-```{r,echo=F}
-## plotOutput("plot_ms2_eic",
-##            hover = hoverOpts(id="plot_hover",
-##                              delayType = "throttle",
-##                              delay=100),
-##            dblclick = "plot_rt_click",
-##            brush = "plot_brush")
-```
-
-
-</div>
-
-<div style="width:100%;">
-```{r,echo=F}
-## plotOutput("plot_ms2_spec",
-##            hover = hoverOpts(id="plot_hover",
-##                              delayType = "throttle",
-##                              delay=100),
-##            dblclick = "plot_mz_click",
-##            brush = brushOpts(id="plot_mz_brush"))
-```
-</div>
-
-</div>
-
-
-
-
 
 <!-- ENGINE -->
 
