@@ -523,16 +523,22 @@ DT::dataTableOutput("plot_sel")
 
 
 ```{r, echo=F}
-plotOutput("plot_ms1_eic")
+plotOutput("plot_ms1_eic",
+           hover = "plot_hover",
+           brush = "plot_brush")
 ```
 
 
 ```{r,echo=F}
-plotOutput("plot_ms2_eic")
+plotOutput("plot_ms2_eic",
+           hover = "plot_hover",
+           brush = "plot_brush")
 ```
 
 ```{r,echo=F}
-plotOutput("plot_ms2_spec")
+plotOutput("plot_ms2_spec",
+           hover = "plot_hover",
+           brush = "plot_brush")
 ```
 
 
