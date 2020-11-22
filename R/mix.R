@@ -1129,16 +1129,24 @@ sci10_old <- function(x) {
         
      } else ""
 }
+
+plot_theme <- function (legend.position="none",...)
+    ggplot2::theme(
+                 plot.margin = unit(c(0,0,0,0),"cm"),
+                 legend.position = legend.position,
+                 axis.text = ggplot2::element_text(size=ggplot2::rel(1.2)),
+                 axis.title = ggplot2::element_text(size=ggplot2::rel(1.2)),
+                 ...)
+
 plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="CE",all_ms2_labels=NULL,
                        ms1_legend_info=T) {
     textf <- ggplot2::element_text
-    
+
+    my_theme <- plot_theme(legend.position="bottom",legend.box="horizontal")
     ## Logarithmic, or linear y axis?
     scale_y <- if (shiny::isTruthy(islog))
                    ggplot2::scale_y_log10 else ggplot2::scale_y_continuous
 
-    my_theme <- function (...) ggplot2::theme(plot.margin = unit(c(0,0,0,0),"cm"),
-                                              legend.position = "none")
 
     getpal <- colorRampPalette(RColorBrewer::brewer.pal(8,"Dark2"))
     
@@ -1176,12 +1184,7 @@ plot_decor <- function(m,islog,all_ms1_labels,legend_name_ms1,legend_name_ms2="C
                          labels=labels) +
             scale_ms2(breaks=ms2_breaks,
                       labels=ms2_labels) +
-            scale_y(labels=sci10) + my_theme()
-        ## plot +
-        ##     scale_colour(breaks=breaks,
-        ##                  labels=labels) +
-        ##     scale_y(labels=sci10) +
-        ##     my_theme()
+            scale_y(labels=sci10) + my_theme
     } 
 }
 

@@ -628,7 +628,7 @@ save_plots <- function(m) {
     topdir <- FIG_TOPDIR 
     dir.create(topdir,showWarnings = F)
 
-    my_theme <- function(...) ggplot2::theme(legend.position = "none",...)
+    my_theme <- function(...) plot_theme(legend.position = "left")
 
 
     clean_range<-function(def,rng) {
