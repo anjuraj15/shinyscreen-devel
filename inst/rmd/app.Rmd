@@ -9,6 +9,7 @@ title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 library(data.table)
 library(shinyscreen)
 library(ggplot2)
+## library(shinydashboard)
 def_state <- new_state()
 def_datafiles <- shinyscreen:::dtable(file=character(0),
                                       tag=character(0))
@@ -339,88 +340,6 @@ rhandsontable::rHandsontableOutput("order_summ")
 
 </div>
 
-## Plots
-
-### Logarithmic axis
-
-```{r, echo=F}
-checkboxGroupInput("plot_log",
-                   label=NULL,
-                   choices = c("MS1 EIC","MS2 EIC","MS2 Spectrum"),
-                   selected = character(0))
-```
-
-### Global retention time range
-```{r, echo=F}
-shinyscreen::rt_input(input_rt = "plot_rt_min",
-                      input_unit = "plot_rt_min_unit",
-                      def_rt = NA_real_,
-                      def_unit = "min",
-                      pref = "min:")
-
-shinyscreen::rt_input(input_rt = "plot_rt_max",
-                      input_unit = "plot_rt_max_unit",
-                      def_rt = NA_real_,
-                      def_unit = "min",
-                      pref = "max:")
-```
-
-### Grouping plots
-
-<details><summary>How to group plots?</summary> 
-
-Plots are organised according to three categories: _plot group_,
-_label group_ and _label_. Category _label_ represents a line in a
-plot (for example, data from a specific file designated by _tag_ key
-in the file table). Category _label group_ defines how different
-labels are grouped together onto a graph (for continuing from the
-previous example, if _label group_ is _ID_ then all _tag_s connected
-to a single _ID_ are going to be plotted together on a graph). Lastly,
-Different _label group_s are going to be organised into _plot group_s.
-
-Keys in different categores must be different.
-
-</details>
-
-<div style= "display: flex; vertical-align:top; ">
-
-<div style="padding-right:0.5em;">
-```{r, echo=F}
-p_feats <- 1:length(PLOT_FEATURES)
-names(p_feats) <- PLOT_FEATURES
-selectInput(inputId = "plot_grp",
-            label = "Group plots",
-            choices = p_feats,
-            selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["group"]]]],
-            width  = "100%")
-```
-</div>
-
-<div style="padding-right:0.5em;padding-left:0.5em;">
-```{r, echo=F}
-p_feats <- 1:length(PLOT_FEATURES)
-names(p_feats) <- PLOT_FEATURES
-selectInput(inputId = "plot_grp_plot",
-            label = "Group labels",
-            choices = p_feats,
-            selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["plot"]]]],
-            width  = "100%")
-```
-</div>
-
-<div style="padding-left:0.5em;">
-```{r, echo=F}
-p_feats <- 1:length(PLOT_FEATURES)
-names(p_feats) <- PLOT_FEATURES
-selectInput(inputId = "plot_label",
-            label = "Label",
-            choices = p_feats,
-            selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["label"]]]],
-            width = "100%")
-```
-</div>
-
-</div>
 ## Report
 
 ```{r, echo=F}
@@ -509,21 +428,72 @@ actionButton(inputId = "sortsubset_b",
 </div>
 
 
-# Browse Results
+# Browse Results {.tabset}
 
 ## Summary table
 ```{r, echo=FALSE}
 DT::dataTableOutput("summ_table")
 ```
 
+## Data Explorer
 
+### Grouping plots
+
+<details><summary>How to group plots?</summary> 
+
+Plots are organised according to three categories: _plot group_,
+_label group_ and _label_. Category _label_ represents a line in a
+plot (for example, data from a specific file designated by _tag_ key
+in the file table). Category _label group_ defines how different
+labels are grouped together onto a graph (for continuing from the
+previous example, if _label group_ is _ID_ then all _tag_s connected
+to a single _ID_ are going to be plotted together on a graph). Lastly,
+Different _label group_s are going to be organised into _plot group_s.
+
+Keys in different categores must be different.
+
+</details>
+
+<div style= "display: flex; vertical-align:top; ">
+
+<div style="padding-right:0.5em;">
 ```{r, echo=F}
-
-uiOutput("plot_b_ctrl")
-
+p_feats <- 1:length(PLOT_FEATURES)
+names(p_feats) <- PLOT_FEATURES
+selectInput(inputId = "plot_grp",
+            label = "Group plots",
+            choices = p_feats,
+            selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["group"]]]],
+            width  = "100%")
 ```
+</div>
 
-## Visualisation
+<div style="padding-right:0.5em;padding-left:0.5em;">
+```{r, echo=F}
+p_feats <- 1:length(PLOT_FEATURES)
+names(p_feats) <- PLOT_FEATURES
+selectInput(inputId = "plot_grp_plot",
+            label = "Group labels",
+            choices = p_feats,
+            selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["plot"]]]],
+            width  = "100%")
+```
+</div>
+
+<div style="padding-left:0.5em;">
+```{r, echo=F}
+p_feats <- 1:length(PLOT_FEATURES)
+names(p_feats) <- PLOT_FEATURES
+selectInput(inputId = "plot_label",
+            label = "Label",
+            choices = p_feats,
+            selected = p_feats[[shinyscreen:::FIG_DEF_CONF$grouping[["label"]]]],
+            width = "100%")
+```
+</div>
+
+</div>
+
 
 ### Plot selection
 
@@ -531,36 +501,68 @@ uiOutput("plot_b_ctrl")
 DT::dataTableOutput("plot_sel")
 ```
 
-### Chromatograms and spectra
-
 Each plot supports zooming by selecting an area within the plot. The
 zoom can be reset by double clicking on the plot surface.
 
-```{r,echo=F}
-verbatimTextOutput("plot_hover_out")
-````
+<!-- <div style="overflow-y:scroll;max-height:80vh; width: 100%; background: white;"> -->
+```{r echo=F}
+sidebarLayout(sidebarPanel(h5("Global RT range"),
+                           shinyscreen::rt_input(input_rt = "plot_rt_min",
+                                                 input_unit = "plot_rt_min_unit",
+                                                 width=55,
+                                                 width_u=40,
+                                                 def_rt = "min",
+                                                 def_unit = "min",
+                                                 pref = ""),
+
+                           shinyscreen::rt_input(input_rt = "plot_rt_max",
+                                                 input_unit = "plot_rt_max_unit",
+                                                 width=55,
+                                                 width_u=40,
+                                                 def_rt = "max",
+                                                 def_unit = "min",
+                                                 pref = ""),
+                           hr(),
+                           h5("Log scale"),
+                           checkboxGroupInput("plot_log",
+                                              label=NULL,
+                                              choices = c("MS1 EIC","MS2 EIC","MS2 Spectrum"),
+                                              selected = character(0)),
+                           hr(),
+                           uiOutput("plot_b_ctrl"),
+                           h5("Pointer position"),
+                           textOutput("plot_hover_out"),
+                           width=4),
+              wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height:80vh; background: white",
+                        column(6,
+                               plotOutput("plot_ms1_eic",
+                                          hover = hoverOpts(id="plot_hover",
+                                                            delayType = "throttle",
+                                                            delay=100),
+                                          dblclick = "plot_rt_click",
+                                          brush = "plot_brush"),
+                               plotOutput("plot_ms2_eic",
+                                          hover = hoverOpts(id="plot_hover",
+                                                            delayType = "throttle",
+                                                            delay=100),
+                                          dblclick = "plot_rt_click",
+                                          brush = "plot_brush")),
+                        column(6,
+                               plotOutput("plot_struct"),
+                               plotOutput("plot_ms2_spec",
+                                          hover = hoverOpts(id="plot_hover",
+                                                            delayType = "throttle",
+                                                            delay=100),
+                                          dblclick = "plot_mz_click",
+                                          brush = brushOpts(id="plot_mz_brush")))))
+
+
+
+```
+<!-- </div> -->
+
 ```{r, echo=F}
-wellPanel(id = "tPanel",style = "overflow-y:scroll;max-height:80vh; width: 100%; background: white",
-          column(6,
-                 plotOutput("plot_ms1_eic",
-                            hover = hoverOpts(id="plot_hover",
-                                              delayType = "throttle",
-                                              delay=100),
-                            dblclick = "plot_rt_click",
-                            brush = "plot_brush"),
-                 plotOutput("plot_ms2_eic",
-                            hover = hoverOpts(id="plot_hover",
-                                              delayType = "throttle",
-                                              delay=100),
-                            dblclick = "plot_rt_click",
-                            brush = "plot_brush")),
-          column(6,
-                 plotOutput("plot_ms2_spec",
-                            hover = hoverOpts(id="plot_hover",
-                                              delayType = "throttle",
-                                              delay=100),
-                            dblclick = "plot_mz_click",
-                            brush = brushOpts(id="plot_mz_brush"))))
+
 ```
 
 <!-- ENGINE -->
@@ -574,15 +576,35 @@ ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
 ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
 def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
 
+adapt_range <- function(fig,x_range=NULL) {
+    if (is.null(x_range)) fig else fig+coord_cartesian(xlim=x_range)
+}
 
-plot2rend <- function(plottab,seltab,row,plot_group,plot_plot,fig,x_range=NULL) {
+
+plot_boiler <- function(m,tab,row,plot_fun,rv_x_range,adapt_x_range=T) {
     req(row)
-    req(NROW(seltab)>0)
-    req(NROW(plottab)>0)
-    sel_grp <- seltab[row,.SD,.SDcols=c(plot_group,plot_plot)]
-    fig <- plottab[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL][[fig]][[1]]
-    if (!is.null(x_range)) fig <- fig+coord_cartesian(xlim=x_range)
-    fig
+    plot_group <- m$conf$figures$grouping$group
+    plot_plot <- m$conf$figures$grouping$plot
+    ms1_plot <- m$out$tab$ms1_plot
+    ms1_plot <- m$out$tab$ms1_plot
+    req(row)
+    idx <- get_plot_idx(tab = tab,
+                        plot_group = plot_group,
+                        plot_plot = plot_plot,
+                        row =row)
+    fig <- plot_fun(m=m,plot_index = idx)
+    x_range <- if (adapt_x_range) c(rv_x_range$min,rv_x_range$max) else NULL
+    adapt_range(fig,x_range=x_range)
+}
+
+
+get_plot_idx <- function(tab,plot_group,plot_plot,row) {
+    pg <- tab[row,..plot_group]
+    pp <- tab[row,..plot_plot]
+    res <- c(pg,pp)
+    names(res) <- c(plot_group,plot_plot)
+    res
+    
 }
 
 update_gui <- function(in_conf, session) {
@@ -791,17 +813,20 @@ rf_summ_table_rows <- eventReactive(input$summ_table_rows_all,{
 })
 
 rf_gen_sel_plot_tab <- reactive({
-    validate(need(NROW(rv_state$out$tab$ms1_plot) > 0,
-                  message = "No plots found. Did you generate them?"))
 
+
+    rv_state$out$tab$flt_summ
+    m <- rev2list(rv_state)
+    fltsumm <- m$out$tab$flt_summ
+    validate(need(NROW(fltsumm) > 0,
+                  message = "Generate summary table first."))
+    
     rows <- rf_summ_table_rows()
     
-    plot_group <- rv_state$conf$figures$grouping$group
-    plot_plot <- rv_state$conf$figures$grouping$plot
-    plot_label <- rv_state$conf$figures$grouping$label
-
-    summt<-rv_state$out$tab$flt_summ[rows,unique(.SD),.SDcols=c(plot_group,plot_plot)]
-    summt
+    ## Reduce to currently selected rows.
+    m$out$tab$flt_summ <- m$out$tab$flt_summ[rows,]
+    gen_key_plot_tab(m)
+   
 })
 
 rf_rtrange_from_data <- eventReactive(input$plot_sel_cell_clicked,{
@@ -818,17 +843,14 @@ rf_rtrange_from_data <- eventReactive(input$plot_sel_cell_clicked,{
     mpl1 <- ms1_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]
     mpl2 <- ms2_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]
 
-    message('sel_grp')
-    print(sel_grp)
-
     res <- shinyscreen:::get_rt_interval(mpl1$fig_eic[[1]]$data,mpl2$fig_eic[[1]]$data,rv_state$conf$figures)
-    message("RES:")
-    print(res)
-    print(class(res))
     res
     
     
 })
+
+
+rf_gen_struct_figs <- eventReactive(rv_state$out$tab$comp,gen_struct_plots(rv_state))
 ```
 
 <!-- OBSERVERS -->
@@ -1002,8 +1024,7 @@ observeEvent(input$plot_b,{
     yaml::write_yaml(x=m$conf,file=fn_c_state)
     message("(generate plots) Config written to ", fn_c_state)
     state <- shinyscreen::run(m=m,
-                              phases=c("plot",
-                                       "saveplot"))
+                              phases=c("plot"))
     message("(generate plots) Done generating plots.")
     
     z <- shinyscreen::merge2rev(rv_state,lst = state)
@@ -1086,6 +1107,12 @@ observeEvent(input$plot_mz_click,
     rv_mzrange$min <- NA
     rv_mzrange$max <- NA
 })
+
+
+observeEvent(rv_state$out$tab$comp,{
+    m <- gen_struct_plots(rev2list(rv_state))
+    rv_state$out$tab$structfig <- m$out$tab$structfig 
+}, label = "gen_struct_plots")
 
 observeEvent(input$plot_mz_brush,{
     xmin <- input$plot_mz_brush[["xmin"]]
@@ -1300,77 +1327,63 @@ output$plot_b_ctrl <- renderUI({
     tab <- rv_state$out$tab$flt_summ
     req(NROW(tab)>0)
     actionButton(inputId = "plot_b",
-             label= "Generate plots")
+             label= "Save all plots")
     
 })
 
 output$plot_ms1_eic <- renderPlot({
-    tab <- rf_gen_sel_plot_tab()
-
-    plot_group <- rv_state$conf$figures$grouping$group
-    plot_plot <- rv_state$conf$figures$grouping$plot
-    ms1_plot <- rv_state$out$tab$ms1_plot
-    ms1_plot <- rv_state$out$tab$ms1_plot
-    row <- input$plot_sel_cell_clicked[["row"]]
-    rt_range <- c(rv_rtrange$min,
-                  rv_rtrange$max)
-    plot2rend(plottab=ms1_plot,
-              seltab=tab,
-              row=row,
-              plot_group=plot_group,
-              plot_plot=plot_plot,
-              x_range=rt_range,
-              "fig_eic")
+    plot_boiler(m=rv_state,
+                tab=rf_gen_sel_plot_tab(),
+                row=input$plot_sel_cell_clicked[["row"]],
+                plot_fun=plot_ms1_chr,
+                rv_x_range=rv_rtrange)
 })
 
 output$plot_ms2_eic <- renderPlot({
-    tab <- rf_gen_sel_plot_tab()
-
-    plot_group <- rv_state$conf$figures$grouping$group
-    plot_plot <- rv_state$conf$figures$grouping$plot
-    ms2_plot <- rv_state$out$tab$ms2_plot
-    ms2_plot <- rv_state$out$tab$ms2_plot
-    row <- input$plot_sel_cell_clicked[["row"]]
-    rt_range <- c(rv_rtrange$min,
-                  rv_rtrange$max)
-    plot2rend(plottab=ms2_plot,
-              seltab=tab,
-              row=row,
-              plot_group=plot_group,
-              plot_plot=plot_plot,
-              x_range=rt_range,
-              "fig_eic")
+    plot_boiler(m=rv_state,
+                tab=rf_gen_sel_plot_tab(),
+                row=input$plot_sel_cell_clicked[["row"]],
+                plot_fun=plot_ms2_chr,
+                rv_x_range=rv_rtrange)
 
 })
 
-output$plot_ms2_spec <- renderPlot({
-    tab <- rf_gen_sel_plot_tab()
 
-    plot_group <- rv_state$conf$figures$grouping$group
-    plot_plot <- rv_state$conf$figures$grouping$plot
-    ms2_plot <- rv_state$out$tab$ms2_plot
-    ms2_plot <- rv_state$out$tab$ms2_plot
-    row <- input$plot_sel_cell_clicked[["row"]]
-    mz_range <- c(rv_mzrange$min,
-                  rv_mzrange$max)
-    plot2rend(plottab=ms2_plot,
-              seltab=tab,
-              row=row,
-              plot_group=plot_group,
-              plot_plot=plot_plot,
-              x_range = mz_range,
-              "fig_spec")
-    
+
+output$plot_ms2_spec <- renderPlot({
+    plot_boiler(m=rv_state,
+                tab=rf_gen_sel_plot_tab(),
+                row=input$plot_sel_cell_clicked[["row"]],
+                plot_fun=plot_ms2_spec,
+                rv_x_range=rv_mzrange)
+
+})
+
+output$plot_struct <- renderPlot({
+    req(NROW(rv_state$out$tab$structfig)>0)
+    message("plot struuuct")
+    plot_boiler(m=rv_state,
+                tab=rf_gen_sel_plot_tab(),
+                row=input$plot_sel_cell_clicked[["row"]],
+                plot_fun=plot_struct,
+                adapt_x_range=F)
     
 })
 
 output$plot_hover_out <- renderText({
-    pr <- "Pointer position: "
-    paste0(pr,'(',
-           format(input$plot_hover[[1]],digits=5),
-           ',',
-           format(input$plot_hover[[2]],digits=2,scientific=T),
-           ')')})
+    inp1 <- input$plot_hover[[1]]
+    inp2 <- input$plot_hover[[2]]
+    res <- if (all(!(c(is.null(inp1),is.null(inp2))))) {
+               paste0('(',
+                      format(inp1,digits=5),
+                      ',',
+                      format(inp2,digits=2,scientific=T),
+                      ')')
+           } else "Currently not in the plot."
+                                                                       
+})
+
+
 ```
 
 

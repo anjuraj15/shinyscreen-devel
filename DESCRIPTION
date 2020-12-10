@@ -1,6 +1,6 @@
 Package: shinyscreen
 Title: Pre-screening of Mass Spectrometry Data 
-Version: 0.9.2
+Version: 0.9.3
 Author: Todor Kondić
 Maintainer: Todor Kondić <todor.kondic@uni.lu>
 Authors@R: 
@@ -20,19 +20,19 @@ Authors@R:
       person(given = "Hiba Mohammed",
              family = "Taha",
              role = c("ctb"),
-             email = "hiba.mohammed-taha@ext.uni.lu"),
+             email = "hiba.mohammed-taha@uni.lu"),
       person(given = "Jessy",
              family = "Krier",
              role = c("ctb"),
-             email = "jessy.krier@ext.uni.lu"),
+             email = "jessy.krier@uni.lu"),
       person(given = "Mira",
              family = "Narayanan",
              role = c("ctb"),
-             email = "mira.narayanan@ext.uni.lu"),
+             email = "mira.narayanan@uni.lu"),
       person(given = "Anjana",
              family = "Elapavalore",
              role = c("ctb"),
-             email = "anjana.elapavalore@ext.uni.lu"),
+             email = "anjana.elapavalore@uni.lu"),
       person(given = "Marc",
              family = "Warmoes",
 	     role = c("ctb"),
@@ -69,8 +69,6 @@ Imports:
     grid,
     curl,
     shiny,
-    shinydashboard,
-    shinyFiles,
     rhandsontable,
     DT,
     tcltk

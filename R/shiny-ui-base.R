@@ -107,17 +107,21 @@ mz_input <- function(input_mz,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIG
 }
 
 ##' @export
-rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_rt=0,def_unit="min",pref="+/-") {
+rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,width_u=1-NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_rt=0,def_unit="min",pref="+/-") {
+    width=paste0(as.character(width), "%")
+    width_u=paste0(as.character(width_u), "%")
+
     style="display: inline-block; vertical-align:top; width: "
     style=paste0(style,width,"; ")
     stylel <- "display: inline-block; vertical-align:top;"
+    styleu <- paste0("display: inline-block; vertical-align:top; color: black; width: ",width_u,";")
     shiny::div(shiny::div(style=stylel,
                           shiny::tags$label(pref,`for`=input_rt)),
                shiny::div(style=style,
                           shiny::numericInput(input_rt,
                                               label=NULL,
                                               value = def_rt)),
-               shiny::div(style=style,
+               shiny::div(style=styleu,
                           shiny::selectInput(input_unit,
                                              label=NULL,
                                              c("min","s"),

@@ -1212,15 +1212,16 @@ gen_get_ms2_legend <- function(m,legend_name_ms2="CE",all_ms2_labels) {
 }
 
 
-plot_eic_ms1 <- function(df,style_fun,plot_label) {
+plot_eic_ms1_df <- function(df,style_fun,plot_label) {
     mk_leg_lab<-function(tag,rt) {if (length(tag) > 0) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else character(0)}
 
-    mz <- df[,unique(mz)]
-    tbl <- df[,.(verb_labs=mk_leg_lab(plot_label,rt_peak),plot_label),
-              by=c("plot_label","rt_peak")]
+    ## mz <- df[,unique(prec_mz)]
+    tbl <- df[,.(verb_labs=mk_leg_lab(get(..plot_label),rt_peak),plot_label=get(..plot_label)),
+              by=c(plot_label,"rt_peak")]
+    
     verb_labs <- tbl[,verb_labs]
     labs <- tbl[,plot_label]
-    df[,plot_label:=factor(plot_label)]
+    df[,plot_label:=factor(get(..plot_label))]
     style_fun(ggplot2::ggplot(df,ggplot2::aes(x=rt,y=intensity,colour=plot_label)),
               breaks=labs,
               labels=verb_labs) +
@@ -1229,15 +1230,11 @@ plot_eic_ms1 <- function(df,style_fun,plot_label) {
                       y=CHR_GRAM_Y)
 }
 
-plot_eic_ms2 <- function(df,style_fun) {
-    mz <- df[,unique(mz)]
+plot_eic_ms2_df <- function(df,style_fun) {
+    mz <- df[,unique(prec_mz)]
     ddf <- df[!is.na(rt_peak)==T]
     
-    ## mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
-    ## tbl <- ddf[,.(verb_labs=mk_leg_lab(plot_label,.SD[ms2_sel==T,rt_peak],any(ms2_sel)),plot_label),
-    ##            by="plot_label"]
-    ## ms2_verb_labs <- tbl[,verb_labs] TODO: This is nonsense for
-    ## multi-CE and multi-other-label.
+
     ms2_labs <- ddf[,plot_label]
     ms1_labs <- ddf[,levels(parent_label)]
     
@@ -1264,18 +1261,11 @@ plot_eic_ms2 <- function(df,style_fun) {
     res
 }
 
-plot_spec_ms2 <- function(df,style_fun) {
-    mk_leg_lab<-function(tag,rt,have_sel) {if (length(tag) > 0 && have_sel) paste(tag,"; rt= ",formatC(rt,format='f',digits=RT_DIGITS)," min",sep='') else if (!have_sel) tag  else character(0)}
+plot_spec_ms2_df <- function(df,style_fun) {
     
-    
-    labels <- df[,unique(plot_label)]
-    parent_labels <- df[,unique(parent_label)]
-    rts <- df[,unique(rt_peak)]
-    
-
     ms2_labs <- df[,levels(plot_label)]
     ms1_labs <- df[,levels(parent_label)]
-    leglabs <- mk_leg_lab(ms1_labs,rts,T)
+
     plot <- if (NROW(df)>0) {
                 ddf <- df[,.(mz,intensity,parent_label,plot_label)]
                 plot <-style_fun(ggplot2::ggplot(ddf,
@@ -1283,7 +1273,7 @@ plot_spec_ms2 <- function(df,style_fun) {
                                                               y = intensity,
                                                               color=parent_label,
                                                               shape=plot_label)),
-                                 labels=leglabs,
+                                 labels=ms1_labs,
                                  breaks=ms1_labs,
                                  ms2_breaks=ms2_labs,
                                  ms2_labels=ms2_labs)
@@ -1293,11 +1283,13 @@ plot_spec_ms2 <- function(df,style_fun) {
                     ggplot2::labs(x="mz", y="intensity")
         
             } else {
-                p <- ggplot2::ggplot(df,ggplot2::aes(x=1:10,y=1:10))+ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+                ddf <- data.table(x=1:10,y=1:10)
+                p <- ggplot2::ggplot(ddf,ggplot2::aes(x=x,y=y))+ggplot2::geom_blank()+ggplot2::labs(x="",y="")
                 p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="NO MS2 SPECTRA", color="black")+ggplot2::theme(axis.text.x=ggplot2::element_blank(),
                                                                                                                            axis.ticks.x=ggplot2::element_blank(),
                                                                                                                            axis.text.y=ggplot2::element_blank(),
                                                                                                                            axis.ticks.y=ggplot2::element_blank())
+
                 
             }
 
@@ -1357,4 +1349,264 @@ get_rt_interval <- function(data_ms1,data_ms2,conf_figures) {
     rlim <- min(rt_lim[[2]],ms1_lim[[2]],ms2_lim[[2]],na.rm = T)
     llim <- max(rt_lim[[1]],ms1_lim[[1]],ms2_lim[[1]],na.rm = T)
     c(llim-0.5,rlim+0.5)
+}
+
+
+
+get_plot_data <- function(plot_index,plot_label,
+                          summ_tab,summ_cols,extr_tab=NULL,
+                          extr_cols=NULL) {
+    thenames<-ifelse(nchar(names(summ_cols))!=0,names(summ_cols),summ_cols)
+    names(summ_cols)<-thenames
+
+    ind_nms <- names(plot_index)
+    plot_group <- ind_nms[[1]]
+    plot_plot <- ind_nms[[2]]
+    
+    
+    meta <- summ_tab[get(ind_nms[[1]]) == plot_index[[1]] &
+                     get(ind_nms[[2]]) == plot_index[[2]],
+                     unique(.SD),.SDcols=c(plot_label,summ_cols)]
+
+    data.table::setkeyv(meta,plot_label)
+    data.table::setnames(meta,summ_cols,names(summ_cols))
+
+    if (!is.null(extr_tab)) {
+        data_cols <- c(plot_label,extr_cols)
+        data <- extr_tab[get(ind_nms[[1]]) == plot_index[[1]] &
+                         get(ind_nms[[2]]) == plot_index[[2]],..data_cols]
+        return(meta[data,on=plot_label])
+    } else meta
+
+}
+
+
+get_ms1_chr_pdata <- function(m,plot_index) get_plot_data(m$out$tab$summ,
+                                                      c("mz",
+                                                        rt_peak="ms1_rt"),
+                                                      m$extr$ms1,
+                                                      extr_cols = c("rt","intensity"),
+                                                      plot_index = plot_index,
+                                                      plot_label = m$conf$figures$grouping$label)
+
+get_ms2_chr_pdata <- function(m,plot_index) {
+    z<- get_plot_data(plot_index = plot_index,
+                      plot_label = c(m$conf$figures$grouping$label,"an"),
+                      summ_tab = m$out$tab$summ,
+                      summ_cols = c(prec_mz="mz",
+                                    rt_peak="ms2_rt",
+                                    int_peak="ms2_int",
+                                    "CE",
+                                    "ms2_sel"))
+    z$plot_label =  factor(z$CE)
+    z$parent_label = factor(z[[m$conf$figures$grouping$label]])
+    z
+}
+
+get_ms2_spec_pdata <- function(m,plot_index) {
+    z <- get_plot_data(plot_index = plot_index,
+                       plot_label = c(m$conf$figures$grouping$label,"an"),
+                       summ_tab = m$out$tab$summ[ms2_sel == T,],
+                       summ_cols = c(prec_mz="mz",
+                                     rt_peak="ms2_rt",
+                                     int_peak="ms2_int",
+                                     "CE",
+                                     "ms2_sel"),
+                       extr_tab = m$extr$ms2,
+                       extr_cols = c("mz","intensity"))
+    z$plot_label =  factor(z$CE)
+    z$parent_label = factor(z[[m$conf$figures$grouping$label]])
+    z
+}
+
+##' @export
+plot_ms1_chr <- function(m,plot_index) {
+    pdata <- get_ms1_chr_pdata(m,plot_index)
+
+    if (NROW(data) < 0 ) {
+        p <- ggplot2::ggplot(data.frame(x=1:10,y=1:10),
+                             ggplot2::aes(x=x,y=y))+
+            ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+
+        p <- p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="NO MS1 SPECTRA", color="black")+
+            ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                           axis.ticks.x=ggplot2::element_blank(),
+                           axis.text.y=ggplot2::element_blank(),
+                           axis.ticks.y=ggplot2::element_blank())
+        return(p)
+    } else
+        
+        group_data <- m$conf$figures$grouping
+    plot_group <- names(plot_index)[[1]]
+    plot_plot <- names(plot_index)[[2]]
+    plot_label <- group_data$label
+
+    all_labels <- m$out$tab$flt_summ[,sort(unique(get(..plot_label)))]
+
+    style <- plot_decor(m,m$conf$logaxes$ms1_eic_int,
+                        all_ms1_labels=all_labels,
+                        legend_name_ms1=plot_label)
+
+    plot_eic_ms1_df(pdata,
+                    style_fun = style,
+                    plot_label = plot_label)
+
+    
+    
+}
+
+
+##' @export
+plot_ms2_chr <- function(m,plot_index) {
+    pdata <- get_ms2_chr_pdata(m,plot_index)
+
+    if (NROW(data) < 0 ) {
+        p <- ggplot2::ggplot(data.frame(x=1:10,y=1:10),
+                             ggplot2::aes(x=x,y=y))+
+            ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+
+        p <- p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="NO MS2 SPECTRA", color="black")+
+            ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                           axis.ticks.x=ggplot2::element_blank(),
+                           axis.text.y=ggplot2::element_blank(),
+                           axis.ticks.y=ggplot2::element_blank())
+        return(p)
+    } else
+        
+    group_data <- m$conf$figures$grouping
+    plot_group <- names(plot_index)[[1]]
+    plot_plot <- names(plot_index)[[2]]
+    plot_ms1_label <- group_data$label
+
+    all_ms1_labels <- m$out$tab$summ[,sort(unique(get(plot_ms1_label)))]
+    all_ms2_ce_labels <- m$out$tab$summ[,sort(na.omit(unique(CE)))]
+
+    style <- plot_decor(m,m$conf$logaxes$ms2_eic_int,
+                        all_ms1_labels = all_ms1_labels,
+                        all_ms2_labels = all_ms2_ce_labels,
+                        legend_name_ms1 = plot_ms1_label,
+                        legend_name_ms2 = "CE")
+
+    plot_eic_ms2_df(pdata, style_fun = style)
+
+    
+    
+}
+
+
+##' @export
+plot_ms2_spec <- function(m,plot_index) {
+    pdata <- get_ms2_spec_pdata(m,plot_index)
+    if (NROW(data) < 0 ) {
+        p <- ggplot2::ggplot(data.frame(x=1:10,y=1:10),
+                             ggplot2::aes(x=x,y=y))+
+            ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+
+        p <- p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="NO MS2 SPECTRA", color="black")+
+            ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                           axis.ticks.x=ggplot2::element_blank(),
+                           axis.text.y=ggplot2::element_blank(),
+                           axis.ticks.y=ggplot2::element_blank())
+        return(p)
+    } else
+        
+    group_data <- m$conf$figures$grouping
+    plot_group <- names(plot_index)[[1]]
+    plot_plot <- names(plot_index)[[2]]
+    plot_ms1_label <- group_data$label
+
+    all_ms1_labels <- m$out$tab$summ[,sort(unique(get(plot_ms1_label)))]
+    all_ms2_ce_labels <- m$out$tab$summ[,sort(na.omit(unique(CE)))]
+
+    style <- plot_decor(m,m$conf$logaxes$ms2_spec_int,
+                        all_ms1_labels = all_ms1_labels,
+                        all_ms2_labels = all_ms2_ce_labels,
+                        legend_name_ms1 = plot_ms1_label,
+                        legend_name_ms2 = "CE")
+
+
+    plot_spec_ms2_df(pdata, style_fun = style)
+
+    
+    
+}
+
+##' @export
+plot_struct <- function(m,plot_index) {
+
+    id <- plot_index[["ID"]]
+    if (is.null(id)) {
+        p <- ggplot2::ggplot(data.frame(x=1:10,y=1:10),
+                             ggplot2::aes(x=x,y=y))+
+            ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+
+        p <- p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="STRUCTURE PLOT UNAVAILABLE", color="black")+
+            ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                           axis.ticks.x=ggplot2::element_blank(),
+                           axis.text.y=ggplot2::element_blank(),
+                           axis.ticks.y=ggplot2::element_blank())
+        return(p)
+    } else {
+        ## grid::grid.draw(gridExtra::arrangeGrob(m$out$tab$structfig[ID==id,img][[1]]))
+        grid::grid.draw(m$out$tab$structfig[ID==id,img][[1]],
+                        recording = F)
+
+    }
+    
+}
+
+
+##' @export
+plot_struct_nowrap <- function(m,plot_index) {
+
+    id <- plot_index[["ID"]]
+    if (is.null(id)) {
+        p <- ggplot2::ggplot(data.frame(x=1:10,y=1:10),
+                             ggplot2::aes(x=x,y=y))+
+            ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+
+        p <- p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="STRUCTURE PLOT UNAVAILABLE", color="black")+
+            ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                           axis.ticks.x=ggplot2::element_blank(),
+                           axis.text.y=ggplot2::element_blank(),
+                           axis.ticks.y=ggplot2::element_blank())
+        return(p)
+    } else {
+        m$out$tab$structfig[ID==id,img][[1]]
+    }
+    
+}
+
+
+##' @export
+gen_key_plot_tab <- function(m) {
+
+
+    fltsumm <- m$out$tab$flt_summ
+    validate(need(NROW(fltsumm) > 0,
+                  message = "Generate summary table first."))
+    
+    
+    plot_group <- m$conf$figures$grouping$group
+    plot_plot <- m$conf$figures$grouping$plot
+    plot_label <- m$conf$figures$grouping$label
+    plot_key <- c(plot_group,plot_plot)
+
+    
+    idx <- fltsumm[,{
+        lapply(.SD,
+               function (col) {
+                   val <- unique(col)
+                   if (length(val)<=1) T else F
+               })
+        
+    },
+    by=c(plot_group,plot_plot)]
+    idxlst <- as.logical(idx[,lapply(.SD,function (col) all(col))])
+    nmidx <- colnames(idx)
+    cols <- nmidx[idxlst]
+    cols <- na.omit(setdiff(cols,plot_key))
+    fltsumm[,unique(.SD[,..cols]),
+            by=plot_key]
+
 }

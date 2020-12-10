@@ -116,7 +116,7 @@ MS1_SN_FAC <- 3.0
 
 ## Shiny objects
 
-NUM_INP_WIDTH="15%"
+NUM_INP_WIDTH=40
 NUM_INP_HEIGHT="5%"
 
 
@@ -192,11 +192,6 @@ FIG_DEF_SUBSET <- c("set","adduct","ID")
 REPORT_AUTHOR <- "Anonymous"
 REPORT_TITLE <- "Plots of EICs and MS2 Spectra"
 
-
-PLOT_FEATURES <- c("adduct",
-                   "tag",
-                   "ID")
-
 ## Select the most fundamental group of entries. Within this group,
 ## each ID is unique.
 BASE_KEY <- c("adduct","tag","ID")
@@ -210,6 +205,10 @@ FIG_DEF_CONF <-list(grouping=list(group="adduct",
 ## File table properties
 SUMM_COLS=c("set",BASE_KEY_MS2,"an","mz","ms1_rt", "ms1_int", "ms2_rt", "ms2_int",
             "ms1_mean","ms2_sel",QA_FLAGS,"Name", "SMILES", "Formula", "known","Comments","file")
+
+PLOT_FEATURES <- c("adduct",
+                   "tag",
+                   "ID")
 
 ## Empty summary table.
 EMPTY_SUMM <- data.table::data.table(set=character(0),

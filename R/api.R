@@ -480,6 +480,29 @@ subset_summary <- function(m) {
     m
 }
 
+
+##' @export
+gen_struct_plots <- function(m) {
+    ## Generate structure plots.
+    comp <- m$out$tab$comp
+
+    res <- if (NROW(comp)>0) {
+        structtab <- m$out$tab$comp[known=="structure",unique(.SD),.SDcols=c("ID","SMILES")]
+        message("Start generating structures.")
+        structtab[,img:=.({tmp <- lapply(SMILES,function (sm) smiles2img(sm,width = 500,height = 500, zoom = 4.5))
+            tmp})]
+        message("Done generating structures.")
+        structtab
+           } else {
+               dtable(ID=character(0),SMILES=character(0),img=list())
+           }
+    
+    m$out$tab$structfig <- res
+
+    m
+}
+
+
 #' @export
 create_plots <- function(m) {
     ## Produce plots of EICs and spectra and group them acording to
@@ -494,11 +517,6 @@ create_plots <- function(m) {
     plot_ms1_label <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$label else group_data$label
     plot_ms2_label <- "CE"
 
-    message("plot_group: ",plot_group)
-    message("plot_plot: ",plot_plot)
-    message("plot_ms1_label: ",plot_ms1_label)
-    message("plot_ms2_label: ",plot_ms2_label)
-    
     plot_index <- c(plot_group,plot_plot)
 
     ## All the possible curve labels.
@@ -530,96 +548,88 @@ create_plots <- function(m) {
                                 ms1_legend_info = F)
 
     
+    plot_key <- gen_key_plot_tab(m)
+
+    topdir <- FIG_TOPDIR 
+    dir.create(topdir,showWarnings = F)
+
+    my_theme <- function(...) plot_theme(legend.position = "left",
+                                         legend.direction = "vertical")
+
+    theme_full <- my_theme()
+    theme_noleg <- plot_theme(legend.position = "none")
+
+
+    clean_range<-function(def,rng) {
+        x1 <- rng[1]
+        x2 <- rng[2]
+        if (is.na(x1) || x1 == 0) x1 <- def[1]
+        if (is.na(x2) || x2 == 0) x2 <- def[2]
+        c(x1,x2)
+    }
     
+    ## If structures do not exist, generate them.
+    if (is.null(m$out$tab$structfig)) m <- gen_struct_plots(m)
     
-    ## Generate MS1 EIC plots.
-    
-    iflt <- flt_summ[,.(mz,rt_peak=ms1_rt),keyby=c(plot_index,plot_ms1_label)]
-    fml <- formula(paste0(plot_group,"+",plot_plot,"~",plot_ms1_label))
-    iflt_squish <- iflt[,.(chunk=list(unique(.SD))),.SDcols=c(plot_ms1_label,"mz","rt_peak"),by=plot_index]
-    ## iflt.dc <- data.table::dcast(iflt,fml, fun.aggregate = function(x) if (length(x)>0) head(x,1) else NA_real_, value.var = c("mz","rt_peak"))
-    data.table::setkeyv(iflt_squish,plot_index)
-    ms1_plot <- m$extr$ms1[iflt_squish,
-                           .(fig_eic={
-                               message("Progress: ",.GRP,"/",.NGRP)
-                               df<-.SD
-                               df$plot_label <- .SD[[..plot_ms1_label]]
-                               res <- i.chunk[[1]][df,on=..plot_ms1_label]
-                               list(plot_eic_ms1(res,
-                                                 style_fun = style_eic_ms1,
-                                                 plot_label = ..plot_ms1_label))
-                           }),
-                           on=plot_index,
-                           by=.EACHI,
-                           .SDcols=c("rt","intensity",
-                                     plot_ms1_label)]
+    plot_key[,mapply(function(gv,pv) {
 
-    message("Done creating MS1 EIC plots.")
+        key <- c(gv,pv)
+        names(key) <- plot_index
 
-    ## Generate MS2 EIC plots.
-    message("Create MS2 EIC plots.")
-    iflt <- flt_summ[,.(mz,rt_peak=ms2_rt,int_peak=ms2_int,ms2_sel),
-                     keyby=c(plot_index,plot_ms1_label,plot_ms2_label)]
-    iflt_squish <- iflt[,.(chunk=list(unique(.SD))),.SDcols=c(plot_ms1_label,
-                                                              plot_ms2_label,
-                                                              "ms2_sel",
-                                                              "mz",
-                                                              "rt_peak",
-                                                              "int_peak"),by=plot_index]
 
-    ms2_plot <- m$extr$ms2[iflt_squish,{
-        df <- i.chunk[[1]]
-        df <- df[ms2_sel==T,]
-        df$parent_label <- df[[..plot_ms1_label]]
-        df$plot_label <- df[[..plot_ms2_label]]
-        spdf<-.SD[df,on=c(..plot_ms1_label,..plot_ms2_label),nomatch=NULL]
-        spdf[,plot_label:=factor(plot_label)]
-        spdf[,parent_label:=factor(parent_label)]
-        df[,parent_label:=factor(parent_label)]
-        df[,plot_label:=factor(plot_label)]
-        df <- df[!is.na(plot_label) & !is.na(parent_label),]
-        spdf <- spdf[!is.na(plot_label) & !is.na(parent_label),]
+        
+        p_chr_ms1 <- plot_ms1_chr(m, plot_index =  key)
+        p_chr_ms2 <- plot_ms2_chr(m, plot_index =  key)
+        p_spec_ms2 <- plot_ms2_spec(m, plot_index = key)
+        p_struct <- plot_struct_nowrap(m, plot_index = key)
 
-        message("Progress: ",.GRP,"/",.NGRP)
-        .(fig_eic=list(plot_eic_ms2(df=df,
-                                    style_fun = style_eic_ms2)),
-          fig_spec=list(plot_spec_ms2(df=spdf,
-                                      style_fun = style_spec_ms2))
-         ,
-          fig_leg= list(plot_leg_ms2(df=df,
-                                     style_fun = style_ms2_leg))
-          )
+
+        ## Produce the filename.
+        fn <- paste0(paste(..plot_group,gv,..plot_plot,pv,sep = "_"),".pdf")
+        fn <- gsub("\\[","",fn)
+        fn <- gsub("\\]","",fn)
+        fn <- gsub("\\+","p",fn)
+        fn <- gsub("-","m",fn)
+        fn <- if (!is.null(topdir)) file.path(topdir,fn) else fn
+
+        
+        rt_int <- get_rt_interval(p_chr_ms1$data, p_chr_ms2$data, m$conf$figures)
+        my_coord <- ggplot2::coord_cartesian(xlim = rt_int)
+
+        p_chr_ms1 <- p_chr_ms1 + my_coord + theme_full
+        p_chr_ms2 <- p_chr_ms2 + my_coord + theme_full
+        leg1 <- cowplot::get_legend(p_chr_ms1)
+        leg2 <- cowplot::get_legend(p_chr_ms2)
+        p_spec_ms2 <- p_spec_ms2 + theme_full
+
+
+        ## Plot labels.
+        labels <- c(paste0("EIC (MS1) ",..plot_group,": ",gv,", ",..plot_plot,": ",pv),
+                        NA,
+                        paste0("EIC (MS2) ",..plot_group,": ",gv,", ",..plot_plot,": ",pv),
+                        NA,
+                        paste0("MS2 Spectra ",..plot_group,": ",gv,", ",..plot_plot,": ",pv),
+                        NA)
+        
+        big_fig <- cowplot::plot_grid(p_chr_ms1+theme_noleg,
+                                      p_struct,
+                                      p_chr_ms2+theme_noleg,
+                                      leg2,
+                                      p_spec_ms2+theme_noleg,
+                                      leg1,
+                                      align = "hv",
+                                      axis='l',
+                                      ncol = 2,
+                                      nrow = 3,
+                                      labels = labels,
+                                      rel_widths = c(2,1))
+        
+        message("Plotting: ",paste(key,collapse = ", ")," to: ",fn)
+        ggplot2::ggsave(plot=big_fig,width = 21, height = 29.7, units = "cm", filename = fn)
+        
     },
-    .SDcols = c("adduct","tag","ID","CE","mz","intensity"),
-    on = plot_index,
-    by = .EACHI]
-    message("Done creating MS1 EIC plots.")
-    
-    ## Generate structure plots.
-    structab <- m$out$tab$comp[known=="structure",unique(.SD),.SDcols=c("ID","SMILES")]
-    message("Start generating structures.")
-    structab[,structimg:=.({tmp <- lapply(SMILES,function (sm) smiles2img(sm,width = 500,height = 500, zoom = 4.5))
-        tmp})]
-    message("Done generating structures.")
-
-    ## We need to check if we have multiplots grouped by ID in order
-    ## for structure generation to make sense.
-    if (plot_plot == "ID") {
-        ms1_plot <- structab[ms1_plot,on="ID"][,fig_struct := .(Map(function (st,eic) {
-            df <- eic[[1]]$data
-            ddf <- dtable(x=df$rt,
-                          y=df$intensity)
-            ggplot2::ggplot(ddf) +
-                ggplot2::geom_blank() +
-                ggplot2::annotation_custom(st) +
-                ggplot2::theme_void()
-        },
-        structimg,
-        fig_eic))]
-        ms1_plot[,structimg:=NULL]
-    } else ms1_plot$fig_struct <- NA
-    m$out$tab$ms2_plot <- ms2_plot
-    m$out$tab$ms1_plot <- ms1_plot
+    get(..plot_group),
+    get(..plot_plot))]
     m
 }
 
@@ -628,7 +638,8 @@ save_plots <- function(m) {
     topdir <- FIG_TOPDIR 
     dir.create(topdir,showWarnings = F)
 
-    my_theme <- function(...) plot_theme(legend.position = "left")
+    my_theme <- function(...) plot_theme(legend.position = "left",
+                                         legend.direction = "vertical")
 
 
     clean_range<-function(def,rng) {
