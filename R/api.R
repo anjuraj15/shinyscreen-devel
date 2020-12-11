@@ -37,8 +37,7 @@ run <- function(fn_conf="",m=NULL,phases=NULL,help=F) {
                     prescreen=prescreen,
                     sort=sort_spectra,
                     subset=subset_summary,
-                    plot=create_plots,
-                    saveplot=save_plots)
+                    plot=create_plots)
 
     if (help) {
         message("(run): You can run some of the following, or all the phases:")
@@ -84,7 +83,6 @@ run_in_dir <- function(m) {
     m <- sort_spectra(m)
     m <- subset_summary(m)
     m <- create_plots(m)
-    m <- save_plots(m)
     invisible(m)
     
 }
@@ -630,116 +628,6 @@ create_plots <- function(m) {
     },
     get(..plot_group),
     get(..plot_plot))]
-    m
-}
-
-#' @export
-save_plots <- function(m) {
-    topdir <- FIG_TOPDIR 
-    dir.create(topdir,showWarnings = F)
-
-    my_theme <- function(...) plot_theme(legend.position = "left",
-                                         legend.direction = "vertical")
-
-
-    clean_range<-function(def,rng) {
-        x1 <- rng[1]
-        x2 <- rng[2]
-        if (is.na(x1) || x1 == 0) x1 <- def[1]
-        if (is.na(x2) || x2 == 0) x2 <- def[2]
-        c(x1,x2)
-    }
-
-    get_ms2_leg <- m$aux$get_ms2_leg
-
-    grouping <- m$conf$figures$grouping
-    plot_group <- grouping$group
-    plot_plot <- grouping$plot
-    plot_ms1_label <- grouping$label
-    plot_ms2_label <- "CE"
-
-    doplot <- function(eic_ms1,eic_ms2,spec_ms2,leg_ms2,struct,group,plot,t_group="",t_plot="",print_labs=T) {
-        ## Produce the filename.
-        fn <- paste0(paste(t_group,group,t_plot,plot,sep = "_"),".pdf")
-        fn <- gsub("\\[","",fn)
-        fn <- gsub("\\]","",fn)
-        fn <- gsub("\\+","p",fn)
-        fn <- gsub("-","m",fn)
-        fn <- if (!is.null(topdir)) file.path(topdir,fn) else fn
-
-        ## Create an empty figure.
-        
-        xxdf <- eic_ms1$data[,.(rt=rt,intensity=intensity)]
-        empty_fig <- ggplot2::ggplot(xxdf,ggplot2::aes(x=rt,y=intensity)) +
-            ggplot2::geom_blank() +
-            ggplot2::theme_void()
-        leg1 <- cowplot::get_legend(eic_ms1)
-        leg2 <- empty_fig
-        if (NROW(eic_ms2$data) == 0)
-            eic_ms2 <- empty_fig else {
-                                     leg2 <- leg_ms2
-                                 }
-        if (NROW(spec_ms2$data) == 0) spec_ms2 <- empty_fig
-        if (is.na(struct)) struct <- empty_fig
-
-        ## Plot labels.
-        labels <- if (print_labs) {
-                      c(paste0("EIC (MS1) ",t_group,": ",group,", ",t_plot,": ",plot),
-                        NA,
-                        paste0("EIC (MS2) ",t_group,": ",group,", ",t_plot,": ",plot),
-                        NA,
-                        paste0("MS2 Spectra ",t_group,": ",group,", ",t_plot,": ",plot),
-                        NA)
-                  } else {
-                      rep(NA,6)
-                      
-                  }
-        
-        ## Interval
-        rt_int <- get_rt_interval(eic_ms1$data, eic_ms2$data, m$conf$figures)
-        my_coord <- ggplot2::coord_cartesian(xlim = rt_int)
-        big_fig <- cowplot::plot_grid(eic_ms1+my_coord+my_theme(),
-                                      struct,
-                                      eic_ms2+my_coord+my_theme(),
-                                      leg2,
-                                      spec_ms2 + my_theme(),
-                                      leg1,
-                                      align = "hv",
-                                      axis='l',
-                                      ncol = 2,
-                                      nrow = 3,
-                                      labels = labels,
-                                      rel_widths = c(2,1))
-
-        message("Saving plot: ",group,", ",plot," to ",fn)
-        ggplot2::ggsave(plot=big_fig,width = 21, height = 29.7, units = "cm", filename = fn)
-        
-        
-        
-    }
-
-    
-    m$out$tab$ms2_plot[m$out$tab$ms1_plot,
-                       Map(function (ms1eic,
-                                     ms2eic,
-                                     ms2spec,
-                                     leg,
-                                     struct,
-                                     grp,
-                                     plt)
-                           doplot(ms1eic,ms2eic,ms2spec,
-                                  leg,struct,grp,plt,
-                                  t_group=m$conf$figures$grouping$group,
-                                  t_plot=m$conf$figures$grouping$plot),
-                           i.fig_eic,
-                           x.fig_eic,
-                           x.fig_spec,
-                           x.fig_leg,
-                           i.fig_struct,
-                           .SD[[1]],
-                           .SD[[2]]),
-                       on=c(plot_group,plot_plot),
-                       .SDcols=c(plot_group,plot_plot)]
     m
 }
 
