@@ -247,18 +247,6 @@ SUBSET_VALS <- c(IGNORE="ignore",
                  BAD="select bad")
 
 
-## Empty plotting tables.
-EMPTY_MS1_PLOT_TAB <- dtable(ID=character(),
-                             SMILES=character(),
-                             tag=character(),
-                             fig_eic=list(),
-                             fig_struct=list())
-
-EMPTY_MS2_PLOT_TAB <- dtable(tag=character(),
-                             ID=character(),
-                             fig_eic=list(),
-                             fig_spec=list(),
-                             fig_leg=list())
 
 
 ## Empty comprehensive table.
