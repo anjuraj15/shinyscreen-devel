@@ -1013,6 +1013,11 @@ gen_rt_err <- function(entry,msg) {
     if (is.na(em)) es/60. else em
 }
 
+##' @export
+read_rt <- function(entry) {
+    gen_rt_err(entry,"Badly formatted RT value. It should be: \"x min\", or \"x s\".")
+}
+
 fig_path <- function(top,set,group,id,suff,ext="pdf") {
     base <- paste("plot",set,group,id,suff,sep="_")
     fn <- paste0(base,".",ext)
@@ -1335,6 +1340,7 @@ tk_save_file <-  function (default = "", caption = "Select files", filters = NUL
     as.character(do.call(tcltk::tcl, args))
 }
 
+##' @export
 get_rt_interval <- function(data_ms1,data_ms2,conf_figures) {
     rt_new_lim <- c(rt_in_min(conf_figures$rt_min),
                     rt_in_min(conf_figures$rt_max))
@@ -1377,7 +1383,7 @@ get_plot_data <- function(plot_index,plot_label,
 
 }
 
-
+##' @export
 get_ms1_chr_pdata <- function(m,plot_index) get_plot_data(m$out$tab$summ,
                                                       c("mz",
                                                         rt_peak="ms1_rt"),
@@ -1386,6 +1392,7 @@ get_ms1_chr_pdata <- function(m,plot_index) get_plot_data(m$out$tab$summ,
                                                       plot_index = plot_index,
                                                       plot_label = m$conf$figures$grouping$label)
 
+##'@export
 get_ms2_chr_pdata <- function(m,plot_index) {
     z<- get_plot_data(plot_index = plot_index,
                       plot_label = c(m$conf$figures$grouping$label,"an"),

@@ -513,7 +513,7 @@ sidebarLayout(sidebarPanel(h5("Global RT range"),
                                                  width_u=40,
                                                  def_rt = "min",
                                                  def_unit = "min",
-                                                 pref = ""),
+                                                 pref = "RT min"),
 
                            shinyscreen::rt_input(input_rt = "plot_rt_max",
                                                  input_unit = "plot_rt_max_unit",
@@ -521,7 +521,7 @@ sidebarLayout(sidebarPanel(h5("Global RT range"),
                                                  width_u=40,
                                                  def_rt = "max",
                                                  def_unit = "min",
-                                                 pref = ""),
+                                                 pref = "RT max"),
                            hr(),
                            h5("Log scale"),
                            checkboxGroupInput("plot_log",
@@ -582,11 +582,8 @@ adapt_range <- function(fig,x_range=NULL) {
 
 
 plot_boiler <- function(m,tab,row,plot_fun,rv_x_range,adapt_x_range=T) {
-    req(row)
     plot_group <- m$conf$figures$grouping$group
     plot_plot <- m$conf$figures$grouping$plot
-    ms1_plot <- m$out$tab$ms1_plot
-    ms1_plot <- m$out$tab$ms1_plot
     req(row)
     idx <- get_plot_idx(tab = tab,
                         plot_group = plot_group,
@@ -835,18 +832,20 @@ rf_rtrange_from_data <- eventReactive(input$plot_sel_cell_clicked,{
     ptab <- rf_gen_sel_plot_tab()
     plot_group <- rv_state$conf$figures$grouping$group
     plot_plot <- rv_state$conf$figures$grouping$plot
-    ms1_plot <- rv_state$out$tab$ms1_plot
-    ms2_plot <- rv_state$out$tab$ms2_plot
     row <- input$plot_sel_cell_clicked[["row"]]
     req(row)
-    sel_grp <- ptab[row,.SD,.SDcols=c(plot_group,plot_plot)]
-    mpl1 <- ms1_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]
-    mpl2 <- ms2_plot[sel_grp,on=c(plot_group,plot_plot),nomatch=NULL]
+    idx <- get_plot_idx(tab = ptab,
+                        plot_group = plot_group,
+                        plot_plot = plot_plot,
+                        row =row)
 
-    res <- shinyscreen:::get_rt_interval(mpl1$fig_eic[[1]]$data,mpl2$fig_eic[[1]]$data,rv_state$conf$figures)
-    res
+    m <- rev2list(rv_state)
+    pdata_ms1 <- get_ms1_chr_pdata(m,plot_index=idx)
+    pdata_ms2 <- get_ms2_chr_pdata(m,plot_index=idx)
+    ## rt_ms1_rng <- as.numeric(pdata_ms1[,range(rt)])
+    ## rt_ms2_rng <- as.numeric(pdata_ms2[,range(rt_peak)])
     
-    
+    get_rt_interval(pdata_ms1,pdata_ms2,rv_state$conf$figures)
 })
 
 
@@ -1080,11 +1079,24 @@ observeEvent(input$state_file_save_b,{
     }
 })
 
+observe ({
+    input$plot_rt_min
+    input$plot_rt_min_unit
+    input$plot_rt_max
+    input$plot_rt_max_unit
+    rv_state$conf$figures$rt_min <- uni_ass("plot_rt_min","plot_rt_min_unit")
+	rv_state$conf$figures$rt_max <- uni_ass("plot_rt_max","plot_rt_max_unit")
+
+    rv_rtrange$min <- read_rt(rv_state$conf$figures$rt_min)
+    rv_rtrange$max <- read_rt(rv_state$conf$figures$rt_max)
+    
+}, label = "get_rt_from_ctrl")
+
 observe({
     res <- rf_rtrange_from_data()
-    rv_rtrange$min <- res[[1]]
-    rv_rtrange$max <- res[[2]]
-},label = "rt_from_data")
+    if (length(rv_rtrange$min) == 0 || is.na(rv_rtrange$min)) rv_rtrange$min <- res[[1]]
+    if (length(rv_rtrange$max) == 0 || is.na(rv_rtrange$max)) rv_rtrange$max <- res[[2]]
+}, label = "get_rt_from_data")
 
 observeEvent(input$plot_brush,{
     xmin <- input$plot_brush[["xmin"]]
@@ -1093,20 +1105,23 @@ observeEvent(input$plot_brush,{
     if (!is.null(xmin)) rv_rtrange$max <- xmax
     session$resetBrush("plot_brush")
     
-})
+},label = "get_rt_from_selection")
 
 observeEvent(input$plot_rt_click,
 {
+    ## TODO: update to sensible range.
     res <- rf_rtrange_from_data()
-    rv_rtrange$min <- res[[1]]
-    rv_rtrange$max <- res[[2]]
-})
+    rv_rtrange$min <- if (length(rv_rtrange$min) == 0 ||
+                          is.na(rv_rtrange$min)) res[[1]] else NA
+    rv_rtrange$max <- if (length(rv_rtrange$max) == 0 ||
+                          is.na(rv_rtrange$max)) res[[2]] else NA
+}, label = "reset_rt_range")
 
 observeEvent(input$plot_mz_click,
 {
     rv_mzrange$min <- NA
     rv_mzrange$max <- NA
-})
+}, label = "reset_mz_range")
 
 
 observeEvent(rv_state$out$tab$comp,{
@@ -1190,8 +1205,7 @@ observe({
     l <- c(if (checked[["MS2 Spectrum"]]) "ms2_spec_int" else NULL,l)
     rv_state$conf$figures[["logaxes"]] <- l[!sapply(l,is.null)]
 	
-	rv_state$conf$figures$rt_min <- uni_ass("plot_rt_min","plot_rt_min_unit")
-	rv_state$conf$figures$rt_max <- uni_ass("plot_rt_max","plot_rt_max_unit")
+
 })
 ```
 <!-- Report -->
@@ -1361,7 +1375,6 @@ output$plot_ms2_spec <- renderPlot({
 
 output$plot_struct <- renderPlot({
     req(NROW(rv_state$out$tab$structfig)>0)
-    message("plot struuuct")
     plot_boiler(m=rv_state,
                 tab=rf_gen_sel_plot_tab(),
                 row=input$plot_sel_cell_clicked[["row"]],
