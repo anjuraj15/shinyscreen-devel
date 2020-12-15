@@ -1552,9 +1552,22 @@ plot_struct <- function(m,plot_index) {
                            axis.ticks.y=ggplot2::element_blank())
         return(p)
     } else {
-        ## grid::grid.draw(gridExtra::arrangeGrob(m$out$tab$structfig[ID==id,img][[1]]))
-        grid::grid.draw(m$out$tab$structfig[ID==id,img][[1]],
-                        recording = F)
+        msfig <- m$out$tab$structfig
+        if (id %in% msfig[,ID]) {
+            grid::grid.draw(m$out$tab$structfig[ID==id,img][[1]],
+                            recording = F)
+        } else {
+            p <- ggplot2::ggplot(data.frame(x=1:10,y=1:10),
+                                 ggplot2::aes(x=x,y=y))+
+                ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+
+            p <- p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="STRUCTURE PLOT UNAVAILABLE", color="black")+
+                ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                               axis.ticks.x=ggplot2::element_blank(),
+                               axis.text.y=ggplot2::element_blank(),
+                               axis.ticks.y=ggplot2::element_blank())
+            return(p)
+        }
 
     }
     
@@ -1577,7 +1590,21 @@ plot_struct_nowrap <- function(m,plot_index) {
                            axis.ticks.y=ggplot2::element_blank())
         return(p)
     } else {
-        m$out$tab$structfig[ID==id,img][[1]]
+        msfig <- m$out$tab$structfig
+        if (id %in% msfig[,ID]) {
+            msfig[ID==id,img][[1]]
+        } else {
+            p <- ggplot2::ggplot(data.frame(x=1:10,y=1:10),
+                                 ggplot2::aes(x=x,y=y))+
+                ggplot2::geom_blank()+ggplot2::labs(x="",y="")
+
+            p <- p + ggplot2::annotate(geom="text", x=5, y=5, size=6, label="STRUCTURE PLOT UNAVAILABLE", color="black")+
+                ggplot2::theme(axis.text.x=ggplot2::element_blank(),
+                               axis.ticks.x=ggplot2::element_blank(),
+                               axis.text.y=ggplot2::element_blank(),
+                               axis.ticks.y=ggplot2::element_blank())
+            return(p)
+        }
     }
     
 }
