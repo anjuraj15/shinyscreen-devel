@@ -793,7 +793,6 @@ base_conf <- function () {
                    compounds=list(lists=list(),
                                   sets="",
                                   data=""),
-                   extr=list(fn=""),
                    debug = F)
     m
 }
@@ -803,6 +802,8 @@ extr_conf <- function(m) {
                              "ms1 fine"=MS1_ERR_FINE,
                              "eic"=EIC_ERR,
                              "rt"=RT_EXTR_ERR)
+    m$conf$extract <- list(missing_precursor_info=DEF_CONF_MISSING_PCS)
+
     m
 }
 
@@ -1613,4 +1614,78 @@ gen_key_plot_tab <- function(m) {
     fltsumm[,unique(.SD[,..cols]),
             by=plot_key]
 
+}
+
+enum_na_scans <- function(vec) {
+    ## Canibalised .locf function from RMassBank.
+    tmp <- !is.na(vec)
+    na_idx <- cumsum(tmp)
+    
+    ## The construct below deals with the fact that vec[0] ==
+    ## integer(0) and not NA...  Therefore we retrieve indexes to
+    ## c(NA,vec) from c(0, which(vec.isna)) + 1 (the +1 shifts all
+    ## values so the 0s point to NA).
+
+    c(NA,vec)[c(0,which(tmp))[na_idx+1]+1]
+    
+}
+
+fix_na_precs <- function(ms) {
+    fd_df <- MSnbase::fData(ms)
+    fd <- data.table::as.data.table(fd_df, keep.rownames = "rn")
+    ## Reset precursor numbers.
+    fd[,precursorScanNum := NA_real_]
+    ## Temporarily label MS1 precursors using their acquisition
+    ## numbers.
+    fd[msLevel == 1, precursorScanNum := acquisitionNum]
+    ## Now populate the MS2 precursors based on MS1 scan numbers.
+    fd[,precursorScanNum := enum_na_scans(precursorScanNum)]
+    ## Reset MS1 precursors.
+    fd[msLevel == 1, precursorScanNum := 0]
+    ## Drop remaining MS2 NAs.
+    notna_idx <- fd[!is.na(precursorScanNum),.I]
+    fd <- fd[notna_idx]
+    notna_rns <- fd[,rn]
+    ms <- ms[notna_idx]
+    fd_res <- as.data.frame(fd)
+    ## Fix rownames.
+    rownames(fd_res) <- notna_rns
+    ## Modify header data for `ms'.
+    MSnbase::fData(ms) <- fd_res
+    ms
+    
+}
+
+omit_na_precs <- function(ms) {
+    fd_df <- MSnbase::fData(ms)
+    fd <- data.table::as.data.table(fd_df, keep.rownames = "rn")
+    fd[,idx:=.I]
+    idx <- fd[msLevel == 1 | msLevel == 2 & !is.na(precursorScanNum),idx]
+    ms[idx]
+    
+}
+
+clean_na_precs <- function(ms,missing_precursors) {
+    fd <- data.table::as.data.table(MSnbase::fData(ms))
+    na_pcs <- fd[msLevel==2 & is.na(precursorScanNum),.I]
+    pc_na_info <- missing_precursors
+
+    if (length(na_pcs)>0) {
+            warning("There are MS2 spectra with missing precursor entries in your data. Consider setting missing_precursor_info to `fill', or `omit'.")
+            message("Current missing_precursor_info value is: ", pc_na_info)
+        }
+        
+        
+    ms <- if (pc_na_info == "fill") {
+             fix_na_precs(ms)
+         } else if (pc_na_info == "omit") {
+             omit_na_precs(ms)
+         } else if (pc_na_info == "do_nothing") {
+             ms
+         } else {
+             stop("Fatal: m$conf$missing_precursor_info value ",pc_na_info, "is not one of `fill', `omit', or `do_nothing`.")
+         }
+
+    ms
+    
 }

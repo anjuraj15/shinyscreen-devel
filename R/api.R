@@ -317,6 +317,8 @@ extr_data <- function(m) {
     file <- m$out$tab$data[,unique(file)]
     allCEs <- do.call(c,args=lapply(file,function(fn) {
         z <- MSnbase::readMSData(files=fn,msLevel = c(1,2),mode="onDisk")
+
+        
         unique(MSnbase::collisionEnergy(z),fromLast=T)
         
     }))
@@ -348,14 +350,16 @@ extr_data <- function(m) {
         
         
         err_rt <- m$conf$tolerance$rt
-        
+
+        missing_precursor_info <- m$conf$extract$missing_precursor_info
         x <- futuref(extract(fn=fn,
                              tag=the_tag,
                              tab=tab,
                              err_ms1_eic=err_ms1_eic,
                              err_coarse = err_coarse,
                              err_fine= err_fine,
-                             err_rt= err_rt),
+                             err_rt= err_rt,
+                             missing_precursors = missing_precursor_info),
                      lazy = F)
 
         x

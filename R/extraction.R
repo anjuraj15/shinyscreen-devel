@@ -490,7 +490,7 @@ extr_eic_ms1 <- function(tab,err) {
 }
 
 ##' @export
-extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
+extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.,missing_precursors) {
     ## Extracts MS1 and MS2 EICs, as well as MS2 spectra, subject to
     ## tolerance specifications.
 
@@ -530,6 +530,9 @@ extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
         ms2 <- MSnbase::readMSData(file=fn,msLevel=2,mode="onDisk")
         ms2
     }
+    read_all <- function() {
+        MSnbase::readMSData(file=fn,msLevel. = c(1,2),mode="onDisk")
+    }
     extr_ms1_eic <- function(ms1) {
         eic <- MSnbase::chromatogram(ms1,mz=mzrng,msLevel=1,missing=0.0,rt=rtrng)
         bits <- dtable(N=sapply(eic,NROW))
@@ -555,8 +558,22 @@ extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.) {
         data.table::setkeyv(res,BASE_KEY)
         res
     }
-    ms1 <- read_ms1()
-    ms2 <- read_ms2()
+
+    
+    if (missing_precursors != "do_nothing") {
+        ms <- clean_na_precs(read_all(),missing_precursors = missing_precursors)
+        fdta <- as.data.table(MSnbase::fData(ms),keep.rownames = "rn")
+        fdta[,idx := .I]
+        idx_ms1 <- fdta[msLevel == 1,idx]
+        idx_ms2 <- fdta[msLevel == 2,idx]
+        
+        ms1 <- ms1[idx_ms1]
+        ms2 <- ms2[idx_ms2]
+    
+    } else {
+        ms1 <- read_ms1()
+        ms2 <- read_ms2()
+    }
     res_ms1 <- extr_ms1_eic(ms1)
     res_ms2 <- extr_ms2(ms1=ms1,
                         ms2=ms2,

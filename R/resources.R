@@ -262,3 +262,5 @@ EMPTY_COMP_TAB <- dtable(ID=character(),
                          Formula=character(),
                          file=character())
 
+
+DEF_CONF_MISSING_PCS <- "do_nothing"
