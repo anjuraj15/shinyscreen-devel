@@ -5,6 +5,13 @@ author: Environmental Cheminformatics Group, LCSB, University of Luxembourg
 title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
 ---
 
+```{r, echo=FALSE}
+htmltools::img(src = knitr::image_uri(system.file(package="shinyscreen","www/shinyscreen2.png")), 
+               alt = 'logo', 
+               style = 'position:absolute; top:0; right:0; padding:5px;')
+```
+
+
 ```{r, context='setup', include='false'}
 library(data.table)
 library(shinyscreen)
