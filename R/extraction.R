@@ -559,7 +559,7 @@ extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.,missing_
         res
     }
 
-    
+    if (is.null(missing_precursors)) missing_precursors <- "do_nothing"
     if (missing_precursors != "do_nothing") {
         ms <- clean_na_precs(read_all(),missing_precursors = missing_precursors)
         fdta <- as.data.table(MSnbase::fData(ms),keep.rownames = "rn")

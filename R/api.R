@@ -489,14 +489,14 @@ gen_struct_plots <- function(m) {
     comp <- m$out$tab$comp
 
     res <- if (NROW(comp)>0) {
-        structtab <- m$out$tab$comp[known=="structure",unique(.SD),.SDcols=c("ID","SMILES")]
-        message("Start generating structures.")
-        if (NROW(structab)>0) {
-            structtab[,img:=.({tmp <- lapply(SMILES,function (sm) smiles2img(sm,width = 500,height = 500, zoom = 4.5))
-                tmp})]
-            message("Done generating structures.")
-            structtab
-        } else dtable(ID=character(0),SMILES=character(0),img=list())
+               structtab <- m$out$tab$comp[known=="structure",unique(.SD),.SDcols=c("ID","SMILES")]
+               message("Start generating structures.")
+               if (NROW(structtab)>0) {
+                   structtab[,img:=.({tmp <- lapply(SMILES,function (sm) smiles2img(sm,width = 500,height = 500, zoom = 4.5))
+                       tmp})]
+                   message("Done generating structures.")
+                   structtab
+               } else dtable(ID=character(0),SMILES=character(0),img=list())
            } else {
                dtable(ID=character(0),SMILES=character(0),img=list())
            }

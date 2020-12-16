@@ -1615,8 +1615,8 @@ gen_key_plot_tab <- function(m) {
 
 
     fltsumm <- m$out$tab$flt_summ
-    validate(need(NROW(fltsumm) > 0,
-                  message = "Generate summary table first."))
+    validate(shiny::need(NROW(fltsumm) > 0,
+                         message = "Generate summary table first."))
     
     
     plot_group <- m$conf$figures$grouping$group
