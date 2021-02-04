@@ -853,10 +853,12 @@ grab_unit <- function(entry,unit) {
 
 
 rt_in_min <- function(entry) {
-    xs <- grab_unit(entry,"s")
-    xm <- grab_unit(entry,"min")
-    x <- if (is.na(xm)) xs/60. else xm
-    x
+    if (length(entry)>0 && nchar(entry)>0) {
+        xs <- grab_unit(entry,"s")
+        xm <- grab_unit(entry,"min")
+        x <- if (is.na(xm)) xs/60. else xm
+        x
+    } else NA_real_
 }
 
 conf_trans_pres <- function(pres_list) {
@@ -1135,7 +1137,7 @@ sci10_old <- function(x) {
 
 plot_theme <- function (legend.position="none",...)
     ggplot2::theme(
-                 plot.margin = unit(c(0,0,0,0),"cm"),
+                 plot.margin = ggplot2::unit(c(0,0,0,0),"cm"),
                  legend.position = legend.position,
                  axis.text = ggplot2::element_text(size=ggplot2::rel(1.2)),
                  axis.title = ggplot2::element_text(size=ggplot2::rel(1.2)),

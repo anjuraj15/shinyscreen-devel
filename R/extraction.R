@@ -222,8 +222,6 @@ extr_ms2<-function(ms1,ms2,ids,mz,adduct,err_coarse_fun, err_fine_fun) {
         
         ans <- x[id==x$ID & ad==x$adduct,]$aN
         sp<-ms2[which(acN %in% ans)]
-
-        message("id:",id,"ad:",ad)
         res <- gen_ms2_spec_blk(sp)
         res$ID <- id
         res$adduct <- ad
@@ -584,6 +582,8 @@ extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.,missing_
                         err_fine_fun=err_fine_fun)
     res_ms2[,"tag":=tag]
 
+    ## Clean all the NA intensity MS2 (sometimes a consequence of 'fill'.)
+    res_ms2<-res_ms2[!is.na(intensity)]
     res <- list(ms1=res_ms1,
                 ms2=res_ms2)
     res
