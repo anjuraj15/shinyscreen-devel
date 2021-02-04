@@ -567,8 +567,8 @@ extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.,missing_
         idx_ms1 <- fdta[msLevel == 1,idx]
         idx_ms2 <- fdta[msLevel == 2,idx]
         
-        ms1 <- ms1[idx_ms1]
-        ms2 <- ms2[idx_ms2]
+        ms1 <- ms[idx_ms1]
+        ms2 <- ms[idx_ms2]
     
     } else {
         ms1 <- read_ms1()
