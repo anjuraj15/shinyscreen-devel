@@ -687,9 +687,9 @@ report <- function(m) {
 
 
 #' @export
-app <- function() {
+app <- function(shiny_args=NULL,render_args=NULL) {
     unlink(list.files(pattern = "app_run.*html$"))
     unlink(list.files(pattern = "app_run.*Rmd$"))
     file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),"app_run.Rmd")
-    rmarkdown::run(file = "app_run.Rmd")
+    rmarkdown::run(file = "app_run.Rmd", shiny_args = shiny_args, render_args = render_args)
 }
