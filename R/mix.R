@@ -77,6 +77,7 @@ calc_mz_from_formula_outer <- function(chform,adduct,id) {
 }
 
 calc_mz_from_formula <- function(chform,adduct,id) {
+    if (length(chform) == 0 ) return(numeric(0))
     check_chform <- enviPat::check_chemform(ISOTOPES,chform)
     wind <- which(check_chform$warning)
     if (length(wind) > 0) stop("Cannot understand the following formulas: ",
@@ -128,18 +129,20 @@ calc_mz_from_formula <- function(chform,adduct,id) {
     mz
 }
 
-calc_mz_from_smiles <- function(smiles,adduct,id) {
-    mol <- lapply(smiles,function(s) try(RMassBank::getMolecule(s), silent = T))
-    check <- which(is.atomic(mol))
-    if (length(check) > 0)
-        stop("Errors in SMILES with IDs:",paste(id[which],collapse = ','))
 
-    mol_form <- sapply(mol,function(x) (rcdk::get.mol2formula(x))@string,USE.NAMES = F)
-    names(mol_form) <- id
-    calc_mz_from_formula(mol_form,adduct,id)
-    
-    
+
+smiles2form <- function(smiles) {
+    one2form <- function (s) {
+        mol <- try(RMassBank::getMolecule(s), silent = T)
+        if (!is.atomic(mol)) {
+            (rcdk::get.mol2formula(mol))@string            
+        } else ""
+    }
+
+    sapply(smiles,one2form,USE.NAMES = F)
 }
+
+
 
 calc_mz_from_smiles_outer <- function(smiles,adduct,id) {
     mol <- lapply(smiles,function(s) try(RMassBank::getMolecule(s), silent = T))

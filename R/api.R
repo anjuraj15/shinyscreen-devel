@@ -174,21 +174,67 @@ mk_comp_tab <- function(m) {
     comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,file,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
     tab2file(tab=comp,file=paste0("setidmerge",".csv"))
     setkey(comp,known,set,ID)
+    message("Merged all sets.")
+    message("Calculate formulas from SMILES (if any). Please wait.")
+    ## Get just the info needed for mz calculation.
+    comp_known <- comp[known=="structure" | known=="formula"]
+    ## Remove mz==NA  col from knowns.
+    comp_known[,mz:=NULL]
+    comp_unknown <- comp[known=="mz"]
+    smiforadd <- comp_known[known=="structure" | known=="formula",unique(.SD),.SDcols=c("adduct","ID","SMILES","Formula")]
     
-    ## Known structure.
-    ## comp[,`:=`(mz=mapply(calc_mz_from_smiles,SMILES,adduct,ID,USE.NAMES = F))]
-    comp[known=="structure",`:=`(mz=calc_mz_from_smiles(SMILES,adduct,ID))]
+    ## Turn SMILES into formulas.
+    smiles <- smiforadd[,unique(.SD),.SDcols=c("SMILES")]
+    smiles[,`:=`(Formula=smiles2form(SMILES))]
+    badsmiles <- as.character(smiles[Formula=="",SMILES])
+    if (length(badsmiles)>0) {
+        stop("Unable to create formula from SMILES:",paste(badsmiles,collapse="\n"))
+    }
+    smiforadd <- smiles[smiforadd,.(ID,SMILES,Formula,adduct),on=c("SMILES")]
+    data.table::setkey(smiforadd,"adduct","ID")
+    
+    ## Update the intermediate table with masses.
+    message("Formulas have been calculated. Start calculating masses from formulas.")
+    smiforadd[,mz:=calc_mz_from_formula(Formula,adduct,ID)]
+    message("Mass calculation has been completed.")
 
-    ## Known formula.
-    comp[known=="formula",`:=`(mz=calc_mz_from_formula(Formula,adduct,ID))]
+    ## Update the whole comprehensive table with masses from
+    ## formulas. Doing it in a merge leaves a mess that has to be
+    ## cleaned.
+    comp2 <- merge(comp_known,smiforadd,all.x = T, by= c("adduct","ID"))
+    ## Take Formulas from smiforadd (y) and SMILES from comp (x).
+    comp2[,`:=`(Formula=Formula.y,SMILES=SMILES.x)]
+    ## Now, populate mz from smiforadd (y) if SMILES/formula known,
+    ## else take what was in the comp (x).
+    ## comp2[,mz:=fifelse(known=="structure" | known=="formula",mz.y,mz.x)]
+    nms <- names(comp)
+    comp_known<-comp2[,..nms]
+    ## In case you were wondering why is this all so complicated,
+    ## well, for the moment I do not want to exclude mixed knowns and
+    ## unknowns in the same run. The unknowns would have masses filled
+    ## already at the stage of the compound list, so thay are taken
+    ## from comp_unknown. Another twist is that mz can be calculated
+    ## from either SMILES, or Formula.
+    
+    ## Combine knowns and unknowns finally.
+    comp <- rbind(comp_known,comp_unknown)
+    ## Rename stuff to be renamed and reorder columns.
     setnames(comp,names(COMP_NAME_MAP),
              function(o) COMP_NAME_MAP[[o]])
     setcolorder(comp,COMP_NAME_FIRST)
+
+    ## Write it out.
     fn_out <- get_fn_comp(m)
     tab2file(tab=comp,file=fn_out)
-    message("Generation of comp table finished.")
+    message("Generation of comprehensive table finished.")
+
+    ## Index for fast search and access.
     setkeyv(comp,c("set","tag","mz"))
     m$out$tab$comp <- comp
+
+    ## TODO: Not tested on cases when there are both knowns and
+    ## unknowns present in the compound lists. It *should* work
+    ## though.
     m
 }
 
