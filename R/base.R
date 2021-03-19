@@ -53,3 +53,30 @@ gen_uniq_lab <- function(prev,pref='',suff='') {
     while (cand %in% prev) cand <- gen()
     c(prev,cand)
 }
+
+yesno2log <- function(yesno) {
+    yes <- which(yesno=="✔")
+    no <- which(yesno=="❌")
+    res <- logical(length(yesno))
+    res[yes] <- T
+    res[no] <- F
+    res[!((1:length(res)) %in% c(yes,no))]<-NA
+    res
+}
+
+log2yesno <- function (log) {
+    wna <- log[is.na(log)]
+    wyes <- which(log)
+    wno <- !((1:length(log)) %in% c(wna,wyes))
+    res <- factor(character(length(log)),levels = c("✔","❌","NA"))
+    res[wyes] <- "✔"
+    res[wno] <- "❌"
+    res[wna] <- "NA"
+    res
+}
+
+## TODO: Remove calls to this once the glitch with prefiltering in
+## datatables is fixed.
+fixlog2yesno <- function(log) {
+    as.character(log2yesno(log))
+}
