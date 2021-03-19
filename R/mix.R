@@ -592,10 +592,16 @@ presc_conf <- function(m) {
     m
 }
 
+fig_conf <- function(m) {
+    m$conf$figures$rt_min <- NA_real_
+    m$conf$figures$rt_max <- NA_real_
+    m$conf$figures$ext <- "pdf"
+    m
+}
 
-new_conf <- function() presc_conf(
+new_conf <- function() fig_conf(presc_conf(
                            extr_conf(
-                               base_conf()))
+                               base_conf())))
 
 
 
@@ -630,7 +636,7 @@ grab_unit <- function(entry,unit) {
 
 
 rt_in_min <- function(entry) {
-    if (length(entry)>0 && nchar(entry)>0) {
+    if (length(entry)>0 && !is.na(entry) && nchar(entry)>0) {
         xs <- grab_unit(entry,"s")
         xm <- grab_unit(entry,"min")
         x <- if (is.na(xm)) xs/60. else xm
