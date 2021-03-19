@@ -560,126 +560,48 @@ create_plots <- function(m) {
 
     ## Select the data nedeed for plotting.
     flt_summ <- m$out$tab$flt_summ
+    ms2 <- m$extr$ms2
+    ms1 <- m$extr$ms1
+    rt_min <- rt_in_min(m$conf$figures$rt_min)
+    rt_max <- rt_in_min(m$conf$figures$rt_max)
+    keytab <- flt_summ[,unique(.SD),.SDcol=c("adduct","ID")]
+    for (n in 1:NROW(keytab)) {
+        select <- dtable(adduct=keytab$adduct[[n]],
+                         ID=keytab$ID[[n]])
+        
+        pdata_ms1 <- data4plot_ms1_cgram(ms1,select)
+        pdata_ms2 <- data4plot_ms2_cgram(ms2,select)
+        pdata_spec <- data4plot_ms2_spec(ms2,flt_summ,select)
 
-    group_data <- m$conf$figures$grouping
-    plot_group <- if (!shiny::isTruthy(group_data$group)) FIG_DEF_CONF$grouping$group else group_data$group
-    plot_plot <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$plot else group_data$plot
-    plot_ms1_label <- if (!shiny::isTruthy(group_data$plot)) FIG_DEF_CONF$grouping$label else group_data$label
-    plot_ms2_label <- "CE"
+        palette = plot_palette(pdata_ms1)
 
-    plot_index <- c(plot_group,plot_plot)
+        p_eic <- plot_eic_w_facet(pdata_ms1 = pdata_ms1,
+                                  pdata_ms2 = pdata_ms2,
+                                  rt_range = c(rt_min,rt_max),
+                                  palette = palette)
 
-    ## All the possible curve labels.
-    all_ms1_labels <- flt_summ[,unique(.SD),.SDcols=plot_ms1_label][[plot_ms1_label]]
-    all_ms1_labels <- sort(all_ms1_labels[!is.na(all_ms1_labels)])
-    all_ms2_ce_labels <- flt_summ[,unique(CE)]
-    all_ms2_ce_labels <- sort(all_ms2_ce_labels[!is.na(all_ms2_ce_labels)])
+        p_spec <- plot_spec_w_facet(pdata_ms2 = pdata_spec,
+                                    mz_range = c(NA_real_,NA_real_),
+                                    palette = palette)
 
-    ## Plot styling.
-    style_eic_ms1 <- plot_decor(m,m$conf$logaxes$ms1_eic_int,
-                                all_ms1_labels=all_ms1_labels,
-                                legend_name_ms1=plot_ms1_label)
-    style_eic_ms2 <- plot_decor(m,m$conf$logaxes$ms2_eic_int,
-                                all_ms1_labels = all_ms1_labels,
-                                all_ms2_labels = all_ms2_ce_labels,
-                                legend_name_ms1 = plot_ms1_label,
-                                legend_name_ms2 = "CE")
-    style_spec_ms2 <- plot_decor(m,m$conf$logaxes$ms2_spec_int,
-                                 all_ms1_labels = all_ms1_labels,
-                                 all_ms2_labels = all_ms2_ce_labels,
-                                 legend_name_ms1 = plot_ms1_label,
-                                 legend_name_ms2 = "CE")
+        message("CCC")
+        plot_save_single(p_eic,
+                         decotab = select,
+                         figtag = "eic",
+                         proj = m$conf$project,
+                         extension = m$conf$figures$ext)
 
-    style_ms2_leg <- plot_decor(m,m$conf$logaxes$ms2_spec_int,
-                                all_ms1_labels = all_ms1_labels,
-                                all_ms2_labels = all_ms2_ce_labels,
-                                legend_name_ms1 = plot_ms1_label,
-                                legend_name_ms2 = "CE",
-                                ms1_legend_info = F)
-
-    
-    plot_key <- gen_key_plot_tab(m)
-
-    topdir <- FIG_TOPDIR 
-    dir.create(topdir,showWarnings = F)
-
-    my_theme <- function(...) plot_theme(legend.position = "left",
-                                         legend.direction = "vertical")
-
-    theme_full <- my_theme()
-    theme_noleg <- plot_theme(legend.position = "none")
-
-
-    clean_range<-function(def,rng) {
-        x1 <- rng[1]
-        x2 <- rng[2]
-        if (is.na(x1) || x1 == 0) x1 <- def[1]
-        if (is.na(x2) || x2 == 0) x2 <- def[2]
-        c(x1,x2)
+        message("DDD")
+        plot_save_single(p_spec,
+                         decotab = select,
+                         figtag = "spec",
+                         proj = m$conf$project,
+                         extension = m$conf$figures$ext)
+        message("Plotting of figure ",n," out of ",NROW(keytab)," has been completed.")
+        
     }
-    
-    ## If structures do not exist, generate them.
-    if (is.null(m$out$tab$structfig)) m <- gen_struct_plots(m)
-    
-    plot_key[,mapply(function(gv,pv) {
-
-        key <- c(gv,pv)
-        names(key) <- plot_index
 
 
-        
-        p_chr_ms1 <- plot_ms1_chr(m, plot_index =  key)
-        p_chr_ms2 <- plot_ms2_chr(m, plot_index =  key)
-        p_spec_ms2 <- plot_ms2_spec(m, plot_index = key)
-        p_struct <- plot_struct_nowrap(m, plot_index = key)
-
-
-        ## Produce the filename.
-        fn <- paste0(paste(..plot_group,gv,..plot_plot,pv,sep = "_"),".pdf")
-        fn <- gsub("\\[","",fn)
-        fn <- gsub("\\]","",fn)
-        fn <- gsub("\\+","p",fn)
-        fn <- gsub("-","m",fn)
-        fn <- if (!is.null(topdir)) file.path(topdir,fn) else fn
-
-        
-        rt_int <- get_rt_interval(p_chr_ms1$data, p_chr_ms2$data, m$conf$figures)
-        my_coord <- ggplot2::coord_cartesian(xlim = rt_int)
-
-        p_chr_ms1 <- p_chr_ms1 + my_coord + theme_full
-        p_chr_ms2 <- p_chr_ms2 + my_coord + theme_full
-        leg1 <- cowplot::get_legend(p_chr_ms1)
-        leg2 <- cowplot::get_legend(p_chr_ms2)
-        p_spec_ms2 <- p_spec_ms2 + theme_full
-
-
-        ## Plot labels.
-        labels <- c(paste0("EIC (MS1) ",..plot_group,": ",gv,", ",..plot_plot,": ",pv),
-                        NA,
-                        paste0("EIC (MS2) ",..plot_group,": ",gv,", ",..plot_plot,": ",pv),
-                        NA,
-                        paste0("MS2 Spectra ",..plot_group,": ",gv,", ",..plot_plot,": ",pv),
-                        NA)
-        
-        big_fig <- cowplot::plot_grid(p_chr_ms1+theme_noleg,
-                                      p_struct,
-                                      p_chr_ms2+theme_noleg,
-                                      leg2,
-                                      p_spec_ms2+theme_noleg,
-                                      leg1,
-                                      align = "hv",
-                                      axis='l',
-                                      ncol = 2,
-                                      nrow = 3,
-                                      labels = labels,
-                                      rel_widths = c(2,1))
-        
-        message("Plotting: ",paste(key,collapse = ", ")," to: ",fn)
-        ggplot2::ggsave(plot=big_fig,width = 21, height = 29.7, units = "cm", filename = fn)
-        
-    },
-    get(..plot_group),
-    get(..plot_plot))]
     m
 }
 
