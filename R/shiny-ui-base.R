@@ -203,4 +203,1598 @@ merge2rev <- function(rev,lst) {
     
 }
 
+## Given a data.frame/table, swap internal names for nicer-to-view
+## names used in DTs.
+style_tab_cols <- function (dt) {
+    
+    old <- colnames(dt)
+    new <- list()
+    for (nm in old) {
+        new <- c(switch(EXPR = nm,
+                        "adduct" = "Adduct",
+                        "tag" = "File Tag",
+                        "ms1_int" = "I(ms1)",
+                        "ms1_rt" = "RT(ms1) [min]",
+                        "ms2_int" = "I(ms2)",
+                        "ms2_rt" = "RT(ms2) [min]",
+                        "ms2_sel" = "Selected?",
+                        "qa_ms2_near" ="MS1/MS2 RT match?",
+                        "qa_ms2_exists" = "Above threshold?",
+                        "qa_ms1_exists" = "MS1 Exists?",
+                        "qa_ms1_good_int" = "Above threshold?",
+                        "qa_ms1_above_noise" = "Not noisy?",
+                        nm),new)
+    }
+    
+    rev(new)
+}
 
+## Format typical cols with typical digits for a DT `dt`.
+style_tab_signif <- function(dt) {
+    numcols <- c(mz=SIGNF_MZ,
+                 "ms1_int"=SIGNF_I,
+                 "ms2_int"=SIGNF_I,
+                 "ms1_rt"=SIGNF_RT,
+                 "ms2_rt"=SIGNF_RT)
+    for (col in names(numcols)) {
+        dt <- tryCatch(DT::formatSignif(dt,col,digits = numcols[[col]]),
+                       error = function(e) dt)
+
+        }
+    dt
+}
+
+## A customised DT intended for spec data.
+styled_dt <- function(tab,style = 'bootstrap4',
+                      class = 'cell-border',
+                      extensions = 'Scroller',
+                      options = list(scrollX=T,
+                                     scrollY=400,
+                                     dom = "t",
+                                     deferRender = T,
+                                     scroller = T,
+                                     ordering = F),
+                      colnames = style_tab_cols(tab),
+                      rownames = F,
+                      filter = 'top',
+                      ...) {
+    dttab <- DT::datatable(tab,
+                           style = style,
+                           class = class,
+                           options = options,
+                           colnames = colnames,
+                           rownames = rownames,
+                           filter = filter,
+                           ...)
+    dttab
+    style_tab_signif(dttab)
+    
+}
+
+
+mk_shinyscreen_server <- function() {
+    ## This used to be context='setup'.
+    ## library(shinydashboard)
+    def_state <- new_state()
+    def_datafiles <- shinyscreen:::dtable(file=character(0),
+                                          tag=character(0))
+    def_datatab <- shinyscreen:::dtable("tag"=factor(),
+                                        "adduct"=factor(levels=shinyscreen:::DISP_ADDUCTS),
+                                        "set"=factor())
+
+    def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
+                                            "Select"=factor("ignore",levels=shinyscreen:::SUBSET_VALS))
+    ## RMassBank masks shiny::validate. Unmask it.
+    validate <- shiny::validate
+    ## def_state$input$tab$tags <- def_datatab
+    rv_state <- list2rev(def_state)
+    compl_sets <- eventReactive(rv_state$input$tab$setid,
+                                rv_state$input$tab$setid[,unique(set)])
+
+
+    ## Reactive values to support some of the UI elements.
+    ## rv_ui <- reactiveValues(datatab=def_tags)
+
+    ## Update with data-files.
+    rv_dfile <- reactiveVal(def_datafiles)
+
+    ## Data-file table when loading.
+    rv_datatab <- reactiveVal(def_datatab)
+
+    ## Re-definitions.
+    PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
+
+    ## Plotting parameters.
+
+    ## Transient rt range.
+    rv_rtrange <- reactiveValues(min=rt_in_min(def_state$conf$figures$rt_min),
+                                 max=rt_in_min(def_state$conf$figures$rt_max))
+
+    ## Transient mz range.
+    rv_mzrange <- reactiveValues(min=NA,
+                                 max=NA)
+
+
+    ## Some more setup.
+    ord_nms <- gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM)
+    ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
+    ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
+    def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
+
+    gen_comp_sel <- function(summ) {
+        res <- summ[,unique(.SD),.SDcol=c("adduct","tag","ID",
+                                          "mz","ms1_rt","ms1_int",
+                                          "qa_ms1_exists",
+                                          "qa_ms1_good_int",
+                                          "qa_ms1_above_noise",
+                                          "Name")]
+        data.table::setkeyv(res,c("adduct", "tag", "mz","ms1_rt"))
+        res[,`:=`(qa_ms1_exists=fixlog2yesno(qa_ms1_exists),
+                  qa_ms1_good_int=fixlog2yesno(qa_ms1_good_int),
+                  qa_ms1_above_noise=fixlog2yesno(qa_ms1_above_noise))]
+        res
+        
+        
+    }
+
+    gen_ms2_sel <- function(tab,sel_dt) {
+        triv <- dtable(an=character(0),
+                       ms2_rt=character(0),
+                       ms2_int=character(0),
+                       CE=character(0),
+                       ms2_sel=character(0),
+                       qa_ms2_near=character(0),
+                       qa_ms2_exists=character(0))
+        coln <- colnames(triv)
+        
+        res <- if (NROW(sel_dt)>0) {
+                   
+                   tab[sel_dt,..coln,on=c("adduct","tag","ID")]
+               } else triv
+
+        
+        data.table::setkeyv(res,c("ms2_rt","ms2_int"))
+        if (NROW(sel_dt)>0) {
+            res[,`:=`(ms2_sel=fixlog2yesno(ms2_sel),
+                      qa_ms2_near=fixlog2yesno(qa_ms2_near),
+                      qa_ms2_exists=fixlog2yesno(qa_ms2_exists))]
+        }
+        res
+    }
+
+
+    gen_ms2_sel_spec <- function(tab,sel_dt) {
+        triv <- dtable(mz=numeric(0),
+                       intensity=numeric(0))
+        coln <- colnames(triv)
+        
+        res <- if (NROW(sel_dt)>0) {
+                   
+                   tab[sel_dt,..coln,on=c("adduct","tag","ID","an")]
+               } else triv
+        data.table::setnames(res,"intensity","ms2_int")
+        res
+    }
+
+
+    gen_plot_comp_sel <- function(summ) {
+        res <- summ[,unique(.SD),.SDcol=c("adduct","ID",
+                                          "mz",
+                                          "Name")]
+        data.table::setkeyv(res,c("adduct", "mz"))
+        res
+    }
+
+    uni_ass <- function(input,val,unit) {
+        paste(input[[val]],
+              input[[unit]])
+    }
+
+    adapt_range <- function(fig,x_range=NULL) {
+        if (is.null(x_range)) fig else fig+coord_cartesian(xlim=x_range)
+    }
+
+
+    plot_boiler <- function(m,tab,row,plot_fun,rv_x_range,adapt_x_range=T) {
+        plot_group <- m$conf$figures$grouping$group
+        plot_plot <- m$conf$figures$grouping$plot
+        req(row)
+        idx <- get_plot_idx(tab = tab,
+                            plot_group = plot_group,
+                            plot_plot = plot_plot,
+                            row =row)
+        fig <- plot_fun(m=m,plot_index = idx)
+        x_range <- if (adapt_x_range) c(rv_x_range$min,rv_x_range$max) else NULL
+        adapt_range(fig,x_range=x_range)
+    }
+
+
+    get_plot_idx <- function(tab,plot_group,plot_plot,row) {
+        pg <- tab[row,..plot_group]
+        pp <- tab[row,..plot_plot]
+        res <- c(pg,pp)
+        names(res) <- c(plot_group,plot_plot)
+        res
+        
+    }
+
+    update_gui <- function(in_conf, session) {
+        upd_unit <- function(entry,inp_val,inp_unit,choices) {
+            if (isTruthy(entry)) {
+                cntnt <- strsplit(entry,split = "[[:space:]]+")[[1]]
+                cntnt <- cntnt[nchar(cntnt) > 0]
+                if (length(cntnt)!=2) stop("(upd_unit) ","Unable to interpret ", entry)
+                val <- cntnt[[1]]
+                unit <- cntnt[[2]]
+                updateNumericInput(session = session,
+                                   inputId = inp_val,
+                                   value = as.numeric(val))
+                updateSelectInput(session = session,
+                                  inputId = inp_unit,
+                                  selected = unit,
+                                  choices = choices)
+            }
+        }
+
+        upd_num <- function(entry,inp_val) {
+            if (isTruthy(entry)) {
+                updateNumericInput(session = session,
+                                   inputId = inp_val,
+                                   value = as.numeric(entry))
+            }
+        }
+
+        upd_sel <- function(inputId,selected,choices) {
+            if (isTruthy(selected)) {
+                updateSelectInput(session = session,
+                                  inputId = inputId,
+                                  selected = selected,
+                                  choices = choices)
+            }
+        }
+
+        isolate({
+            rv_state$conf$project <- in_conf$project
+            rv_state$conf$data <- in_conf$data
+            ## Lists
+            rv_state$conf$compounds$lists <- in_conf$compounds$lists
+            rv_state$conf$compounds$sets <- in_conf$compounds$sets
+            
+            ## Tolerance
+            
+            upd_unit(in_conf$tolerance[["ms1 fine"]],
+                     "ms1_fine",
+                     "ms1_fine_unit",
+                     choices=c("ppm","Da"))
+            upd_unit(in_conf$tolerance[["ms1 coarse"]],
+                     "ms1_coarse",
+                     "ms1_coarse_unit",
+                     choices=c("ppm","Da"))
+
+            upd_unit(in_conf$tolerance[["eic"]],
+                     "ms1_eic",
+                     "ms1_eic_unit",
+                     choices=c("ppm","Da"))
+            upd_unit(in_conf$tolerance[["rt"]],
+                     "ms1_rt_win",
+                     "ms1_rt_win_unit",
+                     choices=c("min","s"))
+
+            ## Prescreen
+            upd_num(in_conf$prescreen[["ms1_int_thresh"]],
+                    "ms1_int_thresh")
+            upd_num(in_conf$prescreen[["ms2_int_thresh"]],
+                    "ms2_int_thresh")
+            upd_num(in_conf$prescreen[["s2n"]],
+                    "s2n")
+            upd_unit(in_conf$prescreen[["ret_time_shift_tol"]],
+                     "ret_time_shift_tol",
+                     "ret_time_shift_tol_unit",
+                     choices=c("min","s"))
+
+            ## Files
+            df <- shinyscreen:::file2tab(in_conf$data)
+            df[,tag:=as.character(tag),with=T]
+            rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
+            nms <- colnames(df)
+            nms <- nms[nms!="file"]
+            fdt <- df[,..nms]
+            rv_datatab(fdt)
+
+            ## figures
+            upd_unit(in_conf$figures$rt_min,
+                     "plot_rt_min",
+                     "plot_rt_min_unit",
+                     choices=c("min","s"))
+            
+            upd_unit(in_conf$figures$rt_max,
+                     "plot_rt_max",
+                     "plot_rt_max_unit",
+                     choices=c("min","s"))
+
+            logentry <- in_conf$figures$logaxes
+            logchoice <- logical(0)
+            logchoice <- mapply(function(cn,uin) if (cn %in% logentry) uin else NA,
+                                c("ms1_eic_int","ms2_eic_int","ms2_spec_int"),
+                                c("MS1 EIC","MS2 EIC","MS2 Spectrum"),USE.NAMES = F)
+            logchoice <- logchoice[!is.na(logchoice)]
+            
+            updateCheckboxGroupInput(session = session,
+                                     inputId = "plot_log",
+                                     choices = c("MS1 EIC",
+                                                 "MS2 EIC",
+                                                 "MS2 Spectrum"),
+                                     selected = logchoice)
+            ## Report
+            if (isTruthy(in_conf$report$author)) updateTextInput(session,"rep_aut",value = in_conf$report$author)
+            if (isTruthy(in_conf$report$title)) updateTextInput(session,"rep_tit",value = in_conf$report$title)
+
+            
+        })
+    }
+
+
+
+
+    server_old <- function(input,output,session) {
+
+
+        observeEvent(input$project_b,{
+            wd <- tcltk::tk_choose.dir(default = getwd(),
+                                       caption = "Choose project directory")
+            message("Set project dir to ", wd)
+            dir.create(wd,recursive = T,showWarnings = F)
+            rv_state$conf$project <- wd
+        })
+
+        observeEvent(input$comp_list_b, {
+            filters <- matrix(c("CSV files", ".csv",
+                                "All files", "*"),
+                              2, 2, byrow = TRUE)
+            compfiles <- tcltk::tk_choose.files(filters=filters)
+            message("(config) Selected compound lists: ", paste(compfiles,collapse = ","))
+            rv_state$conf$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
+        })
+
+        observeEvent(input$datafiles_b,{
+            filters <- matrix(c("mzML files", ".mzML",
+                                "All files", "*"),
+                              2, 2, byrow = TRUE)
+            fns <- tcltk::tk_choose.files(filters=filters)
+            message("(config) Selected data files: ", paste(fns,collapse = ","))
+            ## Did the user choose any files?
+            if (length(fns) > 0) {
+                oldtab <- rf_get_inp_datafiles()
+                
+                newf <- setdiff(fns,oldtab$file)
+                nr <- NROW(oldtab)
+                tmp <- if (length(newf)>0) shinyscreen:::dtable(file=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(file=character(),tag=character())
+
+                z <- rbind(oldtab, tmp)
+                z[,tag:=as.character(tag)]
+                rv_dfile(z)
+            }
+        })
+
+        observe({
+            df_tab <- rf_get_inp_datafiles()
+            state <- rf_compound_input_state()
+            isolate(oldtab <- rf_get_inp_datatab())
+            
+            oldt <- oldtab$tag
+            tagl <- df_tab$tag
+            diff <- setdiff(tagl,
+                            oldt)
+            
+            res <- if (length(diff)!=0) {
+                       ## Only change the tag names in the old ones.
+                       pos_tag <- 1:length(tagl)
+                       pos_old <- 1:NROW(oldtab)
+                       pos_mod <- intersect(pos_tag,pos_old)
+                       new_tag <- tagl[pos_mod]
+                       if (NROW(oldtab)>0) oldtab[pos_mod,tag := ..new_tag]
+
+                       ## Now add tags for completely new files, if any.
+                       rest_new <- if (NROW(oldtab) > 0) setdiff(diff,new_tag) else diff
+                       tmp <- shinyscreen:::dtable(tag=rest_new,
+                                                   adduct=character(0),
+                                                   set=character(0))
+
+                       dt <-data.table::as.data.table(rbind(as.data.frame(oldtab),
+                                                            as.data.frame(tmp)))
+                       dt[tag %in% df_tab$tag,]
+                   } else oldtab
+            
+            rv_datatab(res)
+        })
+
+        observe({
+            mc <- rf_conf_state()
+            rv_state$conf <- mc$conf
+        }, label = "conf_state")
+
+        observe({
+            dtab <- rv_datatab()
+            dfiles <- rv_dfile()
+            message("(config) Generating mzml from rv.")
+            isolate(rv_state$input$tab$mzml <- dtab[dfiles,on="tag"])
+            message("(config) Done generating mzml from rv.")
+
+            
+        }, label = "mzml_from_rv")
+
+        observe({
+            dtab <- rf_get_inp_datatab()
+            dfiles <- rf_get_inp_datafiles()
+
+            message("(config) Generating mzml from inputs.")
+            res <- dtab[dfiles,on="tag"]
+            isolate(rv_state$input$tab$mzml <- res)
+            message("(config) Generating mzml from inputs.")
+
+            
+        }, label = "mzml_from_inp")
+
+        observeEvent(input$extract_b,{
+            m <- rf_conf_state()
+            fn_c_state <- file.path(m$conf$project,
+                                    paste0("extract.",shinyscreen:::FN_CONF))
+            yaml::write_yaml(x=m$conf,file=fn_c_state)
+            message("(extract) Config written to ", fn_c_state)
+            state <- shinyscreen::run(m=m,
+                                      phases=c("setup",
+                                               "comptab",
+                                               "extract"))
+            message("(extract) Done extracting.")
+            z <- shinyscreen::merge2rev(rv_state,lst = state)
+            eval(z)
+        })
+
+        observeEvent(input$presc_b,{
+            validate(need(NROW(rv_state$extr$ms1) > 0,
+                          message = "Perform extraction first."))
+            m <- rev2list(rv_state)
+
+            fn_c_state <- file.path(m$conf$project,
+                                    paste0("presc.",shinyscreen:::FN_CONF))
+            yaml::write_yaml(x=m$conf,file=fn_c_state)
+            message("(prescreen) Config written to ", fn_c_state)
+            state <- shinyscreen::run(m=m,
+                                      phases=c("prescreen"))
+            message("(prescreen) Done prescreening.")
+            
+            z <- shinyscreen::merge2rev(rv_state,lst = state)
+            eval(z)
+            
+            
+        })
+
+        observeEvent(input$sortsubset_b,{
+            m <- rev2list(rv_state)
+
+            fn_c_state <- file.path(m$conf$project,
+                                    paste0("sortsubset.",shinyscreen:::FN_CONF))
+            yaml::write_yaml(x=m$conf,file=fn_c_state)
+            message("(sortsubset) Config written to ", fn_c_state)
+            state <- shinyscreen::run(m=m,
+                                      phases=c("sort",
+                                               "subset"))
+            message("(sortsubset) Done with sorting and subsetting.")
+            
+            z <- shinyscreen::merge2rev(rv_state,lst = state)
+            eval(z)
+            
+            
+        })
+
+        observeEvent(input$plot_b,{
+            validate(need(NROW(rv_state$out$tab$flt_summ) > 0,
+                          message = "Perform prescreening first."))
+            m <- rev2list(rv_state)
+
+            fn_c_state <- file.path(m$conf$project,
+                                    paste0("genplot.",shinyscreen:::FN_CONF))
+            yaml::write_yaml(x=m$conf,file=fn_c_state)
+            message("(generate plots) Config written to ", fn_c_state)
+            state <- shinyscreen::run(m=m,
+                                      phases=c("plot"))
+            message("(generate plots) Done generating plots.")
+            
+            z <- shinyscreen::merge2rev(rv_state,lst = state)
+            eval(z)
+        })
+
+        observeEvent(input$state_file_load_b,{
+            filters <- matrix(c("RDS files", ".rds",
+                                "YAML config files", ".yaml",
+                                "All files", "*"),
+                              3, 2, byrow = TRUE)
+            fn <- tcltk::tk_choose.files(filters=filters,
+                                         multi = F)
+            
+            message("(config) Loading state from: ", paste(fn,collapse = ","))
+            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
+
+            if (nchar(fn) > 0) {
+                if (grepl("yaml",fn)) {
+                    state <- new_state_fn_conf(fn)
+                    conf <- state$conf
+                    update_gui(conf,session=session)
+                } else {
+                    state <- readRDS(file=fn)
+                    z <- shinyscreen::merge2rev(rv_state,lst = state)
+                    eval(z)
+                    update_gui(rv_state$conf, session=session)
+                }
+
+            }
+        })
+
+        observeEvent(input$state_file_save_b,{
+            filters <- matrix(c("RDS files", ".rds",
+                                "All files", "*"),
+                              2, 2, byrow = TRUE)
+            fn <- tk_save_file(filters=filters,
+                               default = "state.rds")
+            message("(config) Saving state to: ", paste(fn,collapse = ","))
+            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
+
+            if (nchar(fn) > 0) {
+                m <- rev2list(rv_state)
+                ftab <- get_fn_ftab(m)
+                fconf <- get_fn_conf(m)
+                yaml::write_yaml(m$conf,
+                                 file = fconf)
+                shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
+                m$conf$data <- ftab
+
+                
+                saveRDS(object=m,file=fn)
+            }
+        })
+
+        observe ({
+            input$plot_rt_min
+            input$plot_rt_min_unit
+            input$plot_rt_max
+            input$plot_rt_max_unit
+            rv_state$conf$figures$rt_min <- uni_ass("plot_rt_min","plot_rt_min_unit")
+            rv_state$conf$figures$rt_max <- uni_ass("plot_rt_max","plot_rt_max_unit")
+
+            rv_rtrange$min <- read_rt(rv_state$conf$figures$rt_min)
+            rv_rtrange$max <- read_rt(rv_state$conf$figures$rt_max)
+            
+        }, label = "get_rt_from_ctrl")
+
+        observe({
+            res <- rf_rtrange_from_data()
+            if (length(rv_rtrange$min) == 0 || is.na(rv_rtrange$min)) rv_rtrange$min <- res[[1]]
+            if (length(rv_rtrange$max) == 0 || is.na(rv_rtrange$max)) rv_rtrange$max <- res[[2]]
+        }, label = "get_rt_from_data")
+
+        observeEvent(input$plot_brush,{
+            xmin <- input$plot_brush[["xmin"]]
+            xmax <- input$plot_brush[["xmax"]]
+            if (!is.null(xmin)) rv_rtrange$min <- xmin
+            if (!is.null(xmin)) rv_rtrange$max <- xmax
+            session$resetBrush("plot_brush")
+            
+        },label = "get_rt_from_selection")
+
+        observeEvent(input$plot_rt_click,
+        {
+            ## TODO: update to sensible range.
+            res <- rf_rtrange_from_data()
+            rv_rtrange$min <- if (length(rv_rtrange$min) == 0 ||
+                                  is.na(rv_rtrange$min)) res[[1]] else NA
+            rv_rtrange$max <- if (length(rv_rtrange$max) == 0 ||
+                                  is.na(rv_rtrange$max)) res[[2]] else NA
+        }, label = "reset_rt_range")
+
+        observeEvent(input$plot_mz_click,
+        {
+            rv_mzrange$min <- NA
+            rv_mzrange$max <- NA
+        }, label = "reset_mz_range")
+
+
+        observeEvent(rv_state$out$tab$comp,{
+            m <- gen_struct_plots(rev2list(rv_state))
+            rv_state$out$tab$structfig <- m$out$tab$structfig
+        }, label = "gen_struct_plots")
+
+        observeEvent(input$plot_mz_brush,{
+            xmin <- input$plot_mz_brush[["xmin"]]
+            xmax <- input$plot_mz_brush[["xmax"]]
+            if (!is.null(xmin)) rv_mzrange$min <- xmin
+            if (!is.null(xmin)) rv_mzrange$max <- xmax
+            session$resetBrush("plot_mz_brush")
+            
+        })
+
+        uni_ass <- function(val,unit) {
+            paste(input[[val]],
+                  input[[unit]])
+        }
+        observe({
+            
+            rv_state$conf$tolerance[["ms1 fine"]] <- uni_ass("ms1_fine",
+                                                             "ms1_fine_unit")
+            
+            rv_state$conf$tolerance[["ms1 coarse"]] <- uni_ass("ms1_coarse",
+                                                               "ms1_coarse_unit")
+
+            rv_state$conf$tolerance[["eic"]] <- uni_ass("ms1_eic",
+                                                        "ms1_eic_unit")
+
+            rv_state$conf$tolerance[["rt"]] <- uni_ass("ms1_rt_win",
+                                                       "ms1_rt_win_unit")
+
+
+        })
+
+        observe({
+            
+            rv_state$conf$prescreen[["ms1_int_thresh"]] <- input[["ms1_int_thresh"]]
+            rv_state$conf$prescreen[["ms2_int_thresh"]] <- input[["ms2_int_thresh"]]
+            rv_state$conf$prescreen[["s2n"]] <- input$s2n
+            rv_state$conf$prescreen[["ret_time_shift_tol"]] <- uni_ass(input,
+                                                                       "ret_time_shift_tol",
+                                                                       "ret_time_shift_tol_unit")
+
+        })
+
+        observe({
+            plot_group <- PLOT_FEATURES[[as.integer(input$plot_grp)]]
+            plot_plot <- PLOT_FEATURES[[as.integer(input$plot_grp_plot)]]
+            plot_label <-PLOT_FEATURES[[as.integer(input$plot_label)]]
+            isolate({
+                rv_state$conf$figures$grouping$group <- plot_group
+                rv_state$conf$figures$grouping$plot <- plot_plot
+                rv_state$conf$figures$grouping$label <- plot_label
+            })
+
+        }, label = "plot-grouping")
+        observe({
+            vals <- input$plot_log
+            checked <- c("MS1 EIC"=F,
+                         "MS2 EIC"=F,
+                         "MS2 Spectrum"=F)
+            if (length(vals)!=0) checked[vals] <- T
+            l <- list()
+            l <- c(if (checked[["MS1 EIC"]]) "ms1_eic_int" else NULL,l)
+            l <- c(if (checked[["MS2 EIC"]]) "ms2_eic_int" else NULL,l)
+            l <- c(if (checked[["MS2 Spectrum"]]) "ms2_spec_int" else NULL,l)
+            rv_state$conf$figures[["logaxes"]] <- l[!sapply(l,is.null)]
+            
+
+        })
+
+        observe({
+            rv_state$conf$report$author <- input$rep_aut
+            rv_state$conf$report$title <- input$rep_tit
+        })
+
+        output$project <- renderText(rv_state$conf$project)
+
+        output$comp_lists <- renderText({
+            lsts <- rev2list(rv_state$conf$compounds$lists)
+            if (length(lsts) > 0 &&
+                isTruthy(lsts) &&
+                lsts != "Nothing selected.") {
+                paste(c("<ul>",
+                        sapply(lsts,
+                               function (x) paste("<li>",x,"</li>")),
+                        "</ul>"))
+            } else "No compound list selected yet."
+        })
+
+        output$setids <- renderText({
+            sets <- rv_state$conf$compounds$sets
+            if (isTruthy(sets) && sets != "Nothing selected.")
+                paste("selected <em>setid</em> table:",
+                      sets) else "No <em>setid</em> table selected."
+        })
+
+        output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsontable(def_ord_summ,
+                                                                                             manualRowMove = T))
+
+        output$datafiles <- rhandsontable::renderRHandsontable(
+        {
+            res <- rv_dfile()
+            rhandsontable::rhandsontable(as.data.frame(res),
+                                         width = "50%",
+                                         height = "25%",
+                                         allowInvalid=F)
+        })
+
+        output$datatab <- rhandsontable::renderRHandsontable(
+        {
+            setid <- rv_state$input$tab$setid
+            res <- rv_datatab()
+            
+            if (NROW(res)>0) {
+                res$tag <- factor(res$tag,
+                                  levels = c(unique(res$tag),
+                                             "invalid"))
+                res$set <- factor(res$set,
+                                  levels = c(unique(setid$set),
+                                             "invalid"))
+                res$adduct <- factor(res$adduct,
+                                     levels = shinyscreen:::DISP_ADDUCTS)
+            }
+
+
+            rhandsontable::rhandsontable(res,stretchH="all",
+                                         allowInvalid=F)
+        })
+
+        output$comp_table <- DT::renderDataTable({
+            state <- rf_compound_input_state()
+
+
+            DT::datatable(state$input$tab$cmpds,
+                          style = 'bootstrap',
+                          class = 'table-condensed',
+                          extensions = 'Scroller',
+                          options = list(scrollX = T,
+                                         scrollY = 200,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+
+        output$setid_table <- DT::renderDataTable({
+            state <- rf_compound_input_state()
+
+            DT::datatable(state$input$tab$setid,
+                          style = 'bootstrap',
+                          class = 'table-condensed',
+                          extensions = 'Scroller',
+                          options = list(scrollX = T,
+                                         scrollY = 200,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+
+        output$summ_subset <- rhandsontable::renderRHandsontable({
+            
+
+            rhandsontable::rhandsontable(def_summ_subset)
+        })
+
+        output$summ_table <- DT::renderDataTable({
+
+            
+            tab <- rv_state$out$tab$flt_summ
+            nms <- colnames(tab)
+            dpl_nms <- nms[nms!="file"]
+            validate(need(NROW(tab)>0, message = "Please prescreen the data first."))
+            DT::datatable(tab[,..dpl_nms],
+                          style = 'bootstrap',
+                          class = 'table-condensed',
+                          extensions = 'Scroller',
+                          options = list(scrollX = T,
+                                         scrollY = 200,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+
+
+        output$plot_sel <- DT::renderDataTable({
+            tab <- rf_gen_sel_plot_tab()
+            DT::datatable(tab,
+                          style = 'bootstrap',
+                          class = 'table-condensed',
+                          extensions = 'Scroller',
+                          selection = 'single',
+                          options = list(scrollX = T,
+                                         scrollY = 200,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+
+
+        output$plot_b_ctrl <- renderUI({
+            tab <- rv_state$out$tab$flt_summ
+            req(NROW(tab)>0)
+            actionButton(inputId = "plot_b",
+                         label= "Save all plots")
+            
+        })
+
+        output$plot_ms1_eic <- renderPlot({
+            plot_boiler(m=rv_state,
+                        tab=rf_gen_sel_plot_tab(),
+                        row=input$plot_sel_cell_clicked[["row"]],
+                        plot_fun=plot_ms1_chr,
+                        rv_x_range=rv_rtrange)
+        })
+
+        output$plot_ms2_eic <- renderPlot({
+            plot_boiler(m=rv_state,
+                        tab=rf_gen_sel_plot_tab(),
+                        row=input$plot_sel_cell_clicked[["row"]],
+                        plot_fun=plot_ms2_chr,
+                        rv_x_range=rv_rtrange)
+
+        })
+
+
+
+        output$plot_ms2_spec <- renderPlot({
+            plot_boiler(m=rv_state,
+                        tab=rf_gen_sel_plot_tab(),
+                        row=input$plot_sel_cell_clicked[["row"]],
+                        plot_fun=plot_ms2_spec,
+                        rv_x_range=rv_mzrange)
+
+        })
+
+        output$plot_struct <- renderPlot({
+            req(NROW(rv_state$out$tab$structfig)>0)
+            plot_boiler(m=rv_state,
+                        tab=rf_gen_sel_plot_tab(),
+                        row=input$plot_sel_cell_clicked[["row"]],
+                        plot_fun=plot_struct,
+                        adapt_x_range=F)
+            
+        })
+
+        output$plot_hover_out <- renderText({
+            inp1 <- input$plot_hover[[1]]
+            inp2 <- input$plot_hover[[2]]
+            res <- if (all(!(c(is.null(inp1),is.null(inp2))))) {
+                       paste0('(',
+                              format(inp1,digits=5),
+                              ',',
+                              format(inp2,digits=2,scientific=T),
+                              ')')
+                   } else "Currently not in the plot."
+            
+        })
+        session$onSessionEnded(function () stopApp())
+    }
+
+    pdf(file="dummy.pdf",width = 1.9685,height = 1.9685)
+    dev.off()
+    server_in_progress <- function(input,output,session) {
+        ## REACTIVE FUNCTIONS
+
+        rf_compound_input_state <- reactive({
+            sets <- rv_state$conf$compounds$sets
+            lst <- as.list(rv_state$conf$compounds$lists)
+            validate(need(length(lst)>0,
+                          message = "Load the compound lists(s) first."))
+            validate(need(length(sets)>0 && nchar(sets)>0,
+                          message = "Load the setid table first."))
+            isolate({
+                state <- rev2list(rv_state)
+                m <- load_compound_input(state)
+                ## Side effect! This is because my pipeline logic does not
+                ## work nicely with reactive stuff.
+                rv_state$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
+                rv_state$input$tab$setid <- m$input$tab$setid
+                m
+            })
+        })
+
+        rf_conf_proj <- reactive({
+            
+            state <- rev2list(rv_state)
+            dir.create(state$conf$project,showWarnings = F)
+            state
+            
+        })
+
+        rf_conf_state <- reactive({
+            state <- rf_conf_proj()
+            ## mzml1 <- rf_get_inp_datatab()
+            ## mzml1[,`:=`(tag=as.character(tag),
+            ##             set=as.character(set),
+            ##             adduct=as.character(adduct))]
+            ## mzml2 <- rf_get_inp_datafiles()
+            
+            ## mzml <- mzml1[mzml2,on="tag"]
+            
+            ftab <- get_fn_ftab(state)
+            state$conf$data <- ftab
+            state$conf[["summary table"]]$filter <- rf_get_subset()
+            state$conf[["summary table"]]$order <- rf_get_order()
+            state
+        })
+
+        rf_get_subset <- reactive({
+            input$summ_subset
+            dt <- tryCatch(rhandsontable::hot_to_r(input$summ_subset),
+                           error = function(e) def_summ_subset)
+            dt[Select == shinyscreen:::SUBSET_VALS[["GOOD"]], extra := T]
+            dt[Select == shinyscreen:::SUBSET_VALS[["BAD"]], extra := F]
+            sdt <- dt[!is.na(extra)]
+            if (NROW(sdt) > 0) {
+                sdt[,paste0(`QA Column`," == ",extra)]
+            } else NULL
+        })
+
+        rf_get_order <- reactive({
+            dt <- tryCatch(rhandsontable::hot_to_r(input$order_summ),error = function(e) def_ord_summ)
+            tmp <- dt[Direction == "descending",.(`Column Name`=paste0("-",`Column Name`))]
+            tmp[,`Column Name`]
+        })
+
+        rf_get_inp_datatab <- eventReactive(input$datatab,{
+            z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datatab)),
+                                           error = function(e) def_datatab)
+
+            
+            z[,.(tag=as.character(tag),
+                 adduct=as.character(adduct),
+                 set=as.character(set)), with = T]
+        })
+
+        rf_get_inp_datafiles <- eventReactive(input$datafiles,{
+            z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datafiles)),
+                                           error = function(e) def_datafiles)
+
+            
+            z[,.(file,
+                 tag=as.character(tag)), with = T]
+        })
+
+        rf_summ_table_rows <- eventReactive(input$summ_table_rows_all,{
+            input$summ_table_rows_all
+            
+        })
+
+        rf_gen_sel_plot_tab <- reactive({
+
+
+            rv_state$out$tab$flt_summ
+            m <- rev2list(rv_state)
+            fltsumm <- m$out$tab$flt_summ
+            validate(need(NROW(fltsumm) > 0,
+                          message = "Generate summary table first."))
+            
+            rows <- rf_summ_table_rows()
+            
+            ## Reduce to currently selected rows.
+            m$out$tab$flt_summ <- m$out$tab$flt_summ[rows,]
+            gen_key_plot_tab(m)
+            
+        })
+
+        rf_rtrange_from_data <- eventReactive(input$plot_sel_cell_clicked,{
+            ## Determine the plotting RT range.
+            
+            ptab <- rf_gen_sel_plot_tab()
+            plot_group <- rv_state$conf$figures$grouping$group
+            plot_plot <- rv_state$conf$figures$grouping$plot
+            row <- input$plot_sel_cell_clicked[["row"]]
+            req(row)
+            idx <- get_plot_idx(tab = ptab,
+                                plot_group = plot_group,
+                                plot_plot = plot_plot,
+                                row =row)
+
+            m <- rev2list(rv_state)
+            pdata_ms1 <- get_ms1_chr_pdata(m,plot_index=idx)
+            pdata_ms2 <- get_ms2_chr_pdata(m,plot_index=idx)
+            ## rt_ms1_rng <- as.numeric(pdata_ms1[,range(rt)])
+            ## rt_ms2_rng <- as.numeric(pdata_ms2[,range(rt_peak)])
+            
+            get_rt_interval(pdata_ms1,pdata_ms2,rv_state$conf$figures)
+        })
+
+
+        rf_gen_struct_figs <- eventReactive(rv_state$out$tab$comp,gen_struct_plots(rv_state))
+
+        rf_comp_sel <- eventReactive(rv_state$out$tab$flt_summ,{
+            tab <- rv_state$out$tab$flt_summ
+            req(NROW(tab)>0)
+            gen_comp_sel(tab)
+        })
+
+        rf_ms2_sel <- reactive({
+            tab <- rv_state$out$tab$flt_summ
+            req(NROW(tab)>0)
+            rows <- input$compound_selector_rows_selected
+            compsel <- rf_comp_sel()
+            
+            sel_dt <- if(length(rows>0)) compsel[rows,unique(.SD),.SDcol=c("adduct","tag","ID")] else data.table("adduct"=character(0),
+                                                                                                                 "tag"=character(0),
+                                                                                                                 "ID"=character(0))
+            gen_ms2_sel(tab,sel_dt=sel_dt)
+        })
+
+        rf_ms2_sel_spec <- reactive({
+            tab <- rv_state$out$tab$flt_summ
+            req(NROW(tab)>0)
+            ms1rows <- input$compound_selector_rows_selected
+            ms2rows <- input$compound_ms2_table_rows_selected
+            compsel <- rf_comp_sel()
+            ms2tab <- rf_ms2_sel()
+            
+            sel_dt <- if (length(ms1rows>0)) compsel[ms1rows,unique(.SD),.SDcol=c("adduct","tag","ID")] else data.table("adduct"=character(0),
+                                                                                                                        "tag"=character(0),
+                                                                                                                        "ID"=character(0))
+
+            ms2_an <- if (length(ms2rows>0)) as.integer(ms2tab[ms2rows,an]) else NA
+
+            
+            if (!is.na(ms2_an)) sel_dt$an <- ms2_an else sel_dt <- data.table()
+            
+            
+            gen_ms2_sel_spec(rv_state$extr$ms2,sel_dt=sel_dt)
+        })
+
+        rf_plot_comp_select <- eventReactive(rv_state$out$tab$flt_summ,{
+            tab <- rv_state$out$tab$flt_summ
+            req(NROW(tab)>0)
+            gen_plot_comp_sel(tab)
+        })
+
+
+        rf_dt_sel <- reactive({
+            cmp_sel <- rf_plot_comp_select()
+            rows <- input$plot_comp_select_rows_selected
+            if (NROW(cmp_sel) == 0 ||
+                length(rows) == 0) return(NULL)
+            cmp_sel[rows,.(adduct,ID)]
+            
+        })
+
+        rf_d4p_ms1_cgram <- reactive({
+            ms1 <- rv_state$extr$ms1
+            dt_sel <- rf_dt_sel()
+            req(NROW(dt_sel)>0)
+            data4plot_ms1_cgram(rv_state$extr$ms1,dt_sel)
+        })
+
+        rf_d4p_ms2_cgram <- reactive({
+            ms2 <- rv_state$extr$ms2
+            dt_sel <- rf_dt_sel()
+            req(NROW(dt_sel)>0)
+            data4plot_ms2_cgram(rv_state$extr$ms2,dt_sel)
+        })
+
+        rf_d4p_ms2_spec <- reactive({
+            summ <- rv_state$out$tab$flt_summ
+            ms2 <- rv_state$extr$ms2
+            dt_sel <- rf_dt_sel()
+            req(NROW(dt_sel)>0)
+            data4plot_ms2_spec(rv_state$extr$ms2,summ,dt_sel)
+        })
+
+        rf_rtrange_from_data <- reactive({
+            dt1 <- rf_d4p_ms1_cgram()
+            dt2 <- rf_d4p_ms2_cgram()
+            rdt1 <- c(NA_real_,NA_real_)
+            rdt2 <- c(NA_real_,NA_real_)
+            if (NROW(dt1)>0) rdt1 <- dt1[,range(rt)]
+            if (NROW(dt2)>0) rdt2 <- dt2[,range(rt)]
+
+            rdt <- c(NA_real_,NA_real_)
+            rdt[[1]]<-min(rdt1[[1]],rdt2[[1]],na.rm = T)
+            if (is.infinite(rdt[[1]])) rdt[[1]] <- NA_real_
+            rdt[[2]]<-max(rdt1[[2]],rdt2[[2]],na.rm = T)
+            if (is.infinite(rdt[[2]])) rdt[[2]] <- NA_real_
+
+            rdt
+            
+            
+        })
+
+
+        rf_plot_palette <- reactive({
+            pdata <- rf_d4p_ms1_cgram()
+            req(NROW(pdata)>0)
+            plot_palette(pdata)
+        })
+        
+        rf_plot_eic_facet <- reactive({
+            ms2 <- rv_state$extr$ms2
+            
+            pdata_ms1 <- rf_d4p_ms1_cgram()
+            pdata_ms2 <- rf_d4p_ms2_cgram()
+            
+            plot_eic_w_facet(pdata_ms1 = pdata_ms1,
+                             pdata_ms2 = pdata_ms2,
+                             rt_range = c(rv_rtrange$min,
+                                          rv_rtrange$max),
+                             palette = rf_plot_palette())
+            
+            
+        })
+
+        rf_plot_spec_facet <- reactive({
+        
+            pdata <- rf_d4p_ms2_spec()
+            plot_spec_w_facet(pdata_ms2 = pdata,
+                              mz_range = c(rv_mzrange$min,
+                                           rv_mzrange$max),
+                              palette = rf_plot_palette())
+            
+            
+        })
+
+
+        rf_tab4plot_eic <- reactive({
+            pdata <- rf_d4p_ms1_cgram()
+            table_eic(pdata)
+        })
+
+        rf_tab4plot_spec <- reactive({
+            pdata <- rf_d4p_ms2_cgram()
+            table_spec(pdata)
+        })
+
+
+
+        ## Observers
+
+        observeEvent(input$setid_b, {
+            filters <- matrix(c("CSV files", ".csv",
+                                "All files", "*"),
+                              2, 2, byrow = TRUE)
+            setids <- tcltk::tk_choose.files(filters=filters)
+            message("(config) Selected compound sets (setid): ", paste(setids,collapse = ","))
+            rv_state$conf$compounds$sets <- if (length(setids)>0 && nchar(setids[[1]])>0) setids else "Nothing selected."
+        })
+
+        observe({
+            df_tab <- rf_get_inp_datafiles()
+            state <- rf_compound_input_state()
+            isolate(oldtab <- rf_get_inp_datatab())
+            
+            oldt <- oldtab$tag
+            tagl <- df_tab$tag
+            diff <- setdiff(tagl,
+                            oldt)
+            
+            res <- if (length(diff)!=0) {
+                       ## Only change the tag names in the old ones.
+                       pos_tag <- 1:length(tagl)
+                       pos_old <- 1:NROW(oldtab)
+                       pos_mod <- intersect(pos_tag,pos_old)
+                       new_tag <- tagl[pos_mod]
+                       if (NROW(oldtab)>0) oldtab[pos_mod,tag := ..new_tag]
+
+                       ## Now add tags for completely new files, if any.
+                       rest_new <- if (NROW(oldtab) > 0) setdiff(diff,new_tag) else diff
+                       tmp <- shinyscreen:::dtable(tag=rest_new,
+                                                   adduct=character(0),
+                                                   set=character(0))
+
+                       dt <-data.table::as.data.table(rbind(as.data.frame(oldtab),
+                                                            as.data.frame(tmp)))
+                       dt[tag %in% df_tab$tag,]
+                   } else oldtab
+            
+            rv_datatab(res)
+        })
+
+        observe({
+            mc <- rf_conf_state()
+            rv_state$conf <- mc$conf
+        }, label = "conf_state")
+
+        observe({
+            dtab <- rv_datatab()
+            dfiles <- rv_dfile()
+            message("(config) Generating mzml from rv.")
+            isolate(rv_state$input$tab$mzml <- dtab[dfiles,on="tag"])
+            message("(config) Done generating mzml from rv.")
+
+            
+        }, label = "mzml_from_rv")
+
+        observe({
+            dtab <- rf_get_inp_datatab()
+            dfiles <- rf_get_inp_datafiles()
+
+            message("(config) Generating mzml from inputs.")
+            res <- dtab[dfiles,on="tag"]
+            isolate(rv_state$input$tab$mzml <- res)
+            message("(config) Generating mzml from inputs.")
+
+            
+        }, label = "mzml_from_inp")
+
+        observeEvent(input$extract_b,{
+            m <- rf_conf_state()
+            fn_c_state <- file.path(m$conf$project,
+                                    paste0("extract.",shinyscreen:::FN_CONF))
+            yaml::write_yaml(x=m$conf,file=fn_c_state)
+            message("(extract) Config written to ", fn_c_state)
+            state <- shinyscreen::run(m=m,
+                                      phases=c("setup",
+                                               "comptab",
+                                               "extract"))
+            message("(extract) Done extracting.")
+            z <- shinyscreen::merge2rev(rv_state,lst = state)
+            eval(z)
+        })
+
+        observeEvent(input$presc_b,{
+            validate(need(NROW(rv_state$extr$ms1) > 0,
+                          message = "Perform extraction first."))
+            m <- rev2list(rv_state)
+
+            fn_c_state <- file.path(m$conf$project,
+                                    paste0("presc.",shinyscreen:::FN_CONF))
+            yaml::write_yaml(x=m$conf,file=fn_c_state)
+            message("(prescreen) Config written to ", fn_c_state)
+            state <- shinyscreen::run(m=m,
+                                      phases=c("prescreen"))
+            message("(prescreen) Done prescreening.")
+            
+            z <- shinyscreen::merge2rev(rv_state,lst = state)
+            eval(z)
+            
+            
+        })
+
+        observeEvent(input$sortsubset_b,{
+            m <- rev2list(rv_state)
+
+            fn_c_state <- file.path(m$conf$project,
+                                    paste0("sortsubset.",shinyscreen:::FN_CONF))
+            yaml::write_yaml(x=m$conf,file=fn_c_state)
+            message("(sortsubset) Config written to ", fn_c_state)
+            state <- shinyscreen::run(m=m,
+                                      phases=c("sort",
+                                               "subset"))
+            message("(sortsubset) Done with sorting and subsetting.")
+            
+            z <- shinyscreen::merge2rev(rv_state,lst = state)
+            eval(z)
+            
+            
+        })
+
+        observeEvent(input$state_file_load_b,{
+            filters <- matrix(c("RDS files", ".rds",
+                                "YAML config files", ".yaml",
+                                "All files", "*"),
+                              3, 2, byrow = TRUE)
+            fn <- tcltk::tk_choose.files(filters=filters,
+                                         multi = F)
+            
+            message("(config) Loading state from: ", paste(fn,collapse = ","))
+            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
+
+            if (nchar(fn) > 0) {
+                if (grepl("yaml",fn)) {
+                    state <- new_state_fn_conf(fn)
+                    conf <- state$conf
+                    update_gui(conf,session=session)
+                } else {
+                    state <- readRDS(file=fn)
+                    z <- shinyscreen::merge2rev(rv_state,lst = state)
+                    eval(z)
+                    update_gui(rv_state$conf, session=session)
+                }
+
+            }
+        })
+
+        observeEvent(input$state_file_save_b,{
+            filters <- matrix(c("RDS files", ".rds",
+                                "All files", "*"),
+                              2, 2, byrow = TRUE)
+            fn <- tk_save_file(filters=filters,
+                               default = "state.rds")
+            message("(config) Saving state to: ", paste(fn,collapse = ","))
+            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
+
+            if (nchar(fn) > 0) {
+                m <- rev2list(rv_state)
+                ftab <- get_fn_ftab(m)
+                fconf <- get_fn_conf(m)
+                yaml::write_yaml(m$conf,
+                                 file = fconf)
+                shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
+                m$conf$data <- ftab
+
+                
+                saveRDS(object=m,file=fn)
+            }
+        })
+
+        observeEvent(input$plot_ext, {
+            rv_state$conf$figures$ext <- input$plot_ext
+        })
+
+        observeEvent(input$plot_save_single,{
+            ext <- rv_state$conf$figures$ext
+            eic <- "eic"
+            spec <- "spec"
+            dt_sel <- rf_dt_sel()
+            if (!is.null(dt_sel)) {
+                plot_save_single(rf_plot_eic_facet(),
+                                 decotab = dt_sel,
+                                 figtag = eic,
+                                 proj = rv_state$conf$project,
+                                 tabl = rf_tab4plot_eic(),
+                                 extension = ext)
+                plot_save_single(rf_plot_spec_facet(),
+                                 decotab = dt_sel,
+                                 proj = rv_state$conf$project,
+                                 tabl = rf_tab4plot_spec(),
+                                 figtag = spec,
+                                 extension = ext)
+                message("Plots saved to ",file.path(rv_state$conf$project,
+                                                    FIG_TOPDIR))
+
+            } else message("Nothing to save.")
+        })
+
+        observeEvent(input$plot_save_all, {
+            req(NROW(rv_state$out$tab$flt_summ)>0)
+            create_plots(rv_state)
+        })
+
+
+        ## TODO: Uncomment this once done refacing.
+        ## observeEvent(rv_state$out$tab$comp,{
+        ##     m <- gen_struct_plots(rev2list(rv_state))
+        ##     rv_state$out$tab$structfig <- m$out$tab$structfig
+        ## }, label = "gen_struct_plots")
+
+        observe({
+            
+            rv_state$conf$tolerance[["ms1 fine"]] <- uni_ass(input,
+                                                             "ms1_fine",
+                                                             "ms1_fine_unit")
+            
+            rv_state$conf$tolerance[["ms1 coarse"]] <- uni_ass(input,
+                                                               "ms1_coarse",
+                                                               "ms1_coarse_unit")
+
+            rv_state$conf$tolerance[["eic"]] <- uni_ass(input,
+                                                        "ms1_eic",
+                                                        "ms1_eic_unit")
+
+            rv_state$conf$tolerance[["rt"]] <- uni_ass(input,
+                                                       "ms1_rt_win",
+                                                       "ms1_rt_win_unit")
+
+
+        })
+
+        observe({
+            
+            rv_state$conf$prescreen[["ms1_int_thresh"]] <- input[["ms1_int_thresh"]]
+            rv_state$conf$prescreen[["ms2_int_thresh"]] <- input[["ms2_int_thresh"]]
+            rv_state$conf$prescreen[["s2n"]] <- input$s2n
+            rv_state$conf$prescreen[["ret_time_shift_tol"]] <- uni_ass(input,
+                                                                       "ret_time_shift_tol",
+                                                                       "ret_time_shift_tol_unit")
+
+        })
+
+        ## observe({
+        ##     plot_group <- PLOT_FEATURES[[as.integer(input$plot_grp)]]
+        ##     plot_plot <- PLOT_FEATURES[[as.integer(input$plot_grp_plot)]]
+        ##     plot_label <-PLOT_FEATURES[[as.integer(input$plot_label)]]
+        ##     isolate({
+        ##         rv_state$conf$figures$grouping$group <- plot_group
+        ##         rv_state$conf$figures$grouping$plot <- plot_plot
+        ##         rv_state$conf$figures$grouping$label <- plot_label
+        ##     })
+
+        ## }, label = "plot-grouping")
+        observe({
+            vals <- input$plot_log
+            checked <- c("MS1 EIC"=F,
+                         "MS2 EIC"=F,
+                         "MS2 Spectrum"=F)
+            if (length(vals)!=0) checked[vals] <- T
+            l <- list()
+            l <- c(if (checked[["MS1 EIC"]]) "ms1_eic_int" else NULL,l)
+            l <- c(if (checked[["MS2 EIC"]]) "ms2_eic_int" else NULL,l)
+            l <- c(if (checked[["MS2 Spectrum"]]) "ms2_spec_int" else NULL,l)
+            rv_state$conf$figures[["logaxes"]] <- l[!sapply(l,is.null)]
+            
+
+        }, label = "plot-logaxes")
+
+        observe({
+            rv_state$conf$report$author <- input$rep_aut
+            rv_state$conf$report$title <- input$rep_tit
+        })
+
+        observeEvent(input$plot_rt_click,
+        {
+            ## TODO: update to sensible range.
+            res <- rf_rtrange_from_data()
+            rv_rtrange$min <- if (length(rv_rtrange$min) == 0 ||
+                                  is.na(rv_rtrange$min)) res[[1]] else NA_real_
+            rv_rtrange$max <- if (length(rv_rtrange$max) == 0 ||
+                                  is.na(rv_rtrange$max)) res[[2]] else NA_real_
+        }, label = "reset_rt_range")
+
+        observeEvent(input$plot_mz_click,
+        {
+            rv_mzrange$min <- NA
+            rv_mzrange$max <- NA
+        }, label = "reset_mz_range")
+
+
+        observeEvent(input$plot_brush,{
+            xmin <- input$plot_brush[["xmin"]]
+            xmax <- input$plot_brush[["xmax"]]
+            if (!is.null(xmin)) rv_rtrange$min <- xmin
+            if (!is.null(xmin)) rv_rtrange$max <- xmax
+            session$resetBrush("plot_brush")
+            
+        },label = "get_rt_from_selection")
+
+        observeEvent(input$plot_mz_brush,{
+            xmin <- input$plot_mz_brush[["xmin"]]
+            xmax <- input$plot_mz_brush[["xmax"]]
+            if (!is.null(xmin)) rv_mzrange$min <- xmin
+            if (!is.null(xmin)) rv_mzrange$max <- xmax
+            session$resetBrush("plot_mz_brush")
+            
+        })
+
+        ## Render Outputs
+
+
+
+        output$project <- renderText(rv_state$conf$project)
+
+        output$comp_lists <- renderText({
+            lsts <- rev2list(rv_state$conf$compounds$lists)
+            if (length(lsts) > 0 &&
+                isTruthy(lsts) &&
+                lsts != "Nothing selected.") {
+                paste(c("<ul>",
+                        sapply(lsts,
+                               function (x) paste("<li>",x,"</li>")),
+                        "</ul>"))
+            } else "No compound list selected yet."
+        })
+
+        output$setids <- renderText({
+            sets <- rv_state$conf$compounds$sets
+            if (isTruthy(sets) && sets != "Nothing selected.")
+                paste("selected <em>setid</em> table:",
+                      sets) else "No <em>setid</em> table selected."
+        })
+
+        output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsontable(def_ord_summ,
+                                                                                             manualRowMove = T))
+
+        output$datafiles <- rhandsontable::renderRHandsontable(
+        {
+            res <- rv_dfile()
+            rhandsontable::rhandsontable(as.data.frame(res),
+                                         width = "50%",
+                                         height = "25%",
+                                         allowInvalid=F)
+        })
+
+        output$datatab <- rhandsontable::renderRHandsontable(
+        {
+            setid <- rv_state$input$tab$setid
+            res <- rv_datatab()
+            
+            if (NROW(res)>0) {
+                res$tag <- factor(res$tag,
+                                  levels = c(unique(res$tag),
+                                             "invalid"))
+                res$set <- factor(res$set,
+                                  levels = c(unique(setid$set),
+                                             "invalid"))
+                res$adduct <- factor(res$adduct,
+                                     levels = shinyscreen:::DISP_ADDUCTS)
+            }
+
+
+            rhandsontable::rhandsontable(res,stretchH="all",
+                                         allowInvalid=F)
+        })
+
+        output$comp_table <- DT::renderDataTable({
+            state <- rf_compound_input_state()
+
+
+            DT::datatable(state$input$tab$cmpds,
+                          style = 'bootstrap',
+                          class = 'table-condensed',
+                          extensions = 'Scroller',
+                          options = list(scrollX = T,
+                                         scrollY = 200,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+
+        output$setid_table <- DT::renderDataTable({
+            state <- rf_compound_input_state()
+
+            DT::datatable(state$input$tab$setid,
+                          style = 'bootstrap',
+                          class = 'table-condensed',
+                          extensions = 'Scroller',
+                          options = list(scrollX = T,
+                                         scrollY = 200,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+
+        output$summ_subset <- rhandsontable::renderRHandsontable({
+            
+
+            rhandsontable::rhandsontable(def_summ_subset)
+        })
+
+        output$summ_table <- DT::renderDataTable({
+
+            
+            tab <- rv_state$out$tab$flt_summ
+            nms <- colnames(tab)
+            dpl_nms <- nms[nms!="file"]
+            validate(need(NROW(tab)>0, message = "Please prescreen the data first."))
+            DT::datatable(tab[,..dpl_nms],
+                          style = 'bootstrap',
+                          class = 'table-condensed',
+                          extensions = 'Scroller',
+                          options = list(scrollX = T,
+                                         scrollY = 200,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+
+
+        output$compound_selector <- DT::renderDT({
+            styled_dt(rf_comp_sel(),
+                      selection = "single")
+        })
+
+        output$compound_ms2_table <- DT::renderDT({
+            styled_dt(rf_ms2_sel(),
+                      selection = "single")
+        })
+
+        output$compound_ms2_spectrum <- DT::renderDT({
+            styled_dt(rf_ms2_sel_spec(),
+                      selection = "none")
+        })
+
+        output$plot_comp_select <- DT::renderDT({
+            styled_dt(rf_plot_comp_select())
+        })
+
+        ## Plots
+
+        output$plot_eic <- renderPlot({
+            rf_plot_eic_facet()
+        })
+
+
+        output$plot_ms2_spec <- renderPlot({
+            rf_plot_spec_facet()
+        })
+
+        output$plot_hover_out <- renderText({
+            inp1 <- input$plot_hover[[1]]
+            inp2 <- input$plot_hover[[2]]
+            res <- if (all(!(c(is.null(inp1),is.null(inp2))))) {
+                       paste0('(',
+                              format(inp1,digits=5),
+                              ',',
+                              format(inp2,digits=2,scientific=T),
+                              ')')
+                   } else "Currently not in the plot."
+            
+        })
+
+        
+
+
+        session$onSessionEnded(function () stopApp())
+    }
+
+    server_in_progress
+}
