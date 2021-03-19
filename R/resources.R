@@ -264,3 +264,9 @@ EMPTY_COMP_TAB <- dtable(ID=character(),
 
 
 DEF_CONF_MISSING_PCS <- "do_nothing"
+
+
+## Significant digits for output
+SIGNF_I <- 3
+SIGNF_MZ <- 7
+SIGNF_RT <- 4
