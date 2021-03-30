@@ -1,6 +1,6 @@
 Package: shinyscreen
 Title: Pre-screening of Mass Spectrometry Data 
-Version: 0.9.9
+Version: 0.9.10
 Author: Todor Kondić
 Maintainer: Todor Kondić <todor.kondic@uni.lu>
 Authors@R: 
