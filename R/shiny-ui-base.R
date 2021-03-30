@@ -252,11 +252,11 @@ style_tab_signif <- function(dt) {
 }
 
 ## A customised DT intended for spec data.
-styled_dt <- function(tab,style = 'bootstrap4',
+styled_dt <- function(tab,style = 'bootstrap',
                       class = 'cell-border',
                       extensions = 'Scroller',
-                      options = list(scrollX=T,
-                                     scrollY=400,
+                      options = list(scrollY=200,
+                                     scrollX=T,
                                      dom = "t",
                                      deferRender = T,
                                      scroller = T,
@@ -322,26 +322,40 @@ mk_shinyscreen_server <- function() {
                                  max=NA)
 
 
+
+    ## Other transient values.
+    rv_tran <- reactiveValues(qa_compsel_tab=dtable(), # QA clickable table for MS1.
+                              qa_ms2sel_tab=dtable())  # QA clickable table for MS2.
     ## Some more setup.
     ord_nms <- gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM)
     ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
     ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
     def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
 
-    gen_comp_sel <- function(summ) {
+
+    gen_compsel_tab <- function(summ) {
+        ## Given summary table, create a table with only adduct/tag/ID
+        ## entries and associated MS1 quantities.
         res <- summ[,unique(.SD),.SDcol=c("adduct","tag","ID",
                                           "mz","ms1_rt","ms1_int",
-                                          "qa_ms1_exists",
-                                          "qa_ms1_good_int",
-                                          "qa_ms1_above_noise",
                                           "Name")]
         data.table::setkeyv(res,c("adduct", "tag", "mz","ms1_rt"))
-        res[,`:=`(qa_ms1_exists=fixlog2yesno(qa_ms1_exists),
-                  qa_ms1_good_int=fixlog2yesno(qa_ms1_good_int),
-                  qa_ms1_above_noise=fixlog2yesno(qa_ms1_above_noise))]
         res
         
         
+    }
+
+    gen_qa_compsel_tab <- function(clicked,compsel,summ) {
+        ## Given the info about what was clicked in compsel table,
+        ## retrieve QA information and return it as a table.
+        info <- get_key_sel_cmpd(clicked,compsel)
+        if (NROW(info$key)==0) return (dtable(qa_ms1_exists=character(0),
+                                                  qa_ms1_good_int=character(0),
+                                                  qa_ms1_above_noise=character(0)))
+        summ[info$key,.(qa_ms1_exists=fixlog2yesno(qa_ms1_exists),
+                            qa_ms1_good_int=fixlog2yesno(qa_ms1_good_int),
+                            qa_ms1_above_noise=fixlog2yesno(qa_ms1_above_noise)),
+             on=c("adduct","tag","ID")][,unique(.SD)]
     }
 
     gen_ms2_sel <- function(tab,sel_dt) {
@@ -350,6 +364,7 @@ mk_shinyscreen_server <- function() {
                        ms2_int=character(0),
                        CE=character(0),
                        ms2_sel=character(0),
+                       qa_ms2_good_int=character(0),
                        qa_ms2_near=character(0),
                        qa_ms2_exists=character(0))
         coln <- colnames(triv)
@@ -363,6 +378,7 @@ mk_shinyscreen_server <- function() {
         data.table::setkeyv(res,c("ms2_rt","ms2_int"))
         if (NROW(sel_dt)>0) {
             res[,`:=`(ms2_sel=fixlog2yesno(ms2_sel),
+                      qa_ms2_good_int=fixlog2yesno(qa_ms2_good_int),
                       qa_ms2_near=fixlog2yesno(qa_ms2_near),
                       qa_ms2_exists=fixlog2yesno(qa_ms2_exists))]
         }
@@ -538,6 +554,53 @@ mk_shinyscreen_server <- function() {
 
             
         })
+    }
+
+    ## This is a JavaScript callback which is meant to capture double
+    ## clicks on DT datatables and return data in an input field of
+    ## the form input$tblId_dbl_click_pos.
+    dblclick_callback <- paste0(c(
+            "table.on('dblclick.dt', 'td', function(){",
+            "var tbl = table.table().node();",
+            "var tblId = $(tbl).closest('.datatables').attr('id');",
+            "row_ = table.cell(this).index().row;",
+            "col_ = table.cell(this).index().column;",
+            "var schmuck = new Date().getTime();",
+            "var res = {row: row_ + 1,col: col_ + 1, chg: schmuck};",
+            "Shiny.setInputValue(tblId + '_dbl_click_pos', res);",
+            "})"
+        ),collapse = "\n")
+
+
+    get_pos_from_dblclick <- function(pos,currrows=NULL) {
+        if (length(pos) == 0) return(NULL)
+        nr <- pos$row
+        nc <- pos$col
+        rows <- if (!is.null(currrows)) currrows[nr] else nr
+        data.frame(row=rows,col=nc)
+    }
+
+
+    
+    get_tab_sel <- function(clicked,selector,keys) {
+        nr <- clicked$row
+        nc <- clicked$col
+        colnms <- names(selector)
+        the_name <- colnms[[nc]]
+        sel_row <- selector[nr,..keys]
+        list(col=the_name,
+             key=sel_row)
+    }
+    ## Get info about compound selected in the browser.
+    get_key_sel_cmpd <- function(clicked,selector) {
+        if (length(clicked) == 0) return(dtable())
+        get_tab_sel(clicked,selector,c('adduct','tag','ID'))
+
+    }
+
+    ## Info about MS2 spectrum selected.
+    get_ms2_sel <- function(clicked,selector) {
+        get_tab_sel(clicked,selector,c('CE','an'))
     }
 
 
@@ -1194,17 +1257,25 @@ mk_shinyscreen_server <- function() {
 
         rf_gen_struct_figs <- eventReactive(rv_state$out$tab$comp,gen_struct_plots(rv_state))
 
-        rf_comp_sel <- eventReactive(rv_state$out$tab$flt_summ,{
+        rf_compsel_tab <- reactive({
             tab <- rv_state$out$tab$flt_summ
             req(NROW(tab)>0)
-            gen_comp_sel(tab)
+            gen_compsel_tab(tab)
+        })
+
+        rf_qa_compsel_tab <- reactive({
+            ## Generate the QA line for compound selector.
+            compsel <- rf_compsel_tab()
+            tab <- rv_state$out$tab$flt_summ
+            clicked <- input$compound_selector_cell_clicked
+            gen_qa_compsel_tab(clicked,compsel,tab)
         })
 
         rf_ms2_sel <- reactive({
             tab <- rv_state$out$tab$flt_summ
             req(NROW(tab)>0)
             rows <- input$compound_selector_rows_selected
-            compsel <- rf_comp_sel()
+            compsel <- rf_compsel_tab()
             
             sel_dt <- if(length(rows>0)) compsel[rows,unique(.SD),.SDcol=c("adduct","tag","ID")] else data.table("adduct"=character(0),
                                                                                                                  "tag"=character(0),
@@ -1213,25 +1284,28 @@ mk_shinyscreen_server <- function() {
         })
 
         rf_ms2_sel_spec <- reactive({
-            tab <- rv_state$out$tab$flt_summ
-            req(NROW(tab)>0)
+            ## tab <- rv_state$out$tab$flt_summ
+            ## req(NROW(tab)>0)
+            req(NROW(rv_tran$qa_ms2sel_tab)>0)
             ms1rows <- input$compound_selector_rows_selected
             ms2rows <- input$compound_ms2_table_rows_selected
-            compsel <- rf_comp_sel()
+            req(length(ms1rows)>0,
+                length(ms2rows)>0)
+            compsel <- rf_compsel_tab()
             ms2tab <- rf_ms2_sel()
             
             sel_dt <- if (length(ms1rows>0)) compsel[ms1rows,unique(.SD),.SDcol=c("adduct","tag","ID")] else data.table("adduct"=character(0),
                                                                                                                         "tag"=character(0),
                                                                                                                         "ID"=character(0))
 
+            
             ms2_an <- if (length(ms2rows>0)) as.integer(ms2tab[ms2rows,an]) else NA
 
             
             if (!is.na(ms2_an)) sel_dt$an <- ms2_an else sel_dt <- data.table()
             
             
-            gen_ms2_sel_spec(rv_state$extr$ms2,sel_dt=sel_dt)
-        })
+            gen_ms2_sel_spec(rv_state$extr$ms2,sel_dt=sel_dt)})
 
         rf_plot_comp_select <- eventReactive(rv_state$out$tab$flt_summ,{
             tab <- rv_state$out$tab$flt_summ
@@ -1335,8 +1409,73 @@ mk_shinyscreen_server <- function() {
         })
 
 
+        rf_get_cmpd_sel <- reactive({
+            clicked <- input$compound_selector_cell_clicked
+            isolate({
+                selector <- rf_compsel_tab()
+                
+            })
+            req(NROW(clicked)>0,
+                NROW(selector)>0)
+            info <- get_key_sel_cmpd(clicked,selector)
+            info
+        })
+
+        rf_get_cmpd_dblclick <- reactive({
+            input$compound_selector_dbl_click_pos
+            isolate({
+                selector <- rf_compsel_tab()
+                curr_rows <- input$compound_selector_rows_current
+            })
+            clicked <- get_pos_from_dblclick(curr_rows,
+                                             input$compound_selector_dbl_click_pos)
+                        
+            req(NROW(clicked)>0,
+                NROW(selector)>0)
+            info <- get_key_sel_cmpd(clicked,selector)
+            info
+        })
+
+
 
         ## Observers
+
+        observeEvent(input$project_b,{
+            wd <- tcltk::tk_choose.dir(default = getwd(),
+                                       caption = "Choose project directory")
+            message("Set project dir to ", wd)
+            dir.create(wd,recursive = T,showWarnings = F)
+            rv_state$conf$project <- wd
+        })
+
+        observeEvent(input$comp_list_b, {
+            filters <- matrix(c("CSV files", ".csv",
+                                "All files", "*"),
+                              2, 2, byrow = TRUE)
+            compfiles <- tcltk::tk_choose.files(filters=filters)
+            message("(config) Selected compound lists: ", paste(compfiles,collapse = ","))
+            rv_state$conf$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
+        })
+
+        observeEvent(input$datafiles_b,{
+            filters <- matrix(c("mzML files", ".mzML",
+                                "All files", "*"),
+                              2, 2, byrow = TRUE)
+            fns <- tcltk::tk_choose.files(filters=filters)
+            message("(config) Selected data files: ", paste(fns,collapse = ","))
+            ## Did the user choose any files?
+            if (length(fns) > 0) {
+                oldtab <- rf_get_inp_datafiles()
+                
+                newf <- setdiff(fns,oldtab$file)
+                nr <- NROW(oldtab)
+                tmp <- if (length(newf)>0) shinyscreen:::dtable(file=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(file=character(),tag=character())
+
+                z <- rbind(oldtab, tmp)
+                z[,tag:=as.character(tag)]
+                rv_dfile(z)
+            }
+        })
 
         observeEvent(input$setid_b, {
             filters <- matrix(c("CSV files", ".csv",
@@ -1407,6 +1546,7 @@ mk_shinyscreen_server <- function() {
         }, label = "mzml_from_inp")
 
         observeEvent(input$extract_b,{
+            shinymsg("Extraction has started. This may take a while.")
             m <- rf_conf_state()
             fn_c_state <- file.path(m$conf$project,
                                     paste0("extract.",shinyscreen:::FN_CONF))
@@ -1419,6 +1559,7 @@ mk_shinyscreen_server <- function() {
             message("(extract) Done extracting.")
             z <- shinyscreen::merge2rev(rv_state,lst = state)
             eval(z)
+            shinymsg("Extraction has been completed.")
         })
 
         observeEvent(input$presc_b,{
@@ -1430,10 +1571,11 @@ mk_shinyscreen_server <- function() {
                                     paste0("presc.",shinyscreen:::FN_CONF))
             yaml::write_yaml(x=m$conf,file=fn_c_state)
             message("(prescreen) Config written to ", fn_c_state)
+            shinymsg("Prescreening started. Please wait.")
             state <- shinyscreen::run(m=m,
                                       phases=c("prescreen"))
             message("(prescreen) Done prescreening.")
-            
+            shinymsg("Prescreening completed.")
             z <- shinyscreen::merge2rev(rv_state,lst = state)
             eval(z)
             
@@ -1467,6 +1609,7 @@ mk_shinyscreen_server <- function() {
                                          multi = F)
             
             message("(config) Loading state from: ", paste(fn,collapse = ","))
+            shinymsg(paste("Loading state from: ", fn,"Please wait.",sep="\n"))
             fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
 
             if (nchar(fn) > 0) {
@@ -1482,6 +1625,7 @@ mk_shinyscreen_server <- function() {
                 }
 
             }
+            shinymsg("Loading state has been completed.")
         })
 
         observeEvent(input$state_file_save_b,{
@@ -1490,6 +1634,7 @@ mk_shinyscreen_server <- function() {
                               2, 2, byrow = TRUE)
             fn <- tk_save_file(filters=filters,
                                default = "state.rds")
+            shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
             message("(config) Saving state to: ", paste(fn,collapse = ","))
             fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
 
@@ -1505,6 +1650,7 @@ mk_shinyscreen_server <- function() {
                 
                 saveRDS(object=m,file=fn)
             }
+            shinymsg("Saving state completed.")
         })
 
         observeEvent(input$plot_ext, {
@@ -1538,6 +1684,71 @@ mk_shinyscreen_server <- function() {
         observeEvent(input$plot_save_all, {
             req(NROW(rv_state$out$tab$flt_summ)>0)
             create_plots(rv_state)
+        })
+
+        observeEvent(input$updatesumm_b,{
+            compsel <- rf_compsel_tab()
+            the_row <- input$compound_selector_rows_selected
+            req(NROW(compsel)>0,
+                NROW(rv_state$out$tab$summ)>0,
+                NROW(rv_state$out$tab$flt_summ)>0)
+            summ <- rv_state$out$tab$summ
+            flt_summ <- rv_state$out$tab$flt_summ
+            if (NROW(rv_tran$qa_compsel_tab)>0) {
+                
+                
+                
+                qa_names <- c("qa_ms1_exists",
+                              "qa_ms1_good_int",
+                              "qa_ms1_above_noise")
+                
+                qatab <- copy(rv_tran$qa_compsel_tab)
+                qatab[,(qa_names):=lapply(.SD,yesno2log),.SDcol=qa_names]
+                entries <- cbind(compsel[the_row][,.(adduct,tag,ID)],
+                                 qatab)
+                summ[entries,c("qa_ms1_exists",
+                              "qa_ms1_good_int",
+                              "qa_ms1_above_noise"):=.(i.qa_ms1_exists,
+                                                       i.qa_ms1_good_int,
+                                                       i.qa_ms1_above_noise),
+                     on=c('adduct','tag','ID')]
+                flt_summ[entries,c("qa_ms1_exists",
+                                   "qa_ms1_good_int",
+                                   "qa_ms1_above_noise"):=.(i.qa_ms1_exists,
+                                                            i.qa_ms1_good_int,
+                                                            i.qa_ms1_above_noise),
+                         on=c('adduct','tag','ID')]
+
+                
+            }
+
+            if (NROW(rv_tran$qa_ms2sel_tab)>0) {
+                qa_names <- c("ms2_sel",colnames(flt_summ)[grepl("qa_ms2",colnames(flt_summ))])
+                qatab <- copy(rv_tran$qa_ms2sel_tab)
+                qatab[,(qa_names):=lapply(.SD,yesno2log),.SDcol=qa_names]
+                entries <- cbind(compsel[the_row][,.(adduct,tag,ID)],
+                                 qatab)
+                qt_qa_names <- sapply(qa_names,function(x) paste0("'",x,"'"),USE.NAMES=F)
+                i_qa_names <- sapply(qa_names,function(x) paste0("i.",x),USE.NAMES=F)
+                strexpr <- paste0("c(",paste(qt_qa_names,collapse=","),
+                                  ")",":=",".(",paste(i_qa_names,collapse=","),")")
+                expr <- parse(text=strexpr)
+                eval(bquote(summ[entries,.(expr[[1]]),on=c("adduct",
+                                                           "tag",
+                                                           "ID",
+                                                           "an")]))
+                eval(bquote(flt_summ[entries,.(expr[[1]]),on=c("adduct",
+                                                               "tag",
+                                                               "ID",
+                                                               "an")]))
+               
+            }
+
+            rv_state$out$tab$summ <- summ
+            rv_state$out$tab$flt_summ <- flt_summ
+            shinymsg("Changes to QA information have been commited.")
+            
+            
         })
 
 
@@ -1610,6 +1821,69 @@ mk_shinyscreen_server <- function() {
             rv_state$conf$report$title <- input$rep_tit
         })
 
+        observe({
+            rv_tran$qa_compsel_tab <- rf_qa_compsel_tab()
+        })
+
+        observeEvent(input$compound_selector_qa_dbl_click_pos,{
+            dbl_clicked <- input$compound_selector_qa_dbl_click_pos
+            isolate({
+                dbl_info <- get_pos_from_dblclick(dbl_clicked)
+            })
+            res <- rv_tran$qa_compsel_tab
+            if (NROW(dbl_info)>0) {
+                ncol <- dbl_info$col
+                nrow <- dbl_info$row
+                lval <- !yesno2log(as.character(res[[ncol]]))
+                res[1,ncol] <- fixlog2yesno(lval)
+            }
+            rv_tran$qa_compsel_tab <- res
+            
+        }, label = "qa_compsel_tab: dblclick")
+
+        observe({
+            rv_tran$qa_ms2sel_tab <- rf_ms2_sel()
+        }, label = "qa_ms2sel_tab: init")
+
+        observeEvent(input$compound_ms2_table_dbl_click_pos,{
+            dbl_clicked <- input$compound_ms2_table_dbl_click_pos
+            isolate({
+                dbl_info <- get_pos_from_dblclick(dbl_clicked,
+                                                  currrows = input$compound_ms2_table_rows_current)
+            })
+            res <- rv_tran$qa_ms2sel_tab
+            req(NROW(res)>0,NROW(dbl_info)>0)
+
+            ncol <- dbl_info$col
+            nrow <- dbl_info$row
+            colnm <- colnames(res)[[ncol]]
+            if (colnm == "ms2_sel" || grepl("^qa_",colnm)) {
+                val <- res[nrow,..ncol]
+                message("val:",val)
+                if (!is.na(val)) {
+                    if (grepl("^qa_",colnm)) {
+                        lval <- !yesno2log(as.character(val))
+                        message("qa lval:",lval)
+                        res[nrow,ncol] <- fixlog2yesno(lval)
+                        rv_tran$qa_ms2sel_tab <- res
+
+                    } else  {
+                        lval <- !yesno2log(as.character(val))
+                        message("ms2sel lval:",lval)
+                        if (lval) {
+                            col <- res[[colnm]]
+                            wind <- which(yesno2log(col))
+                            if (length(wind) > 0) res[wind,colnm] <- fixlog2yesno(F)
+                        }
+                        res[nrow,ncol] <- fixlog2yesno(lval)
+                        rv_tran$qa_ms2sel_tab <- res
+                    }
+                    
+                }
+            }
+            
+        }, label = "qa_ms2sel_tab: dblclick")
+
         observeEvent(input$plot_rt_click,
         {
             ## TODO: update to sensible range.
@@ -1646,9 +1920,6 @@ mk_shinyscreen_server <- function() {
         })
 
         ## Render Outputs
-
-
-
         output$project <- renderText(rv_state$conf$project)
 
         output$comp_lists <- renderText({
@@ -1755,17 +2026,41 @@ mk_shinyscreen_server <- function() {
 
 
         output$compound_selector <- DT::renderDT({
-            styled_dt(rf_comp_sel(),
+            
+            styled_dt(rf_compsel_tab(),
                       selection = "single")
         })
 
+        output$compound_selector_qa <- DT::renderDT({
+            options <- list(scrollX=T,
+                            dom = "t",
+                            scroller = F,
+                            ordering = F)
+            styled_dt(rv_tran$qa_compsel_tab,
+                      extensions = NULL,
+                      selection = "none",
+                      filter = 'none',
+                      options = options,
+                      callback = DT::JS(dblclick_callback))
+
+        })
+
         output$compound_ms2_table <- DT::renderDT({
-            styled_dt(rf_ms2_sel(),
-                      selection = "single")
+            styled_dt(rv_tran$qa_ms2sel_tab,
+                          selection = "single",
+                          callback = DT::JS(dblclick_callback))
+        })
+
+        output$update_summ_ui <- renderUI({
+            ## req(NROW(rf_compsel_tab())>0) # this somehow ruins
+            ## buffered scrolling in compsel tab.
+            actionButton(inputId = "updatesumm_b",
+                         label="Commit manual QA")
         })
 
         output$compound_ms2_spectrum <- DT::renderDT({
             styled_dt(rf_ms2_sel_spec(),
+                      filter = 'none',
                       selection = "none")
         })
 
