@@ -55,8 +55,8 @@ gen_uniq_lab <- function(prev,pref='',suff='') {
 }
 
 yesno2log <- function(yesno) {
-    yes <- which(yesno=="✔")
-    no <- which(yesno=="❌")
+    yes <- which(yesno==SYM_YES)
+    no <- which(yesno==SYM_NO)
     res <- logical(length(yesno))
     res[yes] <- T
     res[no] <- F
@@ -68,9 +68,9 @@ log2yesno <- function (log) {
     wna <- log[is.na(log)]
     wyes <- which(log)
     wno <- !((1:length(log)) %in% c(wna,wyes))
-    res <- factor(character(length(log)),levels = c("✔","❌","NA"))
-    res[wyes] <- "✔"
-    res[wno] <- "❌"
+    res <- factor(character(length(log)),levels = c(SYM_YES,SYM_NO,"NA"))
+    res[wyes] <- SYM_YES
+    res[wno] <- SYM_NO
     res[wna] <- "NA"
     res
 }

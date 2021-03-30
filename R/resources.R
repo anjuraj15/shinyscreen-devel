@@ -270,3 +270,8 @@ DEF_CONF_MISSING_PCS <- "do_nothing"
 SIGNF_I <- 3
 SIGNF_MZ <- 7
 SIGNF_RT <- 4
+
+
+## Symbols to display T, or F
+SYM_YES="✔"
+SYM_NO="❌"
