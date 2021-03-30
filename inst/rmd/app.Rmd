@@ -439,23 +439,35 @@ actionButton(inputId = "sortsubset_b",
 
 ## Browser
 
-<div style="display: flex; vertical-align: top;">
+<div style="display: flex; vertical-align: top;margin: auto;">
+
 <div style="width: 50%;">
 ```{r, echo=F}
 DT::DTOutput("compound_selector")
 ```
+```{r, echo=F}
+DT::DTOutput("compound_selector_qa")
+```
 </div>
-<div style="width: 34%;">
+
+
+<div style="width: 25%">
 ```{r, echo=F}
 DT::DTOutput("compound_ms2_table")
 ```
 </div>
-<div style="width: 16%;">
+
+<div style="width: 25%">
 ```{r, echo=F}
 DT::DTOutput("compound_ms2_spectrum")
 ```
 </div>
+	
 </div>
+
+```{r, echo=F}
+uiOutput("update_summ_ui")
+```
 
 ## Viewer
 
