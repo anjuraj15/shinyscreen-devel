@@ -416,13 +416,13 @@ extr_data <- function(m) {
     curr_done <- which(msk)
     
     for (x in curr_done) {
-        message("Done extraction for ", unique(future::value(tmp[[x]])$ms1$tag))
+        message("Done extraction for ", future::value(tmp[[x]])$ms1$tag[[1]])
     }
     while (!all(msk)) {
         msk <- sapply(tmp,future::resolved)
         newly_done <- which(msk)
         for (x in setdiff(newly_done,curr_done)) {
-            message("Done extraction for ", unique(future::value(tmp[[x]])$file))
+            message("Done extraction for ", future::value(tmp[[x]])$ms1$tag[[1]])
         }
         Sys.sleep(0.5)
         curr_done <- newly_done
