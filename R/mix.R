@@ -1001,3 +1001,20 @@ clean_na_precs <- function(ms,missing_precursors) {
     ms
     
 }
+
+## Given summary and MS2 spectra table, generate MetFrag-friendly
+## output.
+add_msms_peaks <- function(summ,ms2) {
+    ## Flatten spectra.
+    flatspec <- ms2[,.(msms_peaks=paste(mapply(function(x,y) paste0(x,":",y),mz,intensity,USE.NAMES=F),collapse=";")),keyby=c('adduct','tag','ID','an')]
+    ## Add msms_peaks column to the summary table in all the correct
+    ## places.
+    res <- flatspec[summ,on=c('adduct','tag','ID','an'),nomatch=NULL]
+    cols <- names(res)
+    cols1 <- setdiff(cols,"msms_peaks")
+    newcols <- c(cols1,"msms_peaks")
+    data.table::setcolorder(res,newcols)
+    res
+    
+
+}

@@ -485,6 +485,10 @@ DT::DTOutput("compound_ms2_spectrum")
 uiOutput("update_summ_ui")
 ```
 
+```{r, echo=F}
+uiOutput("export_summ_ui")
+```
+
 ## Viewer
 
 ```{r, echo=F}

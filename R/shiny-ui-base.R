@@ -1751,6 +1751,18 @@ mk_shinyscreen_server <- function() {
             
         })
 
+        observeEvent(input$exportsumm_b,{
+            ## Exports sorted/subsetted summary.
+            req(NROW(rv_state$out$tab$flt_summ)>0)
+            shinymsg("Starting to export the summary file.")
+            tab <- add_msms_peaks(rv_state$out$tab$flt_summ,
+                                  rv_state$extr$ms2)
+            tab2file(tab=tab,
+                     file=file.path(rv_state$conf$project,
+                                    "summary.csv"))
+            shinymsg("Summary file export has been completed.")
+        },label = "exportsumm_b")
+
 
         ## TODO: Uncomment this once done refacing.
         ## observeEvent(rv_state$out$tab$comp,{
@@ -2061,6 +2073,13 @@ mk_shinyscreen_server <- function() {
             ## buffered scrolling in compsel tab.
             actionButton(inputId = "updatesumm_b",
                          label="Commit manual QA")
+        })
+
+        output$export_summ_ui <- renderUI({
+            ## req(NROW(rf_compsel_tab())>0) # this somehow ruins
+            ## buffered scrolling in compsel tab.
+            actionButton(inputId = "exportsumm_b",
+                         label="Export MS1/MS2 summary")
         })
 
         output$compound_ms2_spectrum <- DT::renderDT({
