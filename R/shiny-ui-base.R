@@ -21,6 +21,12 @@ obsrv <- shiny::observe
 obsrv_e <- shiny::observeEvent
 isol <- shiny::isolate
 
+
+shinymsg <- function(ui,duration=NULL,type="message",...) showNotification(ui=paste(ui,
+                                                                                    Sys.time(),
+                                                                                    sep="\n"),
+                                                                           duration=duration,
+                                                                           type=type,...)
 # volumes <- function() c(wd=getwd(), shinyFiles::getVolumes()())
 validate1 <- function(expr,msg) shiny::validate(shiny::need(expr,msg))
 
