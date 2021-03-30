@@ -244,6 +244,22 @@ shinyscreen::rt_input(input_rt = "ms1_rt_win",
                       def_unit = "min")
 ```
 
+<details><summary>Fill missing precursors</summary>
+
+* **fill** : Try to guess precursors of MS2 entries. This is done by
+picking MS1 which chronologically preceeds a given MS2 entry.
+* **omit** : Ignore MS2 with missing precursors.
+* **do_nothing** : Default. Use MS1--MS2 metadata recorded in the file
+to associate MS1 and MS2 entries. Usually works.  
+</details>
+```{r, echo=F}
+radioButtons("missingprec",
+             label = "Missing precursors",
+             choices = c("do_nothing","fill","omit"),
+             selected = "do_nothing")
+
+```
+
 ## Prescreening
 
 <details><summary>MS1 intensity threshold</summary>

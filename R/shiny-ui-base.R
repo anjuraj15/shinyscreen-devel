@@ -1919,6 +1919,11 @@ mk_shinyscreen_server <- function() {
             
         })
 
+        observeEvent(input$missingprec,{
+            rv_state$conf$extract$missing_precursor_info <- input$missingprec
+        })
+        
+
         ## Render Outputs
         output$project <- renderText(rv_state$conf$project)
 
