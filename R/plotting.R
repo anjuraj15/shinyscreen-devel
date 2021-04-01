@@ -157,7 +157,7 @@ plot_palette <- function(pdata) {
     breakslabs  <- pdata[,unique(.SD),.SDcol=c("lab_adduct_break","lab_adduct_tag")]
     breaks <- breakslabs$lab_adduct_break
     labels <- breakslabs$lab_adduct_tag
-    values <- pal_maker(length(breaks))
+    values <- pal_maker(length(breaks),palname="Paired")
     names(values) <- breaks
     list(breaks=breaks,
          labels=labels,
@@ -241,8 +241,8 @@ plot_spec_w_facet <- function(pdata_ms2,mz_range,palette) {
     labels <- breakslabs$lab_adduct_tag
     
     scale_colour <- function(name,...) ggplot2::scale_colour_manual(values = palette$values,
-                                                                    breaks = breaks,
-                                                                    labels = labels,
+                                                                    breaks = palette$breaks,
+                                                                    labels = palette$labels,
                                                                     name = name,...)
     
 
