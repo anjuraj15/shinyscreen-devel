@@ -306,7 +306,7 @@ plot_save_single <- function(plot,decotab,extension,proj,tabl,figtag="") {
     fnplot <- paste0(fname,"__",figtag,".",extension)
 
     if (extension == "rds" || extension == "RDS") {
-        saveRDS(plot,file=fn)
+        saveRDS(plot,file=fnplot)
     } else ggplot2::ggsave(filename = fnplot,
                            plot = plot)
 
