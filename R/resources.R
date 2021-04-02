@@ -273,5 +273,5 @@ SIGNF_RT <- 4
 
 
 ## Symbols to display T, or F
-SYM_YES="✔"
-SYM_NO="❌"
+SYM_YES="\U002713"
+SYM_NO="\U00274C"
