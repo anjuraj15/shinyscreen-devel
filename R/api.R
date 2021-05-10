@@ -573,6 +573,11 @@ create_plots <- function(m) {
         pdata_ms2 <- data4plot_ms2_cgram(ms2,select)
         pdata_spec <- data4plot_ms2_spec(ms2,flt_summ,select)
 
+        tabl_ms1 <- table_eic(pdata_ms1)
+        ## tabl_ms2 <- table_eic(pdata_ms2) # For the moment, no real
+                                            # info to be had here.
+        tabl_spec <- table_spec(pdata_spec)
+
         palette = plot_palette(pdata_ms1)
 
         p_eic <- plot_eic_w_facet(pdata_ms1 = pdata_ms1,
@@ -584,18 +589,19 @@ create_plots <- function(m) {
                                     mz_range = c(NA_real_,NA_real_),
                                     palette = palette)
 
-        message("CCC")
+        ## TODO
         plot_save_single(p_eic,
                          decotab = select,
                          figtag = "eic",
                          proj = m$conf$project,
+                         tabl = tabl_ms1,
                          extension = m$conf$figures$ext)
 
-        message("DDD")
         plot_save_single(p_spec,
                          decotab = select,
                          figtag = "spec",
                          proj = m$conf$project,
+                         tabl = tabl_spec,
                          extension = m$conf$figures$ext)
         message("Plotting of figure ",n," out of ",NROW(keytab)," has been completed.")
         

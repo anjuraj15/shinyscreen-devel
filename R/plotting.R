@@ -282,9 +282,8 @@ table_spec <- function(pdata) {
     tbl
 }
 
-plot_save_single <- function(plot,decotab,extension,proj,tabl,figtag="") {
-    if (is.null(plot)) return()
-    print(decotab)
+plot_fname_prefix <- function(decotab,proj) {
+    if (NROW(decotab)==0) return()
     adducts <- decotab[,adduct]
     ids <- decotab[,ID]
     rpls <- list("\\["="","\\]"="","\\+"="p","\\-"="m")
@@ -302,6 +301,14 @@ plot_save_single <- function(plot,decotab,extension,proj,tabl,figtag="") {
     fname <- paste0(fname,paste(ids,collapse = "_"))
 
     fname <- file.path(ddir,fname)
+    fname
+    
+}
+
+plot_save_single <- function(plot,decotab,extension,proj,tabl=NULL,figtag="") {
+    if (is.null(plot)) return()
+
+    fname <- plot_fname_prefix(decotab,proj)
     
     fnplot <- paste0(fname,"__",figtag,".",extension)
 
@@ -311,7 +318,7 @@ plot_save_single <- function(plot,decotab,extension,proj,tabl,figtag="") {
                            plot = plot)
 
     fntab <- paste0(fname,"__",figtag,".csv")
-    data.table::fwrite(tabl,file=fntab,sep = ",")
+    if (! is.null(tabl)) data.table::fwrite(tabl,file=fntab,sep = ",")
 
 
 }
