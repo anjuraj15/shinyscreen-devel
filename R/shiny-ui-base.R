@@ -655,8 +655,8 @@ mk_shinyscreen_server <- function() {
 
         rf_get_subset <- reactive({
             input$summ_subset
-            dt <- tryCatch(rhandsontable::hot_to_r(input$summ_subset),
-                           error = function(e) def_summ_subset)
+            dt <- if (NROW(input$summ_subset)==0) def_summ_subset else rhandsontable::hot_to_r(input$summ_subset)
+            
             dt[Select == shinyscreen:::SUBSET_VALS[["GOOD"]], extra := T]
             dt[Select == shinyscreen:::SUBSET_VALS[["BAD"]], extra := F]
             sdt <- dt[!is.na(extra)]
@@ -666,7 +666,8 @@ mk_shinyscreen_server <- function() {
         })
 
         rf_get_order <- reactive({
-            dt <- tryCatch(rhandsontable::hot_to_r(input$order_summ),error = function(e) def_ord_summ)
+            dt <- if (NROW(input$order_summ)==0) def_ord_summ else rhandsontable::hot_to_r(input$order_summ)
+            
             tmp <- dt[Direction == "descending",.(`Column Name`=paste0("-",`Column Name`))]
             tmp[,`Column Name`]
         })
