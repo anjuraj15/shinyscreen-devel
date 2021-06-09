@@ -455,6 +455,20 @@ actionButton(inputId = "sortsubset_b",
 
 ## Browser
 
+<details><summary>Manual quality control step.</summary>
+
+After the data extraction is finished, the quality of the retrieved
+spectra can be checked using the criteria defined in the
+_Prescreening_ tab of the _Configuration_ Section. The resulting
+_summary table_ is given below and is based on the prescreening
+criteria and filter and ordering setup specified in _Filter and order
+the summary table_ configuration subsection.
+
+```{r, echo=FALSE}
+actionButton(inputId = "updatesumm_b",
+             label = "Browser")
+```
+
 <div style="display: flex; vertical-align: top;margin: auto;">
 
 <div style="width: 50%;">
