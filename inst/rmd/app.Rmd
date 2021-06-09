@@ -504,10 +504,7 @@ uiOutput("update_summ_ui")
 uiOutput("export_summ_ui")
 ```
 
-```{r, echo=FALSE}
-actionButton(inputId = "updatesumm_b",
-             label = "Browser")
-```
+
 ## Viewer
 
 <details><summary> Visualize the plots </summary>
@@ -517,11 +514,6 @@ actionButton(inputId = "updatesumm_b",
 * The user can zoom-in by selection the reion of interest using the cursor and double click to zoom-out.
 
 * The user can select multiple rows to display different plots  and allows the user to save individual plot by clicking _save this plot_ tab or save all the plots. 
-
-```{r, echo=FALSE}
-actionButton(inputId = "plot_ext",
-             label = "Viewer")
-```
 
 ```{r, echo=F}
 sidebarLayout(sidebarPanel(DT::DTOutput("plot_comp_select"),
@@ -582,6 +574,10 @@ sidebarLayout(sidebarPanel(DT::DTOutput("plot_comp_select"),
 
 ```
 
+```{r, echo=FALSE}
+actionButton(inputId = "updatesumm_b",
+             label = "Browser")
+```
 
 <!-- ENGINE -->
 
