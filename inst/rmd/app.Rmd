@@ -469,6 +469,7 @@ To update the sumary table,
 
 * To save the changes, click the _Commit manual QA_ tab and the summary table can be exported as _CSV_ file by clicking the _Export MS1/MS2 summary_ tab.
 
+</details>
 
 <div style="display: flex; vertical-align: top;margin: auto;">
 
@@ -480,7 +481,6 @@ DT::DTOutput("compound_selector")
 DT::DTOutput("compound_selector_qa")
 ```
 </div>
-
 
 <div style="width: 25%">
 ```{r, echo=F}
@@ -514,6 +514,8 @@ uiOutput("export_summ_ui")
 * The user can zoom-in by selection the reion of interest using the cursor and double click to zoom-out.
 
 * The user can select multiple rows to display different plots  and allows the user to save individual plot by clicking _save this plot_ tab or save all the plots. 
+
+</details>
 
 ```{r, echo=F}
 sidebarLayout(sidebarPanel(DT::DTOutput("plot_comp_select"),
@@ -572,11 +574,6 @@ sidebarLayout(sidebarPanel(DT::DTOutput("plot_comp_select"),
 
 
 
-```
-
-```{r, echo=FALSE}
-actionButton(inputId = "updatesumm_b",
-             label = "Browser")
 ```
 
 <!-- ENGINE -->
