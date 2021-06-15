@@ -457,16 +457,7 @@ actionButton(inputId = "sortsubset_b",
 
 <details><summary>Manual quality analysis (QA) step</summary>
 
-After the automatic quality control check based on 
-the criteria defined in the _Prescreening_ tab is done , the resulting _summary table_ is given below to manually update the quality of the retrieved spectra.
-
-To update the sumary table,
-
-* Click any row of MS1 table and the corresponding MS2 peaks are shown on the right side pane.
-
-* Manual QA can be updated by double clicking on the required QA fields namely _MS1/MS2 match?_, _Above threshold_, _MS2 exists_ after inspecting the peaklist. 
-
-* To save the changes, click the _Commit manual QA_ tab and the summary table can be exported as _CSV_ file by clicking the _Export MS1/MS2 summary_ tab.
+After the automatic quality control check based on the criteria defined in the _Prescreening_ tab is done ,it is possible to manually update the quality of the retrieved spectra.This can be achieved by double clicking on the required QA fields namely _MS1/MS2 match?_, _Above threshold_, _MS2 exists_ after inspecting the peaklist. Once the manual QA step is done, the changes can be saved by  clicking the _Commit manual QA_ tab and the summary table can be exported as _CSV_ file by clicking the _Export MS1/MS2 summary_ tab.
 
 </details>
 
@@ -508,11 +499,7 @@ uiOutput("export_summ_ui")
 
 <details><summary> Visualize the plots </summary>
 
-* For any given ID, the MS1 and MS2 fragments can be visualized by selecting the corresponding row in the table.
-
-* The user can zoom-in by selection the region of interest using the cursor and double click to zoom-out.
-
-* The user can select multiple rows to display different plots  and allows the user to save all the plots or save individual plot by clicking _save this plot_ tab.
+* For any given ID, the MS1 and MS2 fragments can be visualized by selecting the corresponding row in the table. The plots can be zoomed-in by selecting the region of interest using the cursor and double click to zoom-out. It is also possible to plot mutiple figures by selecting different rows and the figures are saved by clicking _save this plot_ tab.
 
 </details>
 
