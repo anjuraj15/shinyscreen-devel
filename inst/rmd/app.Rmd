@@ -455,6 +455,12 @@ actionButton(inputId = "sortsubset_b",
 
 ## Browser
 
+<details><summary>Manual quality analysis (QA) step</summary>
+
+After the automatic quality control check based on the criteria defined in the _Prescreening_ tab is done ,it is possible to manually update the quality of the retrieved spectra.This can be achieved by double clicking on the required QA fields namely _MS1/MS2 match?_, _Above threshold_, _MS2 exists_ after inspecting the peaklist. Once the manual QA step is done, the changes can be saved by  clicking the _Commit manual QA_ tab and the summary table can be exported as _CSV_ file by clicking the _Export MS1/MS2 summary_ tab.
+
+</details>
+
 <div style="display: flex; vertical-align: top;margin: auto;">
 
 <div style="width: 50%;">
@@ -465,7 +471,6 @@ DT::DTOutput("compound_selector")
 DT::DTOutput("compound_selector_qa")
 ```
 </div>
-
 
 <div style="width: 25%">
 ```{r, echo=F}
@@ -489,7 +494,14 @@ uiOutput("update_summ_ui")
 uiOutput("export_summ_ui")
 ```
 
+
 ## Viewer
+
+<details><summary> Visualize the plots </summary>
+
+* For any given ID, the MS1 and MS2 fragments can be visualized by selecting the corresponding row in the table. The plots can be zoomed-in by selecting the region of interest using the cursor and double click to zoom-out. It is also possible to plot mutiple figures by selecting different rows and the figures are saved by clicking _save this plot_ tab.
+
+</details>
 
 ```{r, echo=F}
 sidebarLayout(sidebarPanel(DT::DTOutput("plot_comp_select"),
@@ -549,8 +561,6 @@ sidebarLayout(sidebarPanel(DT::DTOutput("plot_comp_select"),
 
 
 ```
-
-
 
 <!-- ENGINE -->
 
