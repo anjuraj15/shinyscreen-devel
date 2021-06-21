@@ -403,6 +403,8 @@ actionButton(inputId = "state_file_save_b",
 
 # Extract Data and Prescreen
 
+Shinyscreen can perform spectral extraction based on the desired settings(_ppm_,_retention time window_) under the _Extraction_ tab. The extracted spectra can be subjected to prescreening based on the settings defined under the _prescreening_ tab.
+
 <details><summary>Extract spectra from data files.</summary>
 
 After Shinyscreen is configured, the compound and setid lists loaded, it
@@ -452,6 +454,8 @@ actionButton(inputId = "sortsubset_b",
 
 
 # Compound Explorer {.tabset}
+
+Shinyscreen can summarise the prescreening results in a table (_Browser_ tab) as well as visualise the spectra (_viewer_ tab). The summary table can be manually updated and the changes can be saved before exporting the _CSV_ file. The visualised plots can be saved as _pdf_ output under _Figures_ in the project directory.
 
 ## Browser
 
