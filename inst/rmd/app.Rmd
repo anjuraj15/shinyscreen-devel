@@ -455,13 +455,64 @@ actionButton(inputId = "sortsubset_b",
 
 # Compound Explorer {.tabset}
 
-Shinyscreen can summarise the prescreening results in a table (_Browser_ tab) as well as visualise the spectra (_viewer_ tab). The summary table can be manually updated and the changes can be saved before exporting the _CSV_ file. The visualised plots can be saved as _pdf_ output under _Figures_ in the project directory.
+This is where the prescreening results are presented. The _Browser_ tab shows a detailed view of the MS2 data as well as the associated precursors in searchable tables. The _Viewer_ tab shows the visualisations of the EICs and the plots of the spectra.  Both kinds of outputs can be exported using portable formats. 
+
+Auto quality checks built into Shinyscreen can sometimes yield unsatisfactory results. In such cases, it is possible to manually update relevant data.
+
+Please see the respective subsections for more details.
+
 
 ## Browser
 
-<details><summary>Manual quality analysis (QA) step</summary>
+<details><summary>Organise, filter and search through data.</summary>
 
-After the automatic quality control check based on the criteria defined in the _Prescreening_ tab is done ,it is possible to manually update the quality of the retrieved spectra.This can be achieved by double clicking on the required QA fields namely _MS1/MS2 match?_, _Above threshold_, _MS2 exists_ after inspecting the peaklist. Once the manual QA step is done, the changes can be saved by  clicking the _Commit manual QA_ tab and the summary table can be exported as _CSV_ file by clicking the _Export MS1/MS2 summary_ tab.
+**Data Organisation**
+
+Postprocessed spectral data is presented in three tables. The first,
+always visible, table shows the list of precursors. The entries of this
+table are ordered by the following categories in order of
+significance: adduct, a data file where they were found, the ion mass
+of the precursor and then the retention time. The ordering was chosen
+because it will group together isobars.
+
+The second table shows the metadata of all the MS2 entries associated
+with the currently selected MS1 entry : the accession number (_an_, a
+chronological tag unique to the data file it stems from), the
+retention time of the signal (_RT(ms2)_), the intensity (_I(ms2)_),
+the collision energy and several quality control flags.
+
+Meaning of QC flags:
+
+- **Selected?** : Is this spectrum the _one_? Auto precscreening will
+  select the spectral entry that passed all QC checks and is the
+  closest to the MS1 peak.
+  
+- **Above threshold?** : Is the MS2 signal greater than the intensity
+  threshold specified in the _Configuration_ section?
+
+- **MS1/MS2 RT match?** : Is the MS2 within the allowed retention time
+  window around the MS1 peak? The retention time window can be change
+  in the _Configuration_ section.
+
+- **MS2 Exists?** : If no MS2 was found for the selected MS1 entry,
+  this will be unchecked.
+
+If an entry is selected from the MS2 metadata table, its mass spectrum
+is going to be shown in the third table. The spectral table is in the
+MetFrag-compatible format and can be directly pasted in the spectral
+widget on the MetFrag website. Please bear in mind that this method of
+spectral matching is for interactive purpouses only, if there are many
+spectra that should be processed with MetFrag it is much better to
+employ MetFragCL program for batch analysis. Some Shinyscreen support
+for this is already there (see _Exporting_).
+
+
+**Filtering and Searching**
+
+The filters just below the table headers can be used to limit the
+displayed data. Numerical columns accept ranges, while the content of
+the textual columns will be matched against character strings in the
+filters.
 
 </details>
 
@@ -490,10 +541,30 @@ DT::DTOutput("compound_ms2_spectrum")
 	
 </div>
 
+<details><summary>Override auto-prescreening results (Commit manual QA).</summary>
+
+After the automatic quality control check based on the criteria
+defined in the _Prescreening_ tab is done ,it is possible to manually
+update the quality of the retrieved spectra.This can be achieved by
+double clicking on the required QA fields namely _MS1/MS2 match?_,
+_Above threshold_, _MS2 exists_ after inspecting the peaklist. Once
+the manual QA step is done, the changes can be saved by clicking the
+_Commit manual QA_ button. 
+
+</details>
+
 ```{r, echo=F}
 uiOutput("update_summ_ui")
 ```
 
+<details><summary>Export Data Browser contents.</summary>
+
+A detailed _summary table_ combining all the information from the
+_Browser_ tab can be saved in a _CSV_ file by clicking the _Export
+MS1/MS2 summary_ tab. The table can be used in combination with
+MetFragCL for batch scoring of the entries.
+
+</details>
 ```{r, echo=F}
 uiOutput("export_summ_ui")
 ```
@@ -501,9 +572,30 @@ uiOutput("export_summ_ui")
 
 ## Viewer
 
-<details><summary> Visualize the plots </summary>
+<details><summary> Visualize and export the plots. </summary>
 
-* For any given ID, the MS1 and MS2 fragments can be visualized by selecting the corresponding row in the table. The plots can be zoomed-in by selecting the region of interest using the cursor and double click to zoom-out. It is also possible to plot mutiple figures by selecting different rows and the figures are saved by clicking _save this plot_ tab.
+For any given ID, the EICs of MS1 and MS2, as well as the
+representative mass spectrum (MS2 entry with _Selected?_ checked in
+the _Data Browser_) can be visualized by selecting the corresponding
+row in the table. The plots can be zoomed-in by selecting the region
+of interest using the cursor and double click to zoom-out. It is also
+possible to plot mutiple figures by selecting different rows.
+
+Shinyscreen can export the plots in all the formats supported by R
+package _ggplot2_ (pdf, png, ...). The plot of the EICs and the mass
+spectra will be saved in _figures_ subdirectory of the project
+directory. Associated metadata for the plots are saved in _CSV_ files
+of the same basename as the plots. The plots themselves feature
+minimal legends, so please do create legends more appropriate to your
+particular use from the data in the plot _CSV_s. The plots can also be
+saved as _ggplot2_ objects by changing the extension to _.rds_. Such a
+file can be loaded into R using the `readRDS` function, and then every
+visual aspect of the plot can be manually tweaked. This can be useful
+when there is a need to comply with specific publication requirements.
+
+Button _Save this plot_ will save the currently selected plot with
+currently selected axes ranges and scaling properties. Button _Save
+all plots_ will save all the plots with default zoom/axes ranges.
 
 </details>
 
