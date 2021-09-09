@@ -17,6 +17,8 @@ library(data.table)
 library(shinyscreen)
 library(ggplot2)
 ## library(shinydashboard)
+
+init <- readRDS("init.rds")
 def_state <- new_state()
 def_datafiles <- shinyscreen:::dtable(file=character(0),
                                       tag=character(0))
@@ -54,6 +56,11 @@ rv_rtrange <- reactiveValues(min=def_state$conf$rt_min,
 rv_mzrange <- reactiveValues(min=NA,
                              max=NA)
 
+projects <- list.dirs(path=init$userdir, full.names = F, recursive = F)
+
+rv_projects <- reactiveVal(projects)
+
+
 ```
 <style type="text/css">
 .main-container {
@@ -71,15 +78,25 @@ rv_mzrange <- reactiveValues(min=NA,
 
 
 <details>
-<summary>Specify the project directory</summary>
-This is where the output files and the state of the analysis will be
-saved.
+<summary>Select or create project</summary>
+
+Load the previous, or create new project, the location of where the
+output files and the state of the analysis will be saved.
+
 </details>
-```{r, echo=FALSE}
+```{r, echo=F}
+selectizeInput('proj_list',
+               label = "Available projects",
+               choices = state.name,
+               options = list(create=T))
+textInput(inputId = "new_project", label= "Current project",value = "")
 actionButton(inputId = "project_b",
-             label= "Project")
+             label= "Select project")
 
 ```
+<!-- ```{r, echo=FALSE} -->
+
+<!-- ``` -->
 
 Current project directory is `r textOutput("project", inline=T)`
 
