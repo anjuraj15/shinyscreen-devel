@@ -661,9 +661,33 @@ report <- function(m) {
 
 
 #' @export
-app <- function(shiny_args=NULL,render_args=NULL) {
-    unlink(list.files(pattern = "app_run.*html$"))
-    unlink(list.files(pattern = "app_run.*Rmd$"))
+#' @title app
+#' @param shiny_args `list`, optional list of arguments conveyed to
+#'     `rmarkdown::run` `shiny_args` argument.
+#' @param render_args `list`, optional list of arguments conveyed to
+#'     `rmarkdown::run` `render_args` argument.
+#' @param indir `character(1)`, a location on the server side
+#'     containing data files.
+#' @param userdir `character(1)`
+#' @return Nada.
+#' @author Todor Kondić
+app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd(),userdir=getwd()) {
+    dir_before <- getwd()
+    init <- list()
+    init$dir_before <- dir_before
+    init$indir <- normalizePath(indir)
+    init$userdir <- normalizePath(userdir)
+    if (!dir.exists(init$indir)) stop("Data directory (indir), currently `",
+                                        init$indir,
+                                        "` does not exist. Abort.")
+    if (!dir.exists(init$userdir)) stop("User root directory (userdir), currently `",
+                                          init$userdir,"` does not exist.. Abort.")
+    on.exit(expr=setwd(dir_before))
+    
+    dir_start <- tempfile("shinyscreen")
+    dir.create(dir_start, recursive = T)
+    setwd(dir_start)
+    saveRDS(object = init,file="init.rds")
     file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),"app_run.Rmd")
     rmarkdown::run(file = "app_run.Rmd", shiny_args = shiny_args, render_args = render_args)
 }
