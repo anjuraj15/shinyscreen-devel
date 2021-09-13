@@ -520,13 +520,15 @@ mk_shinyscreen_server <- function(projects,init) {
                      choices=c("min","s"))
 
             ## Files
-            df <- shinyscreen:::file2tab(in_conf$data)
-            df[,tag:=as.character(tag),with=T]
-            rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
-            nms <- colnames(df)
-            nms <- nms[nms!="file"]
-            fdt <- df[,..nms]
-            rv_datatab(fdt)
+            if (isTruthy(in_conf$data)) {
+                df <- shinyscreen:::file2tab(in_conf$data)
+                df[,tag:=as.character(tag),with=T]
+                rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
+                nms <- colnames(df)
+                nms <- nms[nms!="file"]
+                fdt <- df[,..nms]
+                rv_datatab(fdt)
+            }
 
             ## figures
             upd_unit(in_conf$figures$rt_min,
@@ -539,19 +541,21 @@ mk_shinyscreen_server <- function(projects,init) {
                      "plot_rt_max_unit",
                      choices=c("min","s"))
 
-            logentry <- in_conf$figures$logaxes
-            logchoice <- logical(0)
-            logchoice <- mapply(function(cn,uin) if (cn %in% logentry) uin else NA,
-                                c("ms1_eic_int","ms2_eic_int","ms2_spec_int"),
-                                c("MS1 EIC","MS2 EIC","MS2 Spectrum"),USE.NAMES = F)
-            logchoice <- logchoice[!is.na(logchoice)]
-            
-            updateCheckboxGroupInput(session = session,
-                                     inputId = "plot_log",
-                                     choices = c("MS1 EIC",
-                                                 "MS2 EIC",
-                                                 "MS2 Spectrum"),
-                                     selected = logchoice)
+            if (isTruthy(in_conf$figures$logaxes)) {
+                logentry <- in_conf$figures$logaxes
+                logchoice <- logical(0)
+                logchoice <- mapply(function(cn,uin) if (cn %in% logentry) uin else NA,
+                                    c("ms1_eic_int","ms2_eic_int","ms2_spec_int"),
+                                    c("MS1 EIC","MS2 EIC","MS2 Spectrum"),USE.NAMES = F)
+                logchoice <- logchoice[!is.na(logchoice)]
+                
+                updateCheckboxGroupInput(session = session,
+                                         inputId = "plot_log",
+                                         choices = c("MS1 EIC",
+                                                     "MS2 EIC",
+                                                     "MS2 Spectrum"),
+                                         selected = logchoice)
+            }
             ## Report
             if (isTruthy(in_conf$report$author)) updateTextInput(session,"rep_aut",value = in_conf$report$author)
             if (isTruthy(in_conf$report$title)) updateTextInput(session,"rep_tit",value = in_conf$report$title)

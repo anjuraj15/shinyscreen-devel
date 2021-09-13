@@ -593,8 +593,8 @@ presc_conf <- function(m) {
 }
 
 fig_conf <- function(m) {
-    m$conf$figures$rt_min <- NA_real_
-    m$conf$figures$rt_max <- NA_real_
+    m$conf$figures$rt_min <- "NA_real_ min"
+    m$conf$figures$rt_max <- "NA_real_ min"
     m$conf$figures$ext <- "pdf"
     m
 }
