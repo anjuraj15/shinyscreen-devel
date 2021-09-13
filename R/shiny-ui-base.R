@@ -279,7 +279,7 @@ styled_dt <- function(tab,style = 'bootstrap',
 }
 
 
-mk_shinyscreen_server <- function() {
+mk_shinyscreen_server <- function(projects,init) {
     ## This used to be context='setup'.
     ## library(shinydashboard)
     def_state <- new_state()
@@ -323,9 +323,13 @@ mk_shinyscreen_server <- function() {
 
 
 
+    
     ## Other transient values.
     rv_tran <- reactiveValues(qa_compsel_tab=dtable(), # QA clickable table for MS1.
                               qa_ms2sel_tab=dtable())  # QA clickable table for MS2.
+
+
+    rv_projects <- reactiveVal(projects)
     ## Some more setup.
     ord_nms <- gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM)
     ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
@@ -921,13 +925,55 @@ mk_shinyscreen_server <- function() {
 
         ## Observers
 
-        observeEvent(input$project_b,{
-            wd <- tcltk::tk_choose.dir(default = getwd(),
-                                       caption = "Choose project directory")
-            message("Set project dir to ", wd)
-            dir.create(wd,recursive = T,showWarnings = F)
-            rv_state$conf$project <- wd
+        observeEvent(input$create_proj_b,{
+            wd <- input$new_proj_name
+            req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
+            fullwd <- file.path(init$userdir,wd)
+            dir.create(fullwd,recursive = F,showWarnings = F)
+
+            ## Add to the project list if new.
+            if (! (wd %in% rv_projects())) {
+                message("Updating proj list.")
+                
+                new_projects <- list.dirs(path=init$userdir,
+                                          full.names = F,
+                                          recursive = F)
+                ind <- which(new_projects %in% wd)
+                rv_projects(new_projects)
+                message("which:",ind)
+                updateSelectInput(session = session,
+                                  inputId = "proj_list",
+                                  choices = new_projects,
+                                  selected = wd)
+                
+            }
+
+            rv_state <- list2rev(new_state())
+            rv_state$conf$project <- fullwd
+            saveRDS(rv_state,file.path(fullwd,FN_STATE))
         })
+
+        observeEvent(input$load_proj_b,{
+            
+            wd <- input$proj_list
+            req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
+            fullwd <- file.path(init$userdir,wd)
+            ## If a saved state exists, load it.
+            fn_state <- file.path(fullwd,FN_STATE)
+            if (file.exists(fn_state)) {
+                rv_state <- list2rev(readRDS(fn_state))
+                update_gui(rv_state$conf, session = session)
+            } else {
+                message("No saved state found. This directory is not a project.")
+            }
+        }, label = "project-b")
+
+        observeEvent(rv_projects,
+        {
+            message("This is triggered as it should be.")
+            
+        },label = "upd-proj-list")
+
 
         observeEvent(input$comp_list_b, {
             filters <- matrix(c("CSV files", ".csv",
