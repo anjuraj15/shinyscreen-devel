@@ -34,6 +34,7 @@ FN_COMP_TAB<-"comprehensive.csv"
 FN_SPEC<-"specdata.rds"
 FN_CONF <- "conf-state.yaml"
 FN_EXTR_STATE <- "state_after_extraction.rds"
+FN_STATE <- "current-state.rds"
 
 .envp <- new.env(parent = emptyenv())
 data(adducts,package = "enviPat", envir = .envp)
