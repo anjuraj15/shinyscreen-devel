@@ -585,10 +585,10 @@ extr_conf <- function(m) {
 }
 
 presc_conf <- function(m) {
-    m$conf$prescreen <- list("ms1_int_thresh"=1e5,
-                             "ms2_int_thresh"=2.5e3,
-                             "s2n"=3,
-                             "ret_time_shift_tol"=0.5)
+    m$conf$prescreen <- list("ms1_int_thresh"=MS1_INT_THOLD,
+                             "ms2_int_thresh"=MS2_INT_THOLD,
+                             "s2n"=MS1_SN_FAC,
+                             "ret_time_shift_tol"=RT_SHIFT_ERR)
     m
 }
 

@@ -103,14 +103,14 @@ SUMM_CHK_AUTO<-'AUTO'
 SUMM_CHK_MANL<-'MANUAL'
 
 
-MS1_ERR_COARSE<-0.5                     # Da
-MS1_ERR_FINE<- 5                       # ppm
-EIC_ERR <- 0.001                       # Da
-RT_EXTR_ERR<-0.5                       # min
-RT_SHIFT_ERR <- 0.5               # min
+MS1_ERR_COARSE<-"0.5 Da"                     # Da
+MS1_ERR_FINE<- "5 ppm"                       # ppm
+EIC_ERR <- "0.001 Da"                       # Da
+RT_EXTR_ERR<-"0.5 min"                       # min
+RT_SHIFT_ERR <- "0.5 min"               # min
 
 MS1_INT_THOLD <- 1e5
-MS2_INT_THOLD <- 5000.
+MS2_INT_THOLD <- 2500.
 
 MS1_SN_FAC <- 3.0
 
