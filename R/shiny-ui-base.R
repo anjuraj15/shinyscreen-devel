@@ -614,7 +614,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
     pdf(file="dummy.pdf",width = 1.9685,height = 1.9685)
     dev.off()
-    
+
     server  <- function(input,output,session) {
         ## REACTIVE FUNCTIONS
 
@@ -942,9 +942,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 new_projects <- list.dirs(path=init$userdir,
                                           full.names = F,
                                           recursive = F)
-                ind <- which(new_projects %in% wd)
                 rv_projects(new_projects)
-                message("which:",ind)
                 updateSelectInput(session = session,
                                   inputId = "proj_list",
                                   choices = new_projects,
@@ -966,6 +964,7 @@ mk_shinyscreen_server <- function(projects,init) {
             fn_state <- file.path(fullwd,FN_STATE)
             if (file.exists(fn_state)) {
                 rv_state <- list2rev(readRDS(fn_state))
+                rv_state$conf$project <- fullwd
                 update_gui(rv_state$conf, session = session)
             } else {
                 message("No saved state found. This directory is not a project.")
@@ -977,6 +976,26 @@ mk_shinyscreen_server <- function(projects,init) {
             message("This is triggered as it should be.")
             
         },label = "upd-proj-list")
+
+
+        observeEvent(input$save_proj_b,{
+            fn <- file.path(rv_state$conf$project,FN_STATE)
+            shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
+            message("(config) Saving state to: ", paste(fn,collapse = ","))
+            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
+
+            if (nchar(fn) > 0) {
+                m <- rev2list(rv_state)
+                ftab <- get_fn_ftab(m)
+                fconf <- get_fn_conf(m)
+                yaml::write_yaml(m$conf,
+                                 file = fconf)
+                shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
+                m$conf$data <- ftab
+                saveRDS(object=m,file=fn)
+            }
+            shinymsg("Saving state completed.")
+        })
 
 
         observeEvent(input$comp_list_b, {
@@ -1159,30 +1178,7 @@ mk_shinyscreen_server <- function(projects,init) {
             shinymsg("Loading state has been completed.")
         })
 
-        observeEvent(input$state_file_save_b,{
-            filters <- matrix(c("RDS files", ".rds",
-                                "All files", "*"),
-                              2, 2, byrow = TRUE)
-            fn <- tk_save_file(filters=filters,
-                               default = "state.rds")
-            shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
-            message("(config) Saving state to: ", paste(fn,collapse = ","))
-            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
-
-            if (nchar(fn) > 0) {
-                m <- rev2list(rv_state)
-                ftab <- get_fn_ftab(m)
-                fconf <- get_fn_conf(m)
-                yaml::write_yaml(m$conf,
-                                 file = fconf)
-                shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
-                m$conf$data <- ftab
-
-                
-                saveRDS(object=m,file=fn)
-            }
-            shinymsg("Saving state completed.")
-        })
+        
 
         observeEvent(input$plot_ext, {
             rv_state$conf$figures$ext <- input$plot_ext
