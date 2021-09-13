@@ -58,9 +58,6 @@ rv_mzrange <- reactiveValues(min=NA,
 
 projects <- list.dirs(path=init$userdir, full.names = F, recursive = F)
 
-rv_projects <- reactiveVal(projects)
-
-
 ```
 <style type="text/css">
 .main-container {
@@ -74,31 +71,53 @@ rv_projects <- reactiveVal(projects)
 
 # Configuration {.tabset}
 
-## Inputs
+## Project
 
+### Create new project
 
 <details>
-<summary>Select or create project</summary>
+<summary>Create new project</summary>
 
-Load the previous, or create new project, the location of where the
-output files and the state of the analysis will be saved.
+A project is a directory under the path specified using the `userdir`
+argument of the `app` function. It contains all the intermediate data,
+records of the project state and the outputs of the analysis.
+
+Create a completely new project by typing its name and clicking on the
+`Create` button.
+</details>
 
 </details>
 ```{r, echo=F}
-selectizeInput('proj_list',
-               label = "Available projects",
-               choices = state.name,
-               options = list(create=T))
-textInput(inputId = "new_project", label= "Current project",value = "")
-actionButton(inputId = "project_b",
-             label= "Select project")
+textInput(inputId = "new_proj_name", label= "New project name",value = "")
+actionButton(inputId = "create_proj_b",
+             label= "Create")
 
 ```
-<!-- ```{r, echo=FALSE} -->
 
-<!-- ``` -->
 
-Current project directory is `r textOutput("project", inline=T)`
+### Load existing project
+
+<details>
+<summary>Load an existing project</summary>
+
+All the existing projects are shown in the `Avaliable projects`
+list. Load the project by pressing `Select project` button.
+
+
+</details>
+```{r, echo=F}
+selectInput('proj_list',
+            label = "Select project",
+            choices = projects)
+actionButton(inputId = "load_proj_b",
+             label= "Load")
+
+```
+
+### Save Project
+TODO
+
+## Inputs
 
 <details><summary>Load the compound list(s)</summary>
 A compound list is composed of entries describing compounds. This
@@ -679,7 +698,8 @@ sidebarLayout(sidebarPanel(DT::DTOutput("plot_comp_select"),
 <!-- ENGINE -->
 
 ```{r, echo = F, context = 'setup'}
-shinyscreen_server <- shinyscreen:::mk_shinyscreen_server()
+shinyscreen_server <- shinyscreen:::mk_shinyscreen_server(projects=projects,
+                                                          init=init)
 ```
 
 ```{r, echo = F, context = 'server'}
