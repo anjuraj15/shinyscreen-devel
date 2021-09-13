@@ -30,7 +30,7 @@ def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
                                         "Select"=factor("ignore",levels=shinyscreen:::SUBSET_VALS))
 ## RMassBank masks shiny::validate. Unmask it.
 validate <- shiny::validate
-## def_state$input$tab$tags <- def_datatab
+def_state$input$tab$tags <- def_datatab
 rv_state <- list2rev(def_state)
 compl_sets <- eventReactive(rv_state$input$tab$setid,
                             rv_state$input$tab$setid[,unique(set)])
@@ -52,7 +52,7 @@ PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
 rv_rtrange <- reactiveValues(min=def_state$conf$rt_min,
                              max=def_state$conf$rt_max)
 
-## Transient mz range.
+## ## Transient mz range.
 rv_mzrange <- reactiveValues(min=NA,
                              max=NA)
 
@@ -114,8 +114,11 @@ actionButton(inputId = "load_proj_b",
 
 ```
 
-### Save Project
-TODO
+### Save project state
+```{r, echo=F}
+actionButton(inputId = "save_proj_b",
+             label= "Save project")
+```
 
 ## Inputs
 
