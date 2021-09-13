@@ -566,7 +566,7 @@ init_state <- function(m) {
 
 base_conf <- function () {
     m <- list()
-    m$conf <- list(project=getwd(),
+    m$conf <- list(project=NA_character_,
                    compounds=list(lists=list(),
                                   sets="",
                                   data=""),
