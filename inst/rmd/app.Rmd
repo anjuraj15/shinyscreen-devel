@@ -159,6 +159,10 @@ It is strongly recommended to quote SMILES, names and formulas in the
 CSV file used with Shinyscreen.
 </details>
 ```{r, echo=FALSE}
+selectInput('comp_list',
+            label = "Select compound lists",
+            multiple = T,
+            choices = NULL)
 actionButton(inputId = "comp_list_b",
              label= "Compound list(s)")
 

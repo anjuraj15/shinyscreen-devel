@@ -954,7 +954,6 @@ mk_shinyscreen_server <- function(projects,init) {
 
                 rvs$m <- list2rev(new_state())
                 rvs$m$conf$project <- fullwd
-                message("papapa:",rvs$m$conf$project)
                 saveRDS(rev2list(rvs$m),file.path(fullwd,FN_STATE))
 
                 
@@ -1009,7 +1008,17 @@ mk_shinyscreen_server <- function(projects,init) {
             shinymsg("Saving state completed.")
         })
 
-
+        ## Hold your horses.
+        ## observeEvent(rvs$m$conf$project,{
+        ##     wd <- rvs$m$conf$project
+        ##     req(isTruthy(wd))
+        ##     updateSelectInput(session = session,
+        ##                       inputId = 'comp_list',
+        ##                       choices = list.files(rvs$m$conf$project,
+        ##                                            pattern = "\\.csv$"))
+            
+        ## })
+        
         observeEvent(input$comp_list_b, {
             filters <- matrix(c("CSV files", ".csv",
                                 "All files", "*"),
