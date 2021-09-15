@@ -999,13 +999,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 m <- rev2list(rvs$m)
                 ftab <- get_fn_ftab(m)
                 fconf <- get_fn_conf(m)
-                ## FIXME TODO this is an ugly hack to override a
-                ## suprising appearance of an empty reactivevalues
-                ## object here. It of course has to do with the
-                ## horrible cludge rvs$m is atm.
-                if (class(m$conf$compounds$lists)[[1]] != "list") {
-                    m$conf$compounds$lists <- shiny::reactiveValuesToList(m$conf$compounds$lists)
-                }
+
                 yaml::write_yaml(m$conf,
                                  file = fconf)
                 shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
