@@ -57,6 +57,7 @@ rv_mzrange <- reactiveValues(min=NA,
                              max=NA)
 
 projects <- list.dirs(path=init$userdir, full.names = F, recursive = F)
+inputdirs <- list.dirs(path=init$indir, full.names = F, recursive = F)
 
 ```
 <style type="text/css">
@@ -120,6 +121,20 @@ actionButton(inputId = "save_proj_b",
              label= "Save project")
 ```
 
+### Select input directory
+```{r, echo=F}
+selectInput('indir_list',
+            label = "Input directories",
+            choices = inputdirs)
+actionButton(inputId = "sel_indir_b",
+             label= "Select")
+```
+
+<details>
+<summary>More on input directories</summary>
+
+</details>
+
 ## Inputs
 
 <details><summary>Load the compound list(s)</summary>
@@ -162,7 +177,7 @@ CSV file used with Shinyscreen.
 selectInput('comp_list',
             label = "Select compound lists",
             multiple = T,
-            choices = NULL)
+            choices = inputdirs)
 actionButton(inputId = "comp_list_b",
              label= "Compound list(s)")
 
