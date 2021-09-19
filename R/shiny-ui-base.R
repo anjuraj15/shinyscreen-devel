@@ -1008,6 +1008,29 @@ mk_shinyscreen_server <- function(projects,init) {
             shinymsg("Saving state completed.")
         })
 
+        observeEvent(input$sel_indir_b,{
+            indir <- input$indir_list
+            req(isTruthy(indir))
+            rvs$m$conf$indir <- file.path(init$indir, indir)
+            message("Selected input dir:",rvs$m$conf$indir)
+        })
+
+        observeEvent(rvs$m$conf$indir,{
+            indir <- rvs$m$conf$indir
+            req(isTruthy(indir) && dir.exists(indir))
+            
+            updateSelectInput(session = session,
+                              inputId = "comp_list",
+                              choices = list.files(path=indir,
+                                                   pattern = "*.csv$"))
+            updateSelectInput(session = session,
+                              inputId = "indir_list",
+                              selected = basename(indir),
+                              choices = list.dirs(path = init$indir,
+                                                  full.names = F,
+                                                  recursive = F))
+        })
+
         ## Hold your horses.
         ## observeEvent(rvs$m$conf$project,{
         ##     wd <- rvs$m$conf$project
