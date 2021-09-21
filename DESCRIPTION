@@ -71,5 +71,4 @@ Imports:
     curl,
     shiny,
     rhandsontable,
-    DT,
-    tcltk
+    DT
