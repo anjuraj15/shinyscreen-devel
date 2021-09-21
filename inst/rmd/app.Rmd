@@ -115,13 +115,18 @@ actionButton(inputId = "load_proj_b",
 
 ```
 
-### Save project state
+### Save project
 ```{r, echo=F}
 actionButton(inputId = "save_proj_b",
              label= "Save project")
 ```
 
 ### Select input directory
+<details>
+<summary>More on input directories</summary>
+Blah. 
+</details>
+
 ```{r, echo=F}
 selectInput('indir_list',
             label = "Input directories",
@@ -130,10 +135,29 @@ actionButton(inputId = "sel_indir_b",
              label= "Select")
 ```
 
-<details>
-<summary>More on input directories</summary>
+### Select compound lists
 
-</details>
+```{r, echo=FALSE}
+selectInput('comp_list',
+            label = "Select compound lists",
+            multiple = T,
+            choices = "")
+actionButton(inputId = "comp_list_b",
+             label= "Select")
+
+```
+
+### Select set lists
+
+```{r, echo=FALSE}
+selectInput('set_list',
+            label = "Select set lists",
+            multiple = T,
+            choices = "")
+actionButton(inputId = "set_list_b",
+             label= "Select")
+
+```
 
 ## Inputs
 
@@ -173,17 +197,8 @@ scanning for completely unknown compounds is also supported by the
 It is strongly recommended to quote SMILES, names and formulas in the
 CSV file used with Shinyscreen.
 </details>
-```{r, echo=FALSE}
-selectInput('comp_list',
-            label = "Select compound lists",
-            multiple = T,
-            choices = inputdirs)
-actionButton(inputId = "comp_list_b",
-             label= "Compound list(s)")
 
-```
-
-`r htmlOutput("comp_lists")`
+<!-- needs inv comma ... r htmlOutput("comp_lists")` -->
 
 <details><summary>Load compound set list (_setid_ table)</summary>
 The compound lists can contain more entries than is necessary. Using

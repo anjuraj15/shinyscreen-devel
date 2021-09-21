@@ -1022,7 +1022,13 @@ mk_shinyscreen_server <- function(projects,init) {
             updateSelectInput(session = session,
                               inputId = "comp_list",
                               choices = list.files(path=indir,
-                                                   pattern = "*.csv$"))
+                                                   pattern = CMPD_LIST_PATT))
+
+            updateSelectInput(session = session,
+                              inputId = "set_list",
+                              choices = list.files(path=indir,
+                                                   pattern = SET_LIST_PATT))
+            
             updateSelectInput(session = session,
                               inputId = "indir_list",
                               selected = basename(indir),
@@ -1043,12 +1049,21 @@ mk_shinyscreen_server <- function(projects,init) {
         ## })
         
         observeEvent(input$comp_list_b, {
-            filters <- matrix(c("CSV files", ".csv",
-                                "All files", "*"),
-                              2, 2, byrow = TRUE)
-            compfiles <- tcltk::tk_choose.files(filters=filters)
-            message("(config) Selected compound lists: ", paste(compfiles,collapse = ","))
+            sels <- input$comp_list
+            req(isTruthy(sels))
+            compfiles <- file.path(rvs$m$conf$indir,sels)
+            message("(config) Selected compound lists: ", paste(sels,collapse = ","))
             rvs$m$conf$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
+            
+        })
+
+        observeEvent(input$set_list_b, {
+            sels <- input$set_list
+            req(isTruthy(sels))
+            setfiles <- file.path(rvs$m$conf$indir,sels)
+            message("(config) Selected set lists: ", paste(sels,collapse = ","))
+            rvs$m$conf$compounds$sets <- if (length(setfiles)>0 && nchar(setfiles[[1]])>0) setfiles else "Nothing selected."
+            
         })
 
         observeEvent(input$datafiles_b,{
@@ -1069,15 +1084,6 @@ mk_shinyscreen_server <- function(projects,init) {
                 z[,tag:=as.character(tag)]
                 rv_dfile(z)
             }
-        })
-
-        observeEvent(input$setid_b, {
-            filters <- matrix(c("CSV files", ".csv",
-                                "All files", "*"),
-                              2, 2, byrow = TRUE)
-            setids <- tcltk::tk_choose.files(filters=filters)
-            message("(config) Selected compound sets (setid): ", paste(setids,collapse = ","))
-            rvs$m$conf$compounds$sets <- if (length(setids)>0 && nchar(setids[[1]])>0) setids else "Nothing selected."
         })
 
         observe({
@@ -1562,6 +1568,7 @@ mk_shinyscreen_server <- function(projects,init) {
                                          allowInvalid=F)
         })
 
+        
         output$comp_table <- DT::renderDataTable({
             state <- rf_compound_input_state()
 
@@ -1576,6 +1583,7 @@ mk_shinyscreen_server <- function(projects,init) {
                                          scroller = T))
         })
 
+        
         output$setid_table <- DT::renderDataTable({
             state <- rf_compound_input_state()
 

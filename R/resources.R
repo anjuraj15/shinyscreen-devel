@@ -276,3 +276,7 @@ SIGNF_RT <- 4
 ## Symbols to display T, or F
 SYM_YES="\U002713"
 SYM_NO="\U00274C"
+
+
+CMPD_LIST_PATT <- "((*.csv)|(*.csv.gz))$"
+SET_LIST_PATT <- CMPD_LIST_PATT
