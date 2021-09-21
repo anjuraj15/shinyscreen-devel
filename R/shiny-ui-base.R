@@ -1200,36 +1200,6 @@ mk_shinyscreen_server <- function(projects,init) {
             
         })
 
-        observeEvent(input$state_file_load_b,{
-            filters <- matrix(c("RDS files", ".rds",
-                                "YAML config files", ".yaml",
-                                "All files", "*"),
-                              3, 2, byrow = TRUE)
-            fn <- tcltk::tk_choose.files(filters=filters,
-                                         multi = F)
-            
-            message("(config) Loading state from: ", paste(fn,collapse = ","))
-            shinymsg(paste("Loading state from: ", fn,"Please wait.",sep="\n"))
-            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
-
-            if (nchar(fn) > 0) {
-                if (grepl("yaml",fn)) {
-                    state <- new_state_fn_conf(fn)
-                    conf <- state$conf
-                    update_gui(conf,session=session)
-                } else {
-                    state <- readRDS(file=fn)
-                    z <- shinyscreen::merge2rev(rvs$m,lst = state)
-                    eval(z)
-                    update_gui(rvs$m$conf, session=session)
-                }
-
-            }
-            shinymsg("Loading state has been completed.")
-        })
-
-        
-
         observeEvent(input$plot_ext, {
             rvs$m$conf$figures$ext <- input$plot_ext
         })

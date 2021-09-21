@@ -456,24 +456,6 @@ DT::dataTableOutput("comp_table")
 DT::dataTableOutput("setid_table")
 ```
 
-# Save and Restore
-
-Shinyscreen can start from either a previously saved _state_ file (in
-RDS format), or from a _YAML_ config file. States saved using GUI can
-also be used from the script.
-
-```{r, echo=FALSE}
-actionButton(inputId = "state_file_load_b",
-             label= "Restore project")
-
-```
-
-```{r, echo=FALSE}
-actionButton(inputId = "state_file_save_b",
-             label= "Save project")
-
-```
-
 # Extract Data and Prescreen
 
 Shinyscreen can perform spectral extraction based on the desired settings(_ppm_,_retention time window_) under the _Extraction_ tab. The extracted spectra can be subjected to prescreening based on the settings defined under the _prescreening_ tab.
