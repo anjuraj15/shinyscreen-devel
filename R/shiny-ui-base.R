@@ -1028,6 +1028,11 @@ mk_shinyscreen_server <- function(projects,init) {
                               inputId = "set_list",
                               choices = list.files(path=indir,
                                                    pattern = SET_LIST_PATT))
+
+            updateSelectInput(session = session,
+                              inputId = "dfile_list",
+                              choices = list.files(path=indir,
+                                                   pattern = DFILES_LIST_PATT))
             
             updateSelectInput(session = session,
                               inputId = "indir_list",
@@ -1067,16 +1072,14 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         observeEvent(input$datafiles_b,{
-            filters <- matrix(c("mzML files", ".mzML",
-                                "All files", "*"),
-                              2, 2, byrow = TRUE)
-            fns <- tcltk::tk_choose.files(filters=filters)
-            message("(config) Selected data files: ", paste(fns,collapse = ","))
-            ## Did the user choose any files?
-            if (length(fns) > 0) {
+            sels <- input$dfile_list
+            req(isTruthy(sels))
+            dfiles <- file.path(rvs$m$conf$indir,sels)
+            message("(config) Selected mzMl files: ", paste(sels,collapse = ","))
+            if (length(dfiles) > 0) {
                 oldtab <- rf_get_inp_datafiles()
                 
-                newf <- setdiff(fns,oldtab$file)
+                newf <- setdiff(dfiles,oldtab$file)
                 nr <- NROW(oldtab)
                 tmp <- if (length(newf)>0) shinyscreen:::dtable(file=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(file=character(),tag=character())
 

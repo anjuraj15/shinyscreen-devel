@@ -280,3 +280,4 @@ SYM_NO="\U00274C"
 
 CMPD_LIST_PATT <- "((*.csv)|(*.csv.gz))$"
 SET_LIST_PATT <- CMPD_LIST_PATT
+DFILES_LIST_PATT <- ".*\\.mz[Mm][Ll]$"

@@ -74,20 +74,33 @@ inputdirs <- list.dirs(path=init$indir, full.names = F, recursive = F)
 
 ## Project
 
+<details>
+<summary>Projects, input directories and compound lists</summary>
+
+When you start the program with `app` function, you define two
+superdirecotories: `userdir` and `indir`. Directory `userdir` contains
+all the existing projects and any new projects defined during the
+current session will be saved here. Data inside a project directory
+consists of intermediate files, saved states and workflow outputs.
+
+To create a new project, type in the name and press the `Create`
+button. To load a project, select the project and press `Load`.
+
+There is also a possibility to save the current project state. Just
+use the `Save project` button. This action will record all your
+settings and selected inputs.
+
+Each `Shinyscreen` project needs input data: mass spectrometry files
+(in mzML format), compound and set lists. These should all be present
+before starting `Shinyscreen` in one of the directories under
+`userdir`.
+
+
+
+</details>
+
 ### Create new project
 
-<details>
-<summary>Create new project</summary>
-
-A project is a directory under the path specified using the `userdir`
-argument of the `app` function. It contains all the intermediate data,
-records of the project state and the outputs of the analysis.
-
-Create a completely new project by typing its name and clicking on the
-`Create` button.
-</details>
-
-</details>
 ```{r, echo=F}
 textInput(inputId = "new_proj_name", label= "New project name",value = "")
 actionButton(inputId = "create_proj_b",
@@ -137,31 +150,7 @@ actionButton(inputId = "sel_indir_b",
 
 ### Select compound lists
 
-```{r, echo=FALSE}
-selectInput('comp_list',
-            label = "Select compound lists",
-            multiple = T,
-            choices = "")
-actionButton(inputId = "comp_list_b",
-             label= "Select")
-
-```
-
-### Select set lists
-
-```{r, echo=FALSE}
-selectInput('set_list',
-            label = "Select set lists",
-            multiple = T,
-            choices = "")
-actionButton(inputId = "set_list_b",
-             label= "Select")
-
-```
-
-## Inputs
-
-<details><summary>Load the compound list(s)</summary>
+<details><summary>About compound lists</summary>
 A compound list is composed of entries describing compounds. This
 description is used to search for its spectrum in the data file. The
 list is a table in the ***CSV*** format and contains these columns,
@@ -198,9 +187,19 @@ It is strongly recommended to quote SMILES, names and formulas in the
 CSV file used with Shinyscreen.
 </details>
 
-<!-- needs inv comma ... r htmlOutput("comp_lists")` -->
+```{r, echo=FALSE}
+selectInput('comp_list',
+            label = "Select compound lists",
+            multiple = T,
+            choices = "")
+actionButton(inputId = "comp_list_b",
+             label= "Select")
 
-<details><summary>Load compound set list (_setid_ table)</summary>
+```
+
+### Select set lists
+
+<details><summary>About set lists (_setid_ tables)</summary>
 The compound lists can contain more entries than is necessary. Using
 the _setid_ lists, it is possible to create _compound sets_ which
 contain only those compounds that will actually be searched for in the
@@ -211,15 +210,18 @@ columns,
 
 * ***set*** : an user-defined set name.
 </details>
+
 ```{r, echo=FALSE}
-actionButton(inputId = "setid_b",
-             label= "Load the setid table")
+selectInput('set_list',
+            label = "Select set lists",
+            multiple = T,
+            choices = "")
+actionButton(inputId = "set_list_b",
+             label= "Select")
 
 ```
 
-`r htmlOutput("setids", inline=T)`
-
-## Data files
+### Data files
 <details><summary>Load data files</summary>
 Shinyscreen currently supports only the **mzML** file format. After
 loading the files, set file tags in the file table (column
@@ -230,13 +232,14 @@ with unknown structure and formula, the adduct is ignored for obvious
 reasons.
 </details>
 ```{r, echo=FALSE}
+selectInput('dfile_list',
+            label = "Select datafiles",
+            multiple = T,
+            choices = "")
 actionButton(inputId = "datafiles_b",
              label= "Load data files.")
 
 ```
-
-
-
 
 <details><summary>Assign tags to data files.</summary>
 Each tag designates an unique file. Use the table below to assign
@@ -259,6 +262,23 @@ exists, otherwise _adduct_ column is ignored).
 ```{r, echo=F}
 rhandsontable::rHandsontableOutput("datatab")
 ```
+
+
+## Inputs
+
+
+
+<!-- needs inv comma ... r htmlOutput("comp_lists")` -->
+
+
+
+<!-- `r htmlOutput("setids", inline=T)` -->
+
+
+
+
+
+
 
 ## Extraction
 
