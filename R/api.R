@@ -667,8 +667,8 @@ report <- function(m) {
 #' @param render_args `list`, optional list of arguments conveyed to
 #'     `rmarkdown::run` `render_args` argument.
 #' @param indir `character(1)`, a location on the server side
-#'     containing data files.
-#' @param userdir `character(1)`
+#'     containing data directories.
+#' @param userdir `character(1)`, a location on the server side containing project directories.
 #' @return Nada.
 #' @author Todor Kondić
 app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd(),userdir=getwd()) {
