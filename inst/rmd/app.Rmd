@@ -247,8 +247,7 @@ tags.
 </details>
 
 ```{r, echo=FALSE}
-rhandsontable::rHandsontableOutput("datafiles")
-
+DT::DTOutput("datafiles",width="25%")
 ```
 
 

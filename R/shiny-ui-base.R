@@ -278,6 +278,21 @@ styled_dt <- function(tab,style = 'bootstrap',
     
 }
 
+render_dt <- function(data, server = T) {
+    DT::renderDT(data, server = server)
+}
+
+simple_style_dt <- function(tab,
+                            style = 'bootstrap',
+                            class = 'table-bordered table-condensed',
+                            rownames = F, ...) {
+    DT::datatable(tab,
+                  style = style,
+                  class = class,
+                  rownames = rownames,
+                  ...)
+}
+
 
 mk_shinyscreen_server <- function(projects,init) {
     ## This used to be context='setup'.
@@ -526,8 +541,10 @@ mk_shinyscreen_server <- function(projects,init) {
             ## Files
             if (isTruthy(in_conf$data)) {
                 df <- shinyscreen:::file2tab(in_conf$data)
-                df[,tag:=as.character(tag),with=T]
-                rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
+                dfile <- data.table::copy(df[,tag:=as.character(tag),with=T])
+                dfile <- dfile[,unique(.SD),.SDcol=c("file","tag")]
+                ## rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
+                rv_dfile(dfile)
                 nms <- colnames(df)
                 nms <- nms[nms!="file"]
                 fdt <- df[,..nms]
@@ -694,14 +711,15 @@ mk_shinyscreen_server <- function(projects,init) {
                  set=as.character(set)), with = T]
         })
 
-        rf_get_inp_datafiles <- eventReactive(input$datafiles,{
-            z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datafiles)),
-                                           error = function(e) def_datafiles)
+        ## rf_get_inp_datafiles <- reactive({
+        ##     input$datafiles
+        ##     input$datafiles_cell_edit
 
-            
-            z[,.(file,
-                 tag=as.character(tag)), with = T]
-        })
+        ##     isolate({
+        ##         z <- DT::editData(rv_dfiles(),input$datafiles_cell_edit,'datafiles')
+                
+        ##         if (isTruthy(z)) z else def_datafiles})
+        ## })
 
         rf_summ_table_rows <- eventReactive(input$summ_table_rows_all,{
             input$summ_table_rows_all
@@ -1071,13 +1089,21 @@ mk_shinyscreen_server <- function(projects,init) {
             
         })
 
+        observeEvent(input$datafiles_cell_edit,{
+            z <- DT::editData(rv_dfile(),
+                              input$datafiles_cell_edit,
+                              rownames = F)
+            rv_dfile(z)
+            
+        }, label = "datafiles-edit")
+        
         observeEvent(input$datafiles_b,{
             sels <- input$dfile_list
             req(isTruthy(sels))
             dfiles <- file.path(rvs$m$conf$indir,sels)
             message("(config) Selected mzMl files: ", paste(sels,collapse = ","))
             if (length(dfiles) > 0) {
-                oldtab <- rf_get_inp_datafiles()
+                oldtab <- rv_dfile()
                 
                 newf <- setdiff(dfiles,oldtab$file)
                 nr <- NROW(oldtab)
@@ -1090,7 +1116,7 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         observe({
-            df_tab <- rf_get_inp_datafiles()
+            df_tab <- rv_dfile()#rf_get_inp_datafiles()
             state <- rf_compound_input_state()
             isolate(oldtab <- rf_get_inp_datatab())
             
@@ -1138,8 +1164,8 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observe({
             dtab <- rf_get_inp_datatab()
-            dfiles <- rf_get_inp_datafiles()
-
+            dfiles <- rv_dfile() #rf_get_inp_datafiles()
+            req(isTruthy(dfiles) && NROW(dfiles)>0)
             message("(config) Generating mzml from inputs.")
             res <- dtab[dfiles,on="tag"]
             isolate(rvs$m$input$tab$mzml <- res)
@@ -1511,14 +1537,15 @@ mk_shinyscreen_server <- function(projects,init) {
         output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsontable(def_ord_summ,
                                                                                              manualRowMove = T))
 
-        output$datafiles <- rhandsontable::renderRHandsontable(
+        output$datafiles <- DT::renderDT(
         {
             res <- rv_dfile()
-            rhandsontable::rhandsontable(as.data.frame(res),
-                                         width = "50%",
-                                         height = "25%",
-                                         allowInvalid=F)
-        })
+            req(isTruthy(res))
+            res$tag <- as.factor(res$tag)
+            simple_style_dt(res, editable = list(target = "column",
+                                                 disable= list(columns=0)))
+        },
+        server = T)
 
         output$datatab <- rhandsontable::renderRHandsontable(
         {
