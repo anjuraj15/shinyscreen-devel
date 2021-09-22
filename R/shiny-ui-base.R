@@ -702,13 +702,18 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         rf_get_inp_datatab <- eventReactive(input$datatab,{
-            z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datatab)),
-                                           error = function(e) def_datatab)
+            ## z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datatab)),
+            ##                                error = function(e) def_datatab)
 
             
+            ## z[,.(tag=as.character(tag),
+            ##      adduct=as.character(adduct),
+            ##      set=as.character(set)), with = T]
+            z <- as.data.table(rv_datatab())
             z[,.(tag=as.character(tag),
                  adduct=as.character(adduct),
                  set=as.character(set)), with = T]
+            
         })
 
         ## rf_get_inp_datafiles <- reactive({
