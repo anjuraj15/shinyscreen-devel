@@ -397,6 +397,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
     ## Data-file table when loading.
     rv_datatab <- reactiveVal(def_datatab)
+    rv_flag_datatab <- reactiveVal(-.Machine$integer.max)
 
     ## Re-definitions.
     PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
@@ -535,7 +536,30 @@ mk_shinyscreen_server <- function(projects,init) {
         
     }
 
-    update_gui <- function(in_conf, session) {
+    reset_gui_and_state <- function(session,init,wd,rv_dfile,rv_datatab, rv_flag_datatab,rvs, rv_projects) {
+        new_projects <- list.dirs(path=init$userdir,
+                                  full.names = F,
+                                  recursive = F)
+        updateSelectInput(session = session,
+                          inputId = "proj_list",
+                          choices = new_projects,
+                          selected = wd)
+        updateSelectInput(session = session,
+                          inputId = "comp_list",
+                          choices = character(0))
+        updateSelectInput(session = session,
+                          inputId = "set_list",
+                          choices = character(0))
+        updateSelectInput(session = session,
+                          inputId = "dfile_list",
+                          choices = character(0))
+
+        rvs$m <- list2rev(new_state())
+        rv_projects(new_projects)
+        rv_dfile(def_datafiles)
+        rv_datatab(def_datatab)
+    }
+    update_gui <- function(in_conf, session, rv_dfile, rv_datatab, rv_flag_datatab) {
         upd_unit <- function(entry,inp_val,inp_unit,choices) {
             if (isTruthy(entry)) {
                 cntnt <- strsplit(entry,split = "[[:space:]]+")[[1]]
@@ -1013,19 +1037,17 @@ mk_shinyscreen_server <- function(projects,init) {
             ## Add to the project list if new.
             if (! (wd %in% rv_projects())) {
                 message("Updating proj list.")
-                
-                new_projects <- list.dirs(path=init$userdir,
-                                          full.names = F,
-                                          recursive = F)
-                rv_projects(new_projects)
-                updateSelectInput(session = session,
-                                  inputId = "proj_list",
-                                  choices = new_projects,
-                                  selected = wd)
-
-                rvs$m <- list2rev(new_state())
+                reset_gui_and_state(session=session,
+                                    init = init,
+                                    wd = wd,
+                                    rv_dfile = rv_dfile,
+                                    rv_datatab = rv_datatab,
+                                    rv_flag_datatab = rv_flag_datatab,
+                                    rvs = rvs,
+                                    rv_projects = rv_projects)
                 rvs$m$conf$project <- fullwd
                 saveRDS(rev2list(rvs$m),file.path(fullwd,FN_STATE))
+
 
                 
             } else {
@@ -1044,9 +1066,20 @@ mk_shinyscreen_server <- function(projects,init) {
             ## If a saved state exists, load it.
             fn_state <- file.path(fullwd,FN_STATE)
             if (file.exists(fn_state)) {
+                reset_gui_and_state(session=session,
+                                    init = init,
+                                    wd = wd,
+                                    rv_dfile = rv_dfile,
+                                    rv_datatab = rv_datatab,
+                                    rv_flag_datatab = rv_flag_datatab,
+                                    rvs = rvs,
+                                    rv_projects = rv_projects)
                 rvs$m <- list2rev(readRDS(fn_state))
                 rvs$m$conf$project <- fullwd
-                update_gui(rvs$m$conf, session = session)
+                update_gui(rvs$m$conf, session = session,
+                           rv_dfile = rv_dfile,
+                           rv_datatab = rv_datatab,
+                           rv_flag_datatab = rv_flag_datatab)
             } else {
                 message("No saved state found. This directory is not a project.")
             }
@@ -1605,7 +1638,6 @@ mk_shinyscreen_server <- function(projects,init) {
             
         })
 
-        
         output$comp_table <- DT::renderDataTable({
             state <- rf_compound_input_state()
 
