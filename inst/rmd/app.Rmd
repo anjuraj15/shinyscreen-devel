@@ -259,7 +259,8 @@ exists, otherwise _adduct_ column is ignored).
 </details>
 
 ```{r, echo=F}
-rhandsontable::rHandsontableOutput("datatab")
+DT::DTOutput("datatab",width="25%")
+## rhandsontable::rHandsontableOutput("datatab")
 ```
 
 

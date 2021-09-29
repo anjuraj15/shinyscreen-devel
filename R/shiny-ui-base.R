@@ -22,6 +22,31 @@ obsrv_e <- shiny::observeEvent
 isol <- shiny::isolate
 
 
+celledit_values <- function(col,values,labels=NULL) {
+    if (is.null(labels)) labels <- values
+    if (length(values)==0 || nchar(values)==0) return(character(0))
+
+    
+    part1 <- mapply(function (v,l) {
+        sprintf("{value: '%s', display: '%s'},",v,l)
+    },
+    head(values,-1),
+    head(labels,-1),
+    USE.NAMES = F)
+    
+    part2 <- sprintf("{value: '%s', display: '%s'}",tail(values,1),tail(labels,1))
+
+    res <- if (length(part1)>0 || length(part2)>0) {
+               c("{",sprintf("column: %s, ",col),
+                 "type: 'list', ",
+                 "options: [",
+                 "{value: 'NA', display: 'NA'},",part1,part2, "]","}")
+           } else character(0)
+
+    as.character(res)
+    
+}
+
 shinymsg <- function(ui,duration=NULL,type="message",...) showNotification(ui=paste(ui,
                                                                                     Sys.time(),
                                                                                     sep="\n"),
@@ -278,19 +303,65 @@ styled_dt <- function(tab,style = 'bootstrap',
     
 }
 
+#' @export
+editcell_script <- function() {
+  includeScript(system.file("www/dataTables.cellEdit.js", package = "mypackage"))
+}
+
+
+dt_drop_callback = function (col_adduct,col_set,sets) DT::JS(c(
+                                                              "var tbl = $(table.table().node());",
+                                                              "var id = tbl.closest('.datatables').attr('id');",
+                                                              "function onUpdate(updatedCell, updatedRow, oldValue) {",
+                                                              "  var cellinfo = [{",
+                                                              "    row: updatedCell.index().row + 1,",
+                                                              "    col: updatedCell.index().column,",
+                                                              "    value: updatedCell.data()",
+                                                              "  }];",
+                                                              "  Shiny.setInputValue(id + '_cell_edit:DT.cellInfo', cellinfo);",
+                                                              "}",
+                                                              "table.MakeCellsEditable({",
+                                                              "  onUpdate: onUpdate,",
+                                                              "  inputCss: 'my-input-class',",
+                                                              sprintf("  columns: [%s, %s],",col_adduct,col_set),
+                                                              "  confirmationButton: false,",
+                                                              "  inputTypes: [",
+                                                              celledit_values(col_adduct,DISP_ADDUCTS),
+                                                              ",",
+                                                              celledit_values(col_set,sets),
+                                                              "  ]",
+                                                              "});"))
+
+
 render_dt <- function(data, server = T) {
     DT::renderDT(data, server = server)
 }
 
+dropdown_dt <- function(tab,callback,rownames=F,editable="cell",selection = "none",...) {
+    ce_path <- system.file("www", package = "shinyscreen")
+    dep <- htmltools::htmlDependency(
+      "CellEdit", "1.0.19", ce_path, 
+      script = "dataTables.cellEdit.js",
+      stylesheet = "dataTables.cellEdit.css", 
+      all_files = FALSE)
+    tab <- DT::datatable(tab,
+                         callback = callback,
+                         rownames = rownames,
+                         selection = selection,
+                         ...)
+    tab$dependencies <- c(tab$dependencies, list(dep))
+    tab
+    
+}
 simple_style_dt <- function(tab,
-                            style = 'bootstrap',
-                            class = 'table-bordered table-condensed',
-                            rownames = F, ...) {
-    DT::datatable(tab,
-                  style = style,
-                  class = class,
-                  rownames = rownames,
-                  ...)
+                            rownames = F,
+                            ...) {
+
+    tab <- DT::datatable(tab,
+                         rownames = rownames,
+                         ...)
+
+    tab
 }
 
 
@@ -549,6 +620,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 nms <- nms[nms!="file"]
                 fdt <- df[,..nms]
                 rv_datatab(fdt)
+                rv_flag_datatab(rv_flag_datatab()+1L)
             }
 
             ## figures
@@ -637,6 +709,7 @@ mk_shinyscreen_server <- function(projects,init) {
     dev.off()
 
     server  <- function(input,output,session) {
+        
         ## REACTIVE FUNCTIONS
 
         rf_compound_input_state <- reactive({
@@ -667,14 +740,6 @@ mk_shinyscreen_server <- function(projects,init) {
 
         rf_conf_state <- reactive({
             state <- rf_conf_proj()
-            ## mzml1 <- rf_get_inp_datatab()
-            ## mzml1[,`:=`(tag=as.character(tag),
-            ##             set=as.character(set),
-            ##             adduct=as.character(adduct))]
-            ## mzml2 <- rf_get_inp_datafiles()
-            
-            ## mzml <- mzml1[mzml2,on="tag"]
-            
             ftab <- get_fn_ftab(state)
             state$conf$data <- ftab
             state$conf[["summary table"]]$filter <- rf_get_subset()
@@ -702,29 +767,12 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         rf_get_inp_datatab <- eventReactive(input$datatab,{
-            ## z <- data.table::as.data.table(tryCatch(rhandsontable::hot_to_r(input$datatab)),
-            ##                                error = function(e) def_datatab)
-
-            
-            ## z[,.(tag=as.character(tag),
-            ##      adduct=as.character(adduct),
-            ##      set=as.character(set)), with = T]
             z <- as.data.table(rv_datatab())
             z[,.(tag=as.character(tag),
                  adduct=as.character(adduct),
                  set=as.character(set)), with = T]
             
         })
-
-        ## rf_get_inp_datafiles <- reactive({
-        ##     input$datafiles
-        ##     input$datafiles_cell_edit
-
-        ##     isolate({
-        ##         z <- DT::editData(rv_dfiles(),input$datafiles_cell_edit,'datafiles')
-                
-        ##         if (isTruthy(z)) z else def_datafiles})
-        ## })
 
         rf_summ_table_rows <- eventReactive(input$summ_table_rows_all,{
             input$summ_table_rows_all
@@ -1065,17 +1113,6 @@ mk_shinyscreen_server <- function(projects,init) {
                                                   recursive = F))
         })
 
-        ## Hold your horses.
-        ## observeEvent(rvs$m$conf$project,{
-        ##     wd <- rvs$m$conf$project
-        ##     req(isTruthy(wd))
-        ##     updateSelectInput(session = session,
-        ##                       inputId = 'comp_list',
-        ##                       choices = list.files(rvs$m$conf$project,
-        ##                                            pattern = "\\.csv$"))
-            
-        ## })
-        
         observeEvent(input$comp_list_b, {
             sels <- input$comp_list
             req(isTruthy(sels))
@@ -1099,8 +1136,18 @@ mk_shinyscreen_server <- function(projects,init) {
                               input$datafiles_cell_edit,
                               rownames = F)
             rv_dfile(z)
+
+            
             
         }, label = "datafiles-edit")
+
+        observeEvent(input$datatab_cell_edit,{
+            z <- DT::editData(rv_datatab(),
+                              input$datatab_cell_edit,
+                              rownames = F)
+            rv_datatab(z)
+            rv_flag_datatab(rv_flag_datatab()+1L)
+        }, label = "datatab-edit")
         
         observeEvent(input$datafiles_b,{
             sels <- input$dfile_list
@@ -1123,33 +1170,36 @@ mk_shinyscreen_server <- function(projects,init) {
         observe({
             df_tab <- rv_dfile()#rf_get_inp_datafiles()
             state <- rf_compound_input_state()
-            isolate(oldtab <- rf_get_inp_datatab())
+            isolate(oldtab <- rv_datatab())
             
             oldt <- oldtab$tag
             tagl <- df_tab$tag
             diff <- setdiff(tagl,
                             oldt)
-            
-            res <- if (length(diff)!=0) {
-                       ## Only change the tag names in the old ones.
-                       pos_tag <- 1:length(tagl)
-                       pos_old <- 1:NROW(oldtab)
-                       pos_mod <- intersect(pos_tag,pos_old)
-                       new_tag <- tagl[pos_mod]
-                       if (NROW(oldtab)>0) oldtab[pos_mod,tag := ..new_tag]
 
-                       ## Now add tags for completely new files, if any.
-                       rest_new <- if (NROW(oldtab) > 0) setdiff(diff,new_tag) else diff
-                       tmp <- shinyscreen:::dtable(tag=rest_new,
-                                                   adduct=character(0),
-                                                   set=character(0))
-
-                       dt <-data.table::as.data.table(rbind(as.data.frame(oldtab),
-                                                            as.data.frame(tmp)))
-                       dt[tag %in% df_tab$tag,]
-                   } else oldtab
+            req(isTruthy(diff))
+            pos_tag <- 1:length(tagl)
+            pos_old <- 1:NROW(oldtab)
+            pos_mod <- intersect(pos_tag,pos_old)
+            new_tag <- tagl[pos_mod]
+            if (NROW(oldtab)>0) oldtab[pos_mod,tag := ..new_tag]
             
-            rv_datatab(res)
+            ## Now add tags for completely new files, if any.
+            rest_new <- if (NROW(oldtab) > 0) setdiff(diff,new_tag) else diff
+            tmp <- shinyscreen:::dtable(tag=rest_new,
+                                        adduct=character(0),
+                                        set=character(0))
+
+            dt <-data.table::as.data.table(rbind(as.data.frame(oldtab),
+                                                 as.data.frame(tmp)))
+            x <- dt[tag %in% df_tab$tag,]
+            isolate({
+                rv_datatab(x)
+                rv_flag_datatab(rv_flag_datatab()+1L)
+            })
+            
+            
+            
         })
 
         observe({
@@ -1160,24 +1210,13 @@ mk_shinyscreen_server <- function(projects,init) {
         observe({
             dtab <- rv_datatab()
             dfiles <- rv_dfile()
+            req(isTruthy(dfiles) && NROW(dfiles)>0)
             message("(config) Generating mzml from rv.")
             isolate(rvs$m$input$tab$mzml <- dtab[dfiles,on="tag"])
             message("(config) Done generating mzml from rv.")
 
             
         }, label = "mzml_from_rv")
-
-        observe({
-            dtab <- rf_get_inp_datatab()
-            dfiles <- rv_dfile() #rf_get_inp_datafiles()
-            req(isTruthy(dfiles) && NROW(dfiles)>0)
-            message("(config) Generating mzml from inputs.")
-            res <- dtab[dfiles,on="tag"]
-            isolate(rvs$m$input$tab$mzml <- res)
-            message("(config) Generating mzml from inputs.")
-
-            
-        }, label = "mzml_from_inp")
 
         observeEvent(input$extract_b,{
             shinymsg("Extraction has started. This may take a while.")
@@ -1547,30 +1586,23 @@ mk_shinyscreen_server <- function(projects,init) {
             res <- rv_dfile()
             req(isTruthy(res))
             res$tag <- as.factor(res$tag)
-            simple_style_dt(res, editable = list(target = "column",
-                                                 disable= list(columns=0)))
-        },
-        server = T)
+            simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
+            
+        })
 
-        output$datatab <- rhandsontable::renderRHandsontable(
-        {
+        output$datatab <- DT::renderDT({
+            
+            rv_flag_datatab()
             setid <- rvs$m$input$tab$setid
+            message('setid')
+            print(head(setid))
+            req(NROW(setid)>0)
             res <- rv_datatab()
             
-            if (NROW(res)>0) {
-                res$tag <- factor(res$tag,
-                                  levels = c(unique(res$tag),
-                                             "invalid"))
-                res$set <- factor(res$set,
-                                  levels = c(unique(setid$set),
-                                             "invalid"))
-                res$adduct <- factor(res$adduct,
-                                     levels = shinyscreen:::DISP_ADDUCTS)
-            }
-
-
-            rhandsontable::rhandsontable(res,stretchH="all",
-                                         allowInvalid=F)
+        
+            tab <- dropdown_dt(res, callback = dt_drop_callback('1','2',setid[,unique(set)]))
+            tab
+            
         })
 
         
