@@ -1655,8 +1655,6 @@ mk_shinyscreen_server <- function(projects,init) {
             
             rv_flag_datatab()
             setid <- rvs$m$input$tab$setid
-            message('setid')
-            print(head(setid))
             req(NROW(setid)>0)
             res <- rv_datatab()
             
