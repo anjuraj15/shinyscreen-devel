@@ -260,7 +260,6 @@ exists, otherwise _adduct_ column is ignored).
 
 ```{r, echo=F}
 DT::DTOutput("datatab",width="25%")
-## rhandsontable::rHandsontableOutput("datatab")
 ```
 
 
@@ -432,7 +431,7 @@ Values:
 </details>
 ```{r, echo=F}
 
-rhandsontable::rHandsontableOutput("summ_subset")
+DT::DTOutput("summ_subset")
 
 ```
 </div>

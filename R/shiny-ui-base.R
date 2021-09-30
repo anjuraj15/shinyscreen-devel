@@ -332,6 +332,27 @@ dt_drop_callback = function (col_adduct,col_set,sets) DT::JS(c(
                                                               "  ]",
                                                               "});"))
 
+dt_summ_subset_callback = function () DT::JS(c(
+                                              "var tbl = $(table.table().node());",
+                                              "var id = tbl.closest('.datatables').attr('id');",
+                                              "function onUpdate(updatedCell, updatedRow, oldValue) {",
+                                              "  var cellinfo = [{",
+                                              "    row: updatedCell.index().row + 1,",
+                                              "    col: updatedCell.index().column,",
+                                              "    value: updatedCell.data()",
+                                              "  }];",
+                                              "  Shiny.setInputValue(id + '_cell_edit:DT.cellInfo', cellinfo);",
+                                              "}",
+                                              "table.MakeCellsEditable({",
+                                              "  onUpdate: onUpdate,",
+                                              "  inputCss: 'my-input-class',",
+                                              "  columns: [1],",
+                                              "  confirmationButton: false,",
+                                              "  inputTypes: [",
+                                              celledit_values('1',SUBSET_VALS),
+                                              "  ]",
+                                              "});"))
+
 
 render_dt <- function(data, server = T) {
     DT::renderDT(data, server = server)
@@ -399,6 +420,8 @@ mk_shinyscreen_server <- function(projects,init) {
     rv_datatab <- reactiveVal(def_datatab)
     rv_flag_datatab <- reactiveVal(-.Machine$integer.max)
 
+    the_summ_subset <- def_summ_subset
+    
     ## Re-definitions.
     PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
 
@@ -772,11 +795,10 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         rf_get_subset <- reactive({
-            input$summ_subset
-            dt <- if (NROW(input$summ_subset)==0) def_summ_subset else rhandsontable::hot_to_r(input$summ_subset)
-            
-            dt[Select == shinyscreen:::SUBSET_VALS[["GOOD"]], extra := T]
-            dt[Select == shinyscreen:::SUBSET_VALS[["BAD"]], extra := F]
+            input$summ_subset_cell_edit
+            dt <- data.table::copy(the_summ_subset)
+            dt[Select == SUBSET_VALS[["GOOD"]], extra := T]
+            dt[Select == SUBSET_VALS[["BAD"]], extra := F]
             sdt <- dt[!is.na(extra)]
             if (NROW(sdt) > 0) {
                 sdt[,paste0(`QA Column`," == ",extra)]
@@ -1174,6 +1196,12 @@ mk_shinyscreen_server <- function(projects,init) {
             
         }, label = "datafiles-edit")
 
+        observeEvent(input$summ_subset_cell_edit,{
+            the_summ_subset <<- DT::editData(the_summ_subset,
+                                             input$summ_subset_cell_edit,
+                                             rownames = F)
+            
+        }, label = "summ_subset-edit")
         observeEvent(input$datatab_cell_edit,{
             z <- DT::editData(rv_datatab(),
                               input$datatab_cell_edit,
@@ -1666,10 +1694,9 @@ mk_shinyscreen_server <- function(projects,init) {
                                          scroller = T))
         })
 
-        output$summ_subset <- rhandsontable::renderRHandsontable({
-            
-
-            rhandsontable::rhandsontable(def_summ_subset)
+        output$summ_subset <- DT::renderDT({
+            input$summ_subset_cell_edit
+            dropdown_dt(the_summ_subset, callback = dt_summ_subset_callback())
         })
 
         output$summ_table <- DT::renderDataTable({
