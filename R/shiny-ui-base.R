@@ -303,12 +303,6 @@ styled_dt <- function(tab,style = 'bootstrap',
     
 }
 
-#' @export
-editcell_script <- function() {
-  includeScript(system.file("www/dataTables.cellEdit.js", package = "mypackage"))
-}
-
-
 dt_drop_callback = function (col_adduct,col_set,sets) DT::JS(c(
                                                               "var tbl = $(table.table().node());",
                                                               "var id = tbl.closest('.datatables').attr('id');",
