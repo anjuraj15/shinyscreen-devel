@@ -448,7 +448,7 @@ entire summary table and subsequent keys break the ties.
 </details>
 
 ```{r, echo=F}
-rhandsontable::rHandsontableOutput("order_summ")
+DT::DTOutput("order_summ")
 ```
 
 </div>
