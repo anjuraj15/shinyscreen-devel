@@ -353,6 +353,31 @@ dt_summ_subset_callback = function () DT::JS(c(
                                               "  ]",
                                               "});"))
 
+dt_order_summ_callback = function () DT::JS(c(
+                                              "var tbl = $(table.table().node());",
+                                              "var id = tbl.closest('.datatables').attr('id');",
+                                              "function onUpdate(updatedCell, updatedRow, oldValue) {",
+                                              "  var cellinfo = [{",
+                                              "    row: updatedCell.index().row + 1,",
+                                              "    col: updatedCell.index().column,",
+                                              "    value: updatedCell.data()",
+                                              "  }];",
+                                              "  Shiny.setInputValue(id + '_cell_edit:DT.cellInfo', cellinfo);",
+                                              "}",
+                                              "table.MakeCellsEditable({",
+                                              "  onUpdate: onUpdate,",
+                                              "  inputCss: 'my-input-class',",
+                                              "  columns: [1],",
+                                              "  confirmationButton: false,",
+                                              "  inputTypes: [",
+                                              celledit_values('1',c('Descending','Ascending')),
+                                              "  ]",
+                                             "});",
+                                             "//pass on data to R",
+                                             "table.on('row-reorder', function(e, details, changes) {",
+                                                 "Shiny.onInputChange(id +'_row_reorder', JSON.stringify(details));",
+                                             "});"))
+
 
 render_dt <- function(data, server = T) {
     DT::renderDT(data, server = server)
@@ -420,7 +445,9 @@ mk_shinyscreen_server <- function(projects,init) {
     rv_datatab <- reactiveVal(def_datatab)
     rv_flag_datatab <- reactiveVal(-.Machine$integer.max)
 
-    the_summ_subset <- def_summ_subset
+    ## Modifiable version.
+    the_summ_subset <- data.table::copy(def_summ_subset)
+    
     
     ## Re-definitions.
     PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
@@ -445,11 +472,12 @@ mk_shinyscreen_server <- function(projects,init) {
 
     rv_projects <- reactiveVal(projects)
     ## Some more setup.
-    ord_nms <- gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM)
-    ord_asc <- grepl("^-.+",shinyscreen:::DEF_INDEX_SUMM)
+    ord_nms <- gsub("^-(.+)","\\1",DEF_INDEX_SUMM)
+    ord_asc <- grepl("^-.+",DEF_INDEX_SUMM)
     ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
     def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
-
+    ## Modifiable version.
+    the_ord_summ <- data.table::copy(def_ord_summ)
 
     gen_compsel_tab <- function(summ) {
         ## Given summary table, create a table with only adduct/tag/ID
@@ -806,8 +834,8 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         rf_get_order <- reactive({
-            dt <- if (NROW(input$order_summ)==0) def_ord_summ else rhandsontable::hot_to_r(input$order_summ)
-            
+            input$order_summ_cell_edit
+            dt <- data.table::copy(the_ord_summ)
             tmp <- dt[Direction == "descending",.(`Column Name`=paste0("-",`Column Name`))]
             tmp[,`Column Name`]
         })
@@ -1209,6 +1237,21 @@ mk_shinyscreen_server <- function(projects,init) {
             rv_datatab(z)
             rv_flag_datatab(rv_flag_datatab()+1L)
         }, label = "datatab-edit")
+
+        observeEvent(input$order_summ_row_reorder, {
+            info <- input$order_summ_row_reorder
+            if(is.null(info) | class(info) != 'character') { return() }
+
+            info <- yaml::read_yaml(text=info)
+            
+            if(length(info) == 0) { return() }
+
+            currorder <- 1:NROW(the_ord_summ)
+            for (thing in info) {
+                currorder[[thing$newPosition+1]]<-thing$oldPosition+1
+            }
+            the_ord_summ <<- the_ord_summ[(currorder),]
+        })
         
         observeEvent(input$datafiles_b,{
             sels <- input$dfile_list
@@ -1639,9 +1682,14 @@ mk_shinyscreen_server <- function(projects,init) {
                       sets) else "No <em>setid</em> table selected."
         })
 
-        output$order_summ <- rhandsontable::renderRHandsontable(rhandsontable::rhandsontable(def_ord_summ,
-                                                                                             manualRowMove = T))
-
+        output$order_summ <- DT::renderDT({
+            input$order_summ_row_reorder
+            dropdown_dt(the_ord_summ,
+                        callback = dt_order_summ_callback(),
+                        extensions='RowReorder',
+                        options = list(rowReorder=T))
+        })
+        
         output$datafiles <- DT::renderDT(
         {
             res <- rv_dfile()
