@@ -289,10 +289,11 @@ Extract all entries matching the target mass within this error in the
 precursor table.
 </details>
 ```{r, echo=F}
+vu <- get_val_unit(def_state$conf$tolerance[["ms1 coarse"]])
 shinyscreen::mz_input(input_mz = "ms1_coarse",
                        input_unit = "ms1_coarse_unit",
-                       def_mz = def_state$conf$tolerance[["ms1 coarse"]],
-                       def_unit = "Da")
+                       def_mz = vu[['val']],
+                       def_unit = vu[['unit']])
 ```
 
 <details><summary>MS1 fine error</summary>
@@ -303,10 +304,11 @@ fine error bounds directly in the mass spectrum.
 
 </details>
 ```{r, echo=F}
+vu <- get_val_unit(def_state$conf$tolerance[["ms1 fine"]])
 shinyscreen::mz_input(input_mz = "ms1_fine",
                       input_unit = "ms1_fine_unit",
-                      def_mz = def_state$conf$tolerance[["ms1 fine"]],
-                      def_unit = "ppm")
+                      def_mz = vu[['val']],
+                      def_unit = vu[['unit']])
 ```
 
 <details><summary>MS1 EIC window</summary>
@@ -316,10 +318,11 @@ a chromatogram.
 
 </details>
 ```{r, echo=F}
+vu <- get_val_unit(def_state$conf$tolerance[["eic"]])
 shinyscreen::mz_input(input_mz = "ms1_eic",
                       input_unit = "ms1_eic_unit",
-                      def_mz = def_state$conf$tolerance[["eic"]],
-                      def_unit = "Da")
+                      def_mz = vu[['val']],
+                      def_unit = vu[['unit']])
 ```
 
 <details><summary>Retention time window</summary>
@@ -330,10 +333,11 @@ range.
 
 </details>
 ```{r, echo=F}
+vu <- get_val_unit(def_state$conf$tolerance[["rt"]])
 shinyscreen::rt_input(input_rt = "ms1_rt_win",
                       input_unit = "ms1_rt_win_unit",
-                      def_rt = def_state$conf$tolerance[["rt"]],
-                      def_unit = "min")
+                      def_rt = vu[['val']],
+                      def_unit = vu[['unit']])
 ```
 
 <details><summary>Fill missing precursors</summary>
@@ -396,13 +400,14 @@ peak.
 
 </details>
 ```{r, echo=F}
+vu <- get_val_unit(def_state$conf$prescreen[["ret_time_shift_tol"]])
 shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
                       input_unit = "ret_time_shift_tol_unit",
-                      def_rt = def_state$conf$prescreen[["ret_time_shift_tol"]],
-                      def_unit = "min")
+                      def_rt = vu[['val']],
+                      def_unit = vu[['unit']])
 ```
 
-## Filter and order the summary table
+## Filter the summary table
 <div style= "display: flex; vertical-align:top; ">
 
 <div style="padding-right: 0.5em">
@@ -436,22 +441,23 @@ DT::DTOutput("summ_subset")
 ```
 </div>
 
-<div style="padding-left: 0.5em">
+<!-- FIXME: order_summ reordering/editing unstable. Therefore temporarily removed. -->
+<!-- <div style="padding-left: 0.5em"> -->
 
-<details><summary>Ordering by columns</summary>
-It is possible to order the summary table using columns (keys): 
-*`r paste(gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM), collapse = ',')`*.
-The sequence of columns in the table below describes the
-sequence of ordering steps -- the key in the first row sorts the
-entire summary table and subsequent keys break the ties.
+<!-- <details><summary>Ordering by columns</summary> -->
+<!-- It is possible to order the summary table using columns (keys):  -->
+<!-- *`r paste(gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM), collapse = ',')`*. -->
+<!-- The sequence of columns in the table below describes the -->
+<!-- sequence of ordering steps -- the key in the first row sorts the -->
+<!-- entire summary table and subsequent keys break the ties. -->
 
-</details>
+<!-- </details> -->
 
-```{r, echo=F}
-DT::DTOutput("order_summ")
-```
+<!-- ```{r, echo=F} -->
+<!-- DT::DTOutput("order_summ") -->
+<!-- ``` -->
 
-</div>
+<!-- </div> -->
 
 </div>
 

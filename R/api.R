@@ -93,7 +93,6 @@ run_in_dir <- function(m) {
 
 ##' @export
 load_compound_input <- function(m) {
-
     coll <- list()
     fields <- colnames(EMPTY_CMPD_LIST)
     fns <- m$conf$compounds$lists
@@ -235,6 +234,7 @@ mk_comp_tab <- function(m) {
     ## TODO: Not tested on cases when there are both knowns and
     ## unknowns present in the compound lists. It *should* work
     ## though.
+
     m
 }
 
@@ -330,12 +330,9 @@ mk_tol_funcs <- function(m) {
 
     ## TODO make these things compatible with futures.
 
-
-
     m$extr$tol$coarse <- gen_mz_err_f(m$conf$tolerance[["ms1 coarse"]],
                                       "ms1 coarse error: Only ppm, or Da units allowed."
                                       )
-
 
     m$extr$tol$fine <- gen_mz_err_f(m$conf$tolerance[["ms1 fine"]],
                                     "ms1 fine error: Only ppm, or Da units allowed.")
@@ -343,10 +340,8 @@ mk_tol_funcs <- function(m) {
     m$extr$tol$eic <- gen_mz_err_f(m$conf$tolerance$eic,
                                    "eic error: Only ppm, or Da units allowed.")
 
-    
     m$extr$tol$rt <- gen_rt_err(m$conf$tolerance$rt,
                                 "rt error: Only s(econds), or min(utes) allowed.")
-    
     m
     
 }
@@ -354,7 +349,6 @@ mk_tol_funcs <- function(m) {
 
 ##' @export
 extr_data <- function(m) {
-
     ## Reduce the comp table to only unique masses (this is because
     ## different sets can have same masses).
     

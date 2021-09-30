@@ -80,3 +80,13 @@ log2yesno <- function (log) {
 fixlog2yesno <- function(log) {
     as.character(log2yesno(log))
 }
+
+##' @export
+get_val_unit <- function(entry) {
+    cntnt <- strsplit(entry,split = "[[:space:]]+")[[1]]
+    cntnt <- cntnt[nchar(cntnt) > 0]
+    if (length(cntnt)!=2) stop("(upd_unit) ","Unable to interpret ", entry)
+    val <- cntnt[[1]]
+    unit <- cntnt[[2]]
+    c(val=val,unit=unit)
+}
