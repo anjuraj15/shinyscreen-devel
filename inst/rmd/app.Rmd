@@ -16,7 +16,7 @@ htmltools::img(src = knitr::image_uri(system.file(package="shinyscreen","www/shi
 library(data.table)
 library(shinyscreen)
 library(ggplot2)
-## library(shinydashboard)
+### library(shinydashboard)
 
 init <- readRDS("init.rds")
 def_state <- new_state()
@@ -28,31 +28,31 @@ def_datatab <- shinyscreen:::dtable("tag"=factor(),
 
 def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
                                         "Select"=factor("ignore",levels=shinyscreen:::SUBSET_VALS))
-## RMassBank masks shiny::validate. Unmask it.
+### RMassBank masks shiny::validate. Unmask it.
 validate <- shiny::validate
-## def_state$input$tab$tags <- def_datatab
+### def_state$input$tab$tags <- def_datatab
 rv_state <- list2rev(def_state)
 compl_sets <- eventReactive(rv_state$input$tab$setid,
                             rv_state$input$tab$setid[,unique(set)])
-## Reactive values to support some of the UI elements.
-## rv_ui <- reactiveValues(datatab=def_tags)
+### Reactive values to support some of the UI elements.
+### rv_ui <- reactiveValues(datatab=def_tags)
 
-## Update with data-files.
+### Update with data-files.
 rv_dfile <- reactiveVal(def_datafiles)
 
-## Data-file table when loading.
+### Data-file table when loading.
 rv_datatab <- reactiveVal(def_datatab)
 
-## Re-definitions.
+### Re-definitions.
 PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
 
-## Plotting parameters.
+### Plotting parameters.
 
-## Transient rt range.
+### Transient rt range.
 rv_rtrange <- reactiveValues(min=def_state$conf$rt_min,
                              max=def_state$conf$rt_max)
 
-## Transient mz range.
+### Transient mz range.
 rv_mzrange <- reactiveValues(min=NA,
                              max=NA)
 
@@ -68,11 +68,12 @@ inputdirs <- list.dirs(path=init$indir, full.names = F, recursive = F)
 }
 </style>
 
+# {.tabset .tabset-pills}
+
+## Configuration {.tabset}
 
 
-# Configuration {.tabset}
-
-## Project
+### Project {.tabset}
 
 <details>
 <summary>Projects, input directories and compound lists</summary>
@@ -99,7 +100,9 @@ before starting `Shinyscreen` in one of the directories under
 
 </details>
 
-### Create new project
+#### Project management
+
+##### Create new project
 
 ```{r, echo=F}
 textInput(inputId = "new_proj_name", label= "New project name",value = "")
@@ -109,7 +112,7 @@ actionButton(inputId = "create_proj_b",
 ```
 
 
-### Load existing project
+##### Load existing project
 
 <details>
 <summary>Load an existing project</summary>
@@ -128,13 +131,13 @@ actionButton(inputId = "load_proj_b",
 
 ```
 
-### Save project
+##### Save project
 ```{r, echo=F}
 actionButton(inputId = "save_proj_b",
              label= "Save project")
 ```
 
-### Select input directory
+##### Select input directory
 <details>
 <summary>More on input directories</summary>
 
@@ -156,7 +159,9 @@ actionButton(inputId = "sel_indir_b",
              label= "Select")
 ```
 
-### Select compound lists
+#### Compound list inputs
+
+##### Select compound lists
 
 <details><summary>About compound lists</summary>
 A compound list is composed of entries describing compounds. This
@@ -207,7 +212,7 @@ actionButton(inputId = "comp_list_b",
 
 ```
 
-### Select set lists
+##### Select set lists
 
 <details><summary>About set lists (_setid_ tables)</summary>
 The compound lists can contain more entries than is necessary. Using
@@ -233,7 +238,7 @@ actionButton(inputId = "set_list_b",
 
 ```
 
-### Data files
+#### Data files
 <details><summary>Load data files</summary>
 Shinyscreen currently supports only the **mzML** file format. After
 loading the files, set file tags in the file table (column
@@ -285,9 +290,9 @@ exists, otherwise _adduct_ column is ignored).
 DT::DTOutput("datatab",width="25%")
 ```
 
-## Extraction
+### Extraction
 
-### Spectra extraction based settings
+#### Spectra extraction based settings
 
 <details><summary>MS1 coarse error</summary>
 
@@ -362,7 +367,7 @@ radioButtons("missingprec",
 
 ```
 
-## Prescreening
+### Prescreening
 
 <details><summary>MS1 intensity threshold</summary>
 
@@ -413,7 +418,7 @@ shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
                       def_unit = vu[['unit']])
 ```
 
-## Filter the summary table
+### Filter the summary table
 <div style= "display: flex; vertical-align:top; ">
 
 <div style="padding-right: 0.5em">
@@ -467,27 +472,27 @@ DT::DTOutput("summ_subset")
 
 </div>
 
-## Report
+### Report
 
 ```{r, echo=F}
 shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state$conf$report$author)
 shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title)
 ```
 
-# View compound Lists and Sets {.tabset}
+## View compound Lists and Sets {.tabset}
 
-## Compound List
+### Compound List
 
 ```{r, echo=F}
 DT::dataTableOutput("comp_table")
 ```
 
-## Setid Table
+### Setid Table
 ```{r, echo=F}
 DT::dataTableOutput("setid_table")
 ```
 
-# Extract Data and Prescreen
+## Extract Data and Prescreen
 
 Shinyscreen can perform spectral extraction based on the desired settings(_ppm_,_retention time window_) under the _Extraction_ tab. The extracted spectra can be subjected to prescreening based on the settings defined under the _prescreening_ tab.
 
@@ -539,7 +544,7 @@ actionButton(inputId = "sortsubset_b",
 </div>
 
 
-# Compound Explorer {.tabset}
+## Compound Explorer {.tabset}
 
 This is where the prescreening results are presented. The _Browser_ tab shows a detailed view of the MS2 data as well as the associated precursors in searchable tables. The _Viewer_ tab shows the visualisations of the EICs and the plots of the spectra.  Both kinds of outputs can be exported using portable formats. 
 
@@ -548,7 +553,7 @@ Auto quality checks built into Shinyscreen can sometimes yield unsatisfactory re
 Please see the respective subsections for more details.
 
 
-## Browser
+### Browser
 
 <details><summary>Organise, filter and search through data.</summary>
 
@@ -656,7 +661,7 @@ uiOutput("export_summ_ui")
 ```
 
 
-## Viewer
+### Viewer
 
 
 <details><summary> Visualize and export the plots. </summary>
