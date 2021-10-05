@@ -277,22 +277,25 @@ style_tab_signif <- function(dt) {
 }
 
 ## A customised DT intended for spec data.
-styled_dt <- function(tab,style = 'bootstrap',
-                      class = 'cell-border',
+styled_dt <- function(tab,
                       extensions = 'Scroller',
-                      options = list(scrollY=200,
-                                     scrollX=T,
-                                     dom = "t",
-                                     deferRender = T,
-                                     scroller = T,
-                                     ordering = F),
+                      scrollY=200L,
+                      dom = "t",
+                      scroller = T,
+                      ordering = F,
                       colnames = style_tab_cols(tab),
                       rownames = F,
                       filter = 'top',
                       ...) {
+
+    options = list(scrollY=scrollY,
+                   scrollX=T,
+                   dom = "t",
+                   deferRender = T,
+                   scroller = scroller,
+                   ordering = ordering)
+    
     dttab <- DT::datatable(tab,
-                           style = style,
-                           class = class,
                            options = options,
                            colnames = colnames,
                            rownames = rownames,
@@ -1722,11 +1725,11 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
             DT::datatable(state$input$tab$cmpds,
-                          style = 'bootstrap',
-                          class = 'table-condensed',
+                          ## style = 'bootstrap',
+                          ## class = 'table-condensed',
                           extensions = 'Scroller',
                           options = list(scrollX = T,
-                                         scrollY = 200,
+                                         scrollY = 300,
                                          deferRender = T,
                                          scroller = T))
         })
@@ -1736,11 +1739,11 @@ mk_shinyscreen_server <- function(projects,init) {
             state <- rf_compound_input_state()
 
             DT::datatable(state$input$tab$setid,
-                          style = 'bootstrap',
-                          class = 'table-condensed',
+                          ## style = 'bootstrap',
+                          ## class = 'table-condensed',
                           extensions = 'Scroller',
                           options = list(scrollX = T,
-                                         scrollY = 200,
+                                         scrollY = 300,
                                          deferRender = T,
                                          scroller = T))
         })
@@ -1775,15 +1778,11 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$compound_selector_qa <- DT::renderDT({
-            options <- list(scrollX=T,
-                            dom = "t",
-                            scroller = F,
-                            ordering = F)
             styled_dt(rv_tran$qa_compsel_tab,
                       extensions = NULL,
                       selection = "none",
                       filter = 'none',
-                      options = options,
+                      scroller = F,
                       callback = DT::JS(dblclick_callback))
 
         })

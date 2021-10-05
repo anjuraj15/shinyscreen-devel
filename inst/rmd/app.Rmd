@@ -479,7 +479,7 @@ shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state
 shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title)
 ```
 
-## View compound Lists and Sets {.tabset}
+## View compound Lists and Sets
 
 ### Compound List
 
@@ -609,22 +609,36 @@ filters.
 
 <div style="display: flex; vertical-align: top;margin: auto;">
 
-<div style="width: 50%;">
+<div style="width: 50%;padding-right=1.0em">
+
+#### Compound selector
+
 ```{r, echo=F}
 DT::DTOutput("compound_selector")
 ```
+
+#### MS1 quality check table
+
 ```{r, echo=F}
 DT::DTOutput("compound_selector_qa")
 ```
+
 </div>
 
-<div style="width: 25%">
+
+<div style="width: 50%">
+
+#### MS2 quality check table
+
 ```{r, echo=F}
 DT::DTOutput("compound_ms2_table")
 ```
-</div>
 
-<div style="width: 25%">
+
+
+#### MS2 spectrum
+
+
 ```{r, echo=F}
 DT::DTOutput("compound_ms2_spectrum")
 ```
