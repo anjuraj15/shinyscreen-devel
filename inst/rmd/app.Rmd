@@ -137,7 +137,15 @@ actionButton(inputId = "save_proj_b",
 ### Select input directory
 <details>
 <summary>More on input directories</summary>
-Blah. 
+
+Input directory is a subdirectory of the `indir` directory which is
+one of the arguments to `app` function used to start Shinyscreen
+GUI. It contains all the input data needed for the prescreening:
+datafiles, compound and set lists in the `CSV` format.
+
+Select on of the input directories from the list by clicking the
+`Select` button.
+
 </details>
 
 ```{r, echo=F}
@@ -185,6 +193,8 @@ scanning for completely unknown compounds is also supported by the
 
 It is strongly recommended to quote SMILES, names and formulas in the
 CSV file used with Shinyscreen.
+
+Select one, or more compound lists by clicking `Select` button.
 </details>
 
 ```{r, echo=FALSE}
@@ -209,6 +219,8 @@ columns,
 * ***ID*** : the ID entry from the compound list
 
 * ***set*** : an user-defined set name.
+
+Select one set list by clicking `Select` button.
 </details>
 
 ```{r, echo=FALSE}
@@ -230,8 +242,13 @@ to be extracted from the file using the **set** column. Finally,
 specify the **adduct** in the adduct column. In case of compounds
 with unknown structure and formula, the adduct is ignored for obvious
 reasons.
+
+Select datafiles of interest from the list and confirm the selection
+by clicking `Select`.
+
 </details>
 ```{r, echo=FALSE}
+
 selectInput('dfile_list',
             label = "Select datafiles",
             multiple = T,
@@ -241,9 +258,11 @@ actionButton(inputId = "datafiles_b",
 
 ```
 
-<details><summary>Assign tags to data files.</summary>
+<details><summary>Assign tags to data files.</summary> 
+
 Each tag designates an unique file. Use the table below to assign
 tags.
+
 </details>
 
 ```{r, echo=FALSE}
@@ -253,31 +272,18 @@ DT::DTOutput("datafiles",width="25%")
 
 
 
-<details><summary>Assign sets to tags.</summary>
+<details>
+
+<summary>Assign sets to tags.</summary>
+
 For each tag, assign a set and an adduct (if the structure information
 exists, otherwise _adduct_ column is ignored).
+
 </details>
 
 ```{r, echo=F}
 DT::DTOutput("datatab",width="25%")
 ```
-
-
-## Inputs
-
-
-
-<!-- needs inv comma ... r htmlOutput("comp_lists")` -->
-
-
-
-<!-- `r htmlOutput("setids", inline=T)` -->
-
-
-
-
-
-
 
 ## Extraction
 
