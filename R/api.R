@@ -696,7 +696,7 @@ report <- function(m) {
     fn_chunk <- system.file(file.path('rmd','report_chunk.rmd'), package = "shinyscreen")
     dir.create(REP_TOPDIR,recursive = T,showWarnings = F)
     header <- knitr::knit_expand(fn_header)
-    flt_summ <- m$out$tab$flt_summ
+    flt_summ <- m$out$tab$reptab
     ms2 <- m$extr$ms2
     ms1 <- m$extr$ms1
     rt_min <- rt_in_min(m$conf$figures$rt_min)

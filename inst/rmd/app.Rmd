@@ -418,13 +418,37 @@ shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
                       def_unit = vu[['unit']])
 ```
 
-### Filter the summary table
-<div style= "display: flex; vertical-align:top; ">
+### Report
 
-<div style="padding-right: 0.5em">
+<details><summary>Create a report</summary>
+
+Shinyscreen can produce a report containing graps of EICs and spectra
+for some or all compounds. The controls below define what enters the
+report. Please keep in mind that producing a PDF output with thousands
+of compounds will take huge amount of time, so if you are prescreening
+a lot of compounds, consider restricting limiting the output to, for
+example, those entries that have passed the quality checks.
+
+</details>
+
+
+<div style= "display: flex; vertical-align:top; padding-right: 0.5em">
+
+<div>
+
+```{r, echo=F}
+shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state$conf$report$author)
+shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title)
+```
+
+</div>
+
+
+<div>
+
 <details><summary>Filter summary table</summary>
 
-Filter entries in the summary table according to the QA criteria.
+Filter entries in the report according to the QA criteria.
 
 * **qa_pass** : entries that passed all checks
 
@@ -445,6 +469,7 @@ Values:
 * **take the bad ones** : entry failed QA
 
 </details>
+
 ```{r, echo=F}
 
 DT::DTOutput("summ_subset")
@@ -472,12 +497,8 @@ DT::DTOutput("summ_subset")
 
 </div>
 
-### Report
 
-```{r, echo=F}
-shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state$conf$report$author)
-shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title)
-```
+
 
 ## View compound Lists and Sets
 
@@ -504,51 +525,41 @@ time-intensive step, so some patience might be needed.
 
 Once the data is extracted, it will be possible to quality check the
 spectra associated with the compounds specified in the _setid_ list,
-to subset that data, look at the plots and publish a report.
+look at the plots and publish a report.
 
 </details>
+
 ```{r, echo=FALSE}
 actionButton(inputId = "extract_b",
              label = "Extract")
 ```
 
-<details><summary>Prescreen extracted spectra.</summary>
+<details>
+
+<summary>Prescreen extracted spectra.</summary>
 
 After the data extraction is finished, the quality of the retrieved
 spectra can be checked using the criteria defined in the
-_Prescreening_ tab of the _Configuration_ Section. The resulting
-_summary table_ is given below and is based on the prescreening
-criteria and filter and ordering setup specified in _Filter and order
-the summary table_ configuration subsection.
+_Prescreening_ tab of the _Configuration_ Section.
 
 </details>
 
-</details>
-
-<div style="display: flex; vertical-align: top;">
-
-<div>
 ```{r, echo=FALSE}
 actionButton(inputId = "presc_b",
              label = "Prescreen")
 ```
-</div>
-
-<div>
-```{r, echo=FALSE}
-actionButton(inputId = "sortsubset_b",
-             label = "Sort and subset")
-```
-</div>
-
-</div>
-
 
 ## Compound Explorer {.tabset}
 
-This is where the prescreening results are presented. The _Browser_ tab shows a detailed view of the MS2 data as well as the associated precursors in searchable tables. The _Viewer_ tab shows the visualisations of the EICs and the plots of the spectra.  Both kinds of outputs can be exported using portable formats. 
+This is where the prescreening results are presented. The _Browser_
+tab shows a detailed view of the MS2 data as well as the associated
+precursors in searchable tables. The _Viewer_ tab shows the
+visualisations of the EICs and the plots of the spectra.  Both kinds
+of outputs can be exported using portable formats.
 
-Auto quality checks built into Shinyscreen can sometimes yield unsatisfactory results. In such cases, it is possible to manually update relevant data.
+Auto quality checks built into Shinyscreen can sometimes yield
+unsatisfactory results. In such cases, it is possible to manually
+update relevant data.
 
 Please see the respective subsections for more details.
 
@@ -743,6 +754,8 @@ sidebarLayout(sidebarPanel(DT::DTOutput("plot_comp_select"),
                                         label="Save this plot"),
                            actionButton("plot_save_all",
                                         label="Save all plots"),
+                           actionButton("make_report_b",
+                                        label="Create report"),
                            width=4),
               wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height:80vh; background: white",
                         plotOutput("plot_eic",

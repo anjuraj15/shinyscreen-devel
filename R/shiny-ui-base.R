@@ -1357,27 +1357,9 @@ mk_shinyscreen_server <- function(projects,init) {
             message("(prescreen) Config written to ", fn_c_state)
             shinymsg("Prescreening started. Please wait.")
             state <- shinyscreen::run(m=m,
-                                      phases=c("prescreen"))
+                                      phases=c("prescreen","sort","subset"))
             message("(prescreen) Done prescreening.")
             shinymsg("Prescreening completed.")
-            z <- shinyscreen::merge2rev(rvs$m,lst = state)
-            eval(z)
-            
-            
-        })
-
-        observeEvent(input$sortsubset_b,{
-            m <- rev2list(rvs$m)
-
-            fn_c_state <- file.path(m$conf$project,
-                                    paste0("sortsubset.",shinyscreen:::FN_CONF))
-            yaml::write_yaml(x=m$conf,file=fn_c_state)
-            message("(sortsubset) Config written to ", fn_c_state)
-            state <- shinyscreen::run(m=m,
-                                      phases=c("sort",
-                                               "subset"))
-            message("(sortsubset) Done with sorting and subsetting.")
-            
             z <- shinyscreen::merge2rev(rvs$m,lst = state)
             eval(z)
             
@@ -1416,6 +1398,25 @@ mk_shinyscreen_server <- function(projects,init) {
             req(NROW(rvs$m$out$tab$flt_summ)>0)
             create_plots(rvs$m)
         })
+
+        observeEvent(input$make_report_b, {
+            shinymsg("Started creating report. Please wait.")
+            req(NROW(rvs$m$out$tab$flt_summ)>0)
+            mm <- rev2list(rvs$m)
+            subs <- rf_get_subset()
+            message("we're here")
+            if (shiny::isTruthy(subs)) {
+                message("now here")
+                tmp <- lapply(subs, function (x) parse(text = x)[[1]])
+                expr <- Reduce(function (x,y) {z<-call("&");z[[2]]<-x;z[[3]]<-y;z},x=tmp)
+                message("Filtering with: ",deparse(bquote(mm$out$tab$flt_summ[.(expr)])))
+                mm$out$tab$reptab <- eval(bquote(mm$out$tab$flt_summ[.(expr)]))
+                
+            } else mm$out$tab$reptab <- mm$out$tab$flt_summ
+            report(mm)
+            shinymsg("Finished creating report.")
+            
+        }, label = "make-report")
 
         observeEvent(input$updatesumm_b,{
             compsel <- rf_compsel_tab()
