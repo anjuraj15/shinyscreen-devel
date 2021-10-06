@@ -296,7 +296,7 @@ table_spec <- function(pdata) {
     tbl
 }
 
-plot_fname_prefix <- function(decotab,proj) {
+plot_fname_prefix <- function(decotab,proj,subdir=FIG_TOPDIR) {
     if (NROW(decotab)==0) return()
     adducts <- decotab[,adduct]
     ids <- decotab[,ID]
@@ -308,7 +308,7 @@ plot_fname_prefix <- function(decotab,proj) {
         fname <- paste(fname,chunk,sep = "_")
             
     }
-    ddir <- file.path(proj,FIG_TOPDIR)
+    ddir <- file.path(proj,subdir)
     if (!dir.exists(ddir)) dir.create(ddir,recursive = T)
     
     fname <- paste0(fname,"__id_")
@@ -319,20 +319,20 @@ plot_fname_prefix <- function(decotab,proj) {
     
 }
 
-plot_save_single <- function(plot,decotab,extension,proj,tabl=NULL,figtag="") {
+plot_save_single <- function(plot,decotab,extension,proj,subdir=FIG_TOPDIR,tabl=NULL,figtag="") {
     if (is.null(plot)) return()
-
-    fname <- plot_fname_prefix(decotab,proj)
+    
+    fname <- plot_fname_prefix(decotab,proj,subdir=subdir)
     
     fnplot <- paste0(fname,"__",figtag,".",extension)
-
+    
     if (extension == "rds" || extension == "RDS") {
         saveRDS(plot,file=fnplot)
     } else ggplot2::ggsave(filename = fnplot,
                            plot = plot)
-
     fntab <- paste0(fname,"__",figtag,".csv")
     if (! is.null(tabl)) data.table::fwrite(tabl,file=fntab,sep = ",")
-
-
+    list(plot=plot,tab=tabl,fn_plot=fnplot)
+    
 }
+

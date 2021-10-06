@@ -1,0 +1,13 @@
+---
+output:
+  pdf_document:
+    extra_dependencies: ["float"]
+
+author: "{{report_author}}"
+title: "{{report_title}}"
+geometry: margin=0.5cm
+---
+
+```{r, echo=F}
+knitr::opts_chunk$set(fig.pos = "!H", out.extra = "")
+```

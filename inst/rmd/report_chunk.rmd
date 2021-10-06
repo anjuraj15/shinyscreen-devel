@@ -1,0 +1,36 @@
+## {{report_chunk_header}}
+
+### EICs
+
+```{r, echo=F}
+
+if (nchar("{{report_fn_eic}}")!=0) {
+	knitr::include_graphics("{{report_fn_eic}}")
+} else {
+	"No good EIC found."
+}
+
+
+```
+
+{{report_tab_eic}}
+
+
+
+### MS2 Spectrum
+
+```{r, echo=F}
+
+if (nchar("{{report_fn_spec}}")!=0) {
+	knitr::include_graphics("{{report_fn_spec}}")
+} else {
+	"No good MS2 spectrum found."
+}
+				
+```
+
+
+{{report_tab_spec}}
+
+
+\newpage

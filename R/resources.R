@@ -184,6 +184,7 @@ DEF_INDEX_SUMM <- c("set", "-qa_pass", "-ms1_int", "adduct","-mz")
 ## Top-level directory to store the figures
 FIG_TOPDIR <- "figures"
 
+REP_TOPDIR <- "report"
 ## Figure filter
 FIG_DEF_FILTER <- ""
 

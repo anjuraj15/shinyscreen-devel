@@ -606,7 +606,7 @@ create_plots <- function(m) {
 }
 
 #' @export
-report <- function(m) {
+report_old <- function(m) {
     figtopdir <- FIG_TOPDIR #file.path(m$conf$project,FIG_TOPDIR)
     pander::evalsOptions("graph.output","pdf")
     author <- if (!is.null(m$conf$report$author)) m$conf$report$author else REPORT_AUTHOR
@@ -684,4 +684,88 @@ app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd()
     saveRDS(object = init,file="init.rds")
     file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),"app_run.Rmd")
     rmarkdown::run(file = "app_run.Rmd", shiny_args = shiny_args, render_args = render_args)
+}
+
+
+#' @export
+#' @title report
+report <- function(m) {
+    report_author <- if (!is.null(m$conf$report$author)) m$conf$report$author else REPORT_AUTHOR
+    report_title <- if (!is.null(m$conf$report$title)) m$conf$report$title else REPORT_TITLE
+    fn_header <- system.file(file.path('rmd','report_header.rmd'),package = "shinyscreen")
+    fn_chunk <- system.file(file.path('rmd','report_chunk.rmd'), package = "shinyscreen")
+    dir.create(REP_TOPDIR,recursive = T,showWarnings = F)
+    header <- knitr::knit_expand(fn_header)
+    flt_summ <- m$out$tab$flt_summ
+    ms2 <- m$extr$ms2
+    ms1 <- m$extr$ms1
+    rt_min <- rt_in_min(m$conf$figures$rt_min)
+    rt_max <- rt_in_min(m$conf$figures$rt_max)
+    keytab <- flt_summ[,unique(.SD),.SDcol=c("adduct","ID")]
+
+    repdoc <- header
+    for (n in 1:NROW(keytab)) {
+        select <- dtable(adduct=keytab$adduct[[n]],
+                         ID=keytab$ID[[n]])
+        
+        pdata_ms1 <- data4plot_ms1_cgram(ms1,select)
+        pdata_ms2 <- data4plot_ms2_cgram(ms2,select)
+        pdata_spec <- data4plot_ms2_spec(ms2,flt_summ,select)
+
+        tabl_ms1 <- table_eic(pdata_ms1)
+        ## tabl_ms2 <- table_eic(pdata_ms2) # For the moment, no real
+                                            # info to be had here.
+        tabl_spec <- table_spec(pdata_spec)
+
+        palette = plot_palette(pdata_ms1)
+
+
+        p_eic <- plot_eic_w_facet(pdata_ms1 = pdata_ms1,
+                                  pdata_ms2 = pdata_ms2,
+                                  rt_range = c(rt_min,rt_max),
+                                  palette = palette) + ggplot2::theme(legend.position = "bottom")
+        p_spec <- plot_spec_w_facet(pdata_ms2 = pdata_spec,
+                                    mz_range = c(NA_real_,NA_real_),
+                                    palette = palette) + ggplot2::theme(legend.position = "bottom")
+        eic_things <- plot_save_single(p_eic,
+                                       decotab = select,
+                                       figtag = "eic",
+                                       proj = m$conf$project,
+                                       tabl = tabl_ms1,
+                                       subdir = REP_TOPDIR,
+                                       extension = m$conf$figures$ext)
+        
+
+        spec_things <- plot_save_single(p_spec,
+                                        decotab = select,
+                                        figtag = "spec",
+                                        proj = m$conf$project,
+                                        tabl = tabl_spec,
+                                        subdir = REP_TOPDIR,
+                                        extension = m$conf$figures$ext)
+
+        report_chunk_header <- paste0("Adduct: ",keytab$adduct[[n]],"; ",
+                                      "ID: ",keytab$ID[[n]])
+
+
+        report_tab_eic_cap <- sprintf("EIC for %s",keytab$ID[[n]])
+        report_fn_eic <- eic_things$fn_plot
+        report_tab_eic <- if (shiny::isTruthy(eic_things$tab)) knitr::kable(eic_things$tab, caption = report_tab_eic_cap) else ""
+
+        report_tab_spec_cap <- sprintf("Spectrum for %s",keytab$ID[[n]])
+        report_fn_spec <- spec_things$fn_plot
+        report_tab_spec <- if (shiny::isTruthy(eic_things$tab)) knitr::kable(spec_things$tab, caption = report_tab_spec_cap) else ""
+        
+        repdoc <- c(repdoc,knitr::knit_expand(fn_chunk))
+        message("(report) Knitting of chunk ",n," out of ",NROW(keytab)," has been completed.")
+        
+    }
+    fn_rep <- file.path(m$conf$project,"report.Rmd")
+    message("(report) Writing Rmd...")
+    cat(repdoc,file=fn_rep,sep = "\n")
+    message("(report) ...done.")
+    message("(report) Render start ...")
+    rmarkdown::render(fn_rep,output_dir = m$conf$project)
+    message("(report) ...done.")
+    m
 }
