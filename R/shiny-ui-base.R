@@ -22,7 +22,7 @@ obsrv_e <- shiny::observeEvent
 isol <- shiny::isolate
 
 
-celledit_values <- function(col,values,labels=NULL) {
+celledit_values <- function(col,values,labels=NULL,addna=T) {
     if (is.null(labels)) labels <- values
     if (length(values)==0 || nchar(values)==0) return(character(0))
 
@@ -37,10 +37,12 @@ celledit_values <- function(col,values,labels=NULL) {
     part2 <- sprintf("{value: '%s', display: '%s'}",tail(values,1),tail(labels,1))
 
     res <- if (length(part1)>0 || length(part2)>0) {
-               c("{",sprintf("column: %s, ",col),
-                 "type: 'list', ",
-                 "options: [",
-                 "{value: 'NA', display: 'NA'},",part1,part2, "]","}")
+               a1 <- c("{",sprintf("column: %s, ",col),
+                       "type: 'list', ",
+                       "options: [")
+               a2 <- c(part1,part2,"]","}")
+               if (addna) c(a1,"{value: 'NA', display: 'NA'},",a2) else c(a1,a2)
+                       
            } else character(0)
 
     as.character(res)
@@ -346,7 +348,7 @@ dt_summ_subset_callback = function () DT::JS(c(
                                               "  columns: [1],",
                                               "  confirmationButton: false,",
                                               "  inputTypes: [",
-                                              celledit_values('1',SUBSET_VALS),
+                                              celledit_values('1',SUBSET_VALS,addna=F),
                                               "  ]",
                                               "});"))
 
