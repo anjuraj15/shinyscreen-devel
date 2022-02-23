@@ -146,7 +146,7 @@ pick_uniq_pscan<-function(leg) {
 
 verif_prec_fine_ht<-function(preLeg,ms1,mz,mzrng,ids,adduct) {
     ## TODO FIXME TESTPHASE Something goes wrong here, all mapply results are
-    ## not OK. More testing needed.
+    ## not OK. More testing needed. ... huh? But, it works now? (23/02/2022)
     df<-preLeg
     xx <- dtable(adduct=adduct,ID=ids,mz=mz,mz1=mzrng[,1],mz2=mzrng[,2])
     df <- preLeg[xx,on=c("ID","adduct")]
@@ -190,6 +190,7 @@ filt_ms2_fine <- function(ms1,ms2,mz,ids,adduct,err_coarse_fun,err_fine_fun) {
     
     tmp<-filt_ms2_by_prcs_ht(ms2,mzrng=mzrng_c,ids=ids,adduct=adduct)
     legMS2<-tmp$leg
+    message("nrow legMS2:", nrow(legMS2))
     legPcs<-pick_uniq_pscan(legMS2)
     legPcs<-verif_prec_fine_ht(legPcs,ms1=ms1,mz=mz,mzrng=mzrng_f,ids=ids,adduct=adduct)
     ## x<-Map(function (id,psn,a) {legMS2[id==legMS2$ID & a==legMS2$adduct & psn==legMS2$prec_scan,]},legPcs[,"ID"],legPcs[,"prec_scan"],legPcs[,"adduct"])
