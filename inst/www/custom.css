@@ -6,3 +6,15 @@
 
 #inline label{ display: table-cell; text-align: center; vertical-align: middle; }
 #inline .form-group { display: table-row;}
+
+
+/* From SO 8565819 */
+#wrapper {
+  min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  margin-bottom: -100px; /* <- If you change this height... */
+}
+#footer, #push {
+  height: 100px;         /* <- ...then you should also change this height! */
+}

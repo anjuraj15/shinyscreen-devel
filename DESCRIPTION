@@ -1,6 +1,6 @@
 Package: shinyscreen
 Title: Pre-screening of Mass Spectrometry Data 
-Version: 1.0.6
+Version: 1.0.7
 Author: Todor Kondić
 Maintainer: Todor Kondić <todor.kondic@uni.lu>
 Authors@R: 
@@ -41,7 +41,7 @@ Description: Pre-screening of Mass Spectrometry Data.
 License: Apache License (>= 2.0)
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE)
 Collate:
     'base.R'

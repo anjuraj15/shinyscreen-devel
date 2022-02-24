@@ -1,5 +1,7 @@
 ---
-output: html_document
+output:
+  html_document:
+    css: custom.css
 runtime: shiny_prerendered
 author: Environmental Cheminformatics Group, LCSB, University of Luxembourg
 title: "`r paste('Shinyscreen', packageVersion('shinyscreen'))`"
@@ -634,10 +636,48 @@ DT::DTOutput("compound_selector")
 DT::DTOutput("compound_selector_qa")
 ```
 
+<div id="footer">
+
+<details><summary>Narrow down entries according to the QA criteria.</summary>
+
+* **qa_pass** : entries that passed all checks
+
+* **qa_ms1_exists** : MS1 intensity is above the MS1 threshold
+
+* **qa_ms2_exists** : those entries for which some MS2 spectra have been found
+
+* **qa_ms1_above_noise** : MS1 is intense enough and above the noise level
+
+* **qa_ms2_good_int** : MS2 intensity is above the MS2 threshold
+
+* **qa_ms2_near** : MS2 spectrum is close enough to the MS1 peak
+
+</details>
+
+```{r, echo=F}
+checkboxGroupInput("cmpd_sel_filter",
+                   label="Filter Results",
+                   choices = c(qa_pass="qa_pass",
+                               qa_ms2_near="qa_ms2_near",
+                               qa_ms2_good_int="qa_ms2_good_int",
+                               qa_ms2_exists="qa_ms2_exists",
+                               qa_ms1_above_noise="qa_ms1_above_noise",
+                               qa_ms1_exists="qa_ms1_exists"),
+                   inline=T,
+                   selected = character(0))
+
+```
+
 </div>
 
 
+</div>
+
+
+
 <div style="width: 50%">
+
+
 
 #### MS2 quality check table
 
@@ -653,6 +693,7 @@ DT::DTOutput("compound_ms2_table")
 ```{r, echo=F}
 DT::DTOutput("compound_ms2_spectrum")
 ```
+
 </div>
 	
 </div>

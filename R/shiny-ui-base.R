@@ -479,12 +479,23 @@ mk_shinyscreen_server <- function(projects,init) {
     ## Modifiable version.
     the_ord_summ <- data.table::copy(def_ord_summ)
 
-    gen_compsel_tab <- function(summ) {
+    gen_compsel_tab <- function(summ,criteria=character(0)) {
         ## Given summary table, create a table with only adduct/tag/ID
         ## entries and associated MS1 quantities.
-        res <- summ[,unique(.SD),.SDcol=c("adduct","tag","ID",
-                                          "mz","ms1_rt","ms1_int",
-                                          "Name")]
+        seln <- logical(length(criteria))
+        res <-if (length(seln)>0) {
+                  names(seln) <-criteria
+                  seln[] <- T
+                  critab <- do.call(data.table::data.table,as.list(seln))
+                  summ <- summ[critab,on=names(critab)]
+                  summ[,unique(.SD),.SDcol=c("adduct","tag","ID",
+                                             "mz","ms1_rt","ms1_int",
+                                             "Name")]
+              } else {
+                  summ[,unique(.SD),.SDcol=c("adduct","tag","ID",
+                                             "mz","ms1_rt","ms1_int",
+                                             "Name")]
+              }
         data.table::setkeyv(res,c("adduct", "tag", "mz","ms1_rt"))
         res
         
@@ -897,9 +908,11 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_gen_struct_figs <- eventReactive(rvs$m$out$tab$comp,gen_struct_plots(rvs$m))
 
         rf_compsel_tab <- reactive({
+            input$cmpd_sel_filter
+            message("cmpd_sel_filter:",paste0(input$cmpd_sel_filter,collapse=";"))
             tab <- rvs$m$out$tab$flt_summ
             req(NROW(tab)>0)
-            gen_compsel_tab(tab)
+            gen_compsel_tab(tab,criteria=input$cmpd_sel_filter)
         })
 
         rf_qa_compsel_tab <- reactive({
@@ -1136,11 +1149,11 @@ mk_shinyscreen_server <- function(projects,init) {
             }
         }, label = "project-b")
 
-        observeEvent(rv_projects,
-        {
-            message("This is triggered as it should be.")
+        ## observeEvent(rv_projects,
+        ## {
+        ##     message("Project updated.")
             
-        },label = "upd-proj-list")
+        ## },label = "upd-proj-list")
 
 
         observeEvent(input$save_proj_b,{
