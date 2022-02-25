@@ -133,7 +133,42 @@
   Provided Shinyscreen is successfully installed this snippet will
   run it.
   #+BEGIN_SRC R
-    shinyscreen::app()
+    ## Some low-level R magic to install packages and their dependencies
+    ## locally. In this way, the system-wide distribution is
+    ## untouched. These days, `renv` package is used to achieve the same
+    ## result, plus some bells and whistles. 
+    ## projdir="./pkgs"
+    ## srcdir="path/to/shinyscreen/source"
+    ## unlink(projdir,recursive=T,force=T)
+    ## if (!dir.exists(projdir)) dir.create(projdir)
+    ## .libPaths(projdir)
+    ## if ("package:shinyscreen" %in% search()) detach("package:shinyscreen",unload=T)
+    ## devtools::install(pkg=srcdir,upgrade = "never")
+
+
+    ## Load shinyscreen.
+    library(shinyscreen)
+    library(future)
+
+    ## Define the input top-level directory, containing subdirectories
+    ## with input data. The input data consists of mzML files,
+    ## compound and set lists). All the input data must exist before
+    ## your launch shinyscreen.
+    indir <- "shinyscreen_inputs"
+
+    ## Define the output top-level directory, containing
+    ## subdirectiories which will hold results of different
+    ## projects. Each project directory holds the project state,
+    ## intermediate and final results. Projects can be created from
+    ## within Shinyscreen application.
+    userdir <- "shinyscreen_projects"
+
+    ## Support parallelisation with `multisession` (windows,linux), or
+    ## `multicore` (linux).
+    future::plan("multisession",workers=4L)
+
+    ## Start shinyscreen.
+    app(indir=indir,userdir = userdir)
   #+END_SRC
   
 * Usage
