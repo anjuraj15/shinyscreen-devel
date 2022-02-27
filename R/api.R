@@ -772,6 +772,26 @@ app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd()
 
 
 #' @export
+#' @title serve
+#' @param indir `character(1)`, a location on the server side
+#'     containing data directories.
+#' @param topuserdir `character(1)`, a location on the server side
+#'     containing individual user directories.
+#' @param user `character(1)`, subdir of topuserdir.
+#' @param host `character(1)`, optional, address where the page is
+#'     served.
+#' @param port `integer(1)`, optional, port at which the page is
+#'     served.
+#' @return Nada.
+#' @author Todor Kondić
+serve <- function(indir,topuserdir,user,host='0.0.0.0',port=7777) {
+    shiny_args <- c(list(launch.browser=F),list(host=host,port=port))
+    userdir <- file.path(topuserdir,user)
+    app(shiny_args=shiny_args,indir=indir,userdir=userdir)
+}
+
+
+#' @export
 #' @title report
 report <- function(m) {
     report_author <- if (!is.null(m$conf$report$author)) m$conf$report$author else REPORT_AUTHOR
