@@ -787,6 +787,12 @@ app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd()
 serve <- function(indir,topuserdir,user,host='0.0.0.0',port=7777) {
     shiny_args <- c(list(launch.browser=F),list(host=host,port=port))
     userdir <- file.path(topuserdir,user)
+    if (!dir.exists(userdir)) {
+        dir.create(userdir)
+        message('Created userdir: ',userdir)
+    } else {
+        message('Using existing userdir: ', userdir)
+    }
     app(shiny_args=shiny_args,indir=indir,userdir=userdir)
 }
 
