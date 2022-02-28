@@ -120,10 +120,9 @@ actionButton(inputId = "create_proj_b",
 <summary>Load an existing project</summary>
 
 All the existing projects are shown in the `Avaliable projects`
-list. Load the project by pressing `Select project` button.
-
-
+list. Load the project by pressing `Select project` button. 
 </details>
+
 ```{r, echo=F}
 selectInput('proj_list',
             label = "Select project",
@@ -133,11 +132,34 @@ actionButton(inputId = "load_proj_b",
 
 ```
 
+
 ##### Save project
 ```{r, echo=F}
 actionButton(inputId = "save_proj_b",
              label= "Save project")
 ```
+
+##### Download project
+
+<details> 
+<summary>Download results</summary>
+
+Button `Download project` only makes sense to be used if Shinyscreen is
+served over network. If this is the case, clicking this button will
+download plots and csvs generated in the project directory.
+</details>
+
+```{r, echo=F}
+downloadButtonRmd <- function (outputId, label = "Download", class = NULL, ...)  {
+     tags$a(id = outputId, class = paste("btn btn-default shiny-download-link", 
+        class), href = "", target = "_blank", download = NA, 
+        icon("download"), label, ...)
+ }
+
+downloadButtonRmd("dwn_proj_b",
+                  "Download project directory")
+```
+
 
 ##### Select input directory
 <details>

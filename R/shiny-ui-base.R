@@ -1414,6 +1414,7 @@ mk_shinyscreen_server <- function(projects,init) {
             create_plots(rvs$m)
         })
 
+
         observeEvent(input$make_report_b, {
             shinymsg("Started creating report. Please wait.")
             req(NROW(rvs$m$out$tab$flt_summ)>0)
@@ -1856,6 +1857,30 @@ mk_shinyscreen_server <- function(projects,init) {
                    } else "Currently not in the plot."
             
         })
+
+        output$dwn_proj_b <- shiny::downloadHandler(
+                                        filename=function() {
+                                            format(Sys.time(), "project_%Y%m%d_%H_%M_%S.tar.gz")
+                                        },
+                                        content=function(file) {
+                                            pdir <- rvs$m$conf$project
+                                            shiny::req(!is.null(pdir) &&
+                                                       !is.na(pdir) &&
+                                                       (nchar(pdir) > 0))
+                                            ddir <- tempfile("projectdata",tmpdir=".")
+                                            if (dir.exists(ddir)) unlink(ddir,recursive=T)
+                                            dir.create(ddir)
+                                            srcfig <- file.path(pdir,'figures')
+                                            file.copy(from=srcfig,to=ddir,recursive=T,copy.date=T)
+                                            csvfns <- list.files(path=pdir,pattern=r"(.*\.csv$)",full.names=T)
+                                            ymlfns <- list.files(path=pdir,pattern=r"(.*\.y.ml$)",full.names=T)
+                                            pdffns <- list.files(path=pdir,pattern=r"(.*\.pdf$)",full.names=T)
+                                            fns <- c(csvfns,ymlfns,pdffns)
+                                            for (fn in fns) {file.copy(from=fn,to=ddir,copy.date=T)} 
+                                            tar(file,files=ddir,compression="gzip")
+                                            unlink(ddir,recursive=T)
+                                        })
+
 
         
 
