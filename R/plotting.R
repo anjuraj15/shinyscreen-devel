@@ -64,7 +64,9 @@ data4plot_ms2_cgram <- function(tab,select=dtable(adduct=character(0),ID=charact
     res <- tab[select,.(adduct,tag,ID,CE,an,rt,intensity),on=c('ID','adduct'),nomatch=NULL]
     if (NROW(res) == 0) return(res)
     data.table::setkeyv(res,c('ID','adduct','tag','CE','an'))
-    res <- res[,.(rt,intensity=max(intensity)),keyby=c('ID','adduct','tag','CE')]
+    ## NOTE: I used to not have 'an' in keyby here, but that obviously
+    ## generates bad MS2 chromatogram. So, why?
+    res <- res[,.(rt,intensity=max(intensity)),keyby=c('ID','adduct','tag','CE','an')]
     res[,`:=`(lab_id=factor(ID),
               lab_adduct=factor(adduct),
               lab_tag=factor(tag),
