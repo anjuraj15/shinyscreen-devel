@@ -53,14 +53,14 @@ Collate:
     'shiny-ui-base.R'
 Depends:
     RMassBank,
-    RChemMass
+    RChemMass,
+    mzR,
+    MSnbase
 Imports:
     tools,
     scales,
     future,
     yaml,
-    mzR,
-    MSnbase,
     data.table,
     assertthat,
     withr,
