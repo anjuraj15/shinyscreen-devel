@@ -433,6 +433,7 @@ extr_msnb <-function(file,wd,mz,errEIC, errFinePPM,errCoarse=0.5,rt=NULL,errRT=N
 
 }
 
+##' @importFrom MSnbase filterMz
 extr_msnb_ht <-function(file,wd,mz,errEIC, errFinePPM,errCoarse,fnSpec,rt=NULL,errRT=NULL,mode="onDisk") {
     ## Perform the entire data extraction procedure.
     ## 
@@ -461,7 +462,7 @@ extr_msnb_ht <-function(file,wd,mz,errEIC, errFinePPM,errCoarse,fnSpec,rt=NULL,e
     mzCrs<-gen_mz_range(mz=mz,err=errCoarse)
     mzMin<-min(mzCrs)
     mzMax<-max(mzCrs)
-    ms1<-MSnbase::trimMz(ms1,c(mzMin,mzMax))
+    ms1<-filterMz(ms1,c(mzMin,mzMax))
     fms2<-filt_ms2(ms1,ms2,mz,errCoarse=errCoarse,errFinePPM=errFinePPM)
 
     ## EICs for precursors.
@@ -488,6 +489,7 @@ extr_eic_ms1 <- function(tab,err) {
     res
 }
 
+##' @importFrom MSnbase filterMz readMSData
 ##' @export
 extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.,missing_precursors) {
     ## Extracts MS1 and MS2 EICs, as well as MS2 spectra, subject to
@@ -521,8 +523,8 @@ extract <- function(fn,tag,tab,err_ms1_eic.,err_coarse,err_fine,err_rt.,missing_
     mzmin <- min(mzrng)
     mzmax <- max(mzrng)
     read_ms1 <- function() {
-        ms1 <- MSnbase::readMSData(file=fn,msLevel=1,mode="onDisk")
-        ms1 <- MSnbase::filterMz(ms1,mz=c(mzmin,mzmax),msLevel=1)
+        ms1 <- readMSData(file=fn,msLevel=1,mode="onDisk")
+        ms1 <- filterMz(ms1,mz=c(mzmin,mzmax),msLevel=1)
         ms1
     }
     read_ms2 <- function() {
