@@ -497,8 +497,8 @@ read_setid <- function(fn,cmpds) {
 
 
 write_conf <- function(m,fn) {
-    m$conf$data <- get_fn_ftab(m)
-    if (NROW(m$input$tab$mzml)>0) tab2file(tab=m$input$tab$mzml,file=file.path(m$conf$project,FN_DATA_TAB))
+    m$conf$paths$data <- get_fn_ftab(m)
+    if (NROW(m$input$tab$mzml)>0) tab2file(tab=m$input$tab$mzml,file=file.path(m$conf$paths$project,FN_DATA_TAB))
     yaml::write_yaml(x=m$conf,file=fn)
     
     
@@ -506,12 +506,12 @@ write_conf <- function(m,fn) {
 }
 write_state <- function(m,fn_conf) {
     write_conf(m,fn_conf)
-    tab2file(tab=m$input$tab$mzml,file=file.path(m$conf$project,FN_DATA_TAB))
+    tab2file(tab=m$input$tab$mzml,file=file.path(m$conf$paths$project,FN_DATA_TAB))
 }
 
 read_conf <- function(fn) {
     cf <- yaml::yaml.load_file(fn)
-    fnl <- cf$compound$lists
+    fnl <- cf$compounds$lists
     if (length(fnl)>0) {
         nms <- character(0)
         for (i in 1:length(fnl)) {
@@ -520,7 +520,7 @@ read_conf <- function(fn) {
         names(fnl) <- nms
         
     }
-    cf$compound$lists <- fnl
+    cf$compounds$lists <- fnl
     ## conf_trans(cf)
     cf
 }
@@ -529,28 +529,28 @@ read_conf <- function(fn) {
 
 ##' @export
 get_fn_comp <- function(m) {
-    file.path(m$conf$project,FN_COMP_TAB)
+    file.path(m$conf$paths$project,FN_COMP_TAB)
 }
 
 ##' @export
 get_fn_summ <- function(m) {
-    file.path(m$conf$project, FN_SUMM)
+    file.path(m$conf$paths$project, FN_SUMM)
 }
 
 ##' @export
 get_fn_extr <- function(m) {
-    file.path(m$conf$project, "extracted.rds")
+    file.path(m$conf$paths$project, "extracted.rds")
 }
 
 ##' @export
 get_fn_conf <- function(m) {
-    file.path(m$conf$project, FN_CONF)
+    file.path(m$conf$paths$project, FN_CONF)
 }
 
 
 ##' @export
 get_fn_ftab <- function(m) {
-    file.path(m$conf$project, FN_DATA_TAB)
+    file.path(m$conf$paths$project, FN_DATA_TAB)
 }
 
 init_state <- function(m) {

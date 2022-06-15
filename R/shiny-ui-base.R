@@ -658,7 +658,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         isolate({
             rvs$m$conf$project <- in_conf$project
-            rvs$m$conf$data <- in_conf$data
+            rvs$m$conf$paths <- in_conf$paths
             ## Lists
             rvs$m$conf$compounds$lists <- in_conf$compounds$lists
             rvs$m$conf$compounds$sets <- in_conf$compounds$sets
@@ -696,8 +696,8 @@ mk_shinyscreen_server <- function(projects,init) {
                      choices=c("min","s"))
 
             ## Files
-            if (isTruthy(in_conf$data)) {
-                df <- shinyscreen:::file2tab(in_conf$data)
+            if (isTruthy(in_conf$paths$data)) {
+                df <- shinyscreen:::file2tab(in_conf$paths$data)
                 dfile <- data.table::copy(df[,tag:=as.character(tag),with=T])
                 dfile <- dfile[,unique(.SD),.SDcol=c("file","tag")]
                 ## rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
@@ -827,7 +827,7 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_conf_state <- reactive({
             state <- rf_conf_proj()
             ftab <- get_fn_ftab(state)
-            state$conf$data <- ftab
+            state$conf$paths$data <- ftab
             state$conf[["summary table"]]$filter <- rf_get_subset()
             state$conf[["summary table"]]$order <- rf_get_order()
             state
@@ -1170,7 +1170,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 yaml::write_yaml(m$conf,
                                  file = fconf)
                 shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
-                m$conf$data <- ftab
+                m$conf$paths$data <- ftab
                 saveRDS(object=m,file=fn)
             }
             shinymsg("Saving state completed.")
