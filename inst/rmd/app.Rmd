@@ -104,23 +104,27 @@ before starting `Shinyscreen` in one of the directories under
 
 #### Project management
 
-##### Create new project
+<!-- ##### Create new project -->
 
-```{r, echo=F}
-textInput(inputId = "new_proj_name", label= "New project name",value = "")
-actionButton(inputId = "create_proj_b",
-             label= "Create")
+<!-- ```{r, echo=F} -->
+<!-- textInput(inputId = "new_proj_name", label= "New project name",value = "") -->
+<!-- actionButton(inputId = "create_proj_b", -->
+<!--              label= "Create") -->
 
-```
+<!-- ``` -->
 
 
-##### Load existing project
+##### Load or initialise a project
 
 <details>
-<summary>Load an existing project</summary>
+<summary>Load, or initialise a project</summary>
 
-All the existing projects are shown in the `Avaliable projects`
+All projects are shown in the `Avaliable projects`
 list. Load the project by pressing `Select project` button. 
+
+If the project is new, it has to contain the compound list(s) and the
+set list.
+
 </details>
 
 ```{r, echo=F}
@@ -128,7 +132,7 @@ selectInput('proj_list',
             label = "Select project",
             choices = projects)
 actionButton(inputId = "load_proj_b",
-             label= "Load")
+             label= "Load/Initialise")
 
 ```
 
@@ -161,16 +165,15 @@ downloadButtonRmd("dwn_proj_b",
 ```
 
 
-##### Select input directory
+##### Select data directory
 <details>
-<summary>More on input directories</summary>
+<summary>More on data directories</summary>
 
-Input directory is a subdirectory of the `indir` directory which is
+Data directory is a subdirectory of the `indir` directory which is
 one of the arguments to `app` function used to start Shinyscreen
-GUI. It contains all the input data needed for the prescreening:
-datafiles, compound and set lists in the `CSV` format.
+GUI. It contains the `mzML` data files.
 
-Select on of the input directories from the list by clicking the
+Select one of the data directories from the list by clicking the
 `Select` button.
 
 </details>

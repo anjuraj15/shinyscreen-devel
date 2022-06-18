@@ -568,9 +568,8 @@ base_conf <- function () {
     m <- list()
     m$conf <- list(project=NA_character_,
                    compounds=list(lists=list(),
-                                  sets="",
-                                  data=""),
-                   debug = F)
+                                  sets=""),
+                    debug = F)
     m
 }
 
@@ -599,9 +598,10 @@ fig_conf <- function(m) {
     m
 }
 
-new_conf <- function() fig_conf(presc_conf(
-                           extr_conf(
-                               base_conf())))
+new_conf <- function() fig_conf(
+                           presc_conf(
+                               extr_conf(
+                                   base_conf())))
 
 
 

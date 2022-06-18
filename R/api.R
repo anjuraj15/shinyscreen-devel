@@ -22,6 +22,21 @@ new_state <- function() {
 ##' @export
 new_rv_state <- function() react_v(m=list2rev(new_state()))
 
+
+
+##' @export
+new_empty_project <- function(project) {
+    m <- new_state()
+    if (!is.character(project)) stop("Argument `project' must be a character string.")
+    if (!dir.exists(project)) stop('Project directory either does not exist, or is unreadable.')
+    project_path <- normalizePath(project)
+    project <- basename(project)
+    m$conf <- list()
+    m$conf$project <- project
+    m$conf$paths$project <- project_path
+    m$conf$paths$data <- m$conf$paths$project
+    m
+}
 ##' @export
 new_project <- function(project) {
     m <- new_state()
@@ -103,6 +118,7 @@ run <- function(project="",m=NULL,phases=NULL,help=F) {
 
 ##' @export
 setup_phase <- function(m) {
+    message("Stage: setup")
     m <- mk_tol_funcs(m)
     m <- load_inputs(m)
     m <- concurrency(m)
@@ -198,6 +214,8 @@ load_inputs <- function(m) {
 
 ##' @export
 mk_comp_tab <- function(m) {
+    message("Stage: comptab")
+
     setid <- m$input$tab$setid
     setkey(setid,set)
     mzml<- m$input$tab$mzml
@@ -205,8 +223,10 @@ mk_comp_tab <- function(m) {
     cmpds<-m$input$tab$cmpds
     setkey(cmpds,ID)
     ## mzml[,`:=`(wd=sapply(file,add_wd_to_mzml,m$conf$project))]
+    print(mzml)
     assert(nrow(cmpds)>0,msg="No compound lists have been provided.")
     assert(all(mzml[,unique(set)] %in% setid[,unique(set)]),msg="Not all set names in the `datatab' data file table match those in the provided set list.")
+    assert(all(mzml[,!is.na(unique(adduct))]),msg="Some data file entries do not have selected adducts.")
     message("Begin generation of the comprehensive table.")
 
     comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,file,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
@@ -346,7 +366,7 @@ concurrency <- function(m) {
     ## message("workers: ",m$conf$concurrency$workers)
 
     ## So we can actually debug.
-    m$future <- if (!m$conf$debug)
+    m$future <- if (is.null(m$conf$debug) || !m$conf$debug)
                     future::future
                 else {
                     message("Debug: futures evaluate as identity")
@@ -388,6 +408,7 @@ mk_tol_funcs <- function(m) {
 
 ##' @export
 extr_data <-function(m) {
+    message("Stage: extract")
     if (!is.null(m$conf$serial) && !m$conf$serial) {
         extr_data_future(m)
     } else {

@@ -621,7 +621,7 @@ mk_shinyscreen_server <- function(projects,init) {
         rv_dfile(def_datafiles)
         rv_datatab(def_datatab)
     }
-    update_gui <- function(in_conf, session, rv_dfile, rv_datatab, rv_flag_datatab) {
+    update_gui <- function(session, rv_dfile, rv_datatab, rv_flag_datatab) {
         upd_unit <- function(entry,inp_val,inp_unit,choices) {
             if (isTruthy(entry)) {
                 cntnt <- strsplit(entry,split = "[[:space:]]+")[[1]]
@@ -657,47 +657,47 @@ mk_shinyscreen_server <- function(projects,init) {
         }
 
         isolate({
-            rvs$m$conf$project <- in_conf$project
-            rvs$m$conf$paths <- in_conf$paths
-            ## Lists
-            rvs$m$conf$compounds$lists <- in_conf$compounds$lists
-            rvs$m$conf$compounds$sets <- in_conf$compounds$sets
+            ## rvs$m$conf <- in_conf## new_project(in_conf$paths$project)
+            ## rvs$m$conf$paths <- in_conf$paths
+            ## ## Lists
+            ## rvs$m$conf$compounds$lists <- in_conf$compounds$lists
+            ## rvs$m$conf$compounds$sets <- in_conf$compounds$sets
             
             ## Tolerance
             
-            upd_unit(in_conf$tolerance[["ms1 fine"]],
+            upd_unit(rvs$m$conf$tolerance[["ms1 fine"]],
                      "ms1_fine",
                      "ms1_fine_unit",
                      choices=c("ppm","Da"))
-            upd_unit(in_conf$tolerance[["ms1 coarse"]],
+            upd_unit(rvs$m$conf$tolerance[["ms1 coarse"]],
                      "ms1_coarse",
                      "ms1_coarse_unit",
                      choices=c("ppm","Da"))
 
-            upd_unit(in_conf$tolerance[["eic"]],
+            upd_unit(rvs$m$conf$tolerance[["eic"]],
                      "ms1_eic",
                      "ms1_eic_unit",
                      choices=c("ppm","Da"))
-            upd_unit(in_conf$tolerance[["rt"]],
+            upd_unit(rvs$m$conf$tolerance[["rt"]],
                      "ms1_rt_win",
                      "ms1_rt_win_unit",
                      choices=c("min","s"))
 
             ## Prescreen
-            upd_num(in_conf$prescreen[["ms1_int_thresh"]],
+            upd_num(rvs$m$conf$prescreen[["ms1_int_thresh"]],
                     "ms1_int_thresh")
-            upd_num(in_conf$prescreen[["ms2_int_thresh"]],
+            upd_num(rvs$m$conf$prescreen[["ms2_int_thresh"]],
                     "ms2_int_thresh")
-            upd_num(in_conf$prescreen[["s2n"]],
+            upd_num(rvs$m$conf$prescreen[["s2n"]],
                     "s2n")
-            upd_unit(in_conf$prescreen[["ret_time_shift_tol"]],
+            upd_unit(rvs$m$conf$prescreen[["ret_time_shift_tol"]],
                      "ret_time_shift_tol",
                      "ret_time_shift_tol_unit",
                      choices=c("min","s"))
 
             ## Files
-            if (isTruthy(in_conf$paths$data)) {
-                df <- shinyscreen:::file2tab(in_conf$paths$data)
+            if (isTruthy(rvs$m$conf$paths$datatab)) {
+                df <- shinyscreen:::file2tab(rvs$m$conf$paths$datatab)
                 dfile <- data.table::copy(df[,tag:=as.character(tag),with=T])
                 dfile <- dfile[,unique(.SD),.SDcol=c("file","tag")]
                 ## rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
@@ -710,18 +710,18 @@ mk_shinyscreen_server <- function(projects,init) {
             }
 
             ## figures
-            upd_unit(in_conf$figures$rt_min,
+            upd_unit(rvs$m$conf$figures$rt_min,
                      "plot_rt_min",
                      "plot_rt_min_unit",
                      choices=c("min","s"))
             
-            upd_unit(in_conf$figures$rt_max,
+            upd_unit(rvs$m$conf$figures$rt_max,
                      "plot_rt_max",
                      "plot_rt_max_unit",
                      choices=c("min","s"))
 
-            if (isTruthy(in_conf$figures$logaxes)) {
-                logentry <- in_conf$figures$logaxes
+            if (isTruthy(rvs$m$conf$figures$logaxes)) {
+                logentry <- rvs$m$conf$figures$logaxes
                 logchoice <- logical(0)
                 logchoice <- mapply(function(cn,uin) if (cn %in% logentry) uin else NA,
                                     c("ms1_eic_int","ms2_eic_int","ms2_spec_int"),
@@ -736,8 +736,8 @@ mk_shinyscreen_server <- function(projects,init) {
                                          selected = logchoice)
             }
             ## Report
-            if (isTruthy(in_conf$report$author)) updateTextInput(session,"rep_aut",value = in_conf$report$author)
-            if (isTruthy(in_conf$report$title)) updateTextInput(session,"rep_tit",value = in_conf$report$title)
+            if (isTruthy(rvs$m$conf$report$author)) updateTextInput(session,"rep_aut",value = rvs$m$conf$report$author)
+            if (isTruthy(rvs$m$conf$report$title)) updateTextInput(session,"rep_tit",value = rvs$m$conf$report$title)
 
             
         })
@@ -799,8 +799,9 @@ mk_shinyscreen_server <- function(projects,init) {
         ## REACTIVE FUNCTIONS
 
         rf_compound_input_state <- reactive({
-            sets <- rvs$m$conf$compounds$sets
-            lst <- as.list(rvs$m$conf$compounds$lists)
+            sets <- rvs$m$conf$paths$compounds$sets
+            lst <- as.list(rvs$m$conf$paths$compounds$lists)
+            ## TODO XXX
             validate(need(length(lst)>0,
                           message = "Load the compound lists(s) first."))
             validate(need(length(sets)>0 && nchar(sets)>0,
@@ -808,6 +809,7 @@ mk_shinyscreen_server <- function(projects,init) {
             isolate({
                 state <- rev2list(rvs$m)
                 m <- load_compound_input(state)
+
                 ## Side effect! This is because my pipeline logic does not
                 ## work nicely with reactive stuff.
                 rvs$m$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
@@ -819,7 +821,7 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_conf_proj <- reactive({
             
             state <- rev2list(rvs$m)
-            dir.create(state$conf$project,showWarnings = F)
+            if (!is.null(state$conf$paths$project)) dir.create(state$conf$paths$project,showWarnings = F)
             state
             
         })
@@ -827,7 +829,7 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_conf_state <- reactive({
             state <- rf_conf_proj()
             ftab <- get_fn_ftab(state)
-            state$conf$paths$data <- ftab
+            state$conf$paths$datatab <- ftab
             state$conf[["summary table"]]$filter <- rf_get_subset()
             state$conf[["summary table"]]$order <- rf_get_order()
             state
@@ -1092,35 +1094,36 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Observers
 
-        observeEvent(input$create_proj_b,{
-            wd <- input$new_proj_name
-            req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
-            fullwd <- file.path(init$userdir,wd)
-            dir.create(fullwd,recursive = F,showWarnings = F)
+        ## observeEvent(input$create_proj_b,{
+        ##     wd <- input$new_proj_name
+        ##     req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
+        ##     fullwd <- file.path(init$userdir,wd)
+        ##     dir.create(fullwd,recursive = F,showWarnings = F)
 
-            ## Add to the project list if new.
-            if (! (wd %in% rv_projects())) {
-                message("Updating proj list.")
-                reset_gui_and_state(session=session,
-                                    init = init,
-                                    wd = wd,
-                                    rv_dfile = rv_dfile,
-                                    rv_datatab = rv_datatab,
-                                    rv_flag_datatab = rv_flag_datatab,
-                                    rvs = rvs,
-                                    rv_projects = rv_projects)
-                rvs$m$conf$project <- fullwd
-                saveRDS(rev2list(rvs$m),file.path(fullwd,FN_STATE))
+        ##     ## Add to the project list if new.
+        ##     if (! (wd %in% rv_projects())) {
+        ##         message("Updating proj list.")
+        ##         reset_gui_and_state(session=session,
+        ##                             init = init,
+        ##                             wd = wd,
+        ##                             rv_dfile = rv_dfile,
+        ##                             rv_datatab = rv_datatab,
+        ##                             rv_flag_datatab = rv_flag_datatab,
+        ##                             rvs = rvs,
+        ##                             rv_projects = rv_projects)
+        ##         rvs$m$conf$project <- input$new_proj_name
+        ##         rvs$m$paths$project <- fullwd
+        ##         saveRDS(rev2list(rvs$m),file.path(fullwd,FN_STATE))
 
 
                 
-            } else {
-                msg <- "Project already exists. Refusing to overwrite."
-                message(msg)
-                shinymsg(msg)
-            }
+        ##     } else {
+        ##         msg <- "Project already exists. Refusing to overwrite."
+        ##         message(msg)
+        ##         shinymsg(msg)
+        ##     }
 
-        })
+        ## })
 
         observeEvent(input$load_proj_b,{
             
@@ -1139,13 +1142,22 @@ mk_shinyscreen_server <- function(projects,init) {
                                     rvs = rvs,
                                     rv_projects = rv_projects)
                 rvs$m <- list2rev(readRDS(fn_state))
-                rvs$m$conf$project <- fullwd
-                update_gui(rvs$m$conf, session = session,
+                rvs$m$conf$project <- input$proj_list
+                rvs$m$conf$paths$project <- fullwd
+                update_gui(session = session,
                            rv_dfile = rv_dfile,
                            rv_datatab = rv_datatab,
                            rv_flag_datatab = rv_flag_datatab)
             } else {
-                message("No saved state found. This directory is not a project.")
+                message("No saved state found. Creating an empty project.")
+                m <- new_empty_project(fullwd)
+                rvs$m <- NULL
+                rvs$m <- list2rev(m)
+                update_gui(session = session,
+                           rv_dfile = rv_dfile,
+                           rv_datatab = rv_datatab,
+                           rv_flag_datatab = rv_flag_datatab)
+                
             }
         }, label = "project-b")
 
@@ -1157,7 +1169,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
         observeEvent(input$save_proj_b,{
-            fn <- file.path(rvs$m$conf$project,FN_STATE)
+            fn <- file.path(rvs$m$conf$paths$project,FN_STATE)
             shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
             message("(config) Saving state to: ", paste(fn,collapse = ","))
             fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
@@ -1170,7 +1182,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 yaml::write_yaml(m$conf,
                                  file = fconf)
                 shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
-                m$conf$paths$data <- ftab
+                m$conf$paths$datatab <- ftab
                 saveRDS(object=m,file=fn)
             }
             shinymsg("Saving state completed.")
@@ -1179,14 +1191,14 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$sel_indir_b,{
             indir <- input$indir_list
             req(isTruthy(indir))
-            rvs$m$conf$indir <- file.path(init$indir, indir)
-            message("Selected input dir:",rvs$m$conf$indir)
+            rvs$m$conf$paths$data <- file.path(init$indir, indir)
+            message("Selected data dir:",rvs$m$conf$paths$data)
+
         })
 
-        observeEvent(rvs$m$conf$indir,{
-            indir <- rvs$m$conf$indir
+        observeEvent(rvs$m$conf$paths$project,{
+            indir <- rvs$m$conf$paths$project
             req(isTruthy(indir) && dir.exists(indir))
-            
             updateSelectInput(session = session,
                               inputId = "comp_list",
                               choices = list.files(path=indir,
@@ -1210,21 +1222,31 @@ mk_shinyscreen_server <- function(projects,init) {
                                                   recursive = F))
         })
 
+        observeEvent(rvs$m$conf$paths$data,{
+            indir <- rvs$m$conf$paths$data
+            req(isTruthy(indir) && dir.exists(indir))
+
+            updateSelectInput(session = session,
+                              inputId = "dfile_list",
+                              choices = list.files(path=indir,
+                                                   pattern = DFILES_LIST_PATT))
+        })
+
         observeEvent(input$comp_list_b, {
             sels <- input$comp_list
             req(isTruthy(sels))
-            compfiles <- file.path(rvs$m$conf$indir,sels)
+            compfiles <- file.path(rvs$m$conf$paths$project,sels)
             message("(config) Selected compound lists: ", paste(sels,collapse = ","))
-            rvs$m$conf$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
+            rvs$m$conf$paths$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
             
         })
 
         observeEvent(input$set_list_b, {
             sels <- input$set_list
             req(isTruthy(sels))
-            setfiles <- file.path(rvs$m$conf$indir,sels)
+            setfiles <- file.path(rvs$m$conf$paths$project,sels)
             message("(config) Selected set lists: ", paste(sels,collapse = ","))
-            rvs$m$conf$compounds$sets <- if (length(setfiles)>0 && nchar(setfiles[[1]])>0) setfiles else "Nothing selected."
+            rvs$m$conf$paths$compounds$sets <- if (length(setfiles)>0 && nchar(setfiles[[1]])>0) setfiles else "Nothing selected."
             
         })
 
@@ -1278,7 +1300,7 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$datafiles_b,{
             sels <- input$dfile_list
             req(isTruthy(sels))
-            dfiles <- file.path(rvs$m$conf$indir,sels)
+            dfiles <- file.path(rvs$m$conf$paths$data,sels)
             message("(config) Selected mzMl files: ", paste(sels,collapse = ","))
             if (length(dfiles) > 0) {
                 oldtab <- rv_dfile()
@@ -1347,7 +1369,7 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$extract_b,{
             shinymsg("Extraction has started. This may take a while.")
             m <- rf_conf_state()
-            fn_c_state <- file.path(m$conf$project,
+            fn_c_state <- file.path(m$conf$paths$project,
                                     paste0("extract.",shinyscreen:::FN_CONF))
             yaml::write_yaml(x=m$conf,file=fn_c_state)
             message("(extract) Config written to ", fn_c_state)
@@ -1366,7 +1388,7 @@ mk_shinyscreen_server <- function(projects,init) {
                           message = "Perform extraction first."))
             m <- rev2list(rvs$m)
 
-            fn_c_state <- file.path(m$conf$project,
+            fn_c_state <- file.path(m$conf$paths$project,
                                     paste0("presc.",shinyscreen:::FN_CONF))
             yaml::write_yaml(x=m$conf,file=fn_c_state)
             message("(prescreen) Config written to ", fn_c_state)
@@ -1403,7 +1425,7 @@ mk_shinyscreen_server <- function(projects,init) {
                                  tabl = rf_tab4plot_spec(),
                                  figtag = spec,
                                  extension = ext)
-                message("Plots saved to ",file.path(rvs$m$conf$project,
+                message("Plots saved to ",file.path(rvs$m$conf$paths$project,
                                                     FIG_TOPDIR))
 
             } else message("Nothing to save.")
@@ -1506,7 +1528,7 @@ mk_shinyscreen_server <- function(projects,init) {
             tab <- add_msms_peaks(rvs$m$out$tab$flt_summ,
                                   rvs$m$extr$ms2)
             tab2file(tab=tab,
-                     file=file.path(rvs$m$conf$project,
+                     file=file.path(rvs$m$conf$paths$project,
                                     "summary.csv"))
             shinymsg("Summary file export has been completed.")
         },label = "exportsumm_b")
@@ -1685,7 +1707,7 @@ mk_shinyscreen_server <- function(projects,init) {
         
 
         ## Render Outputs
-        output$project <- renderText(rvs$m$conf$project)
+        output$project <- renderText(rvs$m$conf$paths$project)
 
         output$comp_lists <- renderText({
             lsts <- rev2list(rvs$m$conf$compounds$lists)
@@ -1863,7 +1885,7 @@ mk_shinyscreen_server <- function(projects,init) {
                                             format(Sys.time(), "project_%Y%m%d_%H_%M_%S.tar.gz")
                                         },
                                         content=function(file) {
-                                            pdir <- rvs$m$conf$project
+                                            pdir <- rvs$m$conf$paths$project
                                             shiny::req(!is.null(pdir) &&
                                                        !is.na(pdir) &&
                                                        (nchar(pdir) > 0))
