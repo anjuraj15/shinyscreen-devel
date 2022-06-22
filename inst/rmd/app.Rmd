@@ -133,6 +133,7 @@ selectInput('proj_list',
             choices = projects)
 actionButton(inputId = "load_proj_b",
              label= "Load/Initialise")
+textOutput("curr_proj")
 
 ```
 
@@ -184,6 +185,7 @@ selectInput('indir_list',
             choices = inputdirs)
 actionButton(inputId = "sel_indir_b",
              label= "Select")
+textOutput("curr_data_dir")
 ```
 
 #### Compound list inputs
@@ -229,6 +231,9 @@ CSV file used with Shinyscreen.
 Select one, or more compound lists by clicking `Select` button.
 </details>
 
+<div style= "display: flex; vertical-align:top; padding-right: 1.0em">
+
+<div>
 ```{r, echo=FALSE}
 selectInput('comp_list',
             label = "Select compound lists",
@@ -238,7 +243,19 @@ actionButton(inputId = "comp_list_b",
              label= "Select")
 
 ```
+</div>
 
+<div>
+
+**Selected compound lists**
+
+```{r, echo=FALSE}
+htmlOutput('comp_list_report')
+```
+
+</div>
+
+</div>
 ##### Select set lists
 
 <details><summary>About set lists (_setid_ tables)</summary>
@@ -255,6 +272,10 @@ columns,
 Select one set list by clicking `Select` button.
 </details>
 
+<div style= "display: flex; vertical-align:top; padding-right: 1em">
+
+<div>
+
 ```{r, echo=FALSE}
 selectInput('set_list',
             label = "Select set lists",
@@ -264,6 +285,20 @@ actionButton(inputId = "set_list_b",
              label= "Select")
 
 ```
+
+</div>
+
+<div>
+
+**Selected `setid' list**
+
+```{r, echo=FALSE}
+htmlOutput('sets_report')
+```
+
+</div>
+
+<div>
 
 #### Data files
 <details><summary>Load data files</summary>

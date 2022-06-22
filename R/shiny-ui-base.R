@@ -1237,6 +1237,7 @@ mk_shinyscreen_server <- function(projects,init) {
             req(isTruthy(sels))
             compfiles <- file.path(rvs$m$conf$paths$project,sels)
             message("(config) Selected compound lists: ", paste(sels,collapse = ","))
+            rvs$m$conf$compounds$lists <- sels
             rvs$m$conf$paths$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
             
         })
@@ -1246,6 +1247,7 @@ mk_shinyscreen_server <- function(projects,init) {
             req(isTruthy(sels))
             setfiles <- file.path(rvs$m$conf$paths$project,sels)
             message("(config) Selected set lists: ", paste(sels,collapse = ","))
+            rvs$m$conf$compounds$sets <- sels
             rvs$m$conf$paths$compounds$sets <- if (length(setfiles)>0 && nchar(setfiles[[1]])>0) setfiles else "Nothing selected."
             
         })
@@ -1707,25 +1709,34 @@ mk_shinyscreen_server <- function(projects,init) {
         
 
         ## Render Outputs
-        output$project <- renderText(rvs$m$conf$paths$project)
-
-        output$comp_lists <- renderText({
-            lsts <- rev2list(rvs$m$conf$compounds$lists)
-            if (length(lsts) > 0 &&
-                isTruthy(lsts) &&
-                lsts != "Nothing selected.") {
-                paste(c("<ul>",
-                        sapply(lsts,
-                               function (x) paste("<li>",x,"</li>")),
-                        "</ul>"))
-            } else "No compound list selected yet."
+        output$curr_proj <- renderText({
+            txt <- rvs$m$conf$project
+            if (is.null(txt)) txt <- "Nothing selected"
+            paste0("Current project: ", txt)})
+        
+        output$curr_data_dir <- renderText({
+            txt <- basename(rvs$m$conf$paths$data)
+            if (is.null(txt)) txt <- "Nothing selected"
+            paste0("Current data directory: ", txt)
         })
 
-        output$setids <- renderText({
+        output$comp_list_report <- renderUI({
+            lsts <- rev2list(rvs$m$conf$compounds$lists)
+            HTML(if (length(lsts) > 0 &&
+                     isTruthy(lsts) &&
+                     lsts != "Nothing selected.") {
+                     paste(c("<ul>",
+                             sapply(lsts,
+                                    function (x) paste("<li><em>",x,"</em></li>")),
+                             "</ul>"))
+                 } else "No compound list selected yet.")
+        })
+
+        output$sets_report <- renderUI({
             sets <- rvs$m$conf$compounds$sets
-            if (isTruthy(sets) && sets != "Nothing selected.")
-                paste("selected <em>setid</em> table:",
-                      sets) else "No <em>setid</em> table selected."
+            HTML(if (isTruthy(sets) && sets != "Nothing selected.")
+                     paste("selected <em>setid</em> table:",
+                           sets) else "No <em>setid</em> table selected.")
         })
 
         ## output$order_summ <- DT::renderDT({
