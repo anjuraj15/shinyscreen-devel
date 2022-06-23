@@ -50,6 +50,7 @@ Collate:
     'plotting.R'
     'extraction.R'
     'api.R'
+    'shiny-state.R'
     'shiny-ui-base.R'
 Depends:
     RMassBank,

@@ -1133,21 +1133,21 @@ mk_shinyscreen_server <- function(projects,init) {
             ## If a saved state exists, load it.
             fn_state <- file.path(fullwd,FN_STATE)
             if (file.exists(fn_state)) {
-                reset_gui_and_state(session=session,
-                                    init = init,
-                                    wd = wd,
-                                    rv_dfile = rv_dfile,
-                                    rv_datatab = rv_datatab,
-                                    rv_flag_datatab = rv_flag_datatab,
-                                    rvs = rvs,
-                                    rv_projects = rv_projects)
-                rvs$m <- list2rev(readRDS(fn_state))
-                rvs$m$conf$project <- input$proj_list
-                rvs$m$conf$paths$project <- fullwd
-                update_gui(session = session,
-                           rv_dfile = rv_dfile,
-                           rv_datatab = rv_datatab,
-                           rv_flag_datatab = rv_flag_datatab)
+                ## reset_gui_and_state(session=session,
+                ##                     init = init,
+                ##                     wd = wd,
+                ##                     rv_dfile = rv_dfile,
+                ##                     rv_datatab = rv_datatab,
+                ##                     rv_flag_datatab = rv_flag_datatab,
+                ##                     rvs = rvs,
+                ##                     rv_projects = rv_projects)
+                ## rvs$m <- list2rev(readRDS(fn_state))
+                ## rvs$m$conf$project <- input$proj_list
+                ## rvs$m$conf$paths$project <- fullwd
+                ## update_gui(session = session,
+                ##            rv_dfile = rv_dfile,
+                ##            rv_datatab = rv_datatab,
+                ##            rv_flag_datatab = rv_flag_datatab)
             } else {
                 message("No saved state found. Creating an empty project.")
                 m <- new_empty_project(fullwd)
@@ -1183,6 +1183,11 @@ mk_shinyscreen_server <- function(projects,init) {
                                  file = fconf)
                 shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
                 m$conf$paths$datatab <- ftab
+                gui_inputs <- list()
+                gui_input_names <- which_gui_inputs()
+                gui_inputs <- shiny::reactiveValuesToList(input)[gui_input_names]
+                fn_gui <- file.path(m$conf$paths$project,"gui.rds")
+                saveRDS(object=gui_inputs,file=fn_gui)
                 saveRDS(object=m,file=fn)
             }
             shinymsg("Saving state completed.")
