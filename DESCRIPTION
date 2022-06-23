@@ -47,6 +47,7 @@ Collate:
     'base.R'
     'resources.R'
     'mix.R'
+    'state.R'
     'plotting.R'
     'extraction.R'
     'api.R'

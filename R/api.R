@@ -12,76 +12,6 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-
-##' @export
-new_state <- function() {
-    m <- new_conf()
-    init_state(m)
-}
-
-##' @export
-new_rv_state <- function() react_v(m=list2rev(new_state()))
-
-
-
-##' @export
-new_empty_project <- function(project) {
-    m <- new_state()
-    if (!is.character(project)) stop("Argument `project' must be a character string.")
-    if (!dir.exists(project)) stop('Project directory either does not exist, or is unreadable.')
-    project_path <- normalizePath(project)
-    project <- basename(project)
-    m$conf <- list()
-    m$conf$project <- project
-    m$conf$paths$project <- project_path
-    m$conf$paths$data <- m$conf$paths$project
-    m
-}
-##' @export
-new_project <- function(project) {
-    m <- new_state()
-    if (!is.character(project)) stop("Argument `project' must be a character string.")
-    if (!dir.exists(project)) stop('Project directory either does not exist, or is unreadable.')
-    project_path <- normalizePath(project)
-    project <- basename(project)
-    fn_conf <- file.path(project_path,FN_CONF)
-    m$conf <- read_conf(fn_conf)
-    m$conf$project <- project
-    m$conf$paths$project <- project_path
-    if (is.null(m$conf$paths$data)) {
-        m$conf$paths$data <- m$conf$paths$project
-    }
-    if (!dir.exists(m$conf$paths$data)) stop("Path to data directory either does not exist, or is inaccesible.")
-    lst_cmpl <- m$conf$compounds$lists
-    lst_fn_cmpl <- lapply(names(lst_cmpl),function (nm) {
-        bfn_cmpl <- lst_cmpl[[nm]]
-        fn <- file.path(m$conf$paths$project,bfn_cmpl)
-        if (!file.exists(fn)) stop("File ", fn, " does not exist in ", m$conf$paths$project," .")
-        fn
-        })
-    names(lst_fn_cmpl) <- names(lst_cmpl)
-    m$conf$paths$compounds$lists <- lst_fn_cmpl
-
-    fn_sets <- m$conf$compounds$sets[[1]] #It's always only one.
-    if (!file.exists(fn_sets)) stop("File ", fn_sets, " does not exist in ", m$conf$paths$project," .")
-    m$conf$paths$compounds$sets <- fn_sets
-
-    tmp <- m$conf$paths$datatab
-    datatab <- if (!is.null(tmp)) {
-                   if (file.exists(tmp)) {
-                       tmp
-                   } else {
-                       file.path(m$conf$paths$project,tmp)
-                   }
-               } else {
-                   file.path(m$conf$paths$project,FN_DATA_TAB)
-               }
-    if (!file.exists(datatab)) stop("A CSV file with data file entries does not exist (`paths$datatab' in config).")
-    datatab <- normalizePath(datatab)
-    m$conf$paths$datatab <-datatab
-    m
-}
-
 ##' @export
 run <- function(project="",m=NULL,phases=NULL,help=F) {
     all_phases=list(setup=setup_phase,
@@ -198,7 +128,7 @@ load_compound_input <- function(m) {
 load_data_input <- function(m) {
     m$input$tab$mzml <- file2tab(m$conf$paths$datatab)
     assert(all(unique(m$input$tab$mzml[,.N,by=c("adduct","tag")]$N)<=1),msg="Some rows in the data table contain multiple entries with same tag and adduct fields.")
-    pref<-m$conf$paths$data
+    pref<-m$run$paths$data
     m$input$tab$mzml[,file:=fifelse(file.exists(file),file,file.path(..pref,file))]
     m$input$tab$mzml[,file:=normalizePath(file)]
     m
@@ -331,7 +261,7 @@ verify_data_df <- function(mzml,all_sets) {
 
 verify_data <- function(conf,all_sets) {
     ## * Existence of input files
-    fn_data <- conf$paths$data
+    fn_data <- run$paths$data
     assert(isThingFile(fn_data),msg=paste("Data table does not exist:",fn_data))
     mzml <- file2tab(fn_data)
     verify_data_df(mzml=mzml,all_sets)
@@ -499,7 +429,7 @@ extr_data_future <- function(m) {
 
     fn_ex <- get_fn_extr(m)
     timetag <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    saveRDS(object = m, file = file.path(m$conf$paths$project,
+    saveRDS(object = m, file = file.path(m$run$paths$project,
                                          paste0(timetag,"_",FN_EXTR_STATE)))
     m
     
@@ -574,7 +504,7 @@ extr_data_serial <- function(m) {
 
     fn_ex <- get_fn_extr(m)
     timetag <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    saveRDS(object = m, file = file.path(m$conf$paths$project,
+    saveRDS(object = m, file = file.path(m$run$paths$project,
                                          paste0(timetag,"_",FN_EXTR_STATE)))
     m
     
@@ -881,12 +811,12 @@ report <- function(m) {
         message("(report) Knitting of chunk ",n," out of ",NROW(keytab)," has been completed.")
         
     }
-    fn_rep <- file.path(m$conf$paths$project,"report.Rmd")
+    fn_rep <- file.path(m$run$paths$project,"report.Rmd")
     message("(report) Writing Rmd...")
     cat(repdoc,file=fn_rep,sep = "\n")
     message("(report) ...done.")
     message("(report) Render start ...")
-    rmarkdown::render(fn_rep,output_dir = m$conf$paths$project)
+    rmarkdown::render(fn_rep,output_dir = m$run$paths$project)
     message("(report) ...done.")
     m
 }
