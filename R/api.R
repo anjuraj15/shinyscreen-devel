@@ -129,8 +129,11 @@ load_data_input <- function(m) {
     m$input$tab$mzml <- file2tab(m$run$paths$datatab)
     assert(all(unique(m$input$tab$mzml[,.N,by=c("adduct","tag")]$N)<=1),msg="Some rows in the data table contain multiple entries with same tag and adduct fields.")
     pref<-m$run$paths$data
-    m$input$tab$mzml[,file:=fifelse(file.exists(file),file,file.path(..pref,file))]
-    m$input$tab$mzml[,file:=normalizePath(file)]
+    for (fn in m$input$tab$mzml$file) {
+        if (!file.exists(file.path(pref,fn))) stop("File ",fn," does not exist.")
+    }
+    ## m$input$tab$mzml[,file:=fifelse(file.exists(file),file,file.path(..pref,file))]
+    ## m$input$tab$mzml[,file:=normalizePath(file)]
     m
 
 }
@@ -152,8 +155,6 @@ mk_comp_tab <- function(m) {
     setkey(mzml,set)
     cmpds<-m$input$tab$cmpds
     setkey(cmpds,ID)
-    ## mzml[,`:=`(wd=sapply(file,add_wd_to_mzml,m$conf$project))]
-    print(mzml)
     assert(nrow(cmpds)>0,msg="No compound lists have been provided.")
     assert(all(mzml[,unique(set)] %in% setid[,unique(set)]),msg="Not all set names in the `datatab' data file table match those in the provided set list.")
     assert(all(mzml[,!is.na(unique(adduct))]),msg="Some data file entries do not have selected adducts.")
@@ -250,8 +251,8 @@ verify_compounds <- function(conf) {
     return(list(conf=conf,all_sets=all_sets))
 }
 
-verify_data_df <- function(mzml,all_sets) {
-    no_file <- which(mzml[,!file.exists(file)])
+verify_data_df <- function(data_path,mzml,all_sets) {
+    no_file <- which(mzml[,!file.exists(file.path(data_path,file))])
     no_adducts <- which(mzml[,!(adduct %in% names(ADDUCTMAP))])
     no_sets <- which(mzml[,!(set %in% all_sets)])
     assert(length(no_file)==0,msg = paste("Non-existent data files at rows:",paste(no_file,collapse = ',')))
@@ -259,12 +260,12 @@ verify_data_df <- function(mzml,all_sets) {
     assert(length(no_sets)==0,msg = paste("Unknown sets at rows:",paste(no_sets,collapse = ',')))
 }
 
-verify_data <- function(conf,all_sets) {
+verify_data <- function(conf,run,all_sets) {
     ## * Existence of input files
-    fn_data <- run$paths$data
+    fn_data <- run$paths$datatab
     assert(isThingFile(fn_data),msg=paste("Data table does not exist:",fn_data))
     mzml <- file2tab(fn_data)
-    verify_data_df(mzml=mzml,all_sets)
+    verify_data_df(run$paths$data,mzml=mzml,all_sets)
     return(conf)
 }
 
@@ -354,7 +355,8 @@ extr_data_future <- function(m) {
     m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=BASE_KEY]
     m$out$tab$data[,set:=NULL] #This column is meaningless now.
     file <- m$out$tab$data[,unique(file)]
-    allCEs <- do.call(c,args=lapply(file,function(fn) {
+    fpaths <- file.path(m$run$paths$data,file)
+    allCEs <- do.call(c,args=lapply(fpaths,function(fn) {
         z <- MSnbase::readMSData(files=fn,msLevel = c(1,2),mode="onDisk")
 
         
@@ -368,9 +370,10 @@ extr_data_future <- function(m) {
     m$out$tab$data[,(cols) := .(rep(NA,.N))]
     file <- m$out$tab$data[,unique(file)]
     ftags <- m$out$tab$data[,.(tag=unique(tag)),by=file]
+    fpaths <- file.path(m$run$paths$data,ftags[,file])
     futuref <- m$future
     tmp <- lapply(1:nrow(ftags),function(ii) {
-        fn <- ftags[ii,file]
+        fn <- fpaths[[ii]]
         the_tag <- ftags[ii,tag]
         message("(extract): Commencing extraction for tag: ", the_tag, "; file: ",fn)
         tab <- as.data.frame(data.table::copy(m$out$tab$data[tag==the_tag,.(file,tag,adduct,mz,rt,ID)]))
@@ -443,7 +446,8 @@ extr_data_serial <- function(m) {
     m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=BASE_KEY]
     m$out$tab$data[,set:=NULL] #This column is meaningless now.
     file <- m$out$tab$data[,unique(file)]
-    allCEs <- do.call(c,args=lapply(file,function(fn) {
+    fpaths <- file.path(m$run$paths$data,file)
+    allCEs <- do.call(c,args=lapply(fpaths,function(fn) {
         z <- MSnbase::readMSData(files=fn,msLevel = c(1,2),mode="onDisk")
 
         
@@ -455,11 +459,12 @@ extr_data_serial <- function(m) {
     cols <-paste('CE',allCEs,sep = '')
     vals <- rep(NA,length(cols))
     m$out$tab$data[,(cols) := .(rep(NA,.N))]
-    file <- m$out$tab$data[,unique(file)]
+    file <- file.path(m$run$paths$data,m$out$tab$data[,unique(file)])
     ftags <- m$out$tab$data[,.(tag=unique(tag)),by=file]
+    ftags[,path:=file.path(..m$run$paths$data,file)]
     futuref <- m$future
     tmp <- lapply(1:nrow(ftags),function(ii) {
-        fn <- ftags[ii,file]
+        fn <- ftags[ii,path]
         the_tag <- ftags[ii,tag]
         message("(extract): Commencing extraction for tag: ", the_tag, "; file: ",fn)
         tab <- as.data.frame(data.table::copy(m$out$tab$data[tag==the_tag,.(file,tag,adduct,mz,rt,ID)]))

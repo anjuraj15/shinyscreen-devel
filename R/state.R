@@ -97,6 +97,21 @@ new_project <- function(project) {
     m
 }
 
+##' @export
+import_project <- function(project) {
+    m <- new_project(project)
+    fn_state <- file.path(m$run$paths$project,FN_STATE)
+    if (!file.exists(fn_state)) stop(paste0("Cannot import project. State file ",fn_state," does not exist, or is unreadable."))
+    lm <- readRDS(file=fn_state)
+    lm$run <- m$run
+    lm$conf <- m$conf
+    lm
+}
+
+##' @export
+refresh_state <- function(m) {
+    m$run <- new_runtime_state(m$run$project,conf=m$conf)
+}
 
 ##' @export
 new_rv_state <- function() react_v(m=list2rev(new_state()))
