@@ -340,7 +340,7 @@ mk_tol_funcs <- function(m) {
 ##' @export
 extr_data <-function(m) {
     message("Stage: extract")
-    if (!is.null(m$conf$serial) && !m$conf$serial) {
+    if (is.null(m$conf$serial) || !m$conf$serial) {
         extr_data_future(m)
     } else {
         message("(extract): Serial extraction.")
