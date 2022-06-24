@@ -111,6 +111,7 @@ import_project <- function(project) {
 ##' @export
 refresh_state <- function(m) {
     m$run <- new_runtime_state(m$run$project,conf=m$conf)
+    m
 }
 
 ##' @export
