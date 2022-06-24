@@ -39,7 +39,7 @@ run <- function(project="",m=NULL,phases=NULL,help=F) {
     
     m <- if (nchar(project)!=0) new_project(project) else if (!is.null(m)) m else stop("(run): Either the YAML config file (project),\n or the starting state (m) must be provided\n as the argument to the run function.")
     ## m$conf$project <- normalizePath(m$conf$project) #FIXME: Test in all workflows!
-    m <- withr::with_dir(new=m$conf$paths$project,code = Reduce(function (prev,f) f(prev),
+    m <- withr::with_dir(new=m$run$paths$project,code = Reduce(function (prev,f) f(prev),
                                                             x = the_phases,
                                                             init = m))
     return(invisible(m))
@@ -76,7 +76,7 @@ run_in_dir <- function(m) {
 load_compound_input <- function(m) {
     coll <- list()
     fields <- colnames(EMPTY_CMPD_LIST)
-    fns <- m$conf$paths$compounds$lists
+    fns <- m$run$paths$compounds$lists
     coltypes <- c(ID="character",
                   SMILES="character",
                   Formula="character",
@@ -119,14 +119,14 @@ load_compound_input <- function(m) {
     
     cmpds[,("known"):=.(the_ifelse(!is.na(SMILES),"structure",the_ifelse(!is.na(Formula),"formula","mz")))]
     m$input$tab$cmpds <- cmpds
-    m$input$tab$setid <- read_setid(m$conf$paths$compounds$sets,
+    m$input$tab$setid <- read_setid(m$run$paths$compounds$sets,
                                     m$input$tab$cmpds)
     m
 }
 
 ##' @export
 load_data_input <- function(m) {
-    m$input$tab$mzml <- file2tab(m$conf$paths$datatab)
+    m$input$tab$mzml <- file2tab(m$run$paths$datatab)
     assert(all(unique(m$input$tab$mzml[,.N,by=c("adduct","tag")]$N)<=1),msg="Some rows in the data table contain multiple entries with same tag and adduct fields.")
     pref<-m$run$paths$data
     m$input$tab$mzml[,file:=fifelse(file.exists(file),file,file.path(..pref,file))]
@@ -661,14 +661,14 @@ create_plots <- function(m) {
         plot_save_single(p_eic,
                          decotab = select,
                          figtag = "eic",
-                         proj = m$conf$project,
+                         proj_path = m$run$paths$project,
                          tabl = tabl_ms1,
                          extension = m$conf$figures$ext)
 
         plot_save_single(p_spec,
                          decotab = select,
                          figtag = "spec",
-                         proj = m$conf$project,
+                         proj_path = m$run$paths$project,
                          tabl = tabl_spec,
                          extension = m$conf$figures$ext)
         message("Plotting of figure ",n," out of ",NROW(keytab)," has been completed.")

@@ -298,7 +298,7 @@ table_spec <- function(pdata) {
     tbl
 }
 
-plot_fname_prefix <- function(decotab,proj,subdir=FIG_TOPDIR) {
+plot_fname_prefix <- function(decotab,proj_path,subdir=FIG_TOPDIR) {
     if (NROW(decotab)==0) return()
     adducts <- decotab[,adduct]
     ids <- decotab[,ID]
@@ -310,7 +310,7 @@ plot_fname_prefix <- function(decotab,proj,subdir=FIG_TOPDIR) {
         fname <- paste(fname,chunk,sep = "_")
             
     }
-    ddir <- file.path(proj,subdir)
+    ddir <- file.path(proj_path,subdir)
     if (!dir.exists(ddir)) dir.create(ddir,recursive = T)
     
     fname <- paste0(fname,"__id_")
@@ -321,10 +321,10 @@ plot_fname_prefix <- function(decotab,proj,subdir=FIG_TOPDIR) {
     
 }
 
-plot_save_single <- function(plot,decotab,extension,proj,subdir=FIG_TOPDIR,tabl=NULL,figtag="") {
+plot_save_single <- function(plot,decotab,extension,proj_path,subdir=FIG_TOPDIR,tabl=NULL,figtag="") {
     if (is.null(plot)) return()
     
-    fname <- plot_fname_prefix(decotab,proj,subdir=subdir)
+    fname <- plot_fname_prefix(decotab,proj_path,subdir=subdir)
     
     fnplot <- paste0(fname,"__",figtag,".",extension)
     
