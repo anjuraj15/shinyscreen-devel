@@ -429,7 +429,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
     ## The reactive world.
-    rvs <- shiny::reactiveValues(m=list2rev(def_state))
+    rvs <- create_rvs(m=def_state)#list(m=def_state) #shiny::reactiveValues(m=list2rev(def_state))
 
     compl_sets <- eventReactive(rvs$m$input$tab$setid,
                                 rvs$m$input$tab$setid[,unique(set)])
@@ -1131,15 +1131,27 @@ mk_shinyscreen_server <- function(projects,init) {
             fullwd <- file.path(init$userdir,wd)
             ## If a saved state exists, load it.
             fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
-            rvs <- if (file.exists(fn_packed_state)) {
-                       gui <- readRDS(file=fn_packed_state)
-                       unpack_app_state(session=session,
+            fn_state <- file.path(fullwd,FN_STATE)
+            rvs <<- if (file.exists(fn_packed_state)) {
+                        message("Loading project: ",wd)
+                        gui <- readRDS(file=fn_packed_state)
+                        unpack_app_state(session=session,
                                         input=input,
                                         project_path=fullwd,
                                         packed_state=gui)
-            } else create_rvs(project_path=fullwd)
+                    } else {
+                        message("Initialising project: ",wd)
+                        create_rvs(project_path=fullwd)
+                    }
+            isolate({if (file.exists(fn_state)) rvs$m <- readRDS(file=fn_state)})
+
+            message("project: ",rvs$project())
         }, label = "project-b")
 
+        observe({
+            x <- rvs$project()
+            message("New project: ", x)
+            })
         ## observeEvent(rv_projects,
         ## {
         ##     message("Project updated.")
@@ -1148,6 +1160,8 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
         observeEvent(input$save_proj_b,{
+            message('rvs m run')
+            print(rvs$m$run)
             fn <- file.path(rvs$m$run$paths$project,FN_STATE)
             fn_packed_state <- file.path(rvs$m$run$paths$project,FN_GUI_STATE)
             shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
@@ -1162,13 +1176,16 @@ mk_shinyscreen_server <- function(projects,init) {
                 yaml::write_yaml(m$conf,
                                  file = fconf)
                 shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
-                m$run$paths$datatab <- ftab
-                gui_inputs <- list()
-                gui_input_names <- which_gui_inputs()
-                gui_inputs <- shiny::reactiveValuesToList(input)[gui_input_names]
-                fn_gui <- file.path(m$run$paths$project,FN_GUI_STATE)
-                saveRDS(object=gui_inputs,file=fn_gui)
-                saveRDS(object=m,file=fn)
+                
+                pack <- pack_app_state(input=input,rvs=rvs)
+                saveRDS(pack,file=fn_packed_state)
+                
+                ## gui_inputs <- list()
+                ## gui_input_names <- which_gui_inputs()
+                ## gui_inputs <- shiny::reactiveValuesToList(input)[gui_input_names]
+                ## fn_gui <- file.path(m$run$paths$project,FN_GUI_STATE)
+                ## saveRDS(object=gui_inputs,file=fn_gui)
+                ## saveRDS(object=m,file=fn)
             }
             shinymsg("Saving state completed.")
         })
@@ -1695,18 +1712,19 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Render Outputs
         output$curr_proj <- renderText({
-            xx <- rvs$m$conf$project
+            rvs$project
+            xx <- if (!is.null(rvs$project)) rvs$project() else NULL
             txt <- if (is.null(xx) || is.na(xx) || nchar(xx)=="") "Nothing selected." else basename(xx)
             paste0("Current project: ", txt)})
         
         output$curr_data_dir <- renderText({
-            xx <- rvs$m$run$paths$data
+            xx <- rvs$paths$data
             txt <- if (is.null(xx)) "Nothing selected" else basename(xx)
             paste0("Current data directory: ", txt)
         })
 
         output$comp_list_report <- renderUI({
-            lsts <- rev2list(rvs$m$conf$compounds$lists)
+            lsts <- rvs$compounds$lists
             HTML(if (length(lsts) > 0 &&
                      isTruthy(lsts) &&
                      lsts != "Nothing selected.") {
@@ -1718,7 +1736,7 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$sets_report <- renderUI({
-            sets <- rvs$m$conf$compounds$sets
+            sets <- rvs$compounds$set
             HTML(if (isTruthy(sets) && sets != "Nothing selected.")
                      paste("selected <em>setid</em> table:",
                            sets) else "No <em>setid</em> table selected.")

@@ -27,20 +27,35 @@ GUI_ALL_INPUTS <- c(GUI_SELECT_INPUTS,
                       GUI_TEXT_INPUTS,
                       GUI_RADIO_INPUTS)
 
-
+#TODO: rvs should be a reactiveVal in shiny-ui-base, then rvs(create_stub_rvs()), etc
 #' @export
-create_rvs <- function(project_path) {
+create_stub_rvs <- function() {
     rvs <- list()
-    rvs$m <- new_empty_project(project_path)
-    
     rvs$compounds <- shiny::reactiveValues(lists=character(),
                                            set=character())
-    
     rvs$datatab <- shiny::reactiveValues(file=character(),
                                          tag=character(),
                                          adduct=character(),
                                          set=character())
 
+    rvs$paths <- shiny::reactiveValues(project=NA_character_,
+                                       data=NA_character_)
+    rvs$project <- shiny::reactiveVal(NA_character_)
+    rvs
+    }
+
+
+create_rvs <- function(project_path=NA_character_,m=NULL) {
+    rvs <- create_stub_rvs()
+    if (!is.na(project_path)) {
+        rvs$m <- new_empty_project(project_path)
+        rvs$paths$project_path = project_path
+        rvs$project(basename(project_path))
+    }
+
+    if (!is.null(m)) rvs$m=m
+        
+      
     rvs
                          
 }
@@ -61,8 +76,8 @@ r2datatab <- function(rdatatab) {
 
 r2compounds <- function(rcompounds) {
     shiny::isolate({
-        cmpd_lists <- rcompounds$lists()
-        cmpd_set <- rcompounds$set()
+        cmpd_lists <- rcompounds$lists
+        cmpd_set <- rcompounds$set
         })
 
     list(lists=cmpd_lists,set=cmpd_set)
@@ -79,6 +94,8 @@ pack_app_state <- function(input, rvs) {
         gui$input <- gui_inputs
         gui$datatab <- r2datatab(rvs$datatab)
         gui$compounds <- r2compounds(rvs$compounds)
+        gui$paths <- list()
+        gui$paths$data <- rvs$paths$data
 
         })
     gui
@@ -148,10 +165,11 @@ unpack_app_state <- function(session,input,project_path,packed_state) {
         rvs <- create_rvs(project_path)
         rvs$compounds$lists <- packed_state$compounds$lists
         rvs$compounds$sets <- packed_state$compounds$sets
-        rvs$datatab$file <- packed_state$file
-        rvs$datatab$adduct <- packed_state$adduct
-        rvs$datatab$tag <- packed_state$tag
-        rvs$datatab$set <- packed_state$set
+        rvs$datatab$file <- packed_state$datatab$file
+        rvs$datatab$adduct <- packed_state$datatab$adduct
+        rvs$datatab$tag <- packed_state$datatab$tag
+        rvs$datatab$set <- packed_state$datatab$set
+        rvs$paths$data <- packed_state$paths$data
             
     })
 
