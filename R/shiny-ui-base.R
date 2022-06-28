@@ -1126,39 +1126,18 @@ mk_shinyscreen_server <- function(projects,init) {
         ## })
 
         observeEvent(input$load_proj_b,{
-            
             wd <- input$proj_list
             req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
             fullwd <- file.path(init$userdir,wd)
             ## If a saved state exists, load it.
-            fn_state <- file.path(fullwd,FN_STATE)
-            if (file.exists(fn_state)) {
-                ## reset_gui_and_state(session=session,
-                ##                     init = init,
-                ##                     wd = wd,
-                ##                     rv_dfile = rv_dfile,
-                ##                     rv_datatab = rv_datatab,
-                ##                     rv_flag_datatab = rv_flag_datatab,
-                ##                     rvs = rvs,
-                ##                     rv_projects = rv_projects)
-                ## rvs$m <- list2rev(readRDS(fn_state))
-                ## rvs$m$conf$project <- input$proj_list
-                ## rvs$m$run$paths$project <- fullwd
-                ## update_gui(session = session,
-                ##            rv_dfile = rv_dfile,
-                ##            rv_datatab = rv_datatab,
-                ##            rv_flag_datatab = rv_flag_datatab)
-            } else {
-                message("No saved state found. Creating an empty project.")
-                m <- new_empty_project(fullwd)
-                rvs$m <- NULL
-                rvs$m <- list2rev(m)
-                update_gui(session = session,
-                           rv_dfile = rv_dfile,
-                           rv_datatab = rv_datatab,
-                           rv_flag_datatab = rv_flag_datatab)
-                
-            }
+            fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
+            rvs <- if (file.exists(fn_packed_state)) {
+                       gui <- readRDS(file=fn_packed_state)
+                       unpack_app_state(session=session,
+                                        input=input,
+                                        project_path=fullwd,
+                                        packed_state=gui)
+            } else create_rvs(project_path=fullwd)
         }, label = "project-b")
 
         ## observeEvent(rv_projects,
@@ -1170,6 +1149,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$save_proj_b,{
             fn <- file.path(rvs$m$run$paths$project,FN_STATE)
+            fn_packed_state <- file.path(rvs$m$run$paths$project,FN_GUI_STATE)
             shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
             message("(config) Saving state to: ", paste(fn,collapse = ","))
             fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
@@ -1186,7 +1166,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 gui_inputs <- list()
                 gui_input_names <- which_gui_inputs()
                 gui_inputs <- shiny::reactiveValuesToList(input)[gui_input_names]
-                fn_gui <- file.path(m$run$paths$project,"gui.rds")
+                fn_gui <- file.path(m$run$paths$project,FN_GUI_STATE)
                 saveRDS(object=gui_inputs,file=fn_gui)
                 saveRDS(object=m,file=fn)
             }
@@ -1715,13 +1695,13 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Render Outputs
         output$curr_proj <- renderText({
-            txt <- rvs$m$conf$project
-            if (is.null(txt)) txt <- "Nothing selected"
+            xx <- rvs$m$conf$project
+            txt <- if (is.null(xx) || is.na(xx) || nchar(xx)=="") "Nothing selected." else basename(xx)
             paste0("Current project: ", txt)})
         
         output$curr_data_dir <- renderText({
-            txt <- basename(rvs$m$run$paths$data)
-            if (is.null(txt)) txt <- "Nothing selected"
+            xx <- rvs$m$run$paths$data
+            txt <- if (is.null(xx)) "Nothing selected" else basename(xx)
             paste0("Current data directory: ", txt)
         })
 

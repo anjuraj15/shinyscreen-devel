@@ -23,6 +23,7 @@ new_state <- function() {
 
 
 runtime_from_conf <- function(run,conf) {
+    browser()
     lst_cmpl <- conf$compounds$lists
     lst_fn_cmpl <- lapply(names(lst_cmpl),function (nm) {
         bfn_cmpl <- lst_cmpl[[nm]]
