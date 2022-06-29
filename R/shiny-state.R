@@ -27,37 +27,35 @@ GUI_ALL_INPUTS <- c(GUI_SELECT_INPUTS,
                       GUI_TEXT_INPUTS,
                       GUI_RADIO_INPUTS)
 
-#TODO: rvs should be a reactiveVal in shiny-ui-base, then rvs(create_stub_rvs()), etc
 #' @export
-create_stub_rvs <- function() {
-    rvs <- list()
-    rvs$compounds <- shiny::reactiveValues(lists=character(),
-                                           set=character())
-    rvs$datatab <- shiny::reactiveValues(file=character(),
-                                         tag=character(),
-                                         adduct=character(),
-                                         set=character())
+create_stub_gui <- function() {
+    gui <- list()
+    shiny::isolate({
+        gui$compounds <- shiny::reactiveValues(lists=character(),
+                                               set=character())
+        gui$datatab <- shiny::reactiveValues(file=character(),
+                                             tag=character(),
+                                             adduct=character(),
+                                             set=character())
 
-    rvs$paths <- shiny::reactiveValues(project=NA_character_,
-                                       data=NA_character_)
-    rvs$project <- shiny::reactiveVal(NA_character_)
-    rvs
-    }
+        gui$paths <- shiny::reactiveValues(project=NA_character_,
+                                           data=NA_character_)
+        gui$project <- shiny::reactiveVal(NA_character_)
+    })
+    gui
+}
 
 
-create_rvs <- function(project_path=NA_character_,m=NULL) {
-    rvs <- create_stub_rvs()
-    if (!is.na(project_path)) {
-        rvs$m <- new_empty_project(project_path)
-        rvs$paths$project_path = project_path
-        rvs$project(basename(project_path))
-    }
-
-    if (!is.null(m)) rvs$m=m
+create_gui <- function(project_path=NA_character_) {
+    shiny::isolate({
+        gui <- create_stub_gui()
+        if (!is.na(project_path)) {
+            gui$paths$project = project_path
+            gui$project(basename(project_path))
+        }
         
-      
-    rvs
-                         
+        gui
+    })
 }
 
 #'@export
@@ -85,20 +83,20 @@ r2compounds <- function(rcompounds) {
 
 
 #' @export
-pack_app_state <- function(input, rvs) {
-    gui <- list()
+pack_app_state <- function(input, gui) {
+    pack <- list()
     shiny::isolate({
-        gui_inputs <- list()
-        gui_input_names <- which_gui_inputs()
-        gui_inputs <- shiny::reactiveValuesToList(input)[gui_input_names]
-        gui$input <- gui_inputs
-        gui$datatab <- r2datatab(rvs$datatab)
-        gui$compounds <- r2compounds(rvs$compounds)
-        gui$paths <- list()
-        gui$paths$data <- rvs$paths$data
+        pack_inputs <- list()
+        pack_input_names <- which_gui_inputs()
+        pack_inputs <- shiny::reactiveValuesToList(input)[pack_input_names]
+        pack$input <- pack_inputs
+        pack$datatab <- r2datatab(rvs$datatab)
+        pack$compounds <- r2compounds(rvs$compounds)
+        pack$paths <- list()
+        pack$paths$data <- rvs$paths$data
 
         })
-    gui
+    pack
 }
 
 which_gui_inputs <- function() {
@@ -162,18 +160,18 @@ unpack_app_state <- function(session,input,project_path,packed_state) {
         ## rv_flag_datatab(rv_flag_datatab() + 1L)
         ## NULL
 
-        rvs <- create_rvs(project_path)
-        rvs$compounds$lists <- packed_state$compounds$lists
-        rvs$compounds$sets <- packed_state$compounds$sets
-        rvs$datatab$file <- packed_state$datatab$file
-        rvs$datatab$adduct <- packed_state$datatab$adduct
-        rvs$datatab$tag <- packed_state$datatab$tag
-        rvs$datatab$set <- packed_state$datatab$set
-        rvs$paths$data <- packed_state$paths$data
-            
+        gui <- create_gui(project_path)
+        gui$compounds$lists <- packed_state$compounds$lists
+        gui$compounds$sets <- packed_state$compounds$sets
+        gui$datatab$file <- packed_state$datatab$file
+        gui$datatab$adduct <- packed_state$datatab$adduct
+        gui$datatab$tag <- packed_state$datatab$tag
+        gui$datatab$set <- packed_state$datatab$set
+        gui$paths$data <- packed_state$paths$data
+        gui
     })
 
-    rvs
+ 
 
 }
 
