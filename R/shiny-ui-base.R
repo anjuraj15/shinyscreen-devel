@@ -1220,21 +1220,15 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$comp_list_b, {
             sels <- input$comp_list
             req(isTruthy(sels))
-            compfiles <- file.path(rvs$gui$paths$project,sels)
+            rvs$gui$compounds$lists <- sels
             message("(config) Selected compound lists: ", paste(sels,collapse = ","))
-            rvs$m$conf$compounds$lists <- sels
-            rvs$m$run$paths$compounds$lists <- if (length(compfiles)>0 && nchar(compfiles[[1]])>0) compfiles else "Nothing selected."
-            
         })
 
         observeEvent(input$set_list_b, {
             sels <- input$set_list
             req(isTruthy(sels))
-            setfiles <- file.path(rvs$gui$paths$project,sels)
             message("(config) Selected set lists: ", paste(sels,collapse = ","))
-            rvs$m$conf$compounds$sets <- sels
-            rvs$m$run$paths$compounds$sets <- if (length(setfiles)>0 && nchar(setfiles[[1]])>0) setfiles else "Nothing selected."
-            
+            rvs$gui$compounds$sets <- sels
         })
 
         observeEvent(input$datafiles_cell_edit,{
@@ -1718,7 +1712,7 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$sets_report <- renderUI({
-            sets <- rvs$gui$compounds$set
+            sets <- rvs$gui$compounds$sets
             HTML(if (isTruthy(sets) && sets != "Nothing selected.")
                      paste("selected <em>setid</em> table:",
                            sets) else "No <em>setid</em> table selected.")
