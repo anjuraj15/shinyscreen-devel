@@ -597,150 +597,7 @@ mk_shinyscreen_server <- function(projects,init) {
         
     }
 
-    reset_gui_and_state <- function(session,init,wd,rv_dfile,rv_datatab, rv_flag_datatab,rvs, rv_projects) {
-        new_projects <- list.dirs(path=init$userdir,
-                                  full.names = F,
-                                  recursive = F)
-        updateSelectInput(session = session,
-                          inputId = "proj_list",
-                          choices = new_projects,
-                          selected = wd)
-        updateSelectInput(session = session,
-                          inputId = "comp_list",
-                          choices = character(0))
-        updateSelectInput(session = session,
-                          inputId = "set_list",
-                          choices = character(0))
-        updateSelectInput(session = session,
-                          inputId = "dfile_list",
-                          choices = character(0))
-
-        rvs$m <- list2rev(new_state())
-        rv_projects(new_projects)
-        rv_dfile(def_datafiles)
-        rv_datatab(def_datatab)
-    }
-    update_gui <- function(session, rv_dfile, rv_datatab, rv_flag_datatab) {
-        upd_unit <- function(entry,inp_val,inp_unit,choices) {
-            if (isTruthy(entry)) {
-                cntnt <- strsplit(entry,split = "[[:space:]]+")[[1]]
-                cntnt <- cntnt[nchar(cntnt) > 0]
-                if (length(cntnt)!=2) stop("(upd_unit) ","Unable to interpret ", entry)
-                val <- cntnt[[1]]
-                unit <- cntnt[[2]]
-                updateNumericInput(session = session,
-                                   inputId = inp_val,
-                                   value = as.numeric(val))
-                updateSelectInput(session = session,
-                                  inputId = inp_unit,
-                                  selected = unit,
-                                  choices = choices)
-            }
-        }
-
-        upd_num <- function(entry,inp_val) {
-            if (isTruthy(entry)) {
-                updateNumericInput(session = session,
-                                   inputId = inp_val,
-                                   value = as.numeric(entry))
-            }
-        }
-
-        upd_sel <- function(inputId,selected,choices) {
-            if (isTruthy(selected)) {
-                updateSelectInput(session = session,
-                                  inputId = inputId,
-                                  selected = selected,
-                                  choices = choices)
-            }
-        }
-
-        isolate({
-            ## rvs$m$conf <- in_conf## new_project(in_conf$paths$project)
-            ## rvs$m$conf$paths <- in_conf$paths
-            ## ## Lists
-            ## rvs$m$conf$compounds$lists <- in_conf$compounds$lists
-            ## rvs$m$conf$compounds$sets <- in_conf$compounds$sets
-            
-            ## Tolerance
-            
-            upd_unit(rvs$m$conf$tolerance[["ms1 fine"]],
-                     "ms1_fine",
-                     "ms1_fine_unit",
-                     choices=c("ppm","Da"))
-            upd_unit(rvs$m$conf$tolerance[["ms1 coarse"]],
-                     "ms1_coarse",
-                     "ms1_coarse_unit",
-                     choices=c("ppm","Da"))
-
-            upd_unit(rvs$m$conf$tolerance[["eic"]],
-                     "ms1_eic",
-                     "ms1_eic_unit",
-                     choices=c("ppm","Da"))
-            upd_unit(rvs$m$conf$tolerance[["rt"]],
-                     "ms1_rt_win",
-                     "ms1_rt_win_unit",
-                     choices=c("min","s"))
-
-            ## Prescreen
-            upd_num(rvs$m$conf$prescreen[["ms1_int_thresh"]],
-                    "ms1_int_thresh")
-            upd_num(rvs$m$conf$prescreen[["ms2_int_thresh"]],
-                    "ms2_int_thresh")
-            upd_num(rvs$m$conf$prescreen[["s2n"]],
-                    "s2n")
-            upd_unit(rvs$m$conf$prescreen[["ret_time_shift_tol"]],
-                     "ret_time_shift_tol",
-                     "ret_time_shift_tol_unit",
-                     choices=c("min","s"))
-
-            ## Files
-            if (isTruthy(rvs$m$run$paths$datatab)) {
-                df <- shinyscreen:::file2tab(rvs$m$run$paths$datatab)
-                dfile <- data.table::copy(df[,tag:=as.character(tag),with=T])
-                dfile <- dfile[,unique(.SD),.SDcol=c("file","tag")]
-                ## rv_dfile(df[,.(file,tag),by=c("file","tag"),mult="first"][,file:=NULL])
-                rv_dfile(dfile)
-                nms <- colnames(df)
-                nms <- nms[nms!="file"]
-                fdt <- df[,..nms]
-                rv_datatab(fdt)
-                rv_flag_datatab(rv_flag_datatab()+1L)
-            }
-
-            ## figures
-            upd_unit(rvs$m$conf$figures$rt_min,
-                     "plot_rt_min",
-                     "plot_rt_min_unit",
-                     choices=c("min","s"))
-            
-            upd_unit(rvs$m$conf$figures$rt_max,
-                     "plot_rt_max",
-                     "plot_rt_max_unit",
-                     choices=c("min","s"))
-
-            if (isTruthy(rvs$m$conf$figures$logaxes)) {
-                logentry <- rvs$m$conf$figures$logaxes
-                logchoice <- logical(0)
-                logchoice <- mapply(function(cn,uin) if (cn %in% logentry) uin else NA,
-                                    c("ms1_eic_int","ms2_eic_int","ms2_spec_int"),
-                                    c("MS1 EIC","MS2 EIC","MS2 Spectrum"),USE.NAMES = F)
-                logchoice <- logchoice[!is.na(logchoice)]
-                
-                updateCheckboxGroupInput(session = session,
-                                         inputId = "plot_log",
-                                         choices = c("MS1 EIC",
-                                                     "MS2 EIC",
-                                                     "MS2 Spectrum"),
-                                         selected = logchoice)
-            }
-            ## Report
-            if (isTruthy(rvs$m$conf$report$author)) updateTextInput(session,"rep_aut",value = rvs$m$conf$report$author)
-            if (isTruthy(rvs$m$conf$report$title)) updateTextInput(session,"rep_tit",value = rvs$m$conf$report$title)
-
-            
-        })
-    }
+    
 
     ## This is a JavaScript callback which is meant to capture double
     ## clicks on DT datatables and return data in an input field of
@@ -1093,37 +950,6 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Observers
 
-        ## observeEvent(input$create_proj_b,{
-        ##     wd <- input$new_proj_name
-        ##     req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
-        ##     fullwd <- file.path(init$userdir,wd)
-        ##     dir.create(fullwd,recursive = F,showWarnings = F)
-
-        ##     ## Add to the project list if new.
-        ##     if (! (wd %in% rv_projects())) {
-        ##         message("Updating proj list.")
-        ##         reset_gui_and_state(session=session,
-        ##                             init = init,
-        ##                             wd = wd,
-        ##                             rv_dfile = rv_dfile,
-        ##                             rv_datatab = rv_datatab,
-        ##                             rv_flag_datatab = rv_flag_datatab,
-        ##                             rvs = rvs,
-        ##                             rv_projects = rv_projects)
-        ##         rvs$m$conf$project <- input$new_proj_name
-        ##         rvs$m$paths$project <- fullwd
-        ##         saveRDS(rev2list(rvs$m),file.path(fullwd,FN_STATE))
-
-
-                
-        ##     } else {
-        ##         msg <- "Project already exists. Refusing to overwrite."
-        ##         message(msg)
-        ##         shinymsg(msg)
-        ##     }
-
-        ## })
-
         observeEvent(input$load_proj_b,{
             wd <- input$proj_list
             req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
@@ -1152,18 +978,18 @@ mk_shinyscreen_server <- function(projects,init) {
             print(rvs$m$run)
             fn <- file.path(rvs$gui$paths$project,FN_STATE)
             fn_packed_state <- file.path(rvs$gui$paths$project,FN_GUI_STATE)
+            fn_tab <- file.path(rvs$gui$paths$project,FN_DATA_TAB)
+            fn_conf <-file.path(rvs$gui$paths$project,FN_CONF)
             shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
             message("(config) Saving state to: ", paste(fn,collapse = ","))
+            message("(config) Saving app state to: ", fn_packed_state)
             fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
 
             if (nchar(fn) > 0) {
-                m <- rev2list(rvs$m)
-                ftab <- get_fn_ftab(m)
-                fconf <- get_fn_conf(m)
-
+                m <- rvs$m
                 yaml::write_yaml(m$conf,
-                                 file = fconf)
-                shinyscreen:::tab2file(tab=m$input$tab$mzml,file=ftab)
+                                 file = fn_conf)
+                shinyscreen:::tab2file(tab=m$input$tab$mzml,file=fn_tab)
                 
                 pack <- pack_app_state(input=input,gui=rvs$gui)
                 saveRDS(pack,file=fn_packed_state)

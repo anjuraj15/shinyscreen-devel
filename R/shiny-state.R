@@ -65,10 +65,11 @@ r2datatab <- function(rdatatab) {
         adduct <- rdatatab$adduct
         tag <- rdatatab$tag
         set <- rdatatab$set
-        if (is.null(adduct)) adduct <- rep(NA_character_,length(file))
-        if (is.null(tag)) tag <- rep(NA_character_,length(file))
-        if (is.null(set)) tag <- rep(NA_character_,length(file))
         })
+    if (is.null(file)) file <- character(0)
+    if (is.null(adduct)) adduct <- rep(NA_character_,length(file))
+    if (is.null(tag)) tag <- rep(NA_character_,length(file))
+    if (is.null(set)) tag <- rep(NA_character_,length(file))
     data.table(tag=tag,adduct=adduct,set=set,file=file)
 }
 
@@ -90,10 +91,10 @@ pack_app_state <- function(input, gui) {
         pack_input_names <- which_gui_inputs()
         pack_inputs <- shiny::reactiveValuesToList(input)[pack_input_names]
         pack$input <- pack_inputs
-        pack$datatab <- r2datatab(rvs$datatab)
-        pack$compounds <- r2compounds(rvs$compounds)
+        pack$datatab <- r2datatab(gui$datatab)
+        pack$compounds <- r2compounds(gui$compounds)
         pack$paths <- list()
-        pack$paths$data <- rvs$paths$data
+        pack$paths$data <- gui$paths$data
 
         })
     pack
@@ -123,43 +124,29 @@ which_gui_radio_inputs <- function() {
 unpack_app_state <- function(session,input,project_path,packed_state) {
     shiny::isolate({
         for (inp in which_gui_select_inputs()) {
-            message("Updating: ",inp)
             shiny::updateSelectInput(session = session,
                                      inputId = inp,
-                                     selected = packed_state$input[inp])
+                                     selected = packed_state$input[[inp]])
         }
         
         for (inp in which_gui_numeric_inputs()) {
-            message("Updating: ",inp)
             shiny::updateNumericInput(session = session,
                                       inputId = inp,
-                                      value = packed_state$input[inp])
+                                      value = packed_state$input[[inp]])
         }
         
         for (inp in which_gui_text_inputs()) {
-            message("Updating: ",inp)
             shiny::updateTextInput(session = session,
                                    inputId = inp,
-                                   value = packed_state$input[inp])
+                                   value = packed_state$input[[inp]])
         }
         
         for (inp in which_gui_radio_inputs()) {
-            message("Updating: ",inp)
             shiny::updateRadioButtons(session = session,
                                       inputId = inp,
-                                      selected = packed_state$input[inp])
+                                      selected = packed_state$input[[inp]])
         }
         
-        ## df <- file2tab(rvs$m$run$paths$datatab)
-        ## dfile <- data.table::copy(df[,tag:=as.character(tag),with=T])
-        ## rv_dfile(dfile)
-        ## nms <- colnames(df)
-        ## nms <- nms[nms!="file"]
-        ## fdt <- df[,..nms]
-        ## rv_datatab(fdt)
-        ## rv_flag_datatab(rv_flag_datatab() + 1L)
-        ## NULL
-
         gui <- create_gui(project_path)
         gui$compounds$lists <- packed_state$compounds$lists
         gui$compounds$sets <- packed_state$compounds$sets
