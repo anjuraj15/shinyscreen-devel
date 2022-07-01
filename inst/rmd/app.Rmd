@@ -321,7 +321,7 @@ selectInput('dfile_list',
             multiple = T,
             choices = "")
 actionButton(inputId = "datafiles_b",
-             label= "Load data files.")
+             label= "Load data files.", width="10%")
 
 ```
 
@@ -334,6 +334,7 @@ tags.
 
 ```{r, echo=FALSE}
 DT::DTOutput("datafiles",width="25%")
+actionButton("rem_dfiles_b",label="Remove selected entries",width="10%")
 ```
 
 

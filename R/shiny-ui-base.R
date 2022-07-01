@@ -1083,7 +1083,18 @@ mk_shinyscreen_server <- function(projects,init) {
             updateSelectInput(session=session,
                               inputId="dfile_list",
                               selected=NULL)
+
             
+        })
+
+        observeEvent(input$rem_dfiles_b,{
+            if (isTruthy(input$datafiles_rows_selected)) {
+                rmv <- input$datafiles_rows_selected
+                rvs$gui$datatab$file <- rvs$gui$datatab$file[-rmv]
+                rvs$gui$datatab$set <- rvs$gui$datatab$set[-rmv]
+                rvs$gui$datatab$adduct <- rvs$gui$datatab$adduct[-rmv]
+                rvs$gui$datatab$tag <- rvs$gui$datatab$tag[-rmv]
+            }
         })
         
         observeEvent(input$datafiles_cell_edit,{
