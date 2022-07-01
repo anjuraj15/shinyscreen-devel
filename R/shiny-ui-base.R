@@ -439,7 +439,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
     ## Update with data-files.
     rv_dfile <- reactiveVal(def_datafiles)
-
+    ## TODO: think about the connection of rv_dfile to the rest.
     ## Data-file table when loading.
     rv_datatab <- reactiveVal(def_datatab)
     rv_flag_datatab <- reactiveVal(-.Machine$integer.max)
@@ -654,24 +654,37 @@ mk_shinyscreen_server <- function(projects,init) {
         
         ## REACTIVE FUNCTIONS
 
-        rf_compound_input_state <- reactive({
-            sets <- rvs$m$run$paths$compounds$sets
-            lst <- as.list(rvs$m$run$paths$compounds$lists)
-            ## TODO XXX
-            validate(need(length(lst)>0,
-                          message = "Load the compound lists(s) first."))
-            validate(need(length(sets)>0 && nchar(sets)>0,
-                          message = "Load the setid table first."))
-            isolate({
-                state <- rev2list(rvs$m)
-                m <- load_compound_input(state)
+        ## rf_compound_input_state <- reactive({
+        ##     sets <- rvs$m$run$paths$compounds$sets
+        ##     lst <- as.list(rvs$m$run$paths$compounds$lists)
+        ##     ## TODO XXX
+        ##     validate(need(length(lst)>0,
+        ##                   message = "Load the compound lists(s) first."))
+        ##     validate(need(length(sets)>0 && nchar(sets)>0,
+        ##                   message = "Load the setid table first."))
+        ##     isolate({
+        ##         state <- rev2list(rvs$m)
+        ##         m <- load_compound_input(state)
 
-                ## Side effect! This is because my pipeline logic does not
-                ## work nicely with reactive stuff.
-                rvs$m$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
-                rvs$m$input$tab$setid <- m$input$tab$setid
-                m
+        ##         ## Side effect! This is because my pipeline logic does not
+        ##         ## work nicely with reactive stuff.
+        ##         rvs$m$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
+        ##         rvs$m$input$tab$setid <- m$input$tab$setid
+        ##         m
+        ##     })
+        ## })
+
+        rf_comp_state <- reactive({
+            app_state2state(input=input,
+                            gui = rvs$gui)
             })
+
+        rf_get_sets <- reactive({
+            req(rvs$gui$paths$project)
+            req(rvs$gui$paths$sets)
+
+            get_sets(gui)
+            
         })
 
         rf_conf_proj <- reactive({

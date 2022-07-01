@@ -33,7 +33,7 @@ create_stub_gui <- function() {
     gui <- list()
     shiny::isolate({
         gui$compounds <- shiny::reactiveValues(lists=character(),
-                                               set=character())
+                                               sets=character())
         gui$datatab <- shiny::reactiveValues(file=character(),
                                              tag=character(),
                                              adduct=character(),
@@ -83,10 +83,10 @@ r2taadse <- function(tablist,sets) {
 r2compounds <- function(rcompounds) {
     shiny::isolate({
         cmpd_lists <- rcompounds$lists
-        cmpd_set <- rcompounds$set
+        cmpd_set <- rcompounds$sets
         })
 
-    list(lists=cmpd_lists,set=cmpd_set)
+    list(lists=cmpd_lists,sets=cmpd_set)
     }
 
 
@@ -211,9 +211,22 @@ app_state2state <- function(input,gui) {
     m <- new_project(gui$paths$project)
     m$run$paths <- shiny::reactiveValuesToList(gui$paths)
     m$conf <- input2conf(input)
+    m$input$tab$mzml <- data.table(tag=gui$datatab$tag,
+                                   adduct=gui$datatab$adduct,
+                                   set=gui$datatab$set,
+                                   file=gui$datatab$file)
     m
 }
 
 
-    
+gen_comp_state <- function(input,gui) {
+    m <- app_state2state(input,gui)
+    run(m=m,phases=c("setup","mk_comp_tab"))
+}
 
+    
+get_sets <- function(gui) {
+    fn_set <- file.path(gui$paths$project,gui$compounds$sets)
+    df <- fread(file=fn_sets)
+    df[,unique(set)]
+}
