@@ -2,11 +2,12 @@
 
 
 GUI_SELECT_INPUTS <- c("proj_list",
-                  "indir_list",
-                  "ms1_coarse_unit",
-                  "ms1_fine_unit",
-                  "ms1_rt_win_unit",
-                  "ret_time_shift_tol")
+                       "indir_list",
+                       "ms1_coarse_unit",
+                       "ms1_fine_unit",
+                       "ms1_rt_win_unit",
+                       "ret_time_shift_tol",
+                       "dfile_list")
                   
 GUI_NUMERIC_INPUTS <- c("ms1_coarse",
                    "ms1_fine",
@@ -66,10 +67,10 @@ r2datatab <- function(rdatatab) {
         tag <- rdatatab$tag
         set <- rdatatab$set
         })
-    if (is.null(file)) file <- character(0)
-    if (is.null(adduct)) adduct <- rep(NA_character_,length(file))
-    if (is.null(tag)) tag <- rep(NA_character_,length(file))
-    if (is.null(set)) tag <- rep(NA_character_,length(file))
+    if (length(file)==0L) file <- character(0)
+    if (length(adduct)==0L) adduct <- rep(NA_character_,length(file))
+    if (length(tag)==0L) tag <- rep(NA_character_,length(file))
+    if (length(set)==0L) tag <- rep(NA_character_,length(file))
     data.table(tag=tag,adduct=adduct,set=set,file=file)
 }
 
@@ -161,4 +162,3 @@ unpack_app_state <- function(session,input,project_path,packed_state) {
  
 
 }
-

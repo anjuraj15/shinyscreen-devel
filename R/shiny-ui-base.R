@@ -1057,6 +1057,35 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$compounds$sets <- sels
         })
 
+        observeEvent(input$datafiles_b,{
+            new_file <- input$dfile_list
+            if (isTruthy(new_file)) {
+                curr_file <- rvs$gui$datatab$file
+                curr_tag <- rvs$gui$datatab$tag
+                curr_adduct <- rvs$gui$datatab$adduct
+                curr_set <- rvs$gui$datatab$set
+
+                nb <- length(curr_file)
+                nd <- length(new_file)
+                res_file <- c(curr_file,new_file)
+                res_tag <- c(curr_tag,paste0('F',(nb + 1):(nb + nd)))
+                res_adduct <- c(curr_adduct,rep(NA_character_,nd))
+                res_set <- c(curr_set,rep(NA_character_,nd))
+
+                
+
+                rvs$gui$datatab$file <- res_file
+                rvs$gui$datatab$tag <- res_tag
+                rvs$gui$datatab$adduct <- res_adduct
+                rvs$gui$datatab$set <- res_set
+            }
+
+            updateSelectInput(session=session,
+                              inputId="dfile_list",
+                              selected=NULL)
+            
+        })
+        
         observeEvent(input$datafiles_cell_edit,{
             z <- DT::editData(rv_dfile(),
                               input$datafiles_cell_edit,
@@ -1104,23 +1133,22 @@ mk_shinyscreen_server <- function(projects,init) {
         ##     the_ord_summ <<- the_ord_summ[(currorder),]
         ## })
         
-        observeEvent(input$datafiles_b,{
-            sels <- input$dfile_list
-            req(isTruthy(sels))
-            dfiles <- file.path(rvs$m$run$paths$data,sels)
-            message("(config) Selected mzMl files: ", paste(sels,collapse = ","))
-            if (length(dfiles) > 0) {
-                oldtab <- rv_dfile()
+        ## observeEvent(input$datafiles_b,{
+        ##     dfiles <- input$dfile_list
+        ##     req(isTruthy(dfiles))
+        ##     message("(config) Selected mzMl files: ", paste(sels,collapse = ","))
+        ##     if (length(dfiles) > 0) {
+        ##         oldfiles <- rvs$gui$datatab$file
                 
-                newf <- setdiff(dfiles,oldtab$file)
-                nr <- NROW(oldtab)
-                tmp <- if (length(newf)>0) shinyscreen:::dtable(file=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(file=character(),tag=character())
+        ##         newf <- setdiff(dfiles,oldfiles)
+        ##         nr <- length(oldfiles)
+        ##         tmp <- if (length(newf)>0) shinyscreen:::dtable(file=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(file=character(),tag=character())
 
-                z <- rbind(oldtab, tmp)
-                z[,tag:=as.character(tag)]
-                rv_dfile(z)
-            }
-        })
+        ##         z <- rbind(data.table(file=oldfile,tag=oldtag), tmp)
+        ##         z[,tag:=as.character(tag)]
+        ##         rv_dfile(z)
+        ##     }
+        ## })
 
         observe({
             df_tab <- rv_dfile()#rf_get_inp_datafiles()
@@ -1555,11 +1583,13 @@ mk_shinyscreen_server <- function(projects,init) {
         
         output$datafiles <- DT::renderDT(
         {
-            res <- rv_dfile()
-            req(isTruthy(res))
-            res$tag <- as.factor(res$tag)
-            simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
+            curr_file <- rvs$gui$datatab$file
+            curr_tag <- rvs$gui$datatab$tag
+
+            res <- data.table(file=curr_file,tag=curr_tag)
+            res[,tag:=as.factor(tag)]
             
+            simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
         })
 
         output$datatab <- DT::renderDT({
