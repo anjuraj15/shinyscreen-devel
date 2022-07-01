@@ -74,6 +74,12 @@ r2datatab <- function(rdatatab) {
     data.table(tag=tag,adduct=adduct,set=set,file=file)
 }
 
+r2taadse <- function(tablist,sets) {
+    data.table(tag=factor(tablist$tag,levels=unique(tablist$tag)),
+               adduct=factor(tablist$adduct,levels=ADDUCTMAP),
+               set=factor(tablist$set,levels=sets))
+}
+
 r2compounds <- function(rcompounds) {
     shiny::isolate({
         cmpd_lists <- rcompounds$lists
@@ -162,3 +168,52 @@ unpack_app_state <- function(session,input,project_path,packed_state) {
  
 
 }
+
+
+input2conf <- function(input,conf=list()) {
+    conf$compounds <- list()
+    conf$figures <- list()
+    conf$prescreen <- list()
+    conf$tolerance <- list()
+    conf$extract <- list()
+    conf$summary_table <- list()
+    conf$report <- list()
+    
+    conf$debug <- "no"
+
+    conf$compounds$lists <- gui$compounds$lists
+    conf$compounds$sets <- gui$compounds$sets
+    
+    conf$tolerance[["ms1 fine"]] <- paste(input$ms1_fine,input$ms1_fine_unit)
+    conf$tolerance[["ms1 coarse"]] <- paste(input$ms1_coarse,input$ms1_coarse_unit)
+    conf$tolerance[["eic"]] <- paste(input$ms1_eic,input$ms1_eic_unit)
+    conf$tolerance[["rt"]] <- paste(input$ret_time_shift_tol,input$ret_time_shift_tol_unit)
+
+    conf$prescreen[["ms1_int_thresh"]] <- input$ms1_int_thresh
+    conf$prescreen[["ms2_int_thresh"]] <- input$ms2_int_thresh
+    conf$prescreen[["s2n"]] <- input$s2n
+    conf$prescreen[["ret_time_shift_tol"]] <- paste(input$ret_time_shift_tol,input$ret_time_shift_tol_unit)
+
+    conf$figures$rt_min <- paste(input$plot_rt_min,input$plot_rt_min_unit)
+    conf$figures$rt_max <- paste(input$plot_rt_max,input$plot_rt_max_unit)
+    conf$figures$ext <- input$plot_ext
+
+    conf$extract$missing_precursor_info <- input$missingprec
+
+    conf$report$author <- input$rep_aut
+    conf$report$title <- input$rep_aut
+
+    conf
+}
+
+app_state2state <- function(input,gui) {
+    shiny::req(gui$paths$project)
+    m <- new_project(gui$paths$project)
+    m$run$paths <- shiny::reactiveValuesToList(gui$paths)
+    m$conf <- input2conf(input)
+    m
+}
+
+
+    
+
