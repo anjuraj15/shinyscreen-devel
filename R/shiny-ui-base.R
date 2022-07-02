@@ -654,25 +654,32 @@ mk_shinyscreen_server <- function(projects,init) {
         
         ## REACTIVE FUNCTIONS
 
-        ## rf_compound_input_state <- reactive({
-        ##     sets <- rvs$m$run$paths$compounds$sets
-        ##     lst <- as.list(rvs$m$run$paths$compounds$lists)
-        ##     ## TODO XXX
-        ##     validate(need(length(lst)>0,
-        ##                   message = "Load the compound lists(s) first."))
-        ##     validate(need(length(sets)>0 && nchar(sets)>0,
-        ##                   message = "Load the setid table first."))
-        ##     isolate({
-        ##         state <- rev2list(rvs$m)
-        ##         m <- load_compound_input(state)
+        rf_compound_set <- reactive({
+            req(rvs$gui$compounds$sets,
+                rvs$gui$paths$project)
 
-        ##         ## Side effect! This is because my pipeline logic does not
-        ##         ## work nicely with reactive stuff.
-        ##         rvs$m$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
-        ##         rvs$m$input$tab$setid <- m$input$tab$setid
-        ##         m
-        ##     })
-        ## })
+            get_sets(rvs$gui)
+        })
+        
+        rf_compound_input_state <- reactive({
+            sets <- rvs$m$run$paths$compounds$sets
+            lst <- as.list(rvs$m$run$paths$compounds$lists)
+            ## TODO XXX
+            validate(need(length(lst)>0,
+                          message = "Load the compound lists(s) first."))
+            validate(need(length(sets)>0 && nchar(sets)>0,
+                          message = "Load the setid table first."))
+            isolate({
+                state <- rev2list(rvs$m)
+                m <- load_compound_input(state)
+
+                ## Side effect! This is because my pipeline logic does not
+                ## work nicely with reactive stuff.
+                rvs$m$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
+                rvs$m$input$tab$setid <- m$input$tab$setid
+                m
+            })
+        })
 
         rf_comp_state <- reactive({
             app_state2state(input=input,
@@ -680,10 +687,10 @@ mk_shinyscreen_server <- function(projects,init) {
             })
 
         rf_get_sets <- reactive({
-            req(rvs$gui$paths$project)
-            req(rvs$gui$paths$sets)
+            req(rvs$gui$paths$project,
+                rvs$gui$compounds$sets)
 
-            get_sets(gui)
+            get_sets(rvs$gui)
             
         })
 
@@ -1085,8 +1092,6 @@ mk_shinyscreen_server <- function(projects,init) {
                 res_adduct <- c(curr_adduct,rep(NA_character_,nd))
                 res_set <- c(curr_set,rep(NA_character_,nd))
 
-                
-
                 rvs$gui$datatab$file <- res_file
                 rvs$gui$datatab$tag <- res_tag
                 rvs$gui$datatab$adduct <- res_adduct
@@ -1111,14 +1116,15 @@ mk_shinyscreen_server <- function(projects,init) {
         })
         
         observeEvent(input$datafiles_cell_edit,{
-            z <- DT::editData(rv_dfile(),
-                              input$datafiles_cell_edit,
-                              rownames = F)
-            rv_dfile(z)
-
-            
+            df <- gen_dfiles_tab(rvs$gui)
+            df <- DT::editData(df,
+                               input$datafiles_cell_edit,
+                               rownames = F)
+            rvs$gui$datatab$file <- df$file
+            rvs$gui$datatab$tag <- df$tag
             
         }, label = "datafiles-edit")
+
 
         observeEvent(input$summ_subset_cell_edit,{
             the_summ_subset <<- DT::editData(the_summ_subset,
@@ -1607,24 +1613,22 @@ mk_shinyscreen_server <- function(projects,init) {
         
         output$datafiles <- DT::renderDT(
         {
-            curr_file <- rvs$gui$datatab$file
-            curr_tag <- rvs$gui$datatab$tag
-
-            res <- data.table(file=curr_file,tag=curr_tag)
-            res[,tag:=as.factor(tag)]
-            
+            rvs$gui$datatab$file
+            rvs$gui$datatab$tag
+            res <- gen_dfiles_tab(rvs$gui)
             simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
         })
 
         output$datatab <- DT::renderDT({
-            
-            rv_flag_datatab()
-            setid <- rvs$m$input$tab$setid
-            req(NROW(setid)>0)
-            res <- rv_datatab()
-            
-        
-            tab <- dropdown_dt(res, callback = dt_drop_callback('1','2',setid[,unique(set)]))
+            rvs$gui$datatab$tag
+            rvs$gui$datatab$set
+            rvs$gui$datatab$adduct
+            sets <- rf_get_subset()
+            dtab <- gen_dtab(rvs$gui$datatab,
+                             sets=sets)
+            message("Hey")
+            print(dtab)
+            tab <- dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
             tab
             
         })

@@ -74,7 +74,7 @@ r2datatab <- function(rdatatab) {
     data.table(tag=tag,adduct=adduct,set=set,file=file)
 }
 
-r2taadse <- function(tablist,sets) {
+gen_dtab <- function(tablist,sets) {
     data.table(tag=factor(tablist$tag,levels=unique(tablist$tag)),
                adduct=factor(tablist$adduct,levels=ADDUCTMAP),
                set=factor(tablist$set,levels=sets))
@@ -226,7 +226,17 @@ gen_comp_state <- function(input,gui) {
 
     
 get_sets <- function(gui) {
-    fn_set <- file.path(gui$paths$project,gui$compounds$sets)
+    fn_sets <- file.path(gui$paths$project,gui$compounds$sets)
     df <- fread(file=fn_sets)
     df[,unique(set)]
+}
+
+
+gen_dfiles_tab <- function(gui) {
+    curr_file <- gui$datatab$file
+    curr_tag <- gui$datatab$tag
+    
+    res <- data.table(file=curr_file,tag=curr_tag)
+    res[,tag:=as.factor(tag)]
+    
 }
