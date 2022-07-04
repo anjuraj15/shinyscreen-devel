@@ -76,7 +76,7 @@ r2datatab <- function(rdatatab) {
 
 gen_dtab <- function(tablist,sets) {
     data.table(tag=factor(tablist$tag,levels=unique(tablist$tag)),
-               adduct=factor(tablist$adduct,levels=ADDUCTMAP),
+               adduct=factor(tablist$adduct,levels=DISP_ADDUCTS),
                set=factor(tablist$set,levels=sets))
 }
 

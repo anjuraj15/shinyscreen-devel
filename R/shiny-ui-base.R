@@ -1133,11 +1133,13 @@ mk_shinyscreen_server <- function(projects,init) {
             
         }, label = "summ_subset-edit")
         observeEvent(input$datatab_cell_edit,{
-            z <- DT::editData(rv_datatab(),
+            df <- gen_dtab(rvs$gui$datatab,sets=rf_get_sets())
+            z <- DT::editData(df,
                               input$datatab_cell_edit,
                               rownames = F)
-            rv_datatab(z)
-            rv_flag_datatab(rv_flag_datatab()+1L)
+
+            rvs$gui$datatab$set <- z$set
+            rvs$gui$datatab$adduct <- z$adduct
         }, label = "datatab-edit")
 
         ## FIXME: order_summ reordering/editing unstable. Therefore temporarily removed.
@@ -1623,10 +1625,9 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$datatab$tag
             rvs$gui$datatab$set
             rvs$gui$datatab$adduct
-            sets <- rf_get_subset()
+            sets <- rf_get_sets()
             dtab <- gen_dtab(rvs$gui$datatab,
                              sets=sets)
-            message("Hey")
             print(dtab)
             tab <- dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
             tab
