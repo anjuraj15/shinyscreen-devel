@@ -435,14 +435,6 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
     ## Reactive values to support some of the UI elements.
-    ## rv_ui <- reactiveValues(datatab=def_tags)
-
-    ## Update with data-files.
-    rv_dfile <- reactiveVal(def_datafiles)
-    ## TODO: think about the connection of rv_dfile to the rest.
-    ## Data-file table when loading.
-    rv_datatab <- reactiveVal(def_datatab)
-    rv_flag_datatab <- reactiveVal(-.Machine$integer.max)
 
     ## Modifiable version.
     the_summ_subset <- data.table::copy(def_summ_subset)
@@ -660,31 +652,107 @@ mk_shinyscreen_server <- function(projects,init) {
 
             get_sets(rvs$gui)
         })
-        
-        rf_compound_input_state <- reactive({
-            sets <- rvs$m$run$paths$compounds$sets
-            lst <- as.list(rvs$m$run$paths$compounds$lists)
-            ## TODO XXX
-            validate(need(length(lst)>0,
-                          message = "Load the compound lists(s) first."))
-            validate(need(length(sets)>0 && nchar(sets)>0,
-                          message = "Load the setid table first."))
-            isolate({
-                state <- rev2list(rvs$m)
-                m <- load_compound_input(state)
 
-                ## Side effect! This is because my pipeline logic does not
-                ## work nicely with reactive stuff.
-                rvs$m$input$tab$cmpds <- list2rev(m$input$tab$cmpds)
-                rvs$m$input$tab$setid <- m$input$tab$setid
-                m
-            })
+        rf_setup_state <- reactive({
+            ## This can be done more systematic by employing smaller
+            ## reactives to build up a larger reactive state. But, for
+            ## now, it's good and, also, centralisation has its
+            ## `mnemonic' advantages.
+            rvs$gui$paths$project
+            rvs$gui$paths$data
+            rvs$gui$datatab$file
+            rvs$gui$datatab$tag
+            rvs$gui$datatab$set
+            rvs$gui$datatab$adduct
+            rvs$gui$compounds$lists
+            rvs$gui$compounds$sets
+            input$missingprec
+
+            input$ms1_fine
+            input$ms1_fine_unit
+
+            input$ms1_coarse
+            input$ms1_coarse_unit
+
+            input$ms1_eic
+            input$ms1_eic_unit
+
+            input$ms1_rt_win
+            input$ms1_rt_win_unit
+
+            input$missingprec
+            
+            m <- app_state2state(input=input,
+                                 gui = rvs$gui)
+
+            req(NROW(m$input$tab$mzml)>0)
+            run(m=m,phases=c("setup","comptab"))
         })
 
-        rf_comp_state <- reactive({
-            app_state2state(input=input,
-                            gui = rvs$gui)
-            })
+        rf_extract_state <- reactive({
+            m <- rf_setup_state()
+            run(m=m,phases=c("extract"))
+        })
+
+        rf_prescreen_state <- reactive({
+
+            input$ms1_int_thresh
+            input$ms2_int_thresh
+            input$s2n
+
+            input$ret_time_shift_tol
+            input$ret_time_shift_tol_unit
+
+            m <- rf_extract_state()
+            m$conf <- input2conf_prescreen(input,conf=m$conf)
+            m
+        })
+
+
+        rf_sort_state <- reactive({
+            m <- rf_prescreen_state()
+            run(m=m,phases=c("sort","subset"))
+        })
+
+
+        rf_figures_state <- reactive({
+            m <- rf_sort_state()
+
+            input$plot_rt_min
+            input$plot_rt_min_unit
+
+            input$plot_rt_max
+            input$plot_rt_max_unit
+
+            input$plot_ext
+
+            m$conf <- input2conf_figures(input,m$conf)
+            run(m=m,phases="plot")
+        })
+
+        rf_report_state <- reactive({
+
+            m <- rf_sort_state()
+            
+            input$plot_rt_min
+            input$plot_rt_min_unit
+
+            input$plot_rt_max
+            input$plot_rt_max_unit
+
+            input$plot_ext
+
+            input$rep_aut
+            input$rep_tit
+
+
+            m$conf <- input2conf_figures(input,m$conf)
+            m$conf <- input2conf_report(input,m$conf)
+            run(m=m,phases="report")
+        })
+
+            
+            
 
         rf_get_sets <- reactive({
             req(rvs$gui$paths$project,
@@ -730,13 +798,14 @@ mk_shinyscreen_server <- function(projects,init) {
             tmp[,`Column Name`]
         })
 
-        rf_get_inp_datatab <- eventReactive(input$datatab,{
-            z <- as.data.table(rv_datatab())
-            z[,.(tag=as.character(tag),
-                 adduct=as.character(adduct),
-                 set=as.character(set)), with = T]
-            
-        })
+        rf_dtab <- reactive({
+            rvs$gui$datatab$tag
+            rvs$gui$datatab$adduct
+            rvs$gui$datatab$set
+            sets <- rf_get_sets()
+            validate(need(isTruthy(sets), message = "Please select a set list first."))
+            gen_dtab(rvs$gui$datatab,sets=sets)
+            })
 
         rf_summ_table_rows <- eventReactive(input$summ_table_rows_all,{
             input$summ_table_rows_all
@@ -1009,7 +1078,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 m <- rvs$m
                 yaml::write_yaml(m$conf,
                                  file = fn_conf)
-                shinyscreen:::tab2file(tab=m$input$tab$mzml,file=fn_tab)
+                shinyscreen:::tab2file(tab=gui2datatab(rvs$gui),file=fn_tab)
                 
                 pack <- pack_app_state(input=input,gui=rvs$gui)
                 saveRDS(pack,file=fn_packed_state)
@@ -1141,97 +1210,6 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$datatab$set <- z$set
             rvs$gui$datatab$adduct <- z$adduct
         }, label = "datatab-edit")
-
-        ## FIXME: order_summ reordering/editing unstable. Therefore temporarily removed.
-        ## observeEvent(input$order_summ_cell_edit,{
-        ##     the_ord_summ <<- DT::editData(the_ord_summ,
-        ##                                   input$order_summ_cell_edit,
-        ##                                   rownames=F)
-        ## }, label = "order_summ-edit")
-
-        ## FIXME: order_summ reordering/editing unstable. Therefore temporarily removed.
-        ## observeEvent(input$order_summ_row_reorder, {
-        ##     info <- input$order_summ_row_reorder
-        ##     if(is.null(info) | class(info) != 'character') { return() }
-
-        ##     info <- yaml::read_yaml(text=info)
-            
-        ##     if(length(info) == 0) { return() }
-
-        ##     currorder <- 1:NROW(the_ord_summ)
-        ##     for (thing in info) {
-        ##         currorder[[thing$newPosition+1]]<-thing$oldPosition+1
-        ##     }
-        ##     the_ord_summ <<- the_ord_summ[(currorder),]
-        ## })
-        
-        ## observeEvent(input$datafiles_b,{
-        ##     dfiles <- input$dfile_list
-        ##     req(isTruthy(dfiles))
-        ##     message("(config) Selected mzMl files: ", paste(sels,collapse = ","))
-        ##     if (length(dfiles) > 0) {
-        ##         oldfiles <- rvs$gui$datatab$file
-                
-        ##         newf <- setdiff(dfiles,oldfiles)
-        ##         nr <- length(oldfiles)
-        ##         tmp <- if (length(newf)>0) shinyscreen:::dtable(file=newf,tag=paste0('F',(nr+1):(nr + length(newf)))) else shinyscreen:::dtable(file=character(),tag=character())
-
-        ##         z <- rbind(data.table(file=oldfile,tag=oldtag), tmp)
-        ##         z[,tag:=as.character(tag)]
-        ##         rv_dfile(z)
-        ##     }
-        ## })
-
-        observe({
-            df_tab <- rv_dfile()#rf_get_inp_datafiles()
-            state <- rf_compound_input_state()
-            isolate(oldtab <- rv_datatab())
-            
-            oldt <- oldtab$tag
-            tagl <- df_tab$tag
-            diff <- setdiff(tagl,
-                            oldt)
-
-            req(isTruthy(diff))
-            pos_tag <- 1:length(tagl)
-            pos_old <- 1:NROW(oldtab)
-            pos_mod <- intersect(pos_tag,pos_old)
-            new_tag <- tagl[pos_mod]
-            if (NROW(oldtab)>0) oldtab[pos_mod,tag := ..new_tag]
-            
-            ## Now add tags for completely new files, if any.
-            rest_new <- if (NROW(oldtab) > 0) setdiff(diff,new_tag) else diff
-            tmp <- shinyscreen:::dtable(tag=rest_new,
-                                        adduct=character(0),
-                                        set=character(0))
-
-            dt <-data.table::as.data.table(rbind(as.data.frame(oldtab),
-                                                 as.data.frame(tmp)))
-            x <- dt[tag %in% df_tab$tag,]
-            isolate({
-                rv_datatab(x)
-                rv_flag_datatab(rv_flag_datatab()+1L)
-            })
-            
-            
-            
-        })
-
-        observe({
-            mc <- rf_conf_state()
-            rvs$m$conf <- mc$conf
-        }, label = "conf_state")
-
-        observe({
-            dtab <- rv_datatab()
-            dfiles <- rv_dfile()
-            req(isTruthy(dfiles) && NROW(dfiles)>0)
-            message("(config) Generating mzml from rv.")
-            isolate(rvs$m$input$tab$mzml <- dtab[dfiles,on="tag"])
-            message("(config) Done generating mzml from rv.")
-
-            
-        }, label = "mzml_from_rv")
 
         observeEvent(input$extract_b,{
             shinymsg("Extraction has started. This may take a while.")
@@ -1635,10 +1613,8 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$comp_table <- DT::renderDataTable({
-            state <- rf_compound_input_state()
-
-
-            DT::datatable(state$input$tab$cmpds,
+            rvs$m <- rf_setup_state()
+            DT::datatable(rvs$m$input$tab$cmpds,
                           ## style = 'bootstrap',
                           ## class = 'table-condensed',
                           extensions = 'Scroller',
@@ -1650,9 +1626,8 @@ mk_shinyscreen_server <- function(projects,init) {
 
         
         output$setid_table <- DT::renderDataTable({
-            state <- rf_compound_input_state()
-
-            DT::datatable(state$input$tab$setid,
+            rvs$m <- rf_setup_state()
+            DT::datatable(rvs$m$input$tab$setid,
                           ## style = 'bootstrap',
                           ## class = 'table-condensed',
                           extensions = 'Scroller',

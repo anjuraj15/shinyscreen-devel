@@ -76,7 +76,8 @@ run_in_dir <- function(m) {
 load_compound_input <- function(m) {
     coll <- list()
     fields <- colnames(EMPTY_CMPD_LIST)
-    fns <- m$run$paths$compounds$lists
+    fns <- file.path(m$run$paths$project,m$conf$compounds$lists)
+    message("fns:",paste0(fns,collapse=","))
     coltypes <- c(ID="character",
                   SMILES="character",
                   Formula="character",
@@ -119,14 +120,23 @@ load_compound_input <- function(m) {
     
     cmpds[,("known"):=.(the_ifelse(!is.na(SMILES),"structure",the_ifelse(!is.na(Formula),"formula","mz")))]
     m$input$tab$cmpds <- cmpds
-    m$input$tab$setid <- read_setid(m$run$paths$compounds$sets,
+    fn_setid <- file.path(m$run$paths$project,m$conf$compounds$sets)
+    m$input$tab$setid <- read_setid(fn_setid,
                                     m$input$tab$cmpds)
     m
 }
 
 ##' @export
 load_data_input <- function(m) {
-    m$input$tab$mzml <- file2tab(m$run$paths$datatab)
+    if (NROW(m$input$tab$mzml)==0L) {
+        if (!file.exists(m$run$paths$datatab)) {
+            stop("A CSV file with data file entries does not exist (`paths$datatab' in config).")
+        }
+        m$input$tab$mzml <- file2tab(m$run$paths$datatab)
+    } else {
+        message("Table `datatab' already loaded.")
+    }
+    m$input$tab$mzml <- as.data.table(m$input$tab$mzml)
     assert(all(unique(m$input$tab$mzml[,.N,by=c("adduct","tag")]$N)<=1),msg="Some rows in the data table contain multiple entries with same tag and adduct fields.")
     pref<-m$run$paths$data
     for (fn in m$input$tab$mzml$file) {

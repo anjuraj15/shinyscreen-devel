@@ -21,9 +21,7 @@ new_state <- function() {
 
 
 
-
 runtime_from_conf <- function(run,conf) {
-    browser()
     lst_cmpl <- conf$compounds$lists
     lst_fn_cmpl <- lapply(names(lst_cmpl),function (nm) {
         bfn_cmpl <- lst_cmpl[[nm]]
@@ -38,21 +36,8 @@ runtime_from_conf <- function(run,conf) {
     if (!file.exists(fn_sets)) stop("File ", basename(fn_sets), " does not exist in ", run$paths$project," .")
     run$paths$compounds$sets <- fn_sets
 
-    tmp <- conf$paths$datatab
-    datatab <- if (!is.null(tmp)) {
-                   if (file.exists(tmp)) {
-                       tmp
-                   } else {
-                       file.path(run$paths$project,tmp)
-                   }
-               } else {
-                   file.path(run$paths$project,FN_DATA_TAB)
-               }
-    if (!file.exists(datatab)) stop("A CSV file with data file entries does not exist (`paths$datatab' in config).")
-    datatab <- normalizePath(datatab)
-    run$paths$datatab <- datatab
+    run$paths$datatab <- file.path(run$paths$project,FN_DATA_TAB)
     run
-
 }
 
 
@@ -89,12 +74,18 @@ new_empty_project <- function(project) {
 }
 
 ##' @export
-new_project <- function(project) {
+new_project <- function(project,datatab=NULL,conf=NULL) {
     m <- new_state()
     m$run <- new_runtime_state(project)
     fn_conf <- file.path(m$run$paths$project,FN_CONF)
-    m$conf <- read_conf(fn_conf)
+    m$conf <- if (is.null(conf)) {m$conf; yaml::yaml.load_file(fn_conf)} else conf 
+    m$conf$compounds$lists <- label_cmpd_lists(m$conf$compounds$lists)
     m$run <- new_runtime_state(project,conf=m$conf)
+
+    if (!is.null(datatab)) {
+        m$input$tab$mzml <- datatab
+    }
+    
     m
 }
 
@@ -132,19 +123,21 @@ write_state <- function(m,fn_conf) {
     tab2file(tab=m$input$tab$mzml,file=file.path(m$run$paths$project,FN_DATA_TAB))
 }
 
-read_conf <- function(fn) {
-    cf <- yaml::yaml.load_file(fn)
-    fnl <- cf$compounds$lists
-    if (length(fnl)>0) {
+label_cmpd_lists <- function (lists) {
+    if (length(lists)>0) {
         nms <- character(0)
-        for (i in 1:length(fnl)) {
+        for (i in 1:length(lists)) {
             nms <- gen_uniq_lab(nms,pref = 'L')
         }
-        names(fnl) <- nms
+        names(lists) <- nms
         
     }
-    cf$compounds$lists <- fnl
-    ## conf_trans(cf)
+
+}
+
+read_conf <- function(fn) {
+    cf <- yaml::yaml.load_file(fn)
+    cf$compounds$lists <- label_cmpd_lists(cf$compounds$lists)
     cf
 }
 

@@ -6,7 +6,7 @@ GUI_SELECT_INPUTS <- c("proj_list",
                        "ms1_coarse_unit",
                        "ms1_fine_unit",
                        "ms1_rt_win_unit",
-                       "ret_time_shift_tol",
+                       "ret_time_shift_tol_unit",
                        "dfile_list")
                   
 GUI_NUMERIC_INPUTS <- c("ms1_coarse",
@@ -170,7 +170,7 @@ unpack_app_state <- function(session,input,project_path,packed_state) {
 }
 
 
-input2conf <- function(input,conf=list()) {
+input2conf_setup <- function(input,gui,conf=list()) {
     conf$compounds <- list()
     conf$figures <- list()
     conf$prescreen <- list()
@@ -179,7 +179,7 @@ input2conf <- function(input,conf=list()) {
     conf$summary_table <- list()
     conf$report <- list()
     
-    conf$debug <- "no"
+    conf$debug <- F
 
     conf$compounds$lists <- gui$compounds$lists
     conf$compounds$sets <- gui$compounds$sets
@@ -187,22 +187,39 @@ input2conf <- function(input,conf=list()) {
     conf$tolerance[["ms1 fine"]] <- paste(input$ms1_fine,input$ms1_fine_unit)
     conf$tolerance[["ms1 coarse"]] <- paste(input$ms1_coarse,input$ms1_coarse_unit)
     conf$tolerance[["eic"]] <- paste(input$ms1_eic,input$ms1_eic_unit)
-    conf$tolerance[["rt"]] <- paste(input$ret_time_shift_tol,input$ret_time_shift_tol_unit)
+    conf$tolerance[["rt"]] <- paste(input$ms1_rt_win,input$ms1_rt_win_unit)
+    conf$extract$missing_precursor_info <- input$missingprec
+    conf
+}
 
+
+input2conf_prescreen <- function(input,conf) {
     conf$prescreen[["ms1_int_thresh"]] <- input$ms1_int_thresh
     conf$prescreen[["ms2_int_thresh"]] <- input$ms2_int_thresh
     conf$prescreen[["s2n"]] <- input$s2n
     conf$prescreen[["ret_time_shift_tol"]] <- paste(input$ret_time_shift_tol,input$ret_time_shift_tol_unit)
+    conf
+}
 
+input2conf_figures <- function(input,conf) {
     conf$figures$rt_min <- paste(input$plot_rt_min,input$plot_rt_min_unit)
     conf$figures$rt_max <- paste(input$plot_rt_max,input$plot_rt_max_unit)
     conf$figures$ext <- input$plot_ext
+    conf
+    
+}
 
-    conf$extract$missing_precursor_info <- input$missingprec
-
+input2conf_report <- function(input,conf) {
     conf$report$author <- input$rep_aut
-    conf$report$title <- input$rep_aut
+    conf$report$title <- input$rep_tit
+    conf
 
+}
+input2conf <- function(input,gui,conf=list()) {
+    conf <- input2conf_setup(input,gui=gui,conf)
+    conf <- input2conf_prescreen(input,conf)
+    conf <- input2conf_figures(input,conf)
+    conf <- input2conf_report(input,conf)
     conf
 }
 
@@ -210,11 +227,8 @@ app_state2state <- function(input,gui) {
     shiny::req(gui$paths$project)
     m <- new_project(gui$paths$project)
     m$run$paths <- shiny::reactiveValuesToList(gui$paths)
-    m$conf <- input2conf(input)
-    m$input$tab$mzml <- data.table(tag=gui$datatab$tag,
-                                   adduct=gui$datatab$adduct,
-                                   set=gui$datatab$set,
-                                   file=gui$datatab$file)
+    m$conf <- input2conf_setup(input,gui=gui)
+    m$input$tab$mzml <- gui2datatab(gui)
     m
 }
 
@@ -239,4 +253,13 @@ gen_dfiles_tab <- function(gui) {
     res <- data.table(file=curr_file,tag=curr_tag)
     res[,tag:=as.factor(tag)]
     
+}
+
+gui2datatab <- function(gui) {
+    df <- data.table(tag=as.character(gui$datatab$tag),
+                     adduct=as.character(gui$datatab$adduct),
+                     set=as.character(gui$datatab$set),
+                     file=as.character(gui$datatab$file))
+    df
+                     
 }
