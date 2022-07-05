@@ -429,7 +429,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
     ## The reactive world.
-    rvs <- reactiveValues(m=def_state,gui=create_gui())
+    rvs <- reactiveValues(m=def_state,gui=create_gui(),setup_on=T)
     compl_sets <- eventReactive(rvs$m$input$tab$setid,
                                 rvs$m$input$tab$setid[,unique(set)])
 
@@ -642,10 +642,8 @@ mk_shinyscreen_server <- function(projects,init) {
     pdf(file="dummy.pdf",width = 1.9685,height = 1.9685)
     dev.off()
 
-    server  <- function(input,output,session) {
-        
+    server <- function(input,output,session) {
         ## REACTIVE FUNCTIONS
-
         rf_compound_set <- reactive({
             req(rvs$gui$compounds$sets,
                 rvs$gui$paths$project)
@@ -653,45 +651,64 @@ mk_shinyscreen_server <- function(projects,init) {
             get_sets(rvs$gui)
         })
 
-        rf_setup_state <- reactive({
-            ## This can be done more systematic by employing smaller
-            ## reactives to build up a larger reactive state. But, for
-            ## now, it's good and, also, centralisation has its
-            ## `mnemonic' advantages.
-            rvs$gui$paths$project
-            rvs$gui$paths$data
-            rvs$gui$datatab$file
-            rvs$gui$datatab$tag
-            rvs$gui$datatab$set
-            rvs$gui$datatab$adduct
-            rvs$gui$compounds$lists
-            rvs$gui$compounds$sets
-            input$missingprec
+        ## rf_setup_state <- reactive({
+        ##     ## This can be done more systematic by employing smaller
+        ##     ## reactives to build up a larger reactive state. But, for
+        ##     ## now, it's good and, also, centralisation has its
+        ##     ## `mnemonic' advantages.
+        ##     rvs$gui$paths$project
+        ##     rvs$gui$paths$data
+        ##     rvs$gui$datatab$file
+        ##     rvs$gui$datatab$tag
+        ##     rvs$gui$datatab$set
+        ##     rvs$gui$datatab$adduct
+        ##     rvs$gui$compounds$lists
+        ##     rvs$gui$compounds$sets
+        ##     input$missingprec
 
-            input$ms1_fine
-            input$ms1_fine_unit
+        ##     input$ms1_fine
+        ##     input$ms1_fine_unit
 
-            input$ms1_coarse
-            input$ms1_coarse_unit
+        ##     input$ms1_coarse
+        ##     input$ms1_coarse_unit
 
-            input$ms1_eic
-            input$ms1_eic_unit
+        ##     input$ms1_eic
+        ##     input$ms1_eic_unit
 
-            input$ms1_rt_win
-            input$ms1_rt_win_unit
+        ##     input$ms1_rt_win
+        ##     input$ms1_rt_win_unit
 
-            input$missingprec
+        ##     input$missingprec
             
-            m <- app_state2state(input=input,
-                                 gui = rvs$gui)
+        ##     is_on <- isolate({isTruthy(rvs$m$setup_on)})
 
-            req(NROW(m$input$tab$mzml)>0)
-            run(m=m,phases=c("setup","comptab"))
-        })
+        ##     if (is_on) {
+        ##         message("Create setup state.")
+        ##         m <- app_state2state(input=input,
+        ##                              gui = rvs$gui)
+        ##         req(NROW(m$input$tab$mzml)>0)
+        ##         run(m=m,phases=c("setup","comptab"))
+        ##     } else {
+        ##         isolate({
+        ##             message("Skip creating setup state.")
+        ##             m <- rvs$m
+        ##             m$setup_on <- T
+        ##             m
+        ##         })
+        ##     }
+        ## })
+
 
         rf_extract_state <- reactive({
-            m <- rf_setup_state()
-            run(m=m,phases=c("extract"))
+            nc = NROW(rvs$m$input$tab$cmpds)
+            ns = NROW(rvs$m$input$tab$setid)
+            nm = NROW(rvs$m$input$tab$mzml)
+
+            validate(need(nc>0L,message="Compound list must be loaded."),
+                     need(ns>0L,message= "Set list must be loaded."),
+                     need(nm>0L,message="Table `datatab' must be present."))
+            
+            run(m=rvs$m,phases=c("extract"))
         })
 
         rf_prescreen_state <- reactive({
@@ -702,11 +719,346 @@ mk_shinyscreen_server <- function(projects,init) {
 
             input$ret_time_shift_tol
             input$ret_time_shift_tol_unit
-
-            m <- rf_extract_state()
+            message("I am here.")
+            validate(need(NROW(rvs$m$extr$ms1) > 0L,
+                          message = "Perform extraction first."))
+            message("I am now here.")
+            m <- rvs$m
             m$conf <- input2conf_prescreen(input,conf=m$conf)
-            m
+            run(m=m,phases="prescreen")
         })
+
+        rf_get_sets <- reactive({
+            req(rvs$gui$paths$project,
+                rvs$gui$compounds$sets)
+
+            get_sets(rvs$gui)
+            
+        })
+        ## OBSERVERS
+
+        observe({
+            indir <- rvs$gui$paths$project
+            req(isTruthy(indir) && dir.exists(indir))
+            updateSelectInput(session = session,
+                              inputId = "comp_list",
+                              choices = list.files(path=indir,
+                                                   pattern = CMPD_LIST_PATT))
+
+            updateSelectInput(session = session,
+                              inputId = "set_list",
+                              choices = list.files(path=indir,
+                                                   pattern = SET_LIST_PATT))
+
+            updateSelectInput(session = session,
+                              inputId = "dfile_list",
+                              choices = list.files(path=indir,
+                                                   pattern = DFILES_LIST_PATT))
+            
+            updateSelectInput(session = session,
+                              inputId = "indir_list",
+                              selected = basename(indir),
+                              choices = list.dirs(path = init$indir,
+                                                  full.names = F,
+                                                  recursive = F))
+        })
+
+        observe({
+            indir <- rvs$gui$paths$data
+            req(isTruthy(indir) && dir.exists(indir))
+            
+            updateSelectInput(session = session,
+                              inputId = "dfile_list",
+                              choices = list.files(path=indir,
+                                                   pattern = DFILES_LIST_PATT))
+        })
+
+        
+        observeEvent(input$load_proj_b,{
+            wd <- input$proj_list
+            req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
+            fullwd <- file.path(init$userdir,wd)
+            ## If a saved state exists, load it.
+            fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
+            fn_state <- file.path(fullwd,FN_STATE)
+            rvs$gui <- if (file.exists(fn_packed_state)) {
+                           message("Loading project: ",wd)
+                           pack <- readRDS(file=fn_packed_state)
+                           unpack_app_state(session=session,
+                                            input=input,
+                                            project_path=fullwd,
+                                            packed_state=pack)
+                       } else {
+                           message("Initialising project: ",wd)
+                           create_gui(project_path=fullwd)
+                       }
+            if (file.exists(fn_state)) rvs$load_from_statefiles <- T
+            
+            message("project: ",rvs$gui$project())
+        }, label = "project-b")
+
+        
+
+
+
+        observe({
+            rvs$gui$paths$project
+            rvs$gui$paths$data
+            rvs$gui$datatab$file
+            rvs$gui$datatab$tag
+            rvs$gui$datatab$set
+            rvs$gui$datatab$adduct
+            rvs$gui$compounds$lists
+            rvs$gui$compounds$sets
+            input$missingprec
+            
+            input$ms1_fine
+            input$ms1_fine_unit
+            
+            input$ms1_coarse
+            input$ms1_coarse_unit
+            
+            input$ms1_eic
+            input$ms1_eic_unit
+            
+            input$ms1_rt_win
+            input$ms1_rt_win_unit
+            
+            input$missingprec
+            isolate({
+                rvs$m <- app_state2state(input=input,
+                                         gui = rvs$gui)
+                
+                if (NROW(rvs$m$input$tab$mzml)>0) {
+                    message("Create setup state.")
+                    rvs$m <- run(m=rvs$m,phases=c("setup","comptab"))
+                }
+                
+
+                if (isTruthy(rvs$load_from_statefiles)) {
+                    message("Load from statefile.")
+                    fn_state <- file.path(rvs$gui$paths$project,FN_STATE)
+                    rvs$m <- readRDS(file=fn_state)
+                    rvs$load_from_statefiles <- NULL
+                }
+            })
+            
+        }, label = "gen-setup-state")
+
+        observeEvent(input$extract_b,{
+            shinymsg("Extraction has started. This may take a while.")
+            rvs$m <- rf_extract_state()
+            message("(extract) Done extracting.")
+            fn_c_state <- file.path(rvs$m$run$paths$project,
+                                    paste0("extract.",shinyscreen:::FN_CONF))
+            yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
+            message("(extract) Config written to ", fn_c_state)
+            shinymsg("Extraction has been completed.")
+        })
+        
+        observeEvent(input$presc_b,{
+            shinymsg("Prescreening started. Please wait.")
+            rvs$m <- rf_prescreen_state()
+            message("(prescreen) Done prescreening.")
+            shinymsg("Prescreening completed.")
+        })
+        
+
+        observeEvent(input$save_proj_b,{
+            print(rvs$m$run)
+            fn <- file.path(rvs$gui$paths$project,FN_STATE)
+            fn_packed_state <- file.path(rvs$gui$paths$project,FN_GUI_STATE)
+            fn_tab <- file.path(rvs$gui$paths$project,FN_DATA_TAB)
+            fn_conf <-file.path(rvs$gui$paths$project,FN_CONF)
+            shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
+            message("(config) Saving state to: ", paste(fn,collapse = ","))
+            message("(config) Saving app state to: ", fn_packed_state)
+            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
+
+            if (nchar(fn) > 0) {
+                m <- rvs$m
+                yaml::write_yaml(m$conf,
+                                 file = fn_conf)
+                shinyscreen:::tab2file(tab=gui2datatab(rvs$gui),file=fn_tab)
+                
+                pack <- pack_app_state(input=input,gui=rvs$gui)
+                saveRDS(pack,file=fn_packed_state)
+                saveRDS(rvs$m,file=fn)
+                
+            }
+            shinymsg("Saving state completed.")
+        })
+
+        observeEvent(input$sel_indir_b,{
+            indir <- input$indir_list
+            req(isTruthy(indir))
+            rvs$gui$paths$data <- file.path(init$indir, indir)
+            
+            message("Selected data dir:",rvs$gui$paths$data)
+
+        })
+
+        
+
+        observeEvent(input$comp_list_b, {
+            sels <- input$comp_list
+            req(isTruthy(sels))
+            rvs$gui$compounds$lists <- sels
+            message("(config) Selected compound lists: ", paste(sels,collapse = ","))
+        })
+
+        observeEvent(input$set_list_b, {
+            sels <- input$set_list
+            req(isTruthy(sels))
+            message("(config) Selected set lists: ", paste(sels,collapse = ","))
+            rvs$gui$compounds$sets <- sels
+        })
+
+        observeEvent(input$datafiles_b,{
+            new_file <- input$dfile_list
+            if (isTruthy(new_file)) {
+                curr_file <- rvs$gui$datatab$file
+                curr_tag <- rvs$gui$datatab$tag
+                curr_adduct <- rvs$gui$datatab$adduct
+                curr_set <- rvs$gui$datatab$set
+
+                nb <- length(curr_file)
+                nd <- length(new_file)
+                res_file <- c(curr_file,new_file)
+                res_tag <- c(curr_tag,paste0('F',(nb + 1):(nb + nd)))
+                res_adduct <- c(curr_adduct,rep(NA_character_,nd))
+                res_set <- c(curr_set,rep(NA_character_,nd))
+
+                rvs$gui$datatab$file <- res_file
+                rvs$gui$datatab$tag <- res_tag
+                rvs$gui$datatab$adduct <- res_adduct
+                rvs$gui$datatab$set <- res_set
+            }
+
+            updateSelectInput(session=session,
+                              inputId="dfile_list",
+                              selected=NULL)
+
+            
+        })
+
+        observeEvent(input$rem_dfiles_b,{
+            if (isTruthy(input$datafiles_rows_selected)) {
+                rmv <- input$datafiles_rows_selected
+                rvs$gui$datatab$file <- rvs$gui$datatab$file[-rmv]
+                rvs$gui$datatab$set <- rvs$gui$datatab$set[-rmv]
+                rvs$gui$datatab$adduct <- rvs$gui$datatab$adduct[-rmv]
+                rvs$gui$datatab$tag <- rvs$gui$datatab$tag[-rmv]
+            }
+        })
+        
+        observeEvent(input$datafiles_cell_edit,{
+            df <- gen_dfiles_tab(rvs$gui)
+            df <- DT::editData(df,
+                               input$datafiles_cell_edit,
+                               rownames = F)
+            rvs$gui$datatab$file <- df$file
+            rvs$gui$datatab$tag <- df$tag
+            
+        }, label = "datafiles-edit")
+
+        observeEvent(input$datatab_cell_edit,{
+            df <- gen_dtab(rvs$gui$datatab,sets=rf_get_sets())
+            z <- DT::editData(df,
+                              input$datatab_cell_edit,
+                              rownames = F)
+
+            rvs$gui$datatab$set <- z$set
+            rvs$gui$datatab$adduct <- z$adduct
+        }, label = "datatab-edit")
+        
+        ## RENDER
+        output$curr_proj <- renderText({
+            xx <- rvs$gui$project()
+            txt <- if (is.null(xx) || length(xx) == 0L || is.na(xx) || nchar(xx)=="") "Nothing selected." else basename(xx)
+            paste0("Current project: ", txt)})
+        
+        output$curr_data_dir <- renderText({
+            xx <- rvs$gui$paths$data
+            txt <- if (is.null(xx)) "Nothing selected" else basename(xx)
+            paste0("Current data directory: ", txt)
+        })
+
+        output$comp_list_report <- renderUI({
+            lsts <- rvs$gui$compounds$lists
+            HTML(if (length(lsts) > 0 &&
+                     isTruthy(lsts) &&
+                     lsts != "Nothing selected.") {
+                     paste(c("<ul>",
+                             sapply(lsts,
+                                    function (x) paste("<li><em>",x,"</em></li>")),
+                             "</ul>"))
+                 } else "No compound list selected yet.")
+        })
+
+        output$sets_report <- renderUI({
+            sets <- rvs$gui$compounds$sets
+            HTML(if (isTruthy(sets) && sets != "Nothing selected.")
+                     paste("selected <em>setid</em> table:",
+                           sets) else "No <em>setid</em> table selected.")
+        })
+
+        output$datafiles <- DT::renderDT(
+        {
+            rvs$gui$datatab$file
+            rvs$gui$datatab$tag
+            res <- gen_dfiles_tab(rvs$gui)
+            simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
+        })
+
+        output$datatab <- DT::renderDT({
+            rvs$gui$datatab$tag
+            rvs$gui$datatab$set
+            rvs$gui$datatab$adduct
+            sets <- rf_get_sets()
+            dtab <- gen_dtab(rvs$gui$datatab,
+                             sets=sets)
+            print(dtab)
+            tab <- dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
+            tab
+            
+        })
+
+        output$comp_table <- DT::renderDataTable({
+            m <- rvs$m
+            cmpds <- m$input$tab$cmpds
+            validate(need(NROW(cmpds)>0,"No compound list loaded yet."))
+            DT::datatable(cmpds,
+                          ## style = 'bootstrap',
+                          ## class = 'table-condensed',
+                          extensions = 'Scroller',
+                          options = list(scrollX = T,
+                                         scrollY = 300,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+
+        output$setid_table <- DT::renderDataTable({
+            m <- rvs$m
+            setid <- m$input$tab$setid
+            validate(need(NROW(setid)>0,"No set id list loaded yet."))
+            DT::datatable(setid,
+                          ## style = 'bootstrap',
+                          ## class = 'table-condensed',
+                          extensions = 'Scroller',
+                          options = list(scrollX = T,
+                                         scrollY = 300,
+                                         deferRender = T,
+                                         scroller = T))
+        })
+            
+            
+    }
+
+    server_old  <- function(input,output,session) {
+        
+        ## REACTIVE FUNCTIONS
+        
 
 
         rf_sort_state <- reactive({
@@ -754,13 +1106,7 @@ mk_shinyscreen_server <- function(projects,init) {
             
             
 
-        rf_get_sets <- reactive({
-            req(rvs$gui$paths$project,
-                rvs$gui$compounds$sets)
-
-            get_sets(rvs$gui)
-            
-        })
+        
 
         rf_conf_proj <- reactive({
             
@@ -1039,160 +1385,17 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Observers
 
-        observeEvent(input$load_proj_b,{
-            wd <- input$proj_list
-            req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
-            fullwd <- file.path(init$userdir,wd)
-            ## If a saved state exists, load it.
-            fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
-            fn_state <- file.path(fullwd,FN_STATE)
-            rvs$gui <- if (file.exists(fn_packed_state)) {
-                           message("Loading project: ",wd)
-                           pack <- readRDS(file=fn_packed_state)
-                           unpack_app_state(session=session,
-                                            input=input,
-                                            project_path=fullwd,
-                                            packed_state=pack)
-                       } else {
-                           message("Initialising project: ",wd)
-                           create_gui(project_path=fullwd)
-                       }
-            isolate({if (file.exists(fn_state)) rvs$m <- readRDS(file=fn_state)})
-            
-            message("project: ",rvs$gui$project())
-        }, label = "project-b")
-
-        observeEvent(input$save_proj_b,{
-            message('rvs m run')
-            print(rvs$m$run)
-            fn <- file.path(rvs$gui$paths$project,FN_STATE)
-            fn_packed_state <- file.path(rvs$gui$paths$project,FN_GUI_STATE)
-            fn_tab <- file.path(rvs$gui$paths$project,FN_DATA_TAB)
-            fn_conf <-file.path(rvs$gui$paths$project,FN_CONF)
-            shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
-            message("(config) Saving state to: ", paste(fn,collapse = ","))
-            message("(config) Saving app state to: ", fn_packed_state)
-            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
-
-            if (nchar(fn) > 0) {
-                m <- rvs$m
-                yaml::write_yaml(m$conf,
-                                 file = fn_conf)
-                shinyscreen:::tab2file(tab=gui2datatab(rvs$gui),file=fn_tab)
-                
-                pack <- pack_app_state(input=input,gui=rvs$gui)
-                saveRDS(pack,file=fn_packed_state)
-                
-            }
-            shinymsg("Saving state completed.")
-        })
-
-        observeEvent(input$sel_indir_b,{
-            indir <- input$indir_list
-            req(isTruthy(indir))
-            rvs$gui$paths$data <- file.path(init$indir, indir)
-            
-            message("Selected data dir:",rvs$gui$paths$data)
-
-        })
-
-        observe({
-            indir <- rvs$gui$paths$project
-            req(isTruthy(indir) && dir.exists(indir))
-            updateSelectInput(session = session,
-                              inputId = "comp_list",
-                              choices = list.files(path=indir,
-                                                   pattern = CMPD_LIST_PATT))
-
-            updateSelectInput(session = session,
-                              inputId = "set_list",
-                              choices = list.files(path=indir,
-                                                   pattern = SET_LIST_PATT))
-
-            updateSelectInput(session = session,
-                              inputId = "dfile_list",
-                              choices = list.files(path=indir,
-                                                   pattern = DFILES_LIST_PATT))
-            
-            updateSelectInput(session = session,
-                              inputId = "indir_list",
-                              selected = basename(indir),
-                              choices = list.dirs(path = init$indir,
-                                                  full.names = F,
-                                                  recursive = F))
-        })
-
-        observe({
-            indir <- rvs$gui$paths$data
-            req(isTruthy(indir) && dir.exists(indir))
-
-            updateSelectInput(session = session,
-                              inputId = "dfile_list",
-                              choices = list.files(path=indir,
-                                                   pattern = DFILES_LIST_PATT))
-        })
-
-        observeEvent(input$comp_list_b, {
-            sels <- input$comp_list
-            req(isTruthy(sels))
-            rvs$gui$compounds$lists <- sels
-            message("(config) Selected compound lists: ", paste(sels,collapse = ","))
-        })
-
-        observeEvent(input$set_list_b, {
-            sels <- input$set_list
-            req(isTruthy(sels))
-            message("(config) Selected set lists: ", paste(sels,collapse = ","))
-            rvs$gui$compounds$sets <- sels
-        })
-
-        observeEvent(input$datafiles_b,{
-            new_file <- input$dfile_list
-            if (isTruthy(new_file)) {
-                curr_file <- rvs$gui$datatab$file
-                curr_tag <- rvs$gui$datatab$tag
-                curr_adduct <- rvs$gui$datatab$adduct
-                curr_set <- rvs$gui$datatab$set
-
-                nb <- length(curr_file)
-                nd <- length(new_file)
-                res_file <- c(curr_file,new_file)
-                res_tag <- c(curr_tag,paste0('F',(nb + 1):(nb + nd)))
-                res_adduct <- c(curr_adduct,rep(NA_character_,nd))
-                res_set <- c(curr_set,rep(NA_character_,nd))
-
-                rvs$gui$datatab$file <- res_file
-                rvs$gui$datatab$tag <- res_tag
-                rvs$gui$datatab$adduct <- res_adduct
-                rvs$gui$datatab$set <- res_set
-            }
-
-            updateSelectInput(session=session,
-                              inputId="dfile_list",
-                              selected=NULL)
-
-            
-        })
-
-        observeEvent(input$rem_dfiles_b,{
-            if (isTruthy(input$datafiles_rows_selected)) {
-                rmv <- input$datafiles_rows_selected
-                rvs$gui$datatab$file <- rvs$gui$datatab$file[-rmv]
-                rvs$gui$datatab$set <- rvs$gui$datatab$set[-rmv]
-                rvs$gui$datatab$adduct <- rvs$gui$datatab$adduct[-rmv]
-                rvs$gui$datatab$tag <- rvs$gui$datatab$tag[-rmv]
-            }
-        })
         
-        observeEvent(input$datafiles_cell_edit,{
-            df <- gen_dfiles_tab(rvs$gui)
-            df <- DT::editData(df,
-                               input$datafiles_cell_edit,
-                               rownames = F)
-            rvs$gui$datatab$file <- df$file
-            rvs$gui$datatab$tag <- df$tag
-            
-        }, label = "datafiles-edit")
+
+        
+
+        
+
+        
+
+        
+
+        
 
 
         observeEvent(input$summ_subset_cell_edit,{
@@ -1201,52 +1404,11 @@ mk_shinyscreen_server <- function(projects,init) {
                                              rownames = F)
             
         }, label = "summ_subset-edit")
-        observeEvent(input$datatab_cell_edit,{
-            df <- gen_dtab(rvs$gui$datatab,sets=rf_get_sets())
-            z <- DT::editData(df,
-                              input$datatab_cell_edit,
-                              rownames = F)
+        
 
-            rvs$gui$datatab$set <- z$set
-            rvs$gui$datatab$adduct <- z$adduct
-        }, label = "datatab-edit")
+        
 
-        observeEvent(input$extract_b,{
-            shinymsg("Extraction has started. This may take a while.")
-            m <- rf_conf_state()
-            fn_c_state <- file.path(m$run$paths$project,
-                                    paste0("extract.",shinyscreen:::FN_CONF))
-            yaml::write_yaml(x=m$conf,file=fn_c_state)
-            message("(extract) Config written to ", fn_c_state)
-            state <- shinyscreen::run(m=m,
-                                      phases=c("setup",
-                                               "comptab",
-                                               "extract"))
-            message("(extract) Done extracting.")
-            z <- shinyscreen::merge2rev(rvs$m,lst = state)
-            eval(z)
-            shinymsg("Extraction has been completed.")
-        })
-
-        observeEvent(input$presc_b,{
-            validate(need(NROW(rvs$m$extr$ms1) > 0,
-                          message = "Perform extraction first."))
-            m <- rev2list(rvs$m)
-
-            fn_c_state <- file.path(m$run$paths$project,
-                                    paste0("presc.",shinyscreen:::FN_CONF))
-            yaml::write_yaml(x=m$conf,file=fn_c_state)
-            message("(prescreen) Config written to ", fn_c_state)
-            shinymsg("Prescreening started. Please wait.")
-            state <- shinyscreen::run(m=m,
-                                      phases=c("prescreen","sort","subset"))
-            message("(prescreen) Done prescreening.")
-            shinymsg("Prescreening completed.")
-            z <- shinyscreen::merge2rev(rvs$m,lst = state)
-            eval(z)
-            
-            
-        })
+        
 
         observeEvent(input$plot_ext, {
             rvs$m$conf$figures$ext <- input$plot_ext
@@ -1385,49 +1547,11 @@ mk_shinyscreen_server <- function(projects,init) {
         ##     rvs$m$out$tab$structfig <- m$out$tab$structfig
         ## }, label = "gen_struct_plots")
 
-        observe({
-            
-            rvs$m$conf$tolerance[["ms1 fine"]] <- uni_ass(input,
-                                                             "ms1_fine",
-                                                             "ms1_fine_unit")
-            
-            rvs$m$conf$tolerance[["ms1 coarse"]] <- uni_ass(input,
-                                                               "ms1_coarse",
-                                                               "ms1_coarse_unit")
+        
 
-            rvs$m$conf$tolerance[["eic"]] <- uni_ass(input,
-                                                        "ms1_eic",
-                                                        "ms1_eic_unit")
+        
 
-            rvs$m$conf$tolerance[["rt"]] <- uni_ass(input,
-                                                       "ms1_rt_win",
-                                                       "ms1_rt_win_unit")
-
-
-        })
-
-        observe({
-            
-            rvs$m$conf$prescreen[["ms1_int_thresh"]] <- input[["ms1_int_thresh"]]
-            rvs$m$conf$prescreen[["ms2_int_thresh"]] <- input[["ms2_int_thresh"]]
-            rvs$m$conf$prescreen[["s2n"]] <- input$s2n
-            rvs$m$conf$prescreen[["ret_time_shift_tol"]] <- uni_ass(input,
-                                                                       "ret_time_shift_tol",
-                                                                       "ret_time_shift_tol_unit")
-
-        })
-
-        ## observe({
-        ##     plot_group <- PLOT_FEATURES[[as.integer(input$plot_grp)]]
-        ##     plot_plot <- PLOT_FEATURES[[as.integer(input$plot_grp_plot)]]
-        ##     plot_label <-PLOT_FEATURES[[as.integer(input$plot_label)]]
-        ##     isolate({
-        ##         rvs$m$conf$figures$grouping$group <- plot_group
-        ##         rvs$m$conf$figures$grouping$plot <- plot_plot
-        ##         rvs$m$conf$figures$grouping$label <- plot_label
-        ##     })
-
-        ## }, label = "plot-grouping")
+        
         observe({
             vals <- input$plot_log
             checked <- c("MS1 EIC"=F,
@@ -1442,11 +1566,6 @@ mk_shinyscreen_server <- function(projects,init) {
             
 
         }, label = "plot-logaxes")
-
-        observe({
-            rvs$m$conf$report$author <- input$rep_aut
-            rvs$m$conf$report$title <- input$rep_tit
-        })
 
         observe({
             rv_tran$qa_compsel_tab <- rf_qa_compsel_tab()
@@ -1546,41 +1665,8 @@ mk_shinyscreen_server <- function(projects,init) {
             
         })
 
-        observeEvent(input$missingprec,{
-            rvs$m$conf$extract$missing_precursor_info <- input$missingprec
-        })
-        
-
         ## Render Outputs
-        output$curr_proj <- renderText({
-            xx <- rvs$gui$project()
-            txt <- if (is.null(xx) || length(xx) == 0L || is.na(xx) || nchar(xx)=="") "Nothing selected." else basename(xx)
-            paste0("Current project: ", txt)})
         
-        output$curr_data_dir <- renderText({
-            xx <- rvs$gui$paths$data
-            txt <- if (is.null(xx)) "Nothing selected" else basename(xx)
-            paste0("Current data directory: ", txt)
-        })
-
-        output$comp_list_report <- renderUI({
-            lsts <- rvs$gui$compounds$lists
-            HTML(if (length(lsts) > 0 &&
-                     isTruthy(lsts) &&
-                     lsts != "Nothing selected.") {
-                     paste(c("<ul>",
-                             sapply(lsts,
-                                    function (x) paste("<li><em>",x,"</em></li>")),
-                             "</ul>"))
-                 } else "No compound list selected yet.")
-        })
-
-        output$sets_report <- renderUI({
-            sets <- rvs$gui$compounds$sets
-            HTML(if (isTruthy(sets) && sets != "Nothing selected.")
-                     paste("selected <em>setid</em> table:",
-                           sets) else "No <em>setid</em> table selected.")
-        })
 
         ## output$order_summ <- DT::renderDT({
         ##     input$order_summ_row_reorder
@@ -1591,51 +1677,10 @@ mk_shinyscreen_server <- function(projects,init) {
         ##                 options = list(rowReorder=T))
         ## })
         
-        output$datafiles <- DT::renderDT(
-        {
-            rvs$gui$datatab$file
-            rvs$gui$datatab$tag
-            res <- gen_dfiles_tab(rvs$gui)
-            simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
-        })
-
-        output$datatab <- DT::renderDT({
-            rvs$gui$datatab$tag
-            rvs$gui$datatab$set
-            rvs$gui$datatab$adduct
-            sets <- rf_get_sets()
-            dtab <- gen_dtab(rvs$gui$datatab,
-                             sets=sets)
-            print(dtab)
-            tab <- dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
-            tab
-            
-        })
-
-        output$comp_table <- DT::renderDataTable({
-            rvs$m <- rf_setup_state()
-            DT::datatable(rvs$m$input$tab$cmpds,
-                          ## style = 'bootstrap',
-                          ## class = 'table-condensed',
-                          extensions = 'Scroller',
-                          options = list(scrollX = T,
-                                         scrollY = 300,
-                                         deferRender = T,
-                                         scroller = T))
-        })
+        
 
         
-        output$setid_table <- DT::renderDataTable({
-            rvs$m <- rf_setup_state()
-            DT::datatable(rvs$m$input$tab$setid,
-                          ## style = 'bootstrap',
-                          ## class = 'table-condensed',
-                          extensions = 'Scroller',
-                          options = list(scrollX = T,
-                                         scrollY = 300,
-                                         deferRender = T,
-                                         scroller = T))
-        })
+        
 
         output$summ_subset <- DT::renderDT({
             input$summ_subset_cell_edit
