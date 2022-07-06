@@ -171,15 +171,16 @@ unpack_app_state <- function(session,input,project_path,packed_state) {
 
 
 input2conf_setup <- function(input,gui,conf=list()) {
-    conf$compounds <- list()
-    conf$figures <- list()
-    conf$prescreen <- list()
-    conf$tolerance <- list()
-    conf$extract <- list()
-    conf$summary_table <- list()
-    conf$report <- list()
-    
-    conf$debug <- F
+    if (length(conf)==0L) {
+        conf$compounds <- list()
+        conf$figures <- list()
+        conf$prescreen <- list()
+        conf$tolerance <- list()
+        conf$extract <- list()
+        conf$summary_table <- list()
+        conf$report <- list()
+        conf$debug <- F
+    }
 
     conf$compounds$lists <- gui$compounds$lists
     conf$compounds$sets <- gui$compounds$sets
@@ -224,7 +225,6 @@ input2conf <- function(input,gui,conf=list()) {
 }
 
 app_state2state <- function(input,gui) {
-    shiny::req(gui$paths$project)
     m <- new_project(gui$paths$project)
     m$run$paths <- shiny::reactiveValuesToList(gui$paths)
     m$conf <- input2conf_setup(input,gui=gui)
@@ -262,4 +262,39 @@ gui2datatab <- function(gui) {
                      file=as.character(gui$datatab$file))
     df
                      
+}
+
+pre_extr_val_block <- function(m) {
+    if (NROW(m$input$tab$cmpds)==0L) {
+        shinymsg("Compound table is still missing.",type="error")
+        return(F)
+    }
+
+    if (NROW(m$input$tab$setid)==0L) {
+        shinymsg("Set table is still missing.",type="error")
+        return(F)
+    }
+
+    if (NROW(m$input$tab$mzml)==0L) {
+        shinymsg("Table `datatab' is missing.",type="error")
+        return(F)
+    }
+
+    xx <- m$input$tab$mzml
+    if (any(is.na(xx$tag))) {
+        shinymsg("Some `tag' entries in `datatab' have not been specified.",type='error')
+        return(F)
+    }
+
+    if (any(is.na(xx$adduct))) {
+        shinymsg("Some `adduct' entries in `datatab' have not been specified.",type='error')
+        return(F)
+    }
+
+    if (any(is.na(xx$set))) {
+        shinymsg("Some `set' entries in `datatab' have not been specified.",type='error')
+        return(F)
+    }
+
+    return(T)
 }

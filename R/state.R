@@ -78,7 +78,7 @@ new_project <- function(project,datatab=NULL,conf=NULL) {
     m <- new_state()
     m$run <- new_runtime_state(project)
     fn_conf <- file.path(m$run$paths$project,FN_CONF)
-    m$conf <- if (is.null(conf)) {m$conf; yaml::yaml.load_file(fn_conf)} else conf 
+    m$conf <- if (is.null(conf)) {yaml::yaml.load_file(fn_conf)} else conf 
     m$conf$compounds$lists <- label_cmpd_lists(m$conf$compounds$lists)
     m$run <- new_runtime_state(project,conf=m$conf)
 

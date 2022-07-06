@@ -429,7 +429,8 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
     ## The reactive world.
-    rvs <- reactiveValues(m=def_state,gui=create_gui(),setup_on=T)
+    rvs <- reactiveValues(m=def_state,
+                          gui=create_gui())
     compl_sets <- eventReactive(rvs$m$input$tab$setid,
                                 rvs$m$input$tab$setid[,unique(set)])
 
@@ -651,65 +652,6 @@ mk_shinyscreen_server <- function(projects,init) {
             get_sets(rvs$gui)
         })
 
-        ## rf_setup_state <- reactive({
-        ##     ## This can be done more systematic by employing smaller
-        ##     ## reactives to build up a larger reactive state. But, for
-        ##     ## now, it's good and, also, centralisation has its
-        ##     ## `mnemonic' advantages.
-        ##     rvs$gui$paths$project
-        ##     rvs$gui$paths$data
-        ##     rvs$gui$datatab$file
-        ##     rvs$gui$datatab$tag
-        ##     rvs$gui$datatab$set
-        ##     rvs$gui$datatab$adduct
-        ##     rvs$gui$compounds$lists
-        ##     rvs$gui$compounds$sets
-        ##     input$missingprec
-
-        ##     input$ms1_fine
-        ##     input$ms1_fine_unit
-
-        ##     input$ms1_coarse
-        ##     input$ms1_coarse_unit
-
-        ##     input$ms1_eic
-        ##     input$ms1_eic_unit
-
-        ##     input$ms1_rt_win
-        ##     input$ms1_rt_win_unit
-
-        ##     input$missingprec
-            
-        ##     is_on <- isolate({isTruthy(rvs$m$setup_on)})
-
-        ##     if (is_on) {
-        ##         message("Create setup state.")
-        ##         m <- app_state2state(input=input,
-        ##                              gui = rvs$gui)
-        ##         req(NROW(m$input$tab$mzml)>0)
-        ##         run(m=m,phases=c("setup","comptab"))
-        ##     } else {
-        ##         isolate({
-        ##             message("Skip creating setup state.")
-        ##             m <- rvs$m
-        ##             m$setup_on <- T
-        ##             m
-        ##         })
-        ##     }
-        ## })
-
-
-        rf_extract_state <- reactive({
-            nc = NROW(rvs$m$input$tab$cmpds)
-            ns = NROW(rvs$m$input$tab$setid)
-            nm = NROW(rvs$m$input$tab$mzml)
-
-            validate(need(nc>0L,message="Compound list must be loaded."),
-                     need(ns>0L,message= "Set list must be loaded."),
-                     need(nm>0L,message="Table `datatab' must be present."))
-            
-            run(m=rvs$m,phases=c("extract"))
-        })
 
         rf_prescreen_state <- reactive({
 
@@ -773,33 +715,34 @@ mk_shinyscreen_server <- function(projects,init) {
                                                    pattern = DFILES_LIST_PATT))
         })
 
+
         
         observeEvent(input$load_proj_b,{
+            ## A single place where a new project is initialised, or
+            ## loaded. Everything else works off rvs$m and rvs$gui.
             wd <- input$proj_list
             req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
             fullwd <- file.path(init$userdir,wd)
-            ## If a saved state exists, load it.
+
+            ## Load saved state if existing, create if it does not.
             fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
             fn_state <- file.path(fullwd,FN_STATE)
-            rvs$gui <- if (file.exists(fn_packed_state)) {
-                           message("Loading project: ",wd)
-                           pack <- readRDS(file=fn_packed_state)
-                           unpack_app_state(session=session,
+            if (file.exists(fn_packed_state)) {
+                message("Loading project: ",wd)
+                pack <- readRDS(file=fn_packed_state)
+                rvs$gui <- unpack_app_state(session=session,
                                             input=input,
                                             project_path=fullwd,
                                             packed_state=pack)
-                       } else {
-                           message("Initialising project: ",wd)
-                           create_gui(project_path=fullwd)
-                       }
-            if (file.exists(fn_state)) rvs$load_from_statefiles <- T
-            
+                ## Load computational state.
+                rvs$m <- readRDS(file=fn_state)
+            } else {
+                message("Initialising project: ",wd)
+                rvs$gui <- create_gui(project_path=fullwd)
+                
+            }
             message("project: ",rvs$gui$project())
         }, label = "project-b")
-
-        
-
-
 
         observe({
             rvs$gui$paths$project
@@ -825,29 +768,23 @@ mk_shinyscreen_server <- function(projects,init) {
             input$ms1_rt_win_unit
             
             input$missingprec
-            isolate({
-                rvs$m <- app_state2state(input=input,
-                                         gui = rvs$gui)
-                
-                if (NROW(rvs$m$input$tab$mzml)>0) {
-                    message("Create setup state.")
-                    rvs$m <- run(m=rvs$m,phases=c("setup","comptab"))
-                }
-                
 
-                if (isTruthy(rvs$load_from_statefiles)) {
-                    message("Load from statefile.")
-                    fn_state <- file.path(rvs$gui$paths$project,FN_STATE)
-                    rvs$m <- readRDS(file=fn_state)
-                    rvs$load_from_statefiles <- NULL
-                }
+            isolate({
+                rvs$m$conf <- input2conf_setup(gui=rvs$gui,conf=rvs$m$conf,input=input)
             })
-            
+
+
+
+                
+            message("Initial parameters updated.")
         }, label = "gen-setup-state")
 
+
+
         observeEvent(input$extract_b,{
+            req(isTruthy(pre_extr_val_block(rvs$m)))
             shinymsg("Extraction has started. This may take a while.")
-            rvs$m <- rf_extract_state()
+            rvs$m <- run(m=rvs$m,phases="extract")
             message("(extract) Done extracting.")
             fn_c_state <- file.path(rvs$m$run$paths$project,
                                     paste0("extract.",shinyscreen:::FN_CONF))
