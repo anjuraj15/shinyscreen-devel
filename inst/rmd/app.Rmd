@@ -585,7 +585,7 @@ DT::DTOutput("summ_subset")
 <div style="padding-left: 3em">
 
 #### Control
-<div style="display: flex;flex-flow: row nowrap;">
+<div style="display: flex;flex-flow: row wrap;">
 ```{r, echo=F}
 actionButton(inputId= "commit_changes",
              label = "Commit configuration")
@@ -600,6 +600,26 @@ actionButton(inputId = "presc_b",
              label = "Prescreen")
 ```
 </div>
+
+#### Status
+
+- Has the data been extracted? `r htmlOutput("is_extracted_stat", inline=T)`
+- Has the data been auto-quality checked? `r htmlOutput("is_qa_stat", inline=T)`
+
+##### Extraction
+
+- MS1 coarse: `r htmlOutput("ms1_coarse_stat", inline=T)`
+- MS1 fine: `r htmlOutput("ms1_fine_stat", inline=T)`
+- MS1 eic: `r htmlOutput("ms1_eic_stat", inline=T)`
+- Retention time window: `r htmlOutput("rt_stat", inline=T)`
+
+##### Prescreening
+
+- Intensity Threshold (MS1): `r htmlOutput("ms1_int_thresh_stat", inline=T)`
+- Intensity Threshold (MS2): `r htmlOutput("ms2_int_thresh_stat", inline=T)`
+- Retention time shift: `r htmlOutput("s2n_stat", inline=T)`
+- Signal-to-noise ratio: `r htmlOutput("ret_time_shift_tol_unit_stat", inline=T)`
+
 </div>
 
 </div>

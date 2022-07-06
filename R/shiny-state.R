@@ -28,6 +28,8 @@ GUI_ALL_INPUTS <- c(GUI_SELECT_INPUTS,
                       GUI_TEXT_INPUTS,
                       GUI_RADIO_INPUTS)
 
+
+
 #' @export
 create_stub_gui <- function() {
     gui <- list()
@@ -298,3 +300,7 @@ pre_extr_val_block <- function(m) {
 
     return(T)
 }
+
+commit_val_block <- function(gui) {
+}
+
