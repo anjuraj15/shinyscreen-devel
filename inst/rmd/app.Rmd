@@ -72,10 +72,7 @@ inputdirs <- list.dirs(path=init$indir, full.names = F, recursive = F)
 
 # {.tabset .tabset-pills}
 
-## Configuration {.tabset}
-
-
-### Project {.tabset}
+## Project {.tabset}
 
 <details>
 <summary>Projects, input directories and compound lists</summary>
@@ -102,7 +99,7 @@ before starting `Shinyscreen` in one of the directories under
 
 </details>
 
-#### Project management
+### Project management
 
 <!-- ##### Create new project -->
 
@@ -114,7 +111,7 @@ before starting `Shinyscreen` in one of the directories under
 <!-- ``` -->
 
 
-##### Load or initialise a project
+#### Load or initialise a project
 
 <details>
 <summary>Load, or initialise a project</summary>
@@ -138,13 +135,13 @@ textOutput("curr_proj")
 ```
 
 
-##### Save project
+#### Save project
 ```{r, echo=F}
 actionButton(inputId = "save_proj_b",
              label= "Save project")
 ```
 
-##### Download project
+#### Download project
 
 <details> 
 <summary>Download results</summary>
@@ -166,7 +163,7 @@ downloadButtonRmd("dwn_proj_b",
 ```
 
 
-##### Select data directory
+#### Select data directory
 <details>
 <summary>More on data directories</summary>
 
@@ -188,9 +185,9 @@ actionButton(inputId = "sel_indir_b",
 textOutput("curr_data_dir")
 ```
 
-#### Compound list inputs
+### Compound list inputs
 
-##### Select compound lists
+#### Select compound lists
 
 <details><summary>About compound lists</summary>
 A compound list is composed of entries describing compounds. This
@@ -256,7 +253,7 @@ htmlOutput('comp_list_report')
 </div>
 
 </div>
-##### Select set lists
+#### Select set lists
 
 <details><summary>About set lists (_setid_ tables)</summary>
 The compound lists can contain more entries than is necessary. Using
@@ -300,7 +297,7 @@ htmlOutput('sets_report')
 
 <div>
 
-#### Data files
+### Data files
 <details><summary>Load data files</summary>
 Shinyscreen currently supports only the **mzML** file format. After
 loading the files, set file tags in the file table (column
@@ -353,6 +350,29 @@ exists, otherwise _adduct_ column is ignored).
 DT::DTOutput("datatab",width="25%")
 ```
 
+## Configure, Extract, Prescreen {.tabset}
+
+<details><summary>Extract spectra from data files.</summary>
+
+Spectral extraction is controled by the parameters under the
+_Extraction_ tab, while the quality check parameters are located under
+the _Prescreening_ tab.
+
+After Shinyscreen is configured, the compound and setid lists loaded,
+it is possible to proceed with extracting the data. After the
+configuration changes have been be commited using the `Commit config`
+button, the extraction process can start after pressing
+`Extract`. Depending on the size of the commpound list and the
+properties of the data files this may take a while. 
+
+Once the data is extracted, quality checking can be carried out using
+the `Prescreen` button.
+
+</details>
+
+
+<div style= "display: flex; vertical-align:top;">
+<div style= "padding-right: 0.5em">
 ### Extraction
 
 #### Spectra extraction based settings
@@ -560,8 +580,29 @@ DT::DTOutput("summ_subset")
 
 </div>
 
+</div>
 
+<div style="padding-left: 3em">
 
+#### Control
+<div style="display: flex;flex-flow: row nowrap;">
+```{r, echo=F}
+actionButton(inputId= "commit_changes",
+             label = "Commit configuration")
+```
+```{r, echo=FALSE}
+actionButton(inputId = "extract_b",
+             label = "Extract")
+```
+
+```{r, echo=FALSE}
+actionButton(inputId = "presc_b",
+             label = "Prescreen")
+```
+</div>
+</div>
+
+</div>
 
 ## View compound Lists and Sets
 
@@ -574,42 +615,6 @@ DT::dataTableOutput("comp_table")
 ### Setid Table
 ```{r, echo=F}
 DT::dataTableOutput("setid_table")
-```
-
-## Extract Data and Prescreen
-
-Shinyscreen can perform spectral extraction based on the desired settings(_ppm_,_retention time window_) under the _Extraction_ tab. The extracted spectra can be subjected to prescreening based on the settings defined under the _prescreening_ tab.
-
-<details><summary>Extract spectra from data files.</summary>
-
-After Shinyscreen is configured, the compound and setid lists loaded, it
-is possible to proceed with extracting the data. This is potentially a
-time-intensive step, so some patience might be needed.
-
-Once the data is extracted, it will be possible to quality check the
-spectra associated with the compounds specified in the _setid_ list,
-look at the plots and publish a report.
-
-</details>
-
-```{r, echo=FALSE}
-actionButton(inputId = "extract_b",
-             label = "Extract")
-```
-
-<details>
-
-<summary>Prescreen extracted spectra.</summary>
-
-After the data extraction is finished, the quality of the retrieved
-spectra can be checked using the criteria defined in the
-_Prescreening_ tab of the _Configuration_ Section.
-
-</details>
-
-```{r, echo=FALSE}
-actionButton(inputId = "presc_b",
-             label = "Prescreen")
 ```
 
 ## Compound Explorer {.tabset}
