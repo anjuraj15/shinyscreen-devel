@@ -13,7 +13,8 @@
 ## limitations under the License.
 
 ##' @importFrom shiny validate
-
+##' @importFrom promises future_promise
+##' @importFrom promises %...>%
 react_v <- shiny::reactiveValues
 react_f <- shiny::reactive
 react_e <- shiny::eventReactive
@@ -655,6 +656,12 @@ mk_shinyscreen_server <- function(projects,init) {
     dev.off()
 
     server <- function(input,output,session) {
+        ## REACTIVE VALUES
+        rv_extr_flag <- reactiveVal(F)
+        rv_extr_fin_flag <- reactiveVal(0L)
+        rv_presc_flag <- reactiveVal(0L)
+        rv_extr_comp <- reactiveVal(NA)
+        rtimer_extr <- reactiveTimer(1000)
         ## REACTIVE FUNCTIONS
         rf_compound_set <- reactive({
             req(rvs$gui$compounds$sets,
@@ -664,22 +671,6 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
 
-        rf_prescreen_state <- reactive({
-
-            input$ms1_int_thresh
-            input$ms2_int_thresh
-            input$s2n
-
-            input$ret_time_shift_tol
-            input$ret_time_shift_tol_unit
-            message("I am here.")
-            validate(need(NROW(rvs$m$extr$ms1) > 0L,
-                          message = "Perform extraction first."))
-            message("I am now here.")
-            m <- rvs$m
-            m$conf <- input2conf_prescreen(input,conf=m$conf)
-            run(m=m,phases="prescreen")
-        })
 
         rf_get_sets <- reactive({
             req(rvs$gui$paths$project,
@@ -688,6 +679,32 @@ mk_shinyscreen_server <- function(projects,init) {
             get_sets(rvs$gui)
             
         })
+
+        rf_setup_state <- reactive({
+            rvs$gui$project
+            rvs$gui$datatab$file
+            rvs$gui$datatab$tag
+            rvs$gui$datatab$adduct
+            rvs$gui$datatab$set
+            isolate({
+                req(pre_setup_val_block(rvs$gui))
+                q = app_state2state(input,rvs$gui)
+                
+            })
+            run(m=q,phases=c("setup","comptab"))
+        })
+
+        rf_get_cmpd_tab <- reactive({
+            m <- rf_setup_state()
+            m$input$tab$cmpds
+            })
+
+        rf_get_sets_tab <- reactive({
+            m <- rf_setup_state()
+            m$input$tab$setid
+        })
+
+        
         ## OBSERVERS
 
         observe({
@@ -790,38 +807,50 @@ mk_shinyscreen_server <- function(projects,init) {
         ##     message("Initial parameters updated.")
         ## }, label = "gen-setup-state")
 
-        observeEvent(input$commit_changes,{
-            rvs$m$conf <- input2conf_setup(input=input,gui=rvs$gui,conf=rvs$conf)
-            rvs$m$conf <- input2conf_prescreen(input=input,conf=rvs$conf)
 
-            
-
-            
-
-        },label="comm-changes")
 
         observeEvent(input$extract_b,{
-            req(isTruthy(pre_extr_val_block(rvs$m)))
-            rvs$status$ms1_coarse = rvs$m$conf$tolerance[["ms1 coarse"]]
-            rvs$status$ms1_fine = rvs$m$conf$tolerance[["ms1 fine"]]
-            rvs$status$ms1_eic_stat = rvs$m$conf$tolerance[["eic"]]
-            rvs$status$rt_stat = rvs$m$conf$tolerance[["rt"]]
-            rvs$status$is_extracted_stat = "In process."
-        })
-
-        observeEvent(input$extract_b,{
-            req(isTruthy(pre_extr_val_block(rvs$m)))
+            rvs$m <-req(rf_setup_state())
+            m <- rvs$m
             shinymsg("Extraction has started. This may take a while.")
-            rvs$m <- run(m=rvs$m,phases=c("setup","extract"))
-            message("(extract) Done extracting.")
-            fn_c_state <- file.path(rvs$m$run$paths$project,
-                                    paste0("extract.",shinyscreen:::FN_CONF))
-            yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
-            message("(extract) Config written to ", fn_c_state)
-            shinymsg("Extraction has been completed.")
-            rvs$status$is_extracted_stat = "Yes."
+            rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
+            rvs$status$ms1_fine_stat = m$conf$tolerance[["ms1 fine"]]
+            rvs$status$ms1_eic_stat = m$conf$tolerance[["eic"]]
+            rvs$status$rt_stat = m$conf$tolerance[["rt"]]
+            rvs$status$is_extracted_stat = "In progress."
 
+            ## extract_q <<- T
+            rv_extr_flag(T)
+            ## rv_extr_flag(rv_extr_flag() + 1L)
         })
+        
+        observe({
+            rtimer_extr()
+            isolate({
+                if (rv_extr_flag()) {
+                    m <-rvs$m
+                    promises::future_promise(run(m=m,phases="extract")) %...>% {
+                        rvs$m = .
+
+                    }
+                    rvs$status$is_extracted_stat = "Yes."
+                    rv_extr_flag(F)
+                }
+            })
+        })
+        
+        ## observeEvent(rv_extr_flag(),{
+        ##     shinymsg("Extraction has started. This may take a while.")
+        ##     rvs$m <- run(m=rvs$m,phases="extract")
+        ##     message("(extract) Done extracting.")
+        ##     fn_c_state <- file.path(rvs$m$run$paths$project,
+        ##                             paste0("extract.",shinyscreen:::FN_CONF))
+        ##     yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
+        ##     message("(extract) Config written to ", fn_c_state)
+        ##     shinymsg("Extraction has been completed.")
+        ##     rvs$status$is_extracted_stat = "Yes."
+
+        ## },ignoreInit=T)
 
         observeEvent(input$presc_b,{
             rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh_stat"]]
@@ -829,16 +858,17 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
             rs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
 
-            rvs$status$is_qa_stat = "No."
+            rvs$status$is_qa_stat = "In progress."
+            rv_presc_flag(rv_presc_flag()+1L)
         })
         
-        observeEvent(input$presc_b,{
+        observeEvent(rv_presc_flag(),{
             shinymsg("Prescreening started. Please wait.")
             rvs$m <- run(m=rvs$m,phases="prescreen")
             message("(prescreen) Done prescreening.")
+            rvs$status$is_qa_stat = "Yes."
             shinymsg("Prescreening completed.")
-            ## TODO TODO TODO see also rvs statuses.
-        })
+        }, ignoreInit=T)
         
 
         observeEvent(input$save_proj_b,{
@@ -1002,8 +1032,7 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$comp_table <- DT::renderDataTable({
-            m <- rvs$m
-            cmpds <- m$input$tab$cmpds
+            cmpds <- rf_get_cmpd_tab()
             validate(need(NROW(cmpds)>0,"No compound list loaded yet."))
             DT::datatable(cmpds,
                           ## style = 'bootstrap',
@@ -1016,8 +1045,7 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$setid_table <- DT::renderDataTable({
-            m <- rvs$m
-            setid <- m$input$tab$setid
+            setid <- rf_get_sets_tab()
             validate(need(NROW(setid)>0,"No set id list loaded yet."))
             DT::datatable(setid,
                           ## style = 'bootstrap',
@@ -1029,11 +1057,53 @@ mk_shinyscreen_server <- function(projects,init) {
                                          scroller = T))
         })
 
-        output$is_extracted_txt <- renderText({
-            "No."
-            })
+        ## RENDER: STATUS
 
-        output$is_qa_txt <- renderText({"No."})
+        output$is_extracted_stat <- renderText({
+            x <- rvs$status$is_extracted_stat
+            if (isTruthy(x)) x else "No."
+        })
+
+        output$is_qa_stat <- renderText({
+            x <- rvs$status$is_qa_stat
+            if (isTruthy(x)) x else "No."
+        })
+
+        output$ms1_coarse_stat <- renderText({
+            req(rvs$status$ms1_coarse_stat)
+        })
+
+        output$ms1_fine_stat <- renderText({
+            req(rvs$status$ms1_fine_stat)
+        })
+
+        output$ms1_eic_stat <- renderText({
+            req(rvs$status$ms1_eic_stat)
+        })
+
+        output$rt_stat <- renderText({
+            req(rvs$status$rt_stat)
+        })
+
+        output$ms1_int_thresh_stat <- renderText({
+            req(rvs$status$ms1_int_thresh_stat)
+        })
+
+        output$ms2_int_thresh_stat <- renderText({
+            req(rvs$status$ms2_int_thresh_stat)
+        })
+
+        output$s2n_stat <- renderText({
+            req(rvs$status$sn2_stat)
+        })
+
+        output$ret_time_shift_tol <- renderText({
+            req(rvs$status$ret_time_shift_tol)
+        })
+
+        
+
+        
             
             
     }

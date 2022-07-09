@@ -301,6 +301,37 @@ pre_extr_val_block <- function(m) {
     return(T)
 }
 
-commit_val_block <- function(gui) {
+pre_setup_val_block <- function(gui) {
+
+    if (!isTruthy(gui$project)) {
+        shinymsg("No project yet.", type="error")
+        return(F)
+    }
+
+    if (!isTruthy(head(gui$datatab$file,1))) {
+        shinymsg("No data files have been specified yet.", type="error")
+        return(F)
+    }
+
+    if (!isTruthy(all(!is.na(gui$datatab$tag)))) {
+        shinymsg("Some tags in datatab are undefined.")
+        return(F)
+    }
+
+    if (!isTruthy(all(!is.na(gui$datatab$tag)))) {
+        shinymsg("Some tags in datatab are undefined.")
+        return(F)
+    }
+
+    if (!isTruthy(all(!is.na(gui$datatab$adduct)))) {
+        shinymsg("Some adducts in datatab are undefined.")
+        return(F)
+    }
+
+    if (!isTruthy(all(!is.na(gui$datatab$set)))) {
+        shinymsg("Some sets in datatab are undefined.")
+        return(F)
+    }
+    T
 }
 

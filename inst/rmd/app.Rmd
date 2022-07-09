@@ -617,8 +617,8 @@ actionButton(inputId = "presc_b",
 
 - Intensity Threshold (MS1): `r htmlOutput("ms1_int_thresh_stat", inline=T)`
 - Intensity Threshold (MS2): `r htmlOutput("ms2_int_thresh_stat", inline=T)`
-- Retention time shift: `r htmlOutput("s2n_stat", inline=T)`
-- Signal-to-noise ratio: `r htmlOutput("ret_time_shift_tol_unit_stat", inline=T)`
+- Retention time shift: `r htmlOutput("ret_time_shift_tol_stat", inline=T)`
+- Signal-to-noise ratio: `r htmlOutput("s2n_stat", inline=T)`
 
 </div>
 
