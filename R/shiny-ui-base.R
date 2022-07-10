@@ -658,10 +658,10 @@ mk_shinyscreen_server <- function(projects,init) {
     server <- function(input,output,session) {
         ## REACTIVE VALUES
         rv_extr_flag <- reactiveVal(F)
-        rv_extr_fin_flag <- reactiveVal(0L)
-        rv_presc_flag <- reactiveVal(0L)
-        rv_extr_comp <- reactiveVal(NA)
+        rv_presc_flag <- reactiveVal(F)
         rtimer_extr <- reactiveTimer(1000)
+        rtimer_presc <- reactiveTimer(500)
+        
         ## REACTIVE FUNCTIONS
         rf_compound_set <- reactive({
             req(rvs$gui$compounds$sets,
@@ -819,51 +819,62 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$status$rt_stat = m$conf$tolerance[["rt"]]
             rvs$status$is_extracted_stat = "In progress."
 
-            ## extract_q <<- T
             rv_extr_flag(T)
-            ## rv_extr_flag(rv_extr_flag() + 1L)
+    
+        })
+
+        observeEvent(input$presc_b,{
+            rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh_stat"]]
+            rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh_stat"]]
+            rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
+            rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
+            rvs$status$is_qa_stat = "In progress."
+            rv_presc_flag(T)
         })
         
         observe({
             rtimer_extr()
             isolate({
                 if (rv_extr_flag()) {
+                    rv_extr_flag(F)
                     m <-rvs$m
                     promises::future_promise(run(m=m,phases="extract")) %...>% {
                         rvs$m = .
+                        rvs$status$is_extracted_stat = "Yes."
+                        fn_c_state <- file.path(rvs$m$run$paths$project,
+                                                paste0("extract.",shinyscreen:::FN_CONF))
+                        yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
+                        message("(extract) Done extracting.")
+                        message("(extract) Config written to ", fn_c_state)
+                        shinymsg("Extraction has been completed.")
 
                     }
-                    rvs$status$is_extracted_stat = "Yes."
-                    rv_extr_flag(F)
+
+
+                }
+            })
+        })
+
+        observe({
+            rtimer_presc()
+            isolate({
+                if (rv_presc_flag()) {
+                    validate(need(NROW(rvs$m$extr$ms1)>0L,"Must extract data first."))
+                    shinymsg("Prescreening started. Please wait.")
+                    rv_presc_flag(F)
+                    m <-rvs$m
+                    promises::future_promise(run(m=m,phases="prescreen")) %...>% {
+                        rvs$m = .
+                        rvs$status$is_qa_stat = "Yes."
+
+
+
+                    }
                 }
             })
         })
         
-        ## observeEvent(rv_extr_flag(),{
-        ##     shinymsg("Extraction has started. This may take a while.")
-        ##     rvs$m <- run(m=rvs$m,phases="extract")
-        ##     message("(extract) Done extracting.")
-        ##     fn_c_state <- file.path(rvs$m$run$paths$project,
-        ##                             paste0("extract.",shinyscreen:::FN_CONF))
-        ##     yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
-        ##     message("(extract) Config written to ", fn_c_state)
-        ##     shinymsg("Extraction has been completed.")
-        ##     rvs$status$is_extracted_stat = "Yes."
-
-        ## },ignoreInit=T)
-
-        observeEvent(input$presc_b,{
-            rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh_stat"]]
-            rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh_stat"]]
-            rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
-            rs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
-
-            rvs$status$is_qa_stat = "In progress."
-            rv_presc_flag(rv_presc_flag()+1L)
-        })
-        
         observeEvent(rv_presc_flag(),{
-            shinymsg("Prescreening started. Please wait.")
             rvs$m <- run(m=rvs$m,phases="prescreen")
             message("(prescreen) Done prescreening.")
             rvs$status$is_qa_stat = "Yes."

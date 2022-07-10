@@ -359,14 +359,16 @@ _Extraction_ tab, while the quality check parameters are located under
 the _Prescreening_ tab.
 
 After Shinyscreen is configured, the compound and setid lists loaded,
-it is possible to proceed with extracting the data. After the
-configuration changes have been be commited using the `Commit config`
-button, the extraction process can start after pressing
-`Extract`. Depending on the size of the commpound list and the
-properties of the data files this may take a while. 
+it is possible to proceed with extracting the data. The extraction
+process can start after pressing `Extract`. Depending on the size of
+the commpound list and the properties of the data files this may take
+a while.
 
 Once the data is extracted, quality checking can be carried out using
 the `Prescreen` button.
+
+The parameters affecting current extraction are displayed in the
+*Overview* section. 
 
 </details>
 
@@ -586,10 +588,6 @@ DT::DTOutput("summ_subset")
 
 #### Control
 <div style="display: flex;flex-flow: row wrap;">
-```{r, echo=F}
-actionButton(inputId= "commit_changes",
-             label = "Commit configuration")
-```
 ```{r, echo=FALSE}
 actionButton(inputId = "extract_b",
              label = "Extract")
@@ -601,7 +599,7 @@ actionButton(inputId = "presc_b",
 ```
 </div>
 
-#### Status
+#### Overview
 
 - Has the data been extracted? `r htmlOutput("is_extracted_stat", inline=T)`
 - Has the data been auto-quality checked? `r htmlOutput("is_qa_stat", inline=T)`
