@@ -637,21 +637,37 @@ DT::dataTableOutput("setid_table")
 
 ## Results Explorer
 
+
+
+
 <div style="display: flex; flex-flow: row wrap;">
 
 <div style="width: 25%; padding-right: 1.0em; background-color: var(--lt-gr-bg);">
 
 <div>
-### Compounds
-</div>
+### Compound Index
+
+<div style="overflow-x: scroll">
+```{r, echo=F}
+DT::DTOutput("cindex")
+```
+</div> <!-- cindex-table -->
+
+<div style="display: flex; flex-flow: row wrap; vertical-align: bottom">
+```{r, echo=F}
+selectInput("cindex_switch_ms2", label="Select MS2 to show", width="30%", choices=NULL)
+```
+</div> <!-- cindex-controls -->
+
+</div> <!-- Compound Index -->
 
 <div>
 ### Arrange
-</div>
+</div> <!-- Arrange -->
 
 <div>
 ### Filter
-</div>
+</div> <!-- Filter -->
 
 
 </div> <!-- Big left panel. -->

@@ -704,6 +704,12 @@ mk_shinyscreen_server <- function(projects,init) {
             m$input$tab$setid
         })
 
+        rf_get_cindex <- eventReactive(rvs$status$is_qa_stat,{
+            summ <- req(rvs$m$out$tab$summ)
+            ## simple_style_dt(gen_cindex(summ))
+            gen_cindex(summ)
+        })
+
         
         ## OBSERVERS
 
@@ -771,8 +777,8 @@ mk_shinyscreen_server <- function(projects,init) {
                 rvs$status$ms1_fine_stat = m$conf$tolerance[["ms1 fine"]]
                 rvs$status$ms1_eic_stat = m$conf$tolerance[["eic"]]
                 rvs$status$rt_stat = m$conf$tolerance[["rt"]]
-                rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh_stat"]]
-                rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh_stat"]]
+                rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh"]]
+                rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
                 rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
                 rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
                 if (NROW(m$extr$ms1)>0L) rvs$status$is_extracted_stat <- "Yes."
@@ -1119,6 +1125,15 @@ mk_shinyscreen_server <- function(projects,init) {
 
         output$ret_time_shift_tol <- renderText({
             req(rvs$status$ret_time_shift_tol_stat)
+        })
+
+        ## RENDER: COMPOUND INDEX
+
+        output$cindex <- DT::renderDT({
+            tab <- rf_get_cindex()
+            validate(need(NROW(tab)>0L,message="Need to prescreen, first."))
+            print(names(tab))
+            simple_style_dt(tab)
         })
 
         

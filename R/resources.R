@@ -282,3 +282,6 @@ SYM_NO="\U00274C"
 CMPD_LIST_PATT <- "((*.csv)|(*.csv.gz))$"
 SET_LIST_PATT <- CMPD_LIST_PATT
 DFILES_LIST_PATT <- ".*\\.mz[Mm][Ll]$"
+
+CINDEX_BY <- c("set","adduct","tag","ID")
+CINDEX_COLS <- c("mz", "ms1_rt", "Formula","Name")
