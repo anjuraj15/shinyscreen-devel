@@ -721,8 +721,10 @@ app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd()
     dir_start <- tempfile("shinyscreen")
     dir.create(dir_start, recursive = T)
     setwd(dir_start)
+    dir.create('www', showWarnings=F)
     saveRDS(object = init,file="init.rds")
     file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),"app_run.Rmd")
+    file.copy(system.file(file.path("www","custom.css"),package = "shinyscreen"),file.path("www","custom.css"))
     rmarkdown::run(file = "app_run.Rmd", shiny_args = shiny_args, render_args = render_args)
 }
 
