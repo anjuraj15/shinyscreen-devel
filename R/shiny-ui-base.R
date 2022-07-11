@@ -764,6 +764,19 @@ mk_shinyscreen_server <- function(projects,init) {
                                             packed_state=pack)
                 ## Load computational state.
                 rvs$m <- readRDS(file=fn_state)
+
+                ## Update status variables.
+                m <- rvs$m
+                rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
+                rvs$status$ms1_fine_stat = m$conf$tolerance[["ms1 fine"]]
+                rvs$status$ms1_eic_stat = m$conf$tolerance[["eic"]]
+                rvs$status$rt_stat = m$conf$tolerance[["rt"]]
+                rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh_stat"]]
+                rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh_stat"]]
+                rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
+                rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
+                if (NROW(m$extr$ms1)>0L) rvs$status$is_extracted_stat <- "Yes."
+                if (NROW(m$out$tab$summ)>0L) rvs$status$is_qa_stat <- "Yes."
             } else {
                 message("Initialising project: ",wd)
                 rvs$gui <- create_gui(project_path=fullwd)
@@ -818,26 +831,17 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$status$ms1_eic_stat = m$conf$tolerance[["eic"]]
             rvs$status$rt_stat = m$conf$tolerance[["rt"]]
             rvs$status$is_extracted_stat = "In progress."
-
             rv_extr_flag(T)
     
         })
 
-        observeEvent(input$presc_b,{
-            rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh_stat"]]
-            rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh_stat"]]
-            rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
-            rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
-            rvs$status$is_qa_stat = "In progress."
-            rv_presc_flag(T)
-        })
-        
         observe({
             rtimer_extr()
             isolate({
                 if (rv_extr_flag()) {
                     rv_extr_flag(F)
                     m <-rvs$m
+                    
                     promises::future_promise(run(m=m,phases="extract")) %...>% {
                         rvs$m = .
                         rvs$status$is_extracted_stat = "Yes."
@@ -855,35 +859,41 @@ mk_shinyscreen_server <- function(projects,init) {
             })
         })
 
+        observeEvent(input$presc_b,{
+            if (NROW(rvs$m$extr$ms1)>0L) {
+                rvs$m$conf <- input2conf_prescreen(input=input,conf=rvs$m$conf)
+                rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh"]]
+                rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
+                rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
+                rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
+                rvs$status$is_qa_stat = "In progress."
+                rv_presc_flag(T)
+            } else {
+                shinymsg("You must extract the data first.",type="warning")
+            }
+        })
+        
+        
+
         observe({
             rtimer_presc()
             isolate({
                 if (rv_presc_flag()) {
-                    validate(need(NROW(rvs$m$extr$ms1)>0L,"Must extract data first."))
                     shinymsg("Prescreening started. Please wait.")
                     rv_presc_flag(F)
                     m <-rvs$m
                     promises::future_promise(run(m=m,phases="prescreen")) %...>% {
                         rvs$m = .
                         rvs$status$is_qa_stat = "Yes."
-
+                        shinymsg("Prescreening has been completed.")
 
 
                     }
                 }
             })
         })
-        
-        observeEvent(rv_presc_flag(),{
-            rvs$m <- run(m=rvs$m,phases="prescreen")
-            message("(prescreen) Done prescreening.")
-            rvs$status$is_qa_stat = "Yes."
-            shinymsg("Prescreening completed.")
-        }, ignoreInit=T)
-        
 
         observeEvent(input$save_proj_b,{
-            print(rvs$m$run)
             fn <- file.path(rvs$gui$paths$project,FN_STATE)
             fn_packed_state <- file.path(rvs$gui$paths$project,FN_GUI_STATE)
             fn_tab <- file.path(rvs$gui$paths$project,FN_DATA_TAB)
@@ -1036,7 +1046,6 @@ mk_shinyscreen_server <- function(projects,init) {
             sets <- rf_get_sets()
             dtab <- gen_dtab(rvs$gui$datatab,
                              sets=sets)
-            print(dtab)
             tab <- dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
             tab
             
@@ -1105,11 +1114,11 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$s2n_stat <- renderText({
-            req(rvs$status$sn2_stat)
+            req(rvs$status$s2n_stat)
         })
 
         output$ret_time_shift_tol <- renderText({
-            req(rvs$status$ret_time_shift_tol)
+            req(rvs$status$ret_time_shift_tol_stat)
         })
 
         
