@@ -642,7 +642,7 @@ DT::dataTableOutput("setid_table")
 
 <div style="display: flex; flex-flow: row wrap;">
 
-<div style="width: 25%; padding-right: 1.0em; background-color: var(--lt-gr-bg);">
+<div style="width: 25%; padding-right: 1.0em; background-color: var(--lt-gr-bg); overflow-y: scroll">
 
 <div>
 ### Compound Index

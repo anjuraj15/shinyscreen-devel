@@ -335,7 +335,7 @@ pre_setup_val_block <- function(gui) {
     T
 }
 
-gen_cindex <- function(summ,cols = CINDEX_COLS,by. = CINDEX_BY, sort=character(0)) {
+gen_cindex <- function(summ,cols = CINDEX_COLS,by. = CINDEX_BY) {
     allc <- c(by.,cols)
     res <- summ[,first(.SD),by=by.][,..allc]
     

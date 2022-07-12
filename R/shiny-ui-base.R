@@ -704,29 +704,35 @@ mk_shinyscreen_server <- function(projects,init) {
             m$input$tab$setid
         })
 
-        rf_get_cindex <- eventReactive(rvs$status$is_qa_stat,{
+        rf_get_cindex <- reactive({
+            rvs$status$is_qa_stat
+            s1 <- input$sort1
+            s2 <- input$sort2
+            s3 <- input$sort3
+            s4 <- input$sort4
             summ <- req(rvs$m$out$tab$summ)
+            isolate({
             if (NROW(summ)>0L) {
-                s1 <- input$sort1
-                s2 <- input$sort2
-                s3 <- input$sort3
-                s4 <- input$sort4
                 sortorder <- unique(c(s1,s2,s3,s4))
-                message("----")
-                message(paste0(sortorder,collapse=','))
-                wna <- which(is.na(sortorder)); if (length(wna)>0L) sortorder <- sortorder[-wna]
-                message(paste0(sortorder,collapse=','))
+                wna <- which(sortorder=="nothing"); if (length(wna)>0L) sortorder <- sortorder[-wna]
                 quality <- which("quality"==sortorder)
                 if (length(quality)>0L) {
                     pre <- head(sortorder,quality-1L)
-                    post <- tail(sortorder,quality+1L)
+                    post <- tail(sortorder,-quality)
                     sortorder <- c(pre,"qa_ms1","qa_ms2",post)
                 }
-                message(paste0(sortorder,collapse=','))
-                setorderv(gen_cindex(summ),cols=sortorder)
+
+                
+                ord <- rep(1L,length(sortorder))
+                if ("qa_ms1" %in% sortorder) {
+                    ind <- which(sortorder %in% c("qa_ms1","qa_ms2"))
+                    ord[ind] <- -1L
+                }
+                setorderv(gen_cindex(summ),cols=sortorder,order=ord)
             } else {
                 NULL
             }
+            })
         })
 
         
