@@ -285,3 +285,4 @@ DFILES_LIST_PATT <- ".*\\.mz[Mm][Ll]$"
 
 CINDEX_BY <- c("set","adduct","tag","ID")
 CINDEX_COLS <- c("mz", "ms1_rt", "Formula","Name")
+ARRANGE_CHOICES <- c(NA_character_,"quality","set", "adduct", "tag", "mz", "rt") 

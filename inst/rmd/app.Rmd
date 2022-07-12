@@ -663,6 +663,23 @@ selectInput("cindex_switch_ms2", label="Select MS2 to show", width="30%", choice
 
 <div>
 ### Arrange
+
+```{r, echo=F} 
+selectInput("sort1",label="Group the compound index first by", choices=ARRANGE_CHOICES, selected="quality")
+```
+
+```{r, echo=F} 
+selectInput("sort2",label="then", choices=ARRANGE_CHOICES, selected="set")
+```
+
+```{r, echo=F} 
+selectInput("sort3",label="then", choices=ARRANGE_CHOICES, selected="adduct")
+```
+
+```{r, echo=F} 
+selectInput("sort4",label="and finally", choices=ARRANGE_CHOICES, selected="tag")
+```
+
 </div> <!-- Arrange -->
 
 <div>

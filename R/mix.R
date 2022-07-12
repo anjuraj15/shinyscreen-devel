@@ -194,7 +194,19 @@ gen_summ <- function(comp,qa_ms1,qa_ms2) {
     summ$Comments<-""
     data.table::setkeyv(summ,DEF_KEY_SUMM)
     data.table::setcolorder(summ,SUMM_COLS)
+
+    ## Quality scores for ms1 and ms2.
+    summ[,qa_ms1 := Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
+                        as.integer(qa_ms1_exists),
+                        as.integer(qa_ms1_above_noise),
+                        as.integer(qa_ms1_good_int))]
+    summ[,qa_ms2 := Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
+                        as.integer(qa_ms2_exists),
+                        as.integer(qa_ms2_near),
+                        as.integer(qa_ms2_good_int))]
+
     summ
+    
 }
 pp_touch_q<-function(summ) {
     ## Returns indices that are ok to be auto processed.

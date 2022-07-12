@@ -706,8 +706,27 @@ mk_shinyscreen_server <- function(projects,init) {
 
         rf_get_cindex <- eventReactive(rvs$status$is_qa_stat,{
             summ <- req(rvs$m$out$tab$summ)
-            ## simple_style_dt(gen_cindex(summ))
-            gen_cindex(summ)
+            if (NROW(summ)>0L) {
+                s1 <- input$sort1
+                s2 <- input$sort2
+                s3 <- input$sort3
+                s4 <- input$sort4
+                sortorder <- unique(c(s1,s2,s3,s4))
+                message("----")
+                message(paste0(sortorder,collapse=','))
+                wna <- which(is.na(sortorder)); if (length(wna)>0L) sortorder <- sortorder[-wna]
+                message(paste0(sortorder,collapse=','))
+                quality <- which("quality"==sortorder)
+                if (length(quality)>0L) {
+                    pre <- head(sortorder,quality-1L)
+                    post <- tail(sortorder,quality+1L)
+                    sortorder <- c(pre,"qa_ms1","qa_ms2",post)
+                }
+                message(paste0(sortorder,collapse=','))
+                setorderv(gen_cindex(summ),cols=sortorder)
+            } else {
+                NULL
+            }
         })
 
         
@@ -1132,8 +1151,7 @@ mk_shinyscreen_server <- function(projects,init) {
         output$cindex <- DT::renderDT({
             tab <- rf_get_cindex()
             validate(need(NROW(tab)>0L,message="Need to prescreen, first."))
-            print(names(tab))
-            simple_style_dt(tab)
+            styled_dt(tab)
         })
 
         
