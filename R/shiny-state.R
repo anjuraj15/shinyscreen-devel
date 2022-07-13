@@ -335,9 +335,40 @@ pre_setup_val_block <- function(gui) {
     T
 }
 
-gen_cindex <- function(summ,cols = CINDEX_COLS,by. = CINDEX_BY) {
+## Creating compound index table
+##
+## Take `summ', group first by set, adduct and id. Then, pick only the
+## maximum quality rows in the sub-table. Calculate mean rt and use
+## this as the group rt. This is, then, a row representing the group
+## (of tags, CEs) in the index.
+gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
     allc <- c(by.,cols)
-    res <- summ[,first(.SD),by=by.][,..allc]
-    
+    xsumm <- summ[,..allc]
+    setnames(xsumm,old="ms1_rt",new="rt",skip_absent=T)
+    res <- xsumm[,.SD[max(qa_ms1)==qa_ms1][max(qa_ms2)==qa_ms2],by=by.]
+    res <- res[,c("mz","rt","Name","qa_ms1","qa_ms2"):=.(first(mz),
+                                                         first(mean(rt)),
+                                                         first(Name),
+                                                         first(qa_ms1),
+                                                         first(qa_ms2)),
+               by=by.]
+    res <- res[,unique(.SD),by=by.]
+   
+    sorder <- unique(sorder)
+    wna <- which(sorder=="nothing"); if (length(wna)>0L) sorder <- sorder[-wna]
+    quality <- which("quality"==sorder)
+    if (length(quality)>0L) {
+        pre <- head(sorder,quality-1L)
+        post <- tail(sorder,-quality)
+        sorder <- c(pre,"qa_ms1","qa_ms2",post)
+    }
+    ord <- rep(1L,length(sorder))
 
+    if ("qa_ms1" %in% sorder) {
+        ind <- which(sorder %in% c("qa_ms1","qa_ms2"))
+        ord[ind] <- -1L
+    }
+    setorderv(res,cols=sorder,order=ord)
+    setnames(res,old="rt",new="rt(ms1)")
+    res
 }

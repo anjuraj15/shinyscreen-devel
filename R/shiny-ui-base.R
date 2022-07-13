@@ -713,22 +713,8 @@ mk_shinyscreen_server <- function(projects,init) {
             summ <- req(rvs$m$out$tab$summ)
             isolate({
             if (NROW(summ)>0L) {
-                sortorder <- unique(c(s1,s2,s3,s4))
-                wna <- which(sortorder=="nothing"); if (length(wna)>0L) sortorder <- sortorder[-wna]
-                quality <- which("quality"==sortorder)
-                if (length(quality)>0L) {
-                    pre <- head(sortorder,quality-1L)
-                    post <- tail(sortorder,-quality)
-                    sortorder <- c(pre,"qa_ms1","qa_ms2",post)
-                }
-
-                
-                ord <- rep(1L,length(sortorder))
-                if ("qa_ms1" %in% sortorder) {
-                    ind <- which(sortorder %in% c("qa_ms1","qa_ms2"))
-                    ord[ind] <- -1L
-                }
-                setorderv(gen_cindex(summ),cols=sortorder,order=ord)
+                gen_cindex(summ,
+                           sorder=c(s1,s2,s3,s4))
             } else {
                 NULL
             }
@@ -1157,7 +1143,7 @@ mk_shinyscreen_server <- function(projects,init) {
         output$cindex <- DT::renderDT({
             tab <- rf_get_cindex()
             validate(need(NROW(tab)>0L,message="Need to prescreen, first."))
-            styled_dt(tab)
+            DT::datatable(tab,rownames=NULL,options=list(filter=T))
         })
 
         

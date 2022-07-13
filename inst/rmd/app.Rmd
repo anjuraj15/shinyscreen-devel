@@ -637,62 +637,45 @@ DT::dataTableOutput("setid_table")
 
 ## Results Explorer
 
+<div style="display: flex; flex-flow: column wrap; vertical-align: bottom;">
 
+### Viewer
+<div style="height: 50%;">
 
+</div> <!-- Viewer -->
 
-<div style="display: flex; flex-flow: row wrap;">
-
-<div style="width: 25%; padding-right: 1.0em; background-color: var(--lt-gr-bg); overflow-y: scroll">
-
-<div>
 ### Compound Index
+<div style="display: flex; flex-flow: row nowrap; overflow-y: scroll">
 
-<div style="overflow-x: scroll">
+
+<div style="width: 12%; background-color: var(--lt-gr-bg); vertical-align: bottom;">
+#### Arrange
+
+```{r, echo=F}
+selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES)
+```
+
+```{r, echo=F}
+selectInput("sort2",label="then by ", choices=shinyscreen:::ARRANGE_CHOICES)
+```
+
+```{r, echo=F}
+selectInput("sort3",label="then", choices=shinyscreen:::ARRANGE_CHOICES)
+```
+
+```{r, echo=F}
+selectInput("sort4",label="and finally by", choices=shinyscreen:::ARRANGE_CHOICES)
+```
+
+</div> <!-- Arrange Compound Index -->
+
+<div style="width:75%; vertical-align: bottom;">
+#### Compounds
 ```{r, echo=F}
 DT::DTOutput("cindex")
 ```
-</div> <!-- cindex-table -->
-
-<div style="display: flex; flex-flow: row wrap; vertical-align: bottom">
-```{r, echo=F}
-selectInput("cindex_switch_ms2", label="Select MS2 to show", width="30%", choices=NULL)
-```
-</div> <!-- cindex-controls -->
-
+</div> <!-- Compound Index Table -->
 </div> <!-- Compound Index -->
-
-<div>
-### Arrange
-
-```{r, echo=F} 
-selectInput("sort1",label="Group the compound index first by", choices=ARRANGE_CHOICES, selected="quality")
-```
-
-```{r, echo=F} 
-selectInput("sort2",label="then", choices=ARRANGE_CHOICES, selected="set")
-```
-
-```{r, echo=F} 
-selectInput("sort3",label="then", choices=ARRANGE_CHOICES, selected="adduct")
-```
-
-```{r, echo=F} 
-selectInput("sort4",label="and finally", choices=ARRANGE_CHOICES, selected="tag")
-```
-
-</div> <!-- Arrange -->
-
-<div>
-### Filter
-</div> <!-- Filter -->
-
-
-</div> <!-- Big left panel. -->
-
-
-<div style="width: 75%; padding-left: 1.0em;">
-### Viewer
-</div> <!-- Big right panel. -->
 
 </div> <!-- Main div. -->
 
