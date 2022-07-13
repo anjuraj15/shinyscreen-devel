@@ -802,43 +802,6 @@ mk_shinyscreen_server <- function(projects,init) {
             message("project: ",rvs$gui$project())
         }, label = "project-b")
 
-        ## observe({
-        ##     rvs$gui$paths$project
-        ##     rvs$gui$paths$data
-        ##     rvs$gui$datatab$file
-        ##     rvs$gui$datatab$tag
-        ##     rvs$gui$datatab$set
-        ##     rvs$gui$datatab$adduct
-        ##     rvs$gui$compounds$lists
-        ##     rvs$gui$compounds$sets
-        ##     input$missingprec
-            
-        ##     input$ms1_fine
-        ##     input$ms1_fine_unit
-            
-        ##     input$ms1_coarse
-        ##     input$ms1_coarse_unit
-            
-        ##     input$ms1_eic
-        ##     input$ms1_eic_unit
-            
-        ##     input$ms1_rt_win
-        ##     input$ms1_rt_win_unit
-            
-        ##     input$missingprec
-
-        ##     isolate({
-        ##         rvs$m$conf <- input2conf_setup(gui=rvs$gui,conf=rvs$m$conf,input=input)
-        ##     })
-
-
-
-                
-        ##     message("Initial parameters updated.")
-        ## }, label = "gen-setup-state")
-
-
-
         observeEvent(input$extract_b,{
             rvs$m <-req(rf_setup_state())
             m <- rvs$m
@@ -1016,6 +979,11 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$datatab$set <- z$set
             rvs$gui$datatab$adduct <- z$adduct
         }, label = "datatab-edit")
+
+        observeEvent(input$cindex_row_last_clicked,{
+            row <- input$cindex_row_last_clicked
+            message("row: ", paste0(row,collapse=','))
+        })
         
         ## RENDER
         output$curr_proj <- renderText({
@@ -1143,7 +1111,10 @@ mk_shinyscreen_server <- function(projects,init) {
         output$cindex <- DT::renderDT({
             tab <- rf_get_cindex()
             validate(need(NROW(tab)>0L,message="Need to prescreen, first."))
-            DT::datatable(tab,rownames=NULL,options=list(filter=T))
+            DT::datatable(tab,
+                          rownames=NULL,
+                          options=list(filter=T),
+                          selection="single")
         })
 
         

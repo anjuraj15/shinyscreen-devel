@@ -338,3 +338,48 @@ plot_save_single <- function(plot,decotab,extension,proj_path,subdir=FIG_TOPDIR,
     
 }
 
+
+
+
+## NEW BEGINNINGS
+
+
+theme_eic_ms1 <- theme_light
+mk_logic_exp <- function(rest,sofar=NULL) {
+    if (length(rest)==0L) {
+        return(sofar)
+    } else {
+        nm = names(rest)[[1]]
+        val = rest[[1]]
+        ex <- bquote(.(as.symbol(nm)) %in% .(val))
+        zz <- if (is.null(sofar)) ex else bquote(.(ex) & .(sofar))
+        mk_logic_exp(tail(rest,-1L), zz)
+    }
+}
+
+get_data_from_key <- function(tab,key) {
+    skey <- mk_logic_exp(key)
+    eval(bquote(tab[.(skey)]))
+}
+get_data_4_eic_ms1 <- function(extr_ms1,adduct,id) {
+    key <- list(adduct=adduct,ID=id)
+    get_data_from_key(tab=extr_ms1,key=key)
+}
+
+make_line_label <- function(...) {
+    paste(...,sep="; ")
+}
+make_eic_ms1_plot <- function(extr_ms1,summ,set,adduct,id,splitby) {
+    key <- list(set=set,
+                adduct=adduct,
+                ID=id)
+    extr_data <- get_data_4_eic_ms1(extr_ms1,
+                                    adduct=adduct,
+                                    id=id)
+    summ_row  <- get_data_from_key(summ,key=key)
+    pdata <- extr_data[,.(rt,intensity),by=c('ID',splitby)]
+    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(splitby,as.symbol))),by=.(splitby)],splice=T))
+    
+    setkeyv(pdata,cols=c("ID",splitby,"rt"))
+    ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+labs(tag=id)+xlab("retention time")+geom_line()      
+}
