@@ -38,11 +38,7 @@ sci10 <- function(x) {
 }
 
 
-scale_y<- function (axis="linear", ...) if (axis!="log") {
-                                            ggplot2::scale_y_continuous(...)
-                                        } else {
-                                            ggplot2::scale_y_log10(...)
-                                        }
+
 
 data4plot_ms1_cgram <- function(tab,select=dtable(adduct=character(0),ID=character(0))) {
     res <- tab[select,.(adduct,tag,ID,rt,intensity),on=c('ID','adduct'),nomatch=NULL]
@@ -344,7 +340,46 @@ plot_save_single <- function(plot,decotab,extension,proj_path,subdir=FIG_TOPDIR,
 ## NEW BEGINNINGS
 
 
-theme_eic_ms1 <- theme_light
+theme_eic <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::element_text(size=15L),
+                                                        axis.text=ggplot2::element_text(size=12L,colour="black"),
+                                                        legend.title=ggplot2::element_text(size=15L),
+                                                        plot.title=ggplot2::element_text(size=15L),
+                                                        plot.subtitle=ggplot2::element_text(size=12L),
+                                                        legend.text=ggplot2::element_text(size=12L),
+                                                        plot.caption=ggplot2::element_text(size=12L),...)
+
+
+
+sci10 <- function(x) {
+    prefmt <- formatC(x,format="e",digits=2)
+    bits <- strsplit(prefmt,split="e")
+    bits1 <-sapply(bits,function(x) {
+        if (length(x) > 1) {
+            res <- x[[1]]
+            sub(" ","~",res)
+        } else {
+            x
+        }
+    })
+    bits2 <-sapply(bits,function(x) if (length(x)>1) paste0(" %*% 10^","'",sub("[+]"," ",x[[2]]),"'") else "")
+    txt <- mapply(function(b1,b2) if (nchar(b2)!=0) {paste0("'",b1,"'",b2)} else NA,
+                  bits1,
+                  bits2,
+                  SIMPLIFY = F)
+    names(txt) <- NULL
+    txt <- gsub(pattern = "^'0\\.00'.*$","  0",x=txt)
+    parse(text=txt)
+    
+    
+
+}
+
+scale_y<- function (axis="linear", ...) if (axis!="log") {
+                                            ggplot2::scale_y_continuous(...)
+                                        } else {
+                                            ggplot2::scale_y_log10(...)
+                                        }
+
 mk_logic_exp <- function(rest,sofar=NULL) {
     if (length(rest)==0L) {
         return(sofar)
@@ -361,25 +396,155 @@ get_data_from_key <- function(tab,key) {
     skey <- mk_logic_exp(key)
     eval(bquote(tab[.(skey)]))
 }
-get_data_4_eic_ms1 <- function(extr_ms1,adduct,id) {
-    key <- list(adduct=adduct,ID=id)
-    get_data_from_key(tab=extr_ms1,key=key)
-}
 
 make_line_label <- function(...) {
     paste(...,sep="; ")
 }
-make_eic_ms1_plot <- function(extr_ms1,summ,set,adduct,id,splitby) {
+
+## Prepare MS1 eic data: rt and intensity + key made of splitby.
+get_data_4_eic_ms1 <- function(extr_ms1,adduct,id,splitby) {
+    key <- list(adduct=adduct,ID=id)
+    tab <-get_data_from_key(tab=extr_ms1,key=key)
+    pdata <- tab[,.(rt,intensity),by=c('ID',splitby)]
+    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(splitby,as.symbol))),by=.(splitby)],splice=T))
+    setkeyv(pdata,cols=c("ID",splitby,"rt"))
+    pdata
+}
+
+## Prepare MS2 eic data: rt and intensity + key made of splitby.
+get_data_4_eic_ms2 <- function(summ,adduct,id,splitby) {
+    key <- list(adduct=adduct,ID=id)
+    tab <-get_data_from_key(tab=summ,key=key)
+    pdata <- tab[,.(intensity=ms2_int,rt=ms2_rt),by=c('ID',splitby,"an")]
+    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(splitby,as.symbol))),by=.(splitby)],splice=T))
+    setkeyv(pdata,cols=c("ID",splitby,"rt"))
+    pdata
+}
+
+
+
+make_eic_ms1_plot <- function(extr_ms1,summ,set,adduct,id,splitby,axis="linear",rt_range=NULL) {
     key <- list(set=set,
                 adduct=adduct,
                 ID=id)
-    extr_data <- get_data_4_eic_ms1(extr_ms1,
-                                    adduct=adduct,
-                                    id=id)
+
+    ## Get the table with ms1 data.
+    pdata <- get_data_4_eic_ms1(extr_ms1,
+                                adduct=adduct,
+                                id=id,
+                                splitby=splitby)
+
+    ## Get metadata.
     summ_row  <- get_data_from_key(summ,key=key)
-    pdata <- extr_data[,.(rt,intensity),by=c('ID',splitby)]
-    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(splitby,as.symbol))),by=.(splitby)],splice=T))
-    
-    setkeyv(pdata,cols=c("ID",splitby,"rt"))
-    ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+labs(tag=id)+xlab("retention time")+geom_line()      
+
+    ## Deal with retention time range.
+    rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
+    xrng <- if (!is.null(rt_range)) rt_range else range(pdata$rt)
+    dx <- abs(xrng[[2]]-xrng[[1]])
+    yrng <- range(pdata$intensity)
+    dy <- abs(yrng[[2]]-yrng[[1]])
+
+    ## Calculate aspect ratio.
+    aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
+
+
+    tag_txt = paste0("Set: ", set, " ID: ",id)
+    title_txt = paste0("MS1 EIC for ion m/z = ",paste0(signif(unique(summ_row$mz),digits=7L),collapse=", "))
+    nm <- paste(unique(summ_row$Name),collapse="; ")
+    subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
+    p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("retention time")+ggplot2::geom_line()+ggplot2::coord_fixed(ratio=aspr)+scale_y(axis=axis,labels=sci10)+rt_lim
+
+    annt_dx <- 5*dx/100.
+    annt <- summ[summ_row,on=names(key),nomatch=NULL][,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
+
+    ## Annotate.
+    p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)
+
+    ## Add theme.
+    p + theme_eic()
 }
+
+
+make_eic_ms2_plot <- function(summ,set,adduct,id,splitby,axis="linear",rt_range=NULL) {
+    key <- list(set=set,
+                adduct=adduct,
+                ID=id)
+    
+    ## Get plotting data for the compound.
+    pdata <- get_data_4_eic_ms2(summ,
+                                adduct=adduct,
+                                id=id,
+                                splitby=splitby)
+
+    ## Get metadata.
+    summ_row  <- get_data_from_key(summ,key=key)
+
+    ## Deal with retention time range.
+    rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
+    xrng <- if (!is.null(rt_range)) rt_range else range(pdata$rt)
+    dx <- abs(xrng[[2]]-xrng[[1]])
+    yrng <- range(pdata$intensity)
+    dy <- abs(yrng[[2]]-yrng[[1]])
+
+    ## Fix aspect ratio.
+    aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
+
+    ## Derive various labels.
+    tag_txt = paste0("ID: ",id)
+    title_txt = paste0("MS2 EIC for m/z = ",signif(summ_row$mz,digits=7L))
+    subt_txt = if (!length(summ_row$Name)==0L && !is.na(summ_row$Name) && nchar(summ_row$Name)>0L) summ_row$Name else NULL
+    ## Base plot.
+    p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label))+
+        ggplot2::labs(tag=tag_txt,title=title_txt,subtitle=subt_txt)+
+        ggplot2::xlab("retention time")+ggplot2::geom_linerange()+
+        ggplot2::coord_fixed(ratio=aspr)+scale_y(axis=axis,labels=sci10)+rt_lim
+
+    ans <- pdata[,unique(an)]
+    annt_dx <- 5*dx/100.
+    annt <- summ[an %in% (ans),.(an=an,x=ms2_rt+..annt_dx,y=1.1*ms2_int,txt=signif(ms2_rt,5))]
+    ## Annotate.
+    p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=3,check_overlap=T)
+
+    ## Add theme.
+    p + theme_eic()
+}
+
+
+make_spec_ms2_plot <- function(extr_ms2,summ,set,adduct,id,splitby,axis="linear") {
+
+    ## Get metadata.
+    key <- list(set=set,
+                adduct=adduct,
+                ID=id)
+    
+    ## Only the chosen ones.
+    mdata  <- get_data_from_key(summ,key=key)[ms2_sel==T]
+    ans <- mdata[,unique(an)]
+    pdata <- extr_ms2[an %in% ans,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=c("adduct","tag","CE")]
+    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(c(splitby,"rt"),as.symbol))),by=.(splitby)],splice=T))
+    pdata <- pdata[,.(mz=mz,intensity=intensity,label=label)]
+
+    # Aspect ratio.
+    xrng <- range(pdata$mz)
+    dx <- abs(xrng[[2]]-xrng[[1]])
+    yrng <- range(pdata$intensity)
+    dy <- abs(yrng[[2]]-yrng[[1]])
+    aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
+
+    ## Get labels.
+    tag_txt = paste0("Set: ", set, " ID: ",id)
+    title_txt = paste0("MS2 spectra for ion m/z = ",paste0(signif(unique(mdata$mz),digits=7L),collapse=", "))
+    nm <- paste(unique(mdata$Name),collapse="; ")
+    subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
+
+    p <- ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+ggplot2::geom_linerange()+ggplot2::coord_fixed(ratio=aspr)+scale_y(axis=axis,labels=sci10)
+
+    ## Add theme.
+    p + theme_eic()
+ 
+}
+
+
+
+    
+    
