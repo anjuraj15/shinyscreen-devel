@@ -637,47 +637,159 @@ DT::dataTableOutput("setid_table")
 
 ## Results Explorer
 
-<div style="display: flex; flex-flow: column wrap; vertical-align: bottom;">
 
-### Viewer
-<div style="height: 50%;">
-
-</div> <!-- Viewer -->
-
+<div style="display: flex; flex-flow: row nowrap;">
+<div style="display: flex; flex-flow: column; padding-right:1.0em">
 ### Compound Index
-<div style="display: flex; flex-flow: row nowrap; overflow-y: scroll">
 
-
-<div style="width: 12%; background-color: var(--lt-gr-bg); vertical-align: bottom;">
-#### Arrange
-
+<div style="display: flex; flex-flow: row nowrap">
 ```{r, echo=F}
-selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES)
+selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
+selectInput("sort2",label="then by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
+selectInput("sort3",label="then", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
+selectInput("sort4",label="and finally by", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
 ```
+</div> <!-- Arrange -->
 
-```{r, echo=F}
-selectInput("sort2",label="then by ", choices=shinyscreen:::ARRANGE_CHOICES)
-```
-
-```{r, echo=F}
-selectInput("sort3",label="then", choices=shinyscreen:::ARRANGE_CHOICES)
-```
-
-```{r, echo=F}
-selectInput("sort4",label="and finally by", choices=shinyscreen:::ARRANGE_CHOICES)
-```
-
-</div> <!-- Arrange Compound Index -->
-
-<div style="width:75%; vertical-align: bottom;">
-#### Compounds
+<div>
 ```{r, echo=F}
 DT::DTOutput("cindex")
 ```
-</div> <!-- Compound Index Table -->
-</div> <!-- Compound Index -->
 
-</div> <!-- Main div. -->
+</div> <!-- cindex -->
+
+</div> <!-- Compound Explorer Panel -->
+
+<div style="display: flex-flow: column nowrap">
+### Viewer
+
+<div style="display: flex-flow: row nowrap">
+
+<div>
+```{r,echo=F}
+textOutput("plot_hover_out")
+```
+</div>
+```{r, echo=F}
+actionButton("plot_save_single",
+             label="Save this plot")
+actionButton("plot_save_all",
+             label="Save all plots")
+actionButton("make_report_b",
+             label="Create report")
+textInput("plot_ext",
+          label = "Plot extension",
+          value = "pdf")
+## shinyscreen::rt_input(input_rt = "plot_rt_min",
+##                       input_unit = "plot_rt_min_unit",
+##                       width=15,
+##                       width_u=10,
+##                       def_rt = "min",
+##                       def_unit = "min",
+##                       pref = "RT min")
+## shinyscreen::rt_input(input_rt = "plot_rt_max",
+##                       input_unit = "plot_rt_max_unit",
+##                       width=15,
+##                       width_u=10,
+##                       def_rt = "max",
+##                       def_unit = "min",
+##                       pref = "RT max")
+## hr()
+```
+</div> <!-- Control Bar -->
+</div> <!-- Viewer Panel -->
+
+</div> <!-- Main -->
+
+
+
+<!-- ### Compound Index -->
+
+<!-- ```{r, echo=F} -->
+
+<!-- fluidRow(column(h5("Arrange"), -->
+<!--                            selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES), -->
+<!--                            selectInput("sort2",label="then by ", choices=shinyscreen:::ARRANGE_CHOICES), -->
+<!--                            selectInput("sort3",label="then", choices=shinyscreen:::ARRANGE_CHOICES), -->
+<!--                            selectInput("sort4",label="and finally by", choices=shinyscreen:::ARRANGE_CHOICES), -->
+<!--                            width = 2), -->
+<!--          column(wellPanel(DT::DTOutput("cindex")), -->
+<!--                 width = 10)) -->
+
+<!-- ``` -->
+
+
+
+
+
+<!-- ### Viewer -->
+
+<!-- ```{r, echo=F} -->
+<!-- sidebarLayout(sidebarPanel(h5("Pointer position"), -->
+<!--                            textOutput("plot_hover_out"), -->
+<!--                            textInput("rtrange", -->
+<!--                                      label = "Global RT range"), -->
+<!--                            shinyscreen::rt_input(input_rt = "plot_rt_min", -->
+<!--                                                  input_unit = "plot_rt_min_unit", -->
+<!--                                                  width=55, -->
+<!--                                                  width_u=40, -->
+<!--                                                  def_rt = "min", -->
+<!--                                                  def_unit = "min", -->
+<!--                                                  pref = "RT min"), -->
+
+<!--                            shinyscreen::rt_input(input_rt = "plot_rt_max", -->
+<!--                                                  input_unit = "plot_rt_max_unit", -->
+<!--                                                  width=55, -->
+<!--                                                  width_u=40, -->
+<!--                                                  def_rt = "max", -->
+<!--                                                  def_unit = "min", -->
+<!--                                                  pref = "RT max"), -->
+<!--                            hr(), -->
+<!--                            ## Not so important, TODO later. -->
+<!--                            ## h5("Log scale"), -->
+<!--                            ## checkboxGroupInput("plot_log", -->
+<!--                            ##                    label=NULL, -->
+<!--                            ##                    choices = c("MS1 EIC","MS2 EIC","MS2 Spectrum"), -->
+<!--                            ##                    selected = character(0)), -->
+<!--                            ## hr(), -->
+<!--                            ## uiOutput("plot_b_ctrl"), -->
+<!--                            hr(), -->
+<!--                            textInput("plot_ext", -->
+<!--                                      label = "Plot extension", -->
+<!--                                      value = "pdf"), -->
+<!--                            actionButton("plot_save_single", -->
+<!--                                         label="Save this plot"), -->
+<!--                            actionButton("plot_save_all", -->
+<!--                                         label="Save all plots"), -->
+<!--                            actionButton("make_report_b", -->
+<!--                                         label="Create report"), -->
+<!--                            width=4), -->
+<!--               wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height:80vh; background: white", -->
+<!--                         plotOutput("plot_eic_ms1", -->
+<!--                                    hover = hoverOpts(id="plot_hover", -->
+<!--                                                      delayType = "throttle", -->
+<!--                                                      delay=100), -->
+<!--                                    dblclick = "plot_rt_click", -->
+<!--                                    brush = "plot_brush"), -->
+<!--                         plotOutput("plot_eic_ms2", -->
+<!--                                    hover = hoverOpts(id="plot_hover", -->
+<!--                                                      delayType = "throttle", -->
+<!--                                                      delay=100), -->
+<!--                                    dblclick = "plot_rt_click", -->
+<!--                                    brush = "plot_brush"), -->
+<!--                         plotOutput("plot_ms2_spec", -->
+<!--                                    hover = hoverOpts(id="plot_hover", -->
+<!--                                                      delayType = "throttle", -->
+<!--                                                      delay=100), -->
+<!--                                    dblclick = "plot_mz_click", -->
+<!--                                    brush = brushOpts(id="plot_mz_brush")) -->
+<!--                         ## ,plotOutput("plot_struct") -->
+<!--                         )) -->
+
+
+
+<!-- ``` -->
+
 
 <!-- ## Compound Explorer {.tabset} -->
 
