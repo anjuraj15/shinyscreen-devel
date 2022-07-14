@@ -638,10 +638,13 @@ DT::dataTableOutput("setid_table")
 ## Results Explorer
 
 
-<div style="display: flex; flex-flow: row nowrap;">
+<div style="display: flex; flex-flow: column nowrap;">
 <div style="display: flex; flex-flow: column; padding-right:1.0em">
 ### Compound Index
-
+```{r, echo=F}
+selectInput("cindex_group",label="Group",choices=c(NA_character_,"adduct","tag"), multiple=T)
+```
+            
 <div style="display: flex; flex-flow: row nowrap">
 ```{r, echo=F}
 selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
@@ -663,13 +666,49 @@ DT::DTOutput("cindex")
 <div style="display: flex-flow: column nowrap">
 ### Viewer
 
-<div style="display: flex-flow: row nowrap">
+```{r,echo=F}
+## plotOutput("plot_eic_ms1",
+##            hover = hoverOpts(id="plot_hover",
+##                              delayType = "throttle",
+##                              delay=100),
+##            dblclick = "plot_rt_click",
+##            brush = "plot_brush")
+## plotOutput("plot_eic_ms2",
+##            hover = hoverOpts(id="plot_hover",
+##                              delayType = "throttle",
+##                              delay=100),
+##            dblclick = "plot_rt_click",
+##            brush = "plot_brush")
+## plotOutput("plot_spec_ms2",
+##            hover = hoverOpts(id="plot_hover",
+##                              delayType = "throttle",
+##                              delay=100),
+##            dblclick = "plot_mz_click",
+##            brush = brushOpts(id="plot_mz_brush"))
 
-<div>
+plotOutput("plot_eic_combined",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
+           dblclick = "plot_rt_click",
+           brush = "plot_brush")
+
+plotOutput("plot_spec_ms2",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
+           dblclick = "plot_mz_click",
+           brush = brushOpts(id="plot_mz_brush"))
+
+
+```
+
+<div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
+
 ```{r,echo=F}
 textOutput("plot_hover_out")
 ```
-</div>
+
 ```{r, echo=F}
 actionButton("plot_save_single",
              label="Save this plot")
@@ -696,29 +735,10 @@ textInput("plot_ext",
 ##                       pref = "RT max")
 ## hr()
 ```
+
 </div> <!-- Control Bar -->
 
-```{r,echo=F}
-plotOutput("plot_eic_ms1",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_rt_click",
-           brush = "plot_brush")
-plotOutput("plot_eic_ms2",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_rt_click",
-           brush = "plot_brush")
-plotOutput("plot_spec_ms2",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_mz_click",
-           brush = brushOpts(id="plot_mz_brush"))
 
-```
 </div> <!-- Viewer Panel
 
 </div> <!-- Main -->

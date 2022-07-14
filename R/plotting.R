@@ -490,13 +490,13 @@ make_eic_ms2_plot <- function(summ,set,adduct,id,splitby,axis="linear",rt_range=
     aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
 
     ## Derive various labels.
-    tag_txt = paste0("ID: ",id)
-    title_txt = paste0("MS2 EIC for m/z = ",signif(summ_row$mz,digits=7L))
+    tag_txt = paste0("Set: ", set, " ID: ",id)
+    title_txt = paste0("MS2 EIC for ion m/z = ",paste0(signif(unique(summ_row$mz),digits=7L),collapse=", "))
     subt_txt = if (!length(summ_row$Name)==0L && !is.na(summ_row$Name) && nchar(summ_row$Name)>0L) summ_row$Name else NULL
     ## Base plot.
-    p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label))+
-        ggplot2::labs(tag=tag_txt,title=title_txt,subtitle=subt_txt)+
-        ggplot2::xlab("retention time")+ggplot2::geom_linerange()+
+    p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label)) +
+        ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
+        ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+ggplot2::geom_linerange()+
         ggplot2::coord_fixed(ratio=aspr)+scale_y(axis=axis,labels=sci10)+rt_lim
 
     ans <- pdata[,unique(an)]
@@ -544,7 +544,10 @@ make_spec_ms2_plot <- function(extr_ms2,summ,set,adduct,id,splitby,axis="linear"
  
 }
 
-
+combine_plots <- function(p_eic_ms1,p_eic_ms2) {
+    pl <- list(p_eic_ms1,p_eic_ms2)
+    cowplot::plot_grid(pl,ncol=1,align='v')
+}
 
     
     

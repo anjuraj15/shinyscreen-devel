@@ -706,15 +706,18 @@ mk_shinyscreen_server <- function(projects,init) {
 
         rf_get_cindex <- reactive({
             rvs$status$is_qa_stat
+            grp <- if (isTruthy(input$cindex_group)) setdiff(CINDEX_BY,input$cindex_group) else CINDEX_BY
             s1 <- input$sort1
             s2 <- input$sort2
             s3 <- input$sort3
             s4 <- input$sort4
+            sorder <- setdiff(c(s1,s2,s3,s4),input$cindex_group)
             summ <- req(rvs$m$out$tab$summ)
             isolate({
             if (NROW(summ)>0L) {
                 gen_cindex(summ,
-                           sorder=c(s1,s2,s3,s4))
+                           sorder=sorder,
+                           by.=grp)
             } else {
                 NULL
             }
@@ -739,7 +742,7 @@ mk_shinyscreen_server <- function(projects,init) {
             make_eic_ms1_plot(ms1,summ,set=sel$set,
                               adduct=sel$adduct,
                               id=sel$ID,
-                              splitby=c("adduct","tag"))
+                              splitby=c("tag"))
             
             
             
@@ -762,7 +765,7 @@ mk_shinyscreen_server <- function(projects,init) {
                               set=sel$set,
                               adduct=sel$adduct,
                               id=sel$ID,
-                              splitby=c("adduct","tag"),
+                              splitby=c("tag"),
                               rt_range = rt_rng)
             
             
@@ -1186,17 +1189,22 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## RENDER: PLOTS
 
-        output$plot_eic_ms1 <- renderPlot({
-            rf_plot_eic_ms1()
-        },width=1024)
+        output$plot_eic_combined <- renderPlot({
+            p1 <- rf_plot_eic_ms1()
+            p2 <- rf_plot_eic_ms2()
+            combine_plots(p1,p2)
+        })
+        ## output$plot_eic_ms1 <- renderPlot({
+        ##     rf_plot_eic_ms1()
+        ## })
 
-        output$plot_eic_ms2 <- renderPlot({
-            rf_plot_eic_ms2()
-        },width=1024)
+        ## output$plot_eic_ms2 <- renderPlot({
+        ##     rf_plot_eic_ms2()
+        ## })
 
         output$plot_spec_ms2 <- renderPlot({
             rf_plot_spec_ms2()
-        },width=1024)
+        })
 
         
 

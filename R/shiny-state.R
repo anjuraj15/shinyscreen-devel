@@ -368,7 +368,7 @@ gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
         ind <- which(sorder %in% c("qa_ms1","qa_ms2"))
         ord[ind] <- -1L
     }
-    setorderv(res,cols=sorder,order=ord)
+    if (length(sorder)>0) setorderv(res,cols=sorder,order=ord)
     setnames(res,old="rt",new="rt(ms1)")
     res
 }
