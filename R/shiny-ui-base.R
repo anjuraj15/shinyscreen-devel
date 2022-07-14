@@ -721,6 +721,77 @@ mk_shinyscreen_server <- function(projects,init) {
             })
         })
 
+        ## REACTIVE FUNCTIONS: PLOTS
+        rf_plot_eic_ms1 <- reactive({
+            isolate({
+                ms1 <- rvs$m$extr$ms1
+                summ <- rvs$m$out$tab$summ
+                cind <- rf_get_cindex()
+            })
+            req(NROW(summ)>0L)
+            req(NROW(ms1)>0L)
+            req(NROW(cind)>0L)
+            row <- input$cindex_row_last_clicked
+            req(row)
+            sel <- cind[row]
+            
+
+            make_eic_ms1_plot(ms1,summ,set=sel$set,
+                              adduct=sel$adduct,
+                              id=sel$ID,
+                              splitby=c("adduct","tag"))
+            
+            
+            
+        })
+
+        rf_plot_eic_ms2 <- reactive({
+            isolate({
+                summ <- rvs$m$out$tab$summ
+                cind <- rf_get_cindex()
+            })
+            req(NROW(summ)>0L)
+            req(NROW(cind)>0L)
+            row <- input$cindex_row_last_clicked
+            req(row)
+            sel <- cind[row]
+
+            gg <- rf_plot_eic_ms1()
+            rt_rng <- range(gg$data$rt)
+            make_eic_ms2_plot(summ,
+                              set=sel$set,
+                              adduct=sel$adduct,
+                              id=sel$ID,
+                              splitby=c("adduct","tag"),
+                              rt_range = rt_rng)
+            
+            
+            
+        })
+
+        rf_plot_spec_ms2 <- reactive({
+            isolate({
+                summ <- rvs$m$out$tab$summ
+                ms2 <- rvs$m$extr$ms2
+                cind <- rf_get_cindex()
+            })
+            req(NROW(summ)>0L)
+            req(NROW(ms2)>0L)
+            req(NROW(cind)>0L)
+            row <- input$cindex_row_last_clicked
+            req(row)
+            sel <- cind[row]
+
+            make_spec_ms2_plot(ms2,
+                               summ,
+                               set=sel$set,
+                               adduct=sel$adduct,
+                               id=sel$ID,
+                               splitby=c("adduct","tag"))
+            
+            
+        })
+
         
         ## OBSERVERS
 
@@ -980,10 +1051,6 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$datatab$adduct <- z$adduct
         }, label = "datatab-edit")
 
-        observeEvent(input$cindex_row_last_clicked,{
-            row <- input$cindex_row_last_clicked
-            message("row: ", paste0(row,collapse=','))
-        })
         
         ## RENDER
         output$curr_proj <- renderText({
@@ -1116,6 +1183,20 @@ mk_shinyscreen_server <- function(projects,init) {
                           options=list(filter=T),
                           selection="single")
         })
+
+        ## RENDER: PLOTS
+
+        output$plot_eic_ms1 <- renderPlot({
+            rf_plot_eic_ms1()
+        },width=1024)
+
+        output$plot_eic_ms2 <- renderPlot({
+            rf_plot_eic_ms2()
+        },width=1024)
+
+        output$plot_spec_ms2 <- renderPlot({
+            rf_plot_spec_ms2()
+        },width=1024)
 
         
 
