@@ -704,9 +704,13 @@ mk_shinyscreen_server <- function(projects,init) {
             m$input$tab$setid
         })
 
+        rf_cindex_key <- reactive({
+            if (isTruthy(input$cindex_group)) setdiff(CINDEX_BY,input$cindex_group) else CINDEX_BY
+        })
+
         rf_get_cindex <- reactive({
             rvs$status$is_qa_stat
-            grp <- if (isTruthy(input$cindex_group)) setdiff(CINDEX_BY,input$cindex_group) else CINDEX_BY
+            grp <- rf_cindex_key()
             s1 <- input$sort1
             s2 <- input$sort2
             s3 <- input$sort3
@@ -1183,7 +1187,7 @@ mk_shinyscreen_server <- function(projects,init) {
             validate(need(NROW(tab)>0L,message="Need to prescreen, first."))
             DT::datatable(tab,
                           rownames=NULL,
-                          options=list(filter=T),
+                          options=list(filter=T,ordering=F,dom='t'),
                           selection="single")
         })
 

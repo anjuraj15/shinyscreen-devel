@@ -397,17 +397,28 @@ get_data_from_key <- function(tab,key) {
     eval(bquote(tab[.(skey)]))
 }
 
+
+get_label_group <- function(key) {
+    message('CINDEX:',paste0(CINDEX_BY,coll=','))
+    message('key:', paste0(key,coll=','))
+    setdiff(CINDEX_BY,key)
+}
+
 make_line_label <- function(...) {
     paste(...,sep="; ")
 }
 
 ## Prepare MS1 eic data: rt and intensity + key made of splitby.
-get_data_4_eic_ms1 <- function(extr_ms1,adduct,id,splitby) {
-    key <- list(adduct=adduct,ID=id)
-    tab <-get_data_from_key(tab=extr_ms1,key=key)
-    pdata <- tab[,.(rt,intensity),by=c('ID',splitby)]
-    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(splitby,as.symbol))),by=.(splitby)],splice=T))
-    setkeyv(pdata,cols=c("ID",splitby,"rt"))
+get_data_4_eic_ms1 <- function(extr_ms1,key) {
+    actual_key <- key[intersect(names(key),names(extr_ms1))]
+    label_group <- intersect(get_label_group(names(key)),names(extr_ms1))
+    tab <-get_data_from_key(tab=extr_ms1,key=actual_key)
+    label_group <- as.list(label_group)
+    names(label_group) <- NULL
+    pdata <- tab[,.(rt,intensity),by=label_group]
+
+    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(label_group,as.symbol))),by=(label_group)],splice=T))
+    setkeyv(pdata,cols=unique(c("ID",as.character(label_group),"rt")))
     pdata
 }
 
@@ -423,16 +434,11 @@ get_data_4_eic_ms2 <- function(summ,adduct,id,splitby) {
 
 
 
-make_eic_ms1_plot <- function(extr_ms1,summ,set,adduct,id,splitby,axis="linear",rt_range=NULL) {
-    key <- list(set=set,
-                adduct=adduct,
-                ID=id)
+make_eic_ms1_plot <- function(extr_ms1,summ,key,axis="linear",rt_range=NULL) {
 
+   
     ## Get the table with ms1 data.
-    pdata <- get_data_4_eic_ms1(extr_ms1,
-                                adduct=adduct,
-                                id=id,
-                                splitby=splitby)
+    pdata <- get_data_4_eic_ms1(extr_ms1, key)
 
     ## Get metadata.
     summ_row  <- get_data_from_key(summ,key=key)
@@ -452,8 +458,8 @@ make_eic_ms1_plot <- function(extr_ms1,summ,set,adduct,id,splitby,axis="linear",
     title_txt = paste0("MS1 EIC for ion m/z = ",paste0(signif(unique(summ_row$mz),digits=7L),collapse=", "))
     nm <- paste(unique(summ_row$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
-    p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("retention time")+ggplot2::geom_line()+ggplot2::coord_fixed(ratio=aspr)+scale_y(axis=axis,labels=sci10)+rt_lim
-
+    p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("retention time")+ggplot2::geom_line()+scale_y(axis=axis,labels=sci10)+rt_lim
+    ## +ggplot2::coord_fixed(ratio=aspr)
     annt_dx <- 5*dx/100.
     annt <- summ[summ_row,on=names(key),nomatch=NULL][,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
 
@@ -465,7 +471,7 @@ make_eic_ms1_plot <- function(extr_ms1,summ,set,adduct,id,splitby,axis="linear",
 }
 
 
-make_eic_ms2_plot <- function(summ,set,adduct,id,splitby,axis="linear",rt_range=NULL) {
+make_eic_ms2_plot <- function(summ,key,splitby,axis="linear",rt_range=NULL) {
     key <- list(set=set,
                 adduct=adduct,
                 ID=id)
@@ -497,8 +503,8 @@ make_eic_ms2_plot <- function(summ,set,adduct,id,splitby,axis="linear",rt_range=
     p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label)) +
         ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
         ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+ggplot2::geom_linerange()+
-        ggplot2::coord_fixed(ratio=aspr)+scale_y(axis=axis,labels=sci10)+rt_lim
-
+        scale_y(axis=axis,labels=sci10)+rt_lim
+    ## ggplot2::coord_fixed(ratio=aspr)+
     ans <- pdata[,unique(an)]
     annt_dx <- 5*dx/100.
     annt <- summ[an %in% (ans),.(an=an,x=ms2_rt+..annt_dx,y=1.1*ms2_int,txt=signif(ms2_rt,5))]
@@ -545,8 +551,7 @@ make_spec_ms2_plot <- function(extr_ms2,summ,set,adduct,id,splitby,axis="linear"
 }
 
 combine_plots <- function(p_eic_ms1,p_eic_ms2) {
-    pl <- list(p_eic_ms1,p_eic_ms2)
-    cowplot::plot_grid(pl,ncol=1,align='v')
+    cowplot::plot_grid(p_eic_ms1,p_eic_ms2,ncol=1,align='v',axis='b')
 }
 
     
