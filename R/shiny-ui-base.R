@@ -1028,12 +1028,11 @@ mk_shinyscreen_server <- function(projects,init) {
                 nb <- length(curr_file)
                 nd <- length(new_file)
                 res_file <- c(curr_file,new_file)
-                res_tag <- c(curr_tag,paste0('F',(nb + 1):(nb + nd)))
                 res_adduct <- c(curr_adduct,rep(NA_character_,nd))
                 res_set <- c(curr_set,rep(NA_character_,nd))
 
                 rvs$gui$datatab$file <- res_file
-                rvs$gui$datatab$tag <- res_tag
+                rvs$gui$datatab$tag <- add_new_def_tag(as.character(rvs$gui$datatab$tag),nd)
                 rvs$gui$datatab$adduct <- res_adduct
                 rvs$gui$datatab$set <- res_set
             }
@@ -1060,8 +1059,8 @@ mk_shinyscreen_server <- function(projects,init) {
             df <- DT::editData(df,
                                input$datafiles_cell_edit,
                                rownames = F)
-            rvs$gui$datatab$file <- df$file
-            rvs$gui$datatab$tag <- df$tag
+            rvs$gui$datatab$file <- as.character(df$file)
+            rvs$gui$datatab$tag <- as.character(df$tag)
             
         }, label = "datafiles-edit")
 

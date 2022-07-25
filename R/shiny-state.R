@@ -29,6 +29,17 @@ GUI_ALL_INPUTS <- c(GUI_SELECT_INPUTS,
                       GUI_RADIO_INPUTS)
 
 
+add_new_def_tag <- function(old_tags,how_many) {
+    ind <- which(grepl(r"(^F\d+$)",old_tags))
+    st_num <- if (length(ind)>0L) {
+                    old_def_tags <- old_tags[ind]
+                    tag_nums <- gsub(r"(^F(\d+)$)",r"(\1)",old_def_tags)
+                    max(as.integer(tag_nums))
+                   
+        
+    } else 0L
+    c(old_tags,paste0('F',(st_num + 1L):(st_num + how_many)))
+}
 
 #' @export
 create_stub_gui <- function() {
@@ -253,7 +264,8 @@ gen_dfiles_tab <- function(gui) {
     curr_tag <- gui$datatab$tag
     
     res <- data.table(file=curr_file,tag=curr_tag)
-    res[,tag:=as.factor(tag)]
+    ## res[,tag:=as.factor(tag)]
+    res
     
 }
 
