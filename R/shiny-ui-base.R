@@ -659,7 +659,7 @@ mk_shinyscreen_server <- function(projects,init) {
         ## REACTIVE VALUES
         rv_extr_flag <- reactiveVal(F)
         rv_presc_flag <- reactiveVal(F)
-        rtimer_extr <- reactiveTimer(1000)
+        rtimer1000 <- reactiveTimer(1000)
         rtimer_presc <- reactiveTimer(500)
         
         ## REACTIVE FUNCTIONS
@@ -894,7 +894,7 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         observe({
-            rtimer_extr()
+            rtimer1000()
             isolate({
                 if (rv_extr_flag()) {
                     rv_extr_flag(F)
@@ -916,6 +916,23 @@ mk_shinyscreen_server <- function(projects,init) {
                 }
             })
         })
+
+        ## Update projects and data directories every second.
+        observeEvent(rtimer1000(),{
+            projects <- rv_projects()
+            curr_projects <- list.dirs(path=init$userdir, full.names = F, recursive = F)
+            if (length(union(curr_projects,projects)) != length(intersect(curr_projects,projects))) {
+                updateSelectInput(session=session,
+                                  inputId="proj_list",
+                                  choices=curr_projects)
+                updateSelectInput(session=session,
+                                  inputId="indir_list",
+                                  choices=curr_projects)
+                rv_projects(curr_projects)
+            }
+
+            
+        }, label = "update-proj-list")
 
         observeEvent(input$presc_b,{
             if (NROW(rvs$m$extr$ms1)>0L) {
