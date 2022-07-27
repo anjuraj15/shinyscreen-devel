@@ -380,6 +380,9 @@ scale_y<- function (axis="linear", ...) if (axis!="log") {
                                             ggplot2::scale_y_log10(...)
                                         }
 
+
+## Concatenates items of a named list in a chain of &-s: x==xval &
+## y=yval & z=zval ...)
 mk_logic_exp <- function(rest,sofar=NULL) {
     if (length(rest)==0L) {
         return(sofar)
@@ -391,6 +394,7 @@ mk_logic_exp <- function(rest,sofar=NULL) {
         mk_logic_exp(tail(rest,-1L), zz)
     }
 }
+
 
 get_data_from_key <- function(tab,key) {
     skey <- mk_logic_exp(key)
@@ -408,15 +412,27 @@ make_line_label <- function(...) {
     paste(...,sep="; ")
 }
 
-## Prepare MS1 eic data: rt and intensity + key made of splitby.
+## Prepare MS1 eic data: rt and intensity of a subset of extracted
+## data defined by the key named list.
 get_data_4_eic_ms1 <- function(extr_ms1,key) {
+
+    ## Which of the selected keys are in the extr_ms1? This can be
+    ## made more obvious to the user, but not necessary atm.
     actual_key <- key[intersect(names(key),names(extr_ms1))]
+
+    ## Which of CINDEX categories exist among extr_ms1 categories?
     label_group <- intersect(get_label_group(names(key)),names(extr_ms1))
+
+    ## Subset extr_ms1 by the actual key.
     tab <-get_data_from_key(tab=extr_ms1,key=actual_key)
+
+    ## Group the plot data per label group (ie tags, or adducts, or
+    ## both).
     label_group <- as.list(label_group)
     names(label_group) <- NULL
     pdata <- tab[,.(rt,intensity),by=label_group]
 
+    ## Create labels.
     pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(label_group,as.symbol))),by=(label_group)],splice=T))
     setkeyv(pdata,cols=unique(c("ID",as.character(label_group),"rt")))
     pdata

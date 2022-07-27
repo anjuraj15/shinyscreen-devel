@@ -740,13 +740,16 @@ mk_shinyscreen_server <- function(projects,init) {
             req(NROW(cind)>0L)
             row <- input$cindex_row_last_clicked
             req(row)
+            snms <- names(cind)
             sel <- cind[row]
-            
-
-            make_eic_ms1_plot(ms1,summ,set=sel$set,
-                              adduct=sel$adduct,
-                              id=sel$ID,
-                              splitby=c("tag"))
+            wh <- which(snms %in% CINDEX_BY)
+            req(wh)
+            sel2 <- lapply(wh,function(n) sel[[n]][[1]])
+            names(sel2) <- snms[wh]
+            message('sel2:')
+            print(sel2)
+            message('---')
+            make_eic_ms1_plot(ms1,summ,key=sel2)
             
             
             
