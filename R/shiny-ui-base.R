@@ -727,32 +727,47 @@ mk_shinyscreen_server <- function(projects,init) {
             }
             })
         })
+        
+        ## Get current grouping categories (`cindex key').
+        rf_get_cindex_key <- reactive({
+
+            cind <- rf_get_cindex()
+            req(NROW(cind)>0L)
+            
+            ## Select only valid category names.
+            x <- which(CINDEX_BY %in% names(cind))
+            CINDEX_BY[x]
+        })
+
+        ## Get currently selected cindex values as a list.
+        rf_get_cindex_kval <- reactive({
+            cind <- rf_get_cindex()
+            key <- rf_get_cindex_key()
+            req(NROW(cind)>0L)
+            row <- req(input$cindex_row_last_clicked)
+            rowtab <- cind[row][,..key]
+            res <- lapply(rowtab,function (x) x[[1]])
+            names(res) <- key
+            res
+        })
+
+        ## Get the labels which will define plot curves in EIC MS1.
+        rf_get_cindex_labs <- reactive({
+            key <- rf_get_cindex_key()
+            res <- setdiff(CINDEX_BY,key)
+            if (length(res)!=0L) res else CINDEX_BY
+        })
 
         ## REACTIVE FUNCTIONS: PLOTS
         rf_plot_eic_ms1 <- reactive({
             isolate({
                 ms1 <- rvs$m$extr$ms1
                 summ <- rvs$m$out$tab$summ
-                cind <- rf_get_cindex()
+
             })
             req(NROW(summ)>0L)
             req(NROW(ms1)>0L)
-            req(NROW(cind)>0L)
-            row <- input$cindex_row_last_clicked
-            req(row)
-            snms <- names(cind)
-            sel <- cind[row]
-            wh <- which(snms %in% CINDEX_BY)
-            req(wh)
-            sel2 <- lapply(wh,function(n) sel[[n]][[1]])
-            names(sel2) <- snms[wh]
-            message('sel2:')
-            print(sel2)
-            message('---')
-            make_eic_ms1_plot(ms1,summ,key=sel2)
-            
-            
-            
+            make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),labs=req(rf_get_cindex_labs()))
         })
 
         rf_plot_eic_ms2 <- reactive({
@@ -769,9 +784,7 @@ mk_shinyscreen_server <- function(projects,init) {
             gg <- rf_plot_eic_ms1()
             rt_rng <- range(gg$data$rt)
             make_eic_ms2_plot(summ,
-                              set=sel$set,
-                              adduct=sel$adduct,
-                              id=sel$ID,
+                              key=rf_get_cindex_kval(),
                               splitby=c("tag"),
                               rt_range = rt_rng)
             
@@ -1214,7 +1227,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         output$plot_eic_combined <- renderPlot({
             p1 <- rf_plot_eic_ms1()
-            p2 <- rf_plot_eic_ms2()
+            p2 <- NULL#rf_plot_eic_ms2()
             combine_plots(p1,p2)
         })
         ## output$plot_eic_ms1 <- renderPlot({

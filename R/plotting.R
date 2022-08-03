@@ -413,28 +413,27 @@ make_line_label <- function(...) {
 }
 
 ## Prepare MS1 eic data: rt and intensity of a subset of extracted
-## data defined by the key named list.
-get_data_4_eic_ms1 <- function(extr_ms1,key) {
+## data defined by the key named list. Argument `labs' is a vector of
+## names that will be used to construct the legend labels.
+get_data_4_eic_ms1 <- function(extr_ms1,kvals,labs) {
 
     ## Which of the selected keys are in the extr_ms1? This can be
-    ## made more obvious to the user, but not necessary atm.
-    actual_key <- key[intersect(names(key),names(extr_ms1))]
-
-    ## Which of CINDEX categories exist among extr_ms1 categories?
-    label_group <- intersect(get_label_group(names(key)),names(extr_ms1))
+    ## made more obvious to the user, but note necessary atm.
+    keys <- names(kvals)
+    actual_key <- intersect(keys,names(extr_ms1))
+    actual_kvals <- kvals[actual_key]
 
     ## Subset extr_ms1 by the actual key.
-    tab <-get_data_from_key(tab=extr_ms1,key=actual_key)
+    tab <-get_data_from_key(tab=extr_ms1,key=actual_kvals)
 
     ## Group the plot data per label group (ie tags, or adducts, or
     ## both).
-    label_group <- as.list(label_group)
-    names(label_group) <- NULL
-    pdata <- tab[,.(rt,intensity),by=label_group]
-
+    xlxx <- intersect(labs,names(extr_ms1))
+    xlxx <- as.character(xlxx)
+    pdata <- tab[,.(rt,intensity),by=xlxx]
     ## Create labels.
-    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(label_group,as.symbol))),by=(label_group)],splice=T))
-    setkeyv(pdata,cols=unique(c("ID",as.character(label_group),"rt")))
+    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=xlxx],splice=T))
+    setkeyv(pdata,cols=unique(as.character(xlxx),"rt"))
     pdata
 }
 
@@ -450,15 +449,14 @@ get_data_4_eic_ms2 <- function(summ,adduct,id,splitby) {
 
 
 
-make_eic_ms1_plot <- function(extr_ms1,summ,key,axis="linear",rt_range=NULL) {
+make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL) {
 
    
     ## Get the table with ms1 data.
-    pdata <- get_data_4_eic_ms1(extr_ms1, key)
-
+    pdata <- get_data_4_eic_ms1(extr_ms1, kvals, labs)
     ## Get metadata.
-    summ_row  <- get_data_from_key(summ,key=key)
-
+    summ_row  <- get_data_from_key(summ,key=kvals)
+    key <- names(kvals)
     ## Deal with retention time range.
     rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
     xrng <- if (!is.null(rt_range)) rt_range else range(pdata$rt)
@@ -470,14 +468,15 @@ make_eic_ms1_plot <- function(extr_ms1,summ,key,axis="linear",rt_range=NULL) {
     aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
 
 
-    tag_txt = paste0("Set: ", set, " ID: ",id)
+    tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
+                     collapse='; ') ## paste0("Set: ", set, " ID: ",id)
     title_txt = paste0("MS1 EIC for ion m/z = ",paste0(signif(unique(summ_row$mz),digits=7L),collapse=", "))
     nm <- paste(unique(summ_row$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
     p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("retention time")+ggplot2::geom_line()+scale_y(axis=axis,labels=sci10)+rt_lim
     ## +ggplot2::coord_fixed(ratio=aspr)
     annt_dx <- 5*dx/100.
-    annt <- summ[summ_row,on=names(key),nomatch=NULL][,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
+    annt <- summ[summ_row,on=key,nomatch=NULL][,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
 
     ## Annotate.
     p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)
@@ -488,6 +487,9 @@ make_eic_ms1_plot <- function(extr_ms1,summ,key,axis="linear",rt_range=NULL) {
 
 
 make_eic_ms2_plot <- function(summ,key,splitby,axis="linear",rt_range=NULL) {
+    set <- key[['set']]
+    id <- key[['id']]
+    adduct <- key[['adduct']]
     key <- list(set=set,
                 adduct=adduct,
                 ID=id)
