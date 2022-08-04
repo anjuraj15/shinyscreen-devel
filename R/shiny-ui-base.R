@@ -767,53 +767,59 @@ mk_shinyscreen_server <- function(projects,init) {
             })
             req(NROW(summ)>0L)
             req(NROW(ms1)>0L)
-            make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),labs=req(rf_get_cindex_labs()))
+            make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),
+                              labs=req(rf_get_cindex_labs()),
+                              asp=PLOT_EIC_ASPECT)
         })
 
         rf_plot_eic_ms2 <- reactive({
             isolate({
                 summ <- rvs$m$out$tab$summ
-                cind <- rf_get_cindex()
             })
             req(NROW(summ)>0L)
-            req(NROW(cind)>0L)
-            row <- input$cindex_row_last_clicked
-            req(row)
-            sel <- cind[row]
+
 
             gg <- rf_plot_eic_ms1()
             rt_rng <- range(gg$data$rt)
             make_eic_ms2_plot(summ,
-                              key=rf_get_cindex_kval(),
-                              splitby=c("tag"),
-                              rt_range = rt_rng)
+                              kvals=rf_get_cindex_kval(),
+                              labs=rf_get_cindex_labs(),
+                              rt_range = rt_rng,
+                              asp=PLOT_EIC_ASPECT)
             
             
             
         })
 
-        rf_plot_spec_ms2 <- reactive({
-            isolate({
-                summ <- rvs$m$out$tab$summ
-                ms2 <- rvs$m$extr$ms2
-                cind <- rf_get_cindex()
-            })
-            req(NROW(summ)>0L)
-            req(NROW(ms2)>0L)
+        rf_plot_struct <- reactive({
+            cind <- rf_get_cindex()
+            key <- rf_get_cindex_key()
             req(NROW(cind)>0L)
-            row <- input$cindex_row_last_clicked
-            req(row)
-            sel <- cind[row]
-
-            make_spec_ms2_plot(ms2,
-                               summ,
-                               set=sel$set,
-                               adduct=sel$adduct,
-                               id=sel$ID,
-                               splitby=c("adduct","tag"))
-            
-            
+            row <- req(input$cindex_row_last_clicked)
+            id <- rowtab <- cind[row][,..key][["ID"]][[1]]
+            smi <- rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
+            print("smiles:")
+            print(smi)
+            grb <- smiles2img(smi)
+            xx <- qplot(1:5, 2*(1:5), geom="blank") +
+                annotation_custom(grb, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+                theme_empty
+            xx
         })
+
+        ## rf_plot_spec_ms2 <- reactive({
+        ##     isolate({
+        ##         summ <- rvs$m$out$tab$summ
+        ##         ms2 <- rvs$m$extr$ms2
+        ##     })
+        ##     req(NROW(summ)>0L)
+        ##     req(NROW(ms2)>0L)
+        ##     req(NROW(cind)>0L)
+        ##     make_spec_ms2_plot(ms2,
+        ##                        summ,
+        ##                        kvals=req(rf_get_cindex_kval()),
+        ##                        labs=req(rf_get_cindex_labs()))
+        ## })
 
         
         ## OBSERVERS
@@ -1227,8 +1233,12 @@ mk_shinyscreen_server <- function(projects,init) {
 
         output$plot_eic_combined <- renderPlot({
             p1 <- rf_plot_eic_ms1()
-            p2 <- NULL#rf_plot_eic_ms2()
+            p2 <- rf_plot_eic_ms2()
             combine_plots(p1,p2)
+        })
+
+        output$plot_struct <- renderPlot({
+            rf_plot_struct()
         })
         ## output$plot_eic_ms1 <- renderPlot({
         ##     rf_plot_eic_ms1()
@@ -1239,7 +1249,7 @@ mk_shinyscreen_server <- function(projects,init) {
         ## })
 
         output$plot_spec_ms2 <- renderPlot({
-            rf_plot_spec_ms2()
+            NULL #rf_plot_spec_ms2()
         })
 
         

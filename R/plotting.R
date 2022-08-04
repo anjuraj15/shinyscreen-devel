@@ -348,7 +348,13 @@ theme_eic <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::elem
                                                         legend.text=ggplot2::element_text(size=12L),
                                                         plot.caption=ggplot2::element_text(size=12L),...)
 
-
+theme_empty <- ggplot2::theme_bw()
+theme_empty$line <- ggplot2::element_blank()
+theme_empty$rect <- ggplot2::element_blank()
+theme_empty$strip.text <- ggplot2::element_blank()
+theme_empty$axis.text <- ggplot2::element_blank()
+theme_empty$plot.title <- ggplot2::element_blank()
+theme_empty$axis.title <- ggplot2::element_blank()
 
 sci10 <- function(x) {
     prefmt <- formatC(x,format="e",digits=2)
@@ -438,18 +444,21 @@ get_data_4_eic_ms1 <- function(extr_ms1,kvals,labs) {
 }
 
 ## Prepare MS2 eic data: rt and intensity + key made of splitby.
-get_data_4_eic_ms2 <- function(summ,adduct,id,splitby) {
-    key <- list(adduct=adduct,ID=id)
-    tab <-get_data_from_key(tab=summ,key=key)
-    pdata <- tab[,.(intensity=ms2_int,rt=ms2_rt),by=c('ID',splitby,"an")]
-    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(splitby,as.symbol))),by=.(splitby)],splice=T))
-    setkeyv(pdata,cols=c("ID",splitby,"rt"))
+get_data_4_eic_ms2 <- function(summ,kvals,labs) {
+    tab <-get_data_from_key(tab=summ,key=kvals)
+    nms <- names(kvals)
+    byby <- unique(c(nms,labs,"an"))
+    pdata <- tab[,.(intensity=ms2_int,rt=ms2_rt),by=byby]
+    if (NROW(pdata)==0L) return(NULL)
+    xlxx <- as.character(labs)
+    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=.(xlxx)],splice=T))
+    setkeyv(pdata,cols=c(labs,"rt"))
     pdata
 }
 
 
 
-make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL) {
+make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=0.5) {
 
    
     ## Get the table with ms1 data.
@@ -465,7 +474,7 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     dy <- abs(yrng[[2]]-yrng[[1]])
 
     ## Calculate aspect ratio.
-    aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
+    aspr <- if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
 
 
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
@@ -486,22 +495,17 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
 }
 
 
-make_eic_ms2_plot <- function(summ,key,splitby,axis="linear",rt_range=NULL) {
-    set <- key[['set']]
-    id <- key[['id']]
-    adduct <- key[['adduct']]
-    key <- list(set=set,
-                adduct=adduct,
-                ID=id)
-    
+make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=0.5) {
+    ## TODO
     ## Get plotting data for the compound.
     pdata <- get_data_4_eic_ms2(summ,
-                                adduct=adduct,
-                                id=id,
-                                splitby=splitby)
+                                kvals=kvals,
+                                labs=labs)
+
+    if (NROW(pdata)==0L) return(NULL)
 
     ## Get metadata.
-    summ_row  <- get_data_from_key(summ,key=key)
+    summ_row  <- get_data_from_key(summ,key=kvals)
 
     ## Deal with retention time range.
     rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
@@ -511,10 +515,11 @@ make_eic_ms2_plot <- function(summ,key,splitby,axis="linear",rt_range=NULL) {
     dy <- abs(yrng[[2]]-yrng[[1]])
 
     ## Fix aspect ratio.
-    aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
+    aspr <- if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
 
     ## Derive various labels.
-    tag_txt = paste0("Set: ", set, " ID: ",id)
+    tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
+                     collapse='; ')
     title_txt = paste0("MS2 EIC for ion m/z = ",paste0(signif(unique(summ_row$mz),digits=7L),collapse=", "))
     subt_txt = if (!length(summ_row$Name)==0L && !is.na(summ_row$Name) && nchar(summ_row$Name)>0L) summ_row$Name else NULL
     ## Base plot.

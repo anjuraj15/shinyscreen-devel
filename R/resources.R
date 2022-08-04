@@ -292,3 +292,5 @@ ARRANGE_CHOICES <- c(nothing="nothing",
                      mz="mz",
                      rt="rt",
                      id="ID")
+
+PLOT_EIC_ASPECT <- 0.75
