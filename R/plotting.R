@@ -539,20 +539,19 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=0.
 }
 
 
-make_spec_ms2_plot <- function(extr_ms2,summ,set,adduct,id,splitby,axis="linear") {
+make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear") {
 
-    ## Get metadata.
-    key <- list(set=set,
-                adduct=adduct,
-                ID=id)
     
     ## Only the chosen ones.
-    mdata  <- get_data_from_key(summ,key=key)[ms2_sel==T]
+    mdata  <- get_data_from_key(summ,key=kvals)[ms2_sel==T]
     ans <- mdata[,unique(an)]
-    pdata <- extr_ms2[an %in% ans,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=c("adduct","tag","CE")]
-    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(c(splitby,"rt"),as.symbol))),by=.(splitby)],splice=T))
+    ms2ctg <- c(intersect(c(names(kvals),labs),names(extr_ms2)),"CE")
+    xlxx <- intersect(as.character(labs),names(extr_ms2))
+    pdata <- extr_ms2[an %in% ans,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=ms2ctg]
+    print(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
+    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
     pdata <- pdata[,.(mz=mz,intensity=intensity,label=label)]
-
+    if (NROW(pdata)==0L) return(NULL)
     # Aspect ratio.
     xrng <- range(pdata$mz)
     dx <- abs(xrng[[2]]-xrng[[1]])
@@ -561,7 +560,8 @@ make_spec_ms2_plot <- function(extr_ms2,summ,set,adduct,id,splitby,axis="linear"
     aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
 
     ## Get labels.
-    tag_txt = paste0("Set: ", set, " ID: ",id)
+    tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
+                     collapse='; ')
     title_txt = paste0("MS2 spectra for ion m/z = ",paste0(signif(unique(mdata$mz),digits=7L),collapse=", "))
     nm <- paste(unique(mdata$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL

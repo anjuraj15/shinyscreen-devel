@@ -807,19 +807,18 @@ mk_shinyscreen_server <- function(projects,init) {
             xx
         })
 
-        ## rf_plot_spec_ms2 <- reactive({
-        ##     isolate({
-        ##         summ <- rvs$m$out$tab$summ
-        ##         ms2 <- rvs$m$extr$ms2
-        ##     })
-        ##     req(NROW(summ)>0L)
-        ##     req(NROW(ms2)>0L)
-        ##     req(NROW(cind)>0L)
-        ##     make_spec_ms2_plot(ms2,
-        ##                        summ,
-        ##                        kvals=req(rf_get_cindex_kval()),
-        ##                        labs=req(rf_get_cindex_labs()))
-        ## })
+        rf_plot_spec_ms2 <- reactive({
+            isolate({
+                summ <- rvs$m$out$tab$summ
+                ms2 <- rvs$m$extr$ms2
+            })
+            req(NROW(summ)>0L)
+            req(NROW(ms2)>0L)
+            make_spec_ms2_plot(ms2,
+                               summ,
+                               kvals=req(rf_get_cindex_kval()),
+                               labs=req(rf_get_cindex_labs()))
+        })
 
         
         ## OBSERVERS
@@ -1249,7 +1248,7 @@ mk_shinyscreen_server <- function(projects,init) {
         ## })
 
         output$plot_spec_ms2 <- renderPlot({
-            NULL #rf_plot_spec_ms2()
+            rf_plot_spec_ms2()
         })
 
         
