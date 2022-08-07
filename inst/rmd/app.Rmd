@@ -101,16 +101,6 @@ before starting `Shinyscreen` in one of the directories under
 
 ### Project management
 
-<!-- ##### Create new project -->
-
-<!-- ```{r, echo=F} -->
-<!-- textInput(inputId = "new_proj_name", label= "New project name",value = "") -->
-<!-- actionButton(inputId = "create_proj_b", -->
-<!--              label= "Create") -->
-
-<!-- ``` -->
-
-
 #### Load or initialise a project
 
 <details>
@@ -666,7 +656,7 @@ DT::DTOutput("cindex")
 <div style="display: flex-flow: column nowrap">
 ### Viewer
 
-<div style="display: flex; flex-direction: row; flex-wrap: nowrap;">
+<div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- EICs and Structure -->
 <div style="width: 70%;"> <!-- EIC ID Plot -->
 ```{r,echo=F}
 ## plotOutput("plot_eic_ms1",
@@ -701,10 +691,11 @@ plotOutput("plot_eic_combined",
 ```{r, echo=F}
 plotOutput("plot_struct")
 ```
-</div>
-</div>
+</div> <!-- Structure -->
+</div>  <!-- EICs and Structure -->
+<div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- Spec and Details-->
+<div style="width: 40%"> <!-- MS2 Spec -->
 ```{r, echo=F}
-
 plotOutput("plot_spec_ms2",
            hover = hoverOpts(id="plot_hover",
                              delayType = "throttle",
@@ -712,7 +703,8 @@ plotOutput("plot_spec_ms2",
            dblclick = "plot_mz_click",
            brush = brushOpts(id="plot_mz_brush"))
 ```
-
+</div> <!-- MS2 Spec -->
+</div>
 <div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
 
 ```{r,echo=F}
