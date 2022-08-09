@@ -552,24 +552,6 @@ DT::DTOutput("summ_subset")
 ```
 </div>
 
-<!-- FIXME: order_summ reordering/editing unstable. Therefore temporarily removed. -->
-<!-- <div style="padding-left: 0.5em"> -->
-
-<!-- <details><summary>Ordering by columns</summary> -->
-<!-- It is possible to order the summary table using columns (keys):  -->
-<!-- *`r paste(gsub("^-(.+)","\\1",shinyscreen:::DEF_INDEX_SUMM), collapse = ',')`*. -->
-<!-- The sequence of columns in the table below describes the -->
-<!-- sequence of ordering steps -- the key in the first row sorts the -->
-<!-- entire summary table and subsequent keys break the ties. -->
-
-<!-- </details> -->
-
-<!-- ```{r, echo=F} -->
-<!-- DT::DTOutput("order_summ") -->
-<!-- ``` -->
-
-<!-- </div> -->
-
 </div>
 
 </div>
@@ -653,9 +635,8 @@ DT::DTOutput("cindex")
 
 </div> <!-- Compound Explorer Panel -->
 
-<div style="display: flex-flow: column nowrap">
 ### Viewer
-
+<div style="display: flex-flow: column nowrap"> <!-- Main -->
 <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- EICs and Structure -->
 <div style="width: 70%;"> <!-- EIC ID Plot -->
 ```{r,echo=F}
@@ -693,6 +674,7 @@ plotOutput("plot_struct")
 ```
 </div> <!-- Structure -->
 </div>  <!-- EICs and Structure -->
+
 <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- Spec and Details-->
 <div style="width: 40%"> <!-- MS2 Spec -->
 ```{r, echo=F}
@@ -704,7 +686,25 @@ plotOutput("plot_spec_ms2",
            brush = brushOpts(id="plot_mz_brush"))
 ```
 </div> <!-- MS2 Spec -->
-</div>
+<div style="display: flex; flex-direction: row; flex-wrap: nowrap; padding-top: 2em; padding-left: 2em;">  <!-- Modification -->
+<div> <!-- Select MS1 curve -->
+```{r,echo=F}
+selectInput(inputId="sel_ms1_curve",label="Select MS1 curve",choices=NULL)
+numericInput(inputId="mod_ms1_rt",label="MS1 peak retention time (min)",value=NA_real_)
+numericInput(inputId="mod_ms1_int", label="MS1 peak intensity", value=NA_real_)
+checkboxGroupInput(inputId="mod_ms1_qa", label="MS1 Quality")
+```
+</div> <!-- Select MS1 curve -->
+<div> <!-- Select MS2 entry -->
+```{r,echo=F}
+selectInput(inputId="sel_ms2_entry",label="Select MS2 spectrum",choices=NULL)
+checkboxGroupInput(inputId="mod_ms2_qa", label="MS2 Quality")
+actionButton(inputId="change_qa_b",label="Commit changes")
+```
+</div> <!-- Select MS2 entry -->
+</div> <!-- Modification -->
+</div> <!-- Spec and Details-->
+
 <div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
 
 ```{r,echo=F}
@@ -739,9 +739,6 @@ textInput("plot_ext",
 ```
 
 </div> <!-- Control Bar -->
-
-
-</div> <!-- Viewer Panel
 
 </div> <!-- Main -->
 

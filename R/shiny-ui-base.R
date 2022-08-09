@@ -395,20 +395,56 @@ dropdown_dt <- function(tab,callback,rownames=F,editable="cell",selection = "non
                          callback = callback,
                          rownames = rownames,
                          selection = selection,
+                         fillContainer = T,
                          ...)
     tab$dependencies <- c(tab$dependencies, list(dep))
     tab
     
 }
+
+
 simple_style_dt <- function(tab,
                             rownames = F,
                             ...) {
 
     tab <- DT::datatable(tab,
                          rownames = rownames,
+                         fillContainer=T,
                          ...)
 
     tab
+}
+
+scroll_style_dt <- function(tab,
+                            rownames = F,
+                            deferRender = T,
+                            options = list(),
+                            ...) {
+    DT::datatable(tab,
+                  rownames=rownames,
+                  options= c(list(deferRender = deferRender,
+                                scrollY = 400L,
+                                scroller = TRUE),
+                             options),
+                  extensions = 'Scroller',
+                  ...)
+}
+
+scroll_dropdown_dt <- function(tab,callback,rownames=F,editable="cell",selection = "none",...) {
+    ce_path <- system.file("www", package = "shinyscreen")
+    dep <- htmltools::htmlDependency(
+      "CellEdit", "1.0.19", ce_path, 
+      script = "dataTables.cellEdit.js",
+      stylesheet = "dataTables.cellEdit.css", 
+      all_files = FALSE)
+    tab <- scroll_style_dt(tab,
+                           callback = callback,
+                           rownames = rownames,
+                           selection = selection,
+                           ...)
+    tab$dependencies <- c(tab$dependencies, list(dep))
+    tab
+    
 }
 
 
@@ -1132,7 +1168,8 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$datatab$file
             rvs$gui$datatab$tag
             res <- gen_dfiles_tab(rvs$gui)
-            simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
+            ## simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
+            scroll_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
         })
 
         output$datatab <- DT::renderDT({
@@ -1142,7 +1179,8 @@ mk_shinyscreen_server <- function(projects,init) {
             sets <- rf_get_sets()
             dtab <- gen_dtab(rvs$gui$datatab,
                              sets=sets)
-            tab <- dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
+            tab <- scroll_dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
+            ## tab <- dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
             tab
             
         })
@@ -1222,10 +1260,12 @@ mk_shinyscreen_server <- function(projects,init) {
         output$cindex <- DT::renderDT({
             tab <- rf_get_cindex()
             validate(need(NROW(tab)>0L,message="Need to prescreen, first."))
-            DT::datatable(tab,
-                          rownames=NULL,
-                          options=list(filter=T,ordering=F,dom='t'),
-                          selection="single")
+            scroll_style_dt(tab,options=list(filter=T,ordering=F),
+                            selection="single")
+            ## DT::datatable(tab,
+            ##               rownames=NULL,
+            ##               options=list(filter=T,ordering=F),
+            ##               selection="single")
         })
 
         ## RENDER: PLOTS
