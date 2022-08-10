@@ -1273,8 +1273,10 @@ mk_shinyscreen_server <- function(projects,init) {
         output$plot_eic_combined <- renderPlot({
             p1 <- rf_plot_eic_ms1()
             p2 <- rf_plot_eic_ms2()
-            combine_plots(p1,p2)
-        })
+            p3 <- rf_plot_spec_ms2()
+            combine_plots(p1,p2,p3)
+            
+        },height=1000)
 
         output$plot_struct <- renderPlot({
             rf_plot_struct()
@@ -1287,9 +1289,9 @@ mk_shinyscreen_server <- function(projects,init) {
         ##     rf_plot_eic_ms2()
         ## })
 
-        output$plot_spec_ms2 <- renderPlot({
-            rf_plot_spec_ms2()
-        })
+        ## output$plot_spec_ms2 <- renderPlot({
+        ##     NULL
+        ## })
 
         
 

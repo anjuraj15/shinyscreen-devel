@@ -346,7 +346,9 @@ theme_eic <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::elem
                                                         plot.title=ggplot2::element_text(size=15L),
                                                         plot.subtitle=ggplot2::element_text(size=12L),
                                                         legend.text=ggplot2::element_text(size=12L),
-                                                        plot.caption=ggplot2::element_text(size=12L),...)
+                                                        plot.caption=ggplot2::element_text(size=12L),
+                                                        legend.position='bottom',...)
+                               
 
 theme_empty <- ggplot2::theme_bw()
 theme_empty$line <- ggplot2::element_blank()
@@ -461,7 +463,11 @@ get_rows_from_summ <- function(summ,kvals,...) {
     summ_rows_cols <- c(names(kvals),...)
     get_data_from_key(summ,key=kvals)[,unique(.SD),.SDcol=summ_rows_cols]
 }
-make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=0.5) {
+
+guide_fun <- function() {
+    ggplot2::guides(colour=ggplot2::guide_legend(nrow=2,byrow=T),shape='square')
+}
+make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=1) {
 
    
     ## Get the table with ms1 data.
@@ -485,18 +491,17 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     nm <- paste(unique(summ_rows$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
     p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("retention time")+ggplot2::geom_line()+scale_y(axis=axis,labels=sci10)+rt_lim
-    ## +ggplot2::coord_fixed(ratio=aspr)
     annt_dx <- 5*dx/100.
     annt <- summ_rows[,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
     ## Annotate.
-    p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)
+    p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)+guide_fun()
 
     ## Add theme.
     p + theme_eic()
 }
 
 
-make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=0.5) {
+make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1) {
     ## TODO
     ## Get plotting data for the compound.
     pdata <- get_data_4_eic_ms2(summ,
@@ -526,8 +531,7 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=0.
     p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label)) +
         ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
         ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+ggplot2::geom_linerange()+
-        scale_y(axis=axis,labels=sci10)+rt_lim
-    ## ggplot2::coord_fixed(ratio=aspr)+
+        scale_y(axis=axis,labels=sci10)+rt_lim+guide_fun()
     ans <- pdata[,unique(an)]
     annt_dx <- 5*dx/100.
     annt <- summ[an %in% (ans),.(an=an,x=ms2_rt+..annt_dx,y=1.1*ms2_int,txt=signif(ms2_rt,5))]
@@ -539,7 +543,7 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=0.
 }
 
 
-make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear") {
+make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1) {
 
     
     ## Only the chosen ones.
@@ -563,7 +567,7 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear") {
     dx <- abs(xrng[[2]]-xrng[[1]])
     yrng <- range(pdata$intensity)
     dy <- abs(yrng[[2]]-yrng[[1]])
-    aspr <- if (dx < .Machine$double.eps) 1 else 0.5*as.numeric(dx)/as.numeric(dy)
+    aspr <- if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
 
     ## Get labels.
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
@@ -572,15 +576,15 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear") {
     nm <- paste(unique(mdata$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
 
-    p <- ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+ggplot2::geom_linerange()+ggplot2::coord_fixed(ratio=aspr)+scale_y(axis=axis,labels=sci10)
+    p <- ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+ggplot2::geom_linerange()+scale_y(axis=axis,labels=sci10)+guide_fun()
 
     ## Add theme.
     p + theme_eic()
  
 }
 
-combine_plots <- function(p_eic_ms1,p_eic_ms2) {
-    cowplot::plot_grid(p_eic_ms1,p_eic_ms2,ncol=1,align='v',axis='b')
+combine_plots <- function(p_eic_ms1,p_eic_ms2,p_spec_ms2) {
+    cowplot::plot_grid(p_eic_ms1,p_eic_ms2,p_spec_ms2,ncol=1,align='vh',axis='b')
 }
 
     

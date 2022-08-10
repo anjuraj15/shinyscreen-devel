@@ -638,7 +638,7 @@ DT::DTOutput("cindex")
 ### Viewer
 <div style="display: flex-flow: column nowrap"> <!-- Main -->
 <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- EICs and Structure -->
-<div style="width: 70%;"> <!-- EIC ID Plot -->
+<div style="width: 80%; overflow-y: scroll;"> <!-- EIC ID Plot -->
 ```{r,echo=F}
 ## plotOutput("plot_eic_ms1",
 ##            hover = hoverOpts(id="plot_hover",
@@ -660,6 +660,7 @@ DT::DTOutput("cindex")
 ##            brush = brushOpts(id="plot_mz_brush"))
 
 plotOutput("plot_eic_combined",
+           ## height="100%",
            hover = hoverOpts(id="plot_hover",
                              delayType = "throttle",
                              delay=100),
@@ -668,7 +669,7 @@ plotOutput("plot_eic_combined",
 
 ```
 </div> <!-- EIC ID Plot -->
-<div style="width: 30%;">  <!-- Structure -->
+<div style="width: 20%;">  <!-- Structure -->
 ```{r, echo=F}
 plotOutput("plot_struct")
 ```
@@ -676,16 +677,16 @@ plotOutput("plot_struct")
 </div>  <!-- EICs and Structure -->
 
 <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- Spec and Details-->
-<div style="width: 40%"> <!-- MS2 Spec -->
-```{r, echo=F}
-plotOutput("plot_spec_ms2",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_mz_click",
-           brush = brushOpts(id="plot_mz_brush"))
-```
-</div> <!-- MS2 Spec -->
+<!-- <div style="width: 40%"> <\!-- MS2 Spec -\-> -->
+<!-- ```{r, echo=F} -->
+<!-- plotOutput("plot_spec_ms2", -->
+<!--            hover = hoverOpts(id="plot_hover", -->
+<!--                              delayType = "throttle", -->
+<!--                              delay=100), -->
+<!--            dblclick = "plot_mz_click", -->
+<!--            brush = brushOpts(id="plot_mz_brush")) -->
+<!-- ``` -->
+<!-- </div> <\!-- MS2 Spec -\-> -->
 <div style="display: flex; flex-direction: row; flex-wrap: nowrap; padding-top: 2em; padding-left: 2em;">  <!-- Modification -->
 <div> <!-- Select MS1 curve -->
 ```{r,echo=F}
