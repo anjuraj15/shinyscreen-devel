@@ -457,14 +457,17 @@ get_data_4_eic_ms2 <- function(summ,kvals,labs) {
 }
 
 
-
+get_rows_from_summ <- function(summ,kvals,...) {
+    summ_rows_cols <- c(names(kvals),...)
+    get_data_from_key(summ,key=kvals)[,unique(.SD),.SDcol=summ_rows_cols]
+}
 make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=0.5) {
 
    
     ## Get the table with ms1 data.
     pdata <- get_data_4_eic_ms1(extr_ms1, kvals, labs)
     ## Get metadata.
-    summ_row  <- get_data_from_key(summ,key=kvals)
+    summ_rows <- get_rows_from_summ(summ,kvals,"mz","ms1_rt","ms1_int","Name","SMILES","Formula")
     key <- names(kvals)
     ## Deal with retention time range.
     rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
@@ -476,17 +479,15 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     ## Calculate aspect ratio.
     aspr <- if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
 
-
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
                      collapse='; ') ## paste0("Set: ", set, " ID: ",id)
-    title_txt = paste0("MS1 EIC for ion m/z = ",paste0(signif(unique(summ_row$mz),digits=7L),collapse=", "))
-    nm <- paste(unique(summ_row$Name),collapse="; ")
+    title_txt = paste0("MS1 EIC for ion m/z = ",paste0(signif(unique(summ_rows$mz),digits=7L),collapse=", "))
+    nm <- paste(unique(summ_rows$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
     p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("retention time")+ggplot2::geom_line()+scale_y(axis=axis,labels=sci10)+rt_lim
     ## +ggplot2::coord_fixed(ratio=aspr)
     annt_dx <- 5*dx/100.
-    annt <- summ[summ_row,on=key,nomatch=NULL][,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
-
+    annt <- summ_rows[,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
     ## Annotate.
     p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)
 
@@ -505,8 +506,7 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=0.
     if (NROW(pdata)==0L) return(NULL)
 
     ## Get metadata.
-    summ_row  <- get_data_from_key(summ,key=kvals)
-
+    summ_rows <- get_rows_from_summ(summ,kvals,"mz","ms2_rt","ms2_int","Name","SMILES","Formula")
     ## Deal with retention time range.
     rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
     xrng <- if (!is.null(rt_range)) rt_range else range(pdata$rt)
@@ -520,8 +520,8 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=0.
     ## Derive various labels.
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
                      collapse='; ')
-    title_txt = paste0("MS2 EIC for ion m/z = ",paste0(signif(unique(summ_row$mz),digits=7L),collapse=", "))
-    subt_txt = if (!length(summ_row$Name)==0L && !is.na(summ_row$Name) && nchar(summ_row$Name)>0L) summ_row$Name else NULL
+    title_txt = paste0("MS2 EIC for ion m/z = ",paste0(signif(unique(summ_rows$mz),digits=7L),collapse=", "))
+    subt_txt = if (!length(summ_rows$Name)==0L && !is.na(summ_rows$Name) && nchar(summ_rows$Name)>0L) summ_rows$Name else NULL
     ## Base plot.
     p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label)) +
         ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
@@ -544,11 +544,17 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear") {
     
     ## Only the chosen ones.
     mdata  <- get_data_from_key(summ,key=kvals)[ms2_sel==T]
-    ans <- mdata[,unique(an)]
+    common_key <- intersect(names(extr_ms2),names(kvals))
+    common_vals <- kvals[common_key]
+    if (length(common_key) == 0L) return(NULL)
+    subxdata <- get_data_from_key(extr_ms2,key=common_vals)
+    if (NROW(mdata)==0L) return(NULL)
+    if (NROW(subxdata) == 0L) return(NULL)
+    ans <- data.table(an=mdata[,unique(an)],key="an")
     ms2ctg <- c(intersect(c(names(kvals),labs),names(extr_ms2)),"CE")
     xlxx <- intersect(as.character(labs),names(extr_ms2))
-    pdata <- extr_ms2[an %in% ans,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=ms2ctg]
-    print(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
+    common_labels <- unique(c("an",common_key,intersect(names(extr_ms2),labs)))
+    pdata <- subxdata[ans,on="an"][,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=common_labels]
     pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
     pdata <- pdata[,.(mz=mz,intensity=intensity,label=label)]
     if (NROW(pdata)==0L) return(NULL)
