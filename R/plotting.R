@@ -339,6 +339,17 @@ plot_save_single <- function(plot,decotab,extension,proj_path,subdir=FIG_TOPDIR,
 
 ## NEW BEGINNINGS
 
+smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
+                       zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
+                       showTitle=FALSE, smaLimit=100, sma=NULL) {
+    dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
+                              abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
+                              sma = NULL)
+
+    mol <- RMassBank::getMolecule(smiles)
+    z<-rcdk::view.image.2d(mol, depictor=dep)
+    grid::rasterGrob(z)
+}
 
 theme_eic <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::element_text(size=15L),
                                                         axis.text=ggplot2::element_text(size=12L,colour="black"),

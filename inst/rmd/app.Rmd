@@ -614,13 +614,17 @@ DT::dataTableOutput("setid_table")
 <div style="display: flex; flex-flow: column; padding-right:1.0em">
 ### Compound Index
 ```{r, echo=F}
-selectInput("cindex_group",label="Group",choices=c(NA_character_,"adduct","tag"), multiple=T)
+selectInput("cindex_group",label="Group",
+            choices=c(NA_character_,
+                      "adduct","tag"),
+            multiple=T,
+            selected=c("adduct","tag"))
 ```
             
 <div style="display: flex; flex-flow: row nowrap">
 ```{r, echo=F}
-selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
-selectInput("sort2",label="then by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
+selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%",selected="quality")
+selectInput("sort2",label="then by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%",selected="mz")
 selectInput("sort3",label="then", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
 selectInput("sort4",label="and finally by", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
 ```
@@ -640,25 +644,6 @@ DT::DTOutput("cindex")
 <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- EICs and Structure -->
 <div style="width: 80%; overflow-y: scroll;"> <!-- EIC ID Plot -->
 ```{r,echo=F}
-## plotOutput("plot_eic_ms1",
-##            hover = hoverOpts(id="plot_hover",
-##                              delayType = "throttle",
-##                              delay=100),
-##            dblclick = "plot_rt_click",
-##            brush = "plot_brush")
-## plotOutput("plot_eic_ms2",
-##            hover = hoverOpts(id="plot_hover",
-##                              delayType = "throttle",
-##                              delay=100),
-##            dblclick = "plot_rt_click",
-##            brush = "plot_brush")
-## plotOutput("plot_spec_ms2",
-##            hover = hoverOpts(id="plot_hover",
-##                              delayType = "throttle",
-##                              delay=100),
-##            dblclick = "plot_mz_click",
-##            brush = brushOpts(id="plot_mz_brush"))
-
 plotOutput("plot_eic_combined",
            ## height="100%",
            hover = hoverOpts(id="plot_hover",
@@ -669,24 +654,24 @@ plotOutput("plot_eic_combined",
 
 ```
 </div> <!-- EIC ID Plot -->
-<div style="width: 20%;">  <!-- Structure -->
+<div style="display: flex; flex-direction: column; width=20%;">  <!-- Structure and Dynamic Plot Data -->
+
 ```{r, echo=F}
-plotOutput("plot_struct")
+plotOutput("plot_struct", width="400%")
 ```
-</div> <!-- Structure -->
+
+#### Pointer Position
+
+```{r, echo=F}
+textOutput("plot_hover_out")
+```
+
+</div>  <!-- Structure and Dynamic Plot Data -->
+
 </div>  <!-- EICs and Structure -->
 
 <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- Spec and Details-->
-<!-- <div style="width: 40%"> <\!-- MS2 Spec -\-> -->
-<!-- ```{r, echo=F} -->
-<!-- plotOutput("plot_spec_ms2", -->
-<!--            hover = hoverOpts(id="plot_hover", -->
-<!--                              delayType = "throttle", -->
-<!--                              delay=100), -->
-<!--            dblclick = "plot_mz_click", -->
-<!--            brush = brushOpts(id="plot_mz_brush")) -->
-<!-- ``` -->
-<!-- </div> <\!-- MS2 Spec -\-> -->
+
 <div style="display: flex; flex-direction: row; flex-wrap: nowrap; padding-top: 2em; padding-left: 2em;">  <!-- Modification -->
 <div> <!-- Select MS1 curve -->
 ```{r,echo=F}
@@ -707,11 +692,6 @@ actionButton(inputId="change_qa_b",label="Commit changes")
 </div> <!-- Spec and Details-->
 
 <div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
-
-```{r,echo=F}
-textOutput("plot_hover_out")
-```
-
 ```{r, echo=F}
 actionButton("plot_save_single",
              label="Save this plot")

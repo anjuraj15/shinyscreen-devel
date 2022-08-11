@@ -1276,7 +1276,21 @@ mk_shinyscreen_server <- function(projects,init) {
             p3 <- rf_plot_spec_ms2()
             combine_plots(p1,p2,p3)
             
+            
         },height=1000)
+
+        output$plot_hover_out <- renderText({
+            inp1 <- input$plot_hover[[1]]
+            inp2 <- input$plot_hover[[2]]
+            res <- if (all(!(c(is.null(inp1),is.null(inp2))))) {
+                       paste0('(',
+                              format(inp1,digits=5),
+                              ',',
+                              format(inp2,digits=2,scientific=T),
+                              ')')
+                   } else "Currently not in the plot."
+            
+        })
 
         output$plot_struct <- renderPlot({
             rf_plot_struct()
@@ -2007,18 +2021,7 @@ mk_shinyscreen_server <- function(projects,init) {
             rf_plot_spec_facet()
         })
 
-        output$plot_hover_out <- renderText({
-            inp1 <- input$plot_hover[[1]]
-            inp2 <- input$plot_hover[[2]]
-            res <- if (all(!(c(is.null(inp1),is.null(inp2))))) {
-                       paste0('(',
-                              format(inp1,digits=5),
-                              ',',
-                              format(inp2,digits=2,scientific=T),
-                              ')')
-                   } else "Currently not in the plot."
-            
-        })
+        
 
         output$dwn_proj_b <- shiny::downloadHandler(
                                         filename=function() {

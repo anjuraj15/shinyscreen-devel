@@ -326,18 +326,6 @@ preProc <- function (summ,noiseFac=3,errRT=0.5,intThreshMS1=1e5,intThreshMS2=500
     summ
 }
 
-smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
-                       zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
-                       showTitle=FALSE, smaLimit=100, sma=NULL) {
-    dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
-                              abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
-                              sma = NULL)
-
-    mol <- RMassBank::getMolecule(smiles)
-    z<-rcdk::view.image.2d(mol, depictor=dep)
-    grid::rasterGrob(z)
-}
-
 gen_ms2_spec_data <- function(id,tag,iMS2rt,data,luckyN=NA) {
     ## Given the id, tag and the index of the MS2 spectrum, return the
     ## dataframe of the spectrum, with luckyN number of lagerst
