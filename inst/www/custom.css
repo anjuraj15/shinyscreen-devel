@@ -26,3 +26,9 @@
 /* #footer, #push { */
 /*   height: 100px;         /\* <- ...then you should also change this height! *\/ */
 /* } */
+
+
+.plot-layout {
+    display: grid;
+    grid-template-columns: 3fr 1fr
+}

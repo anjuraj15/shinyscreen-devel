@@ -640,88 +640,131 @@ DT::DTOutput("cindex")
 </div> <!-- Compound Explorer Panel -->
 
 ### Viewer
-<div style="display: flex-flow: column nowrap"> <!-- Main -->
-<div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- EICs and Structure -->
-<div style="width: 80%; overflow-y: scroll;"> <!-- EIC ID Plot -->
-```{r,echo=F}
-plotOutput("plot_eic_combined",
-           ## height="100%",
+<div class="plot-layout">
+<div>
+```{r, echo=F}
+plotOutput("plot_eic_ms1",
            hover = hoverOpts(id="plot_hover",
                              delayType = "throttle",
                              delay=100),
            dblclick = "plot_rt_click",
            brush = "plot_brush")
-
 ```
-</div> <!-- EIC ID Plot -->
-<div style="display: flex; flex-direction: column; width=20%;">  <!-- Structure and Dynamic Plot Data -->
-
+</div>
+<div>
 ```{r, echo=F}
-plotOutput("plot_struct", width="400%")
+plotOutput("plot_struct")
 ```
+</div>
+<div>
+```{r, echo=F}
+plotOutput("plot_eic_ms2",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
+           dblclick = "plot_rt_click",
+           brush = "plot_brush")
+```
+</div>
+<div>
 
 #### Pointer Position
 
 ```{r, echo=F}
 textOutput("plot_hover_out")
 ```
-
-</div>  <!-- Structure and Dynamic Plot Data -->
-
-</div>  <!-- EICs and Structure -->
-
-<div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <!-- Spec and Details-->
-
-<div style="display: flex; flex-direction: row; flex-wrap: nowrap; padding-top: 2em; padding-left: 2em;">  <!-- Modification -->
-<div> <!-- Select MS1 curve -->
-```{r,echo=F}
-selectInput(inputId="sel_ms1_curve",label="Select MS1 curve",choices=NULL)
-numericInput(inputId="mod_ms1_rt",label="MS1 peak retention time (min)",value=NA_real_)
-numericInput(inputId="mod_ms1_int", label="MS1 peak intensity", value=NA_real_)
-checkboxGroupInput(inputId="mod_ms1_qa", label="MS1 Quality")
-```
-</div> <!-- Select MS1 curve -->
-<div> <!-- Select MS2 entry -->
-```{r,echo=F}
-selectInput(inputId="sel_ms2_entry",label="Select MS2 spectrum",choices=NULL)
-checkboxGroupInput(inputId="mod_ms2_qa", label="MS2 Quality")
-actionButton(inputId="change_qa_b",label="Commit changes")
-```
-</div> <!-- Select MS2 entry -->
-</div> <!-- Modification -->
-</div> <!-- Spec and Details-->
-
-<div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
+</div>
+<div>
 ```{r, echo=F}
-actionButton("plot_save_single",
-             label="Save this plot")
-actionButton("plot_save_all",
-             label="Save all plots")
-actionButton("make_report_b",
-             label="Create report")
-textInput("plot_ext",
-          label = "Plot extension",
-          value = "pdf")
-## shinyscreen::rt_input(input_rt = "plot_rt_min",
-##                       input_unit = "plot_rt_min_unit",
-##                       width=15,
-##                       width_u=10,
-##                       def_rt = "min",
-##                       def_unit = "min",
-##                       pref = "RT min")
-## shinyscreen::rt_input(input_rt = "plot_rt_max",
-##                       input_unit = "plot_rt_max_unit",
-##                       width=15,
-##                       width_u=10,
-##                       def_rt = "max",
-##                       def_unit = "min",
-##                       pref = "RT max")
-## hr()
+plotOutput("plot_spec_ms2",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
+           dblclick = "plot_mz_click",
+           brush = brushOpts(id="plot_mz_brush"))
 ```
+</div>
+<div></div>
+</div>
 
-</div> <!-- Control Bar -->
+<!-- <div style="display: flex-flow: column nowrap"> <\!-- Main -\-> -->
+<!-- <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <\!-- EICs and Structure -\-> -->
+<!-- <div style="width: 80%; overflow-y: scroll;"> <\!-- EIC ID Plot -\-> -->
+<!-- ```{r,echo=F} -->
+<!-- plotOutput("plot_eic_combined", -->
+<!--            ## height="100%", -->
+<!--            hover = hoverOpts(id="plot_hover", -->
+<!--                              delayType = "throttle", -->
+<!--                              delay=100), -->
+<!--            dblclick = "plot_rt_click", -->
+<!--            brush = "plot_brush") -->
 
-</div> <!-- Main -->
+<!-- ``` -->
+<!-- </div> <\!-- EIC ID Plot -\-> -->
+<!-- <div style="display: flex; flex-direction: column; width=20%;">  <\!-- Structure and Dynamic Plot Data -\-> -->
+
+<!-- ```{r, echo=F} -->
+<!-- plotOutput("plot_struct", width="400%") -->
+<!-- ``` -->
+
+
+
+<!-- </div>  <\!-- Structure and Dynamic Plot Data -\-> -->
+
+<!-- </div>  <\!-- EICs and Structure -\-> -->
+
+<!-- <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <\!-- Spec and Details-\-> -->
+
+<!-- <div style="display: flex; flex-direction: row; flex-wrap: nowrap; padding-top: 2em; padding-left: 2em;">  <\!-- Modification -\-> -->
+<!-- <div> <\!-- Select MS1 curve -\-> -->
+<!-- ```{r,echo=F} -->
+<!-- selectInput(inputId="sel_ms1_curve",label="Select MS1 curve",choices=NULL) -->
+<!-- numericInput(inputId="mod_ms1_rt",label="MS1 peak retention time (min)",value=NA_real_) -->
+<!-- numericInput(inputId="mod_ms1_int", label="MS1 peak intensity", value=NA_real_) -->
+<!-- checkboxGroupInput(inputId="mod_ms1_qa", label="MS1 Quality") -->
+<!-- ``` -->
+<!-- </div> <\!-- Select MS1 curve -\-> -->
+<!-- <div> <\!-- Select MS2 entry -\-> -->
+<!-- ```{r,echo=F} -->
+<!-- selectInput(inputId="sel_ms2_entry",label="Select MS2 spectrum",choices=NULL) -->
+<!-- checkboxGroupInput(inputId="mod_ms2_qa", label="MS2 Quality") -->
+<!-- actionButton(inputId="change_qa_b",label="Commit changes") -->
+<!-- ``` -->
+<!-- </div> <\!-- Select MS2 entry -\-> -->
+<!-- </div> <\!-- Modification -\-> -->
+<!-- </div> <\!-- Spec and Details-\-> -->
+
+<!-- <div style="display: flex-flow: row nowrap"> <\!-- Control Bar -\-> -->
+<!-- ```{r, echo=F} -->
+<!-- actionButton("plot_save_single", -->
+<!--              label="Save this plot") -->
+<!-- actionButton("plot_save_all", -->
+<!--              label="Save all plots") -->
+<!-- actionButton("make_report_b", -->
+<!--              label="Create report") -->
+<!-- textInput("plot_ext", -->
+<!--           label = "Plot extension", -->
+<!--           value = "pdf") -->
+<!-- ## shinyscreen::rt_input(input_rt = "plot_rt_min", -->
+<!-- ##                       input_unit = "plot_rt_min_unit", -->
+<!-- ##                       width=15, -->
+<!-- ##                       width_u=10, -->
+<!-- ##                       def_rt = "min", -->
+<!-- ##                       def_unit = "min", -->
+<!-- ##                       pref = "RT min") -->
+<!-- ## shinyscreen::rt_input(input_rt = "plot_rt_max", -->
+<!-- ##                       input_unit = "plot_rt_max_unit", -->
+<!-- ##                       width=15, -->
+<!-- ##                       width_u=10, -->
+<!-- ##                       def_rt = "max", -->
+<!-- ##                       def_unit = "min", -->
+<!-- ##                       pref = "RT max") -->
+<!-- ## hr() -->
+<!-- ``` -->
+
+<!-- </div> <\!-- Control Bar -\-> -->
+
+<!-- </div> <\!-- Main -\-> -->
 
 
 
@@ -1060,25 +1103,10 @@ textInput("plot_ext",
 <!--                            actionButton("make_report_b", -->
 <!--                                         label="Create report"), -->
 <!--                            width=4), -->
-<!--               wellPanel(id = "tPanel",style = "overflow-y:scroll; max-height:80vh; background: white", -->
-<!--                         plotOutput("plot_eic", -->
-<!--                                    hover = hoverOpts(id="plot_hover", -->
-<!--                                                      delayType = "throttle", -->
-<!--                                                      delay=100), -->
-<!--                                    dblclick = "plot_rt_click", -->
-<!--                                    brush = "plot_brush"), -->
-<!--                         plotOutput("plot_ms2_spec", -->
-<!--                                    hover = hoverOpts(id="plot_hover", -->
-<!--                                                      delayType = "throttle", -->
-<!--                                                      delay=100), -->
-<!--                                    dblclick = "plot_mz_click", -->
-<!--                                    brush = brushOpts(id="plot_mz_brush")) -->
-<!--                         ## ,plotOutput("plot_struct") -->
-<!--                         )) -->
 
 
 
-<!-- ``` -->
+
 
 <!-- ENGINE -->
 

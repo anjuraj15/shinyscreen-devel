@@ -1270,14 +1270,27 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## RENDER: PLOTS
 
-        output$plot_eic_combined <- renderPlot({
-            p1 <- rf_plot_eic_ms1()
-            p2 <- rf_plot_eic_ms2()
-            p3 <- rf_plot_spec_ms2()
-            combine_plots(p1,p2,p3)
+        ## output$plot_eic_combined <- renderPlot({
+        ##     p1 <- rf_plot_eic_ms1()
+        ##     p2 <- rf_plot_eic_ms2()
+        ##     p3 <- rf_plot_spec_ms2()
+        ##     combine_plots(p1,p2,p3)
             
             
-        },height=1000)
+        ## },height=1000)
+
+        output$plot_eic_ms1 <- renderPlot({
+            rf_plot_eic_ms1()
+        })
+
+        output$plot_eic_ms2 <- renderPlot({
+            rf_plot_eic_ms2()
+        })
+
+        output$plot_spec_ms2 <- renderPlot({
+            rf_plot_spec_ms2()
+        })
+
 
         output$plot_hover_out <- renderText({
             inp1 <- input$plot_hover[[1]]
