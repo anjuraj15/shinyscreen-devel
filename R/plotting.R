@@ -417,7 +417,9 @@ mk_logic_exp <- function(rest,sofar=NULL) {
 
 get_data_from_key <- function(tab,key) {
     skey <- mk_logic_exp(key)
-    eval(bquote(tab[.(skey)]))
+    tab <- eval(bquote(tab[.(skey)]))
+    setkeyv(tab,names(key))
+    tab
 }
 
 
@@ -432,9 +434,11 @@ make_line_label <- function(...) {
 }
 
 ## Prepare MS1 eic data: rt and intensity of a subset of extracted
-## data defined by the key named list. Argument `labs' is a vector of
-## names that will be used to construct the legend labels.
-get_data_4_eic_ms1 <- function(extr_ms1,kvals,labs) {
+## data defined by the key named list. Argument `summ_rows' is a
+## subset of the `summ' table based on `kvals'. We need it for rt-s in
+## the labels. Argument `labs' is a vector of names that will be used
+## to construct the legend labels.
+get_data_4_eic_ms1 <- function(extr_ms1,summ_rows,kvals,labs) {
 
     ## Which of the selected keys are in the extr_ms1? This can be
     ## made more obvious to the user, but note necessary atm.
@@ -450,7 +454,13 @@ get_data_4_eic_ms1 <- function(extr_ms1,kvals,labs) {
     xlxx <- intersect(labs,names(extr_ms1))
     xlxx <- as.character(xlxx)
     pdata <- tab[,.(rt,intensity),by=xlxx]
+    print(xlxx)
+    print(unique(pdata$ID))
+    ## Now, add the RTs in.
+    pdata[summ_rows,ms1_rt:=signif(i.ms1_rt,5),on=xlxx]
+
     ## Create labels.
+    xlxx <- unique(c(xlxx,"ms1_rt"))
     pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=xlxx],splice=T))
     setkeyv(pdata,cols=unique(as.character(xlxx),"rt"))
     pdata
@@ -478,13 +488,23 @@ get_rows_from_summ <- function(summ,kvals,...) {
 guide_fun <- function() {
     ggplot2::guides(colour=ggplot2::guide_legend(nrow=2,byrow=T),shape='square')
 }
-make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=1) {
 
+narrow_summ <- function(summ,kvals,labs,...) {
+        keys <- names(kvals)
+        needed <- setdiff(labs,keys)
+        x <- as.list(c(needed,...))
+        x <- c(list(summ,kvals),x)
+        do.call(get_rows_from_summ,x)
+}
+
+make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=1) {
+    
    
-    ## Get the table with ms1 data.
-    pdata <- get_data_4_eic_ms1(extr_ms1, kvals, labs)
     ## Get metadata.
-    summ_rows <- get_rows_from_summ(summ,kvals,"mz","ms1_rt","ms1_int","Name","SMILES","Formula")
+    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula")
+    ## Get the table with ms1 data.
+    pdata <- get_data_4_eic_ms1(extr_ms1, summ_rows, kvals, labs)
+
     key <- names(kvals)
     ## Deal with retention time range.
     rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
@@ -502,10 +522,10 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     nm <- paste(unique(summ_rows$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
     p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("retention time")+ggplot2::geom_line()+scale_y(axis=axis,labels=sci10)+rt_lim
-    annt_dx <- 5*dx/100.
-    annt <- summ_rows[,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
-    ## Annotate.
-    p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)+guide_fun()
+    ## annt_dx <- 5*dx/100.
+    ## annt <- summ_rows[,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
+    ## ## Annotate.
+    ## p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)+guide_fun()
 
     ## Add theme.
     p + theme_eic()
@@ -513,7 +533,10 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
 
 
 make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1) {
-    ## TODO
+    ## TODO refurbish get_data_4_eic_ms2 to use narrowed summ.
+    ## Get metadata.
+    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES","Formula")
+
     ## Get plotting data for the compound.
     pdata <- get_data_4_eic_ms2(summ,
                                 kvals=kvals,
@@ -521,8 +544,6 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1)
 
     if (NROW(pdata)==0L) return(NULL)
 
-    ## Get metadata.
-    summ_rows <- get_rows_from_summ(summ,kvals,"mz","ms2_rt","ms2_int","Name","SMILES","Formula")
     ## Deal with retention time range.
     rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
     xrng <- if (!is.null(rt_range)) rt_range else range(pdata$rt)
@@ -544,10 +565,10 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1)
         ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+ggplot2::geom_linerange()+
         scale_y(axis=axis,labels=sci10)+rt_lim+guide_fun()
     ans <- pdata[,unique(an)]
-    annt_dx <- 5*dx/100.
-    annt <- summ[an %in% (ans),.(an=an,x=ms2_rt+..annt_dx,y=1.1*ms2_int,txt=signif(ms2_rt,5))]
-    ## Annotate.
-    p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=3,check_overlap=T)
+    ## annt_dx <- 5*dx/100.
+    ## annt <- summ[an %in% (ans),.(an=an,x=ms2_rt+..annt_dx,y=1.1*ms2_int,txt=signif(ms2_rt,5))]
+    ## ## Annotate.
+    ## p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=3,check_overlap=T)
 
     ## Add theme.
     p + theme_eic()
