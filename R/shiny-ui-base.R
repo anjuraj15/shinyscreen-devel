@@ -1140,6 +1140,71 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$datatab$adduct <- z$adduct
         }, label = "datatab-edit")
 
+        observeEvent(input$make_report_b,{
+            isolate({
+                ms1 <- rvs$m$extr$ms1
+                ms2 <- rvs$m$extr$ms2
+                summ <- rvs$m$out$tab$summ
+
+            })
+            req(NROW(summ)>0L)
+            req(NROW(ms1)>0L)
+            req(NROW(ms2)>0L)
+
+            cind <- rf_get_cindex()
+            key <- rf_get_cindex_key()
+            rt_range <- rf_get_rtrange()
+            labs <- req(rf_get_cindex_labs())
+            projdir <- rvs$gui$paths$project
+            fn <- paste0(file.path(projdir,input$report_name),'.pdf')
+            print(fn)
+            pdf(file=fn,paper="a4")
+            for (ri in 1:NROW(cind)) {
+                rowtab <- cind[ri][,..key] 
+                kvals <- lapply(rowtab,function (x) x[[1]])
+                names(kvals) <- key
+                message('Compound index row: ',ri)
+                p1 <- make_eic_ms1_plot(ms1,summ,kvals=kvals,
+                                        labs=labs,
+                                        asp=PLOT_EIC_ASPECT,
+                                        rt_range=rt_range)
+                p2 <- make_eic_ms2_plot(summ,
+                                        kvals=kvals,
+                                        labs=labs,
+                                        rt_range = rt_range,
+                                        asp=PLOT_EIC_ASPECT)
+
+                id <- rowtab <- cind[ri][,..key][["ID"]][[1]]
+                smi <- rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
+                grb <- smiles2img(smi)
+                p_struc <- qplot(1:5, 2*(1:5), geom="blank") +
+                    annotation_custom(grb, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+                    theme_empty
+
+                p_spec <- make_spec_ms2_plot(ms2,
+                                             summ,
+                                             kvals=kvals,
+                                             labs=labs)
+
+                cmb <- combine_plots(p1,p2,p_spec,p_struc)
+                print(cmb)
+            }
+            dev.off()
+        })
+
+        ## observeEvent(input$plot_save_single,{
+
+        ##     p1 <- rf_plot_eic_ms1()
+        ##     p2 <- rf_plot_eic_ms2()
+        ##     p3 <- rf_plot_spec_ms2()
+        ##     str <- rf_plot_struct()
+
+        ##     message("Plots saved to ",file.path(rvs$gui$paths$project,
+        ##                                         FIG_TOPDIR))
+
+            
+        ## })
+
         
         ## RENDER
         output$curr_proj <- renderText({
@@ -1287,6 +1352,30 @@ mk_shinyscreen_server <- function(projects,init) {
             
             
         ## },height=1000)
+        observeEvent(input$plot_brush,{
+            xmin <- input$plot_brush[["xmin"]]
+            xmax <- input$plot_brush[["xmax"]]
+            if (!is.null(xmin)) updateNumericInput(session=session,
+                                                   inputId="plot_rt_min",
+                                                   value=xmin)
+            if (!is.null(xmax)) updateNumericInput(session=session,
+                                                   inputId="plot_rt_max",
+                                                   value=xmax)
+            session$resetBrush("plot_brush")
+            
+        },label = "get_rt_from_selection")
+
+        observeEvent(input$plot_rt_click,
+        {
+            ## TODO: update to sensible range.
+            updateNumericInput(session=session,
+                               inputId="plot_rt_min",
+                               value=NA_real_)
+            updateNumericInput(session=session,
+                               inputId="plot_rt_max",
+                               value=NA_real_)
+        }, label = "reset_rt_range")
+
 
         output$plot_eic_ms1 <- renderPlot({
             rf_plot_eic_ms1()

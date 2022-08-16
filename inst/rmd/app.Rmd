@@ -705,6 +705,24 @@ plotOutput("plot_spec_ms2",
 </div>
 <div></div>
 </div>
+<div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
+```{r, echo=F}
+## actionButton("plot_save_single",
+##              label="Save this plot")
+## actionButton("plot_save_all",
+##              label="Save all plots")
+actionButton("make_report_b",
+             label="Create report")
+textInput("report_name",
+          label="Report Name",
+          value="report")
+## textInput("plot_ext",
+##           label = "Plot extension",
+##           value = "pdf")
+```
+
+</div> <\!-- Control Bar -\-> -->
+
 
 <!-- <div style="display: flex-flow: column nowrap"> <\!-- Main -\-> -->
 <!-- <div style="display: flex; flex-direction: row; flex-wrap: nowrap;"> <\!-- EICs and Structure -\-> -->

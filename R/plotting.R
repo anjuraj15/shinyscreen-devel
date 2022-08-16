@@ -491,6 +491,7 @@ guide_fun <- function() {
 
 narrow_summ <- function(summ,kvals,labs,...) {
         keys <- names(kvals)
+        ## keys <- keys[!is.na(keys)]
         needed <- setdiff(labs,keys)
         x <- as.list(c(needed,...))
         x <- c(list(summ,kvals),x)
@@ -498,8 +499,6 @@ narrow_summ <- function(summ,kvals,labs,...) {
 }
 
 make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=1) {
-    
-    message("RTs: ", paste0(rt_range,coll=','))
     ## Get metadata.
     summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula")
     ## Get the table with ms1 data.
@@ -613,9 +612,11 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1) {
  
 }
 
-combine_plots <- function(p_eic_ms1,p_eic_ms2,p_spec_ms2) {
-    cowplot::plot_grid(p_eic_ms1,p_eic_ms2,p_spec_ms2,ncol=1,align='vh',axis='b')
+combine_plots <- function(p_eic_ms1,p_eic_ms2,p_spec_ms2,p_struct) {
+    cowplot::plot_grid(p_eic_ms1,p_struct,p_eic_ms2,p_spec_ms2,ncol=2,align='v',axis='l')
 }
+
+
 
     
     
