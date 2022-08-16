@@ -668,11 +668,30 @@ plotOutput("plot_eic_ms2",
 </div>
 <div>
 
-#### Pointer Position
+#### Tweak Plot Parameters
 
 ```{r, echo=F}
 textOutput("plot_hover_out")
 ```
+
+#### Retention Time Range
+
+<div style="display:flex; flex-direction: row;"> <!-- RT div -->
+```{r, echo=F}
+numericInput(inputId = "plot_rt_min",
+             label="Start",
+             value=NA_real_,
+             width="15%")
+```
+```{r, echo=F}
+numericInput(inputId = "plot_rt_max",
+             label="End",
+             value=NA_real_,
+             width="15%")
+
+
+```
+</div> <!-- RT div -->
 </div>
 <div>
 ```{r, echo=F}
@@ -794,21 +813,6 @@ plotOutput("plot_spec_ms2",
 <!--                            textOutput("plot_hover_out"), -->
 <!--                            textInput("rtrange", -->
 <!--                                      label = "Global RT range"), -->
-<!--                            shinyscreen::rt_input(input_rt = "plot_rt_min", -->
-<!--                                                  input_unit = "plot_rt_min_unit", -->
-<!--                                                  width=55, -->
-<!--                                                  width_u=40, -->
-<!--                                                  def_rt = "min", -->
-<!--                                                  def_unit = "min", -->
-<!--                                                  pref = "RT min"), -->
-
-<!--                            shinyscreen::rt_input(input_rt = "plot_rt_max", -->
-<!--                                                  input_unit = "plot_rt_max_unit", -->
-<!--                                                  width=55, -->
-<!--                                                  width_u=40, -->
-<!--                                                  def_rt = "max", -->
-<!--                                                  def_unit = "min", -->
-<!--                                                  pref = "RT max"), -->
 <!--                            hr(), -->
 <!--                            ## Not so important, TODO later. -->
 <!--                            ## h5("Log scale"), -->

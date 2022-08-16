@@ -495,8 +495,8 @@ mk_shinyscreen_server <- function(projects,init) {
     ## Plotting parameters.
 
     ## Transient rt range.
-    rv_rtrange <- reactiveValues(min=rt_in_min(def_state$conf$figures$rt_min),
-                                 max=rt_in_min(def_state$conf$figures$rt_max))
+    rv_rtrange <- reactiveValues(min=Inf,
+                                 max=-Inf)
 
     ## Transient mz range.
     rv_mzrange <- reactiveValues(min=NA,
@@ -795,6 +795,14 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         ## REACTIVE FUNCTIONS: PLOTS
+        rf_get_rtrange <- reactive({
+            x1 <- input$plot_rt_min
+            x2 <- input$plot_rt_max
+
+            if (is.na(x1)) x1 <- NA_real_
+            if (is.na(x2)) x2 <- NA_real_
+            c(x1,x2)
+        })
         rf_plot_eic_ms1 <- reactive({
             isolate({
                 ms1 <- rvs$m$extr$ms1
@@ -805,7 +813,8 @@ mk_shinyscreen_server <- function(projects,init) {
             req(NROW(ms1)>0L)
             make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),
                               labs=req(rf_get_cindex_labs()),
-                              asp=PLOT_EIC_ASPECT)
+                              asp=PLOT_EIC_ASPECT,
+                              rt_range=rf_get_rtrange())
         })
 
         rf_plot_eic_ms2 <- reactive({
@@ -820,7 +829,7 @@ mk_shinyscreen_server <- function(projects,init) {
             make_eic_ms2_plot(summ,
                               kvals=rf_get_cindex_kval(),
                               labs=rf_get_cindex_labs(),
-                              rt_range = rt_rng,
+                              rt_range = rf_get_rtrange(),
                               asp=PLOT_EIC_ASPECT)
             
             

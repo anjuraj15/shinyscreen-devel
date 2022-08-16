@@ -499,7 +499,7 @@ narrow_summ <- function(summ,kvals,labs,...) {
 
 make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=1) {
     
-   
+    message("RTs: ", paste0(rt_range,coll=','))
     ## Get metadata.
     summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula")
     ## Get the table with ms1 data.
@@ -507,8 +507,8 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
 
     key <- names(kvals)
     ## Deal with retention time range.
-    rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
-    xrng <- if (!is.null(rt_range)) rt_range else range(pdata$rt)
+    rt_lim <- if (is.null(rt_range)) NULL else ggplot2::coord_cartesian(xlim=rt_range)#ggplot2::xlim(rt_range[[1]],rt_range[[2]])
+    xrng <- range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
     dx <- abs(xrng[[2]]-xrng[[1]])
     yrng <- range(pdata$intensity)
     dy <- abs(yrng[[2]]-yrng[[1]])
@@ -533,7 +533,6 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
 
 
 make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1) {
-    ## TODO refurbish get_data_4_eic_ms2 to use narrowed summ.
     ## Get metadata.
     summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES","Formula")
 
@@ -545,15 +544,14 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1)
     if (NROW(pdata)==0L) return(NULL)
 
     ## Deal with retention time range.
-    rt_lim <- if (is.null(rt_range)) NULL else ggplot2::xlim(rt_range)
-    xrng <- if (!is.null(rt_range)) rt_range else range(pdata$rt)
+    rt_lim <- if (is.null(rt_range)) NULL else ggplot2::coord_cartesian(xlim=rt_range)#ggplot2::xlim(rt_range)
+    xrng <- range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
     dx <- abs(xrng[[2]]-xrng[[1]])
     yrng <- range(pdata$intensity)
     dy <- abs(yrng[[2]]-yrng[[1]])
 
     ## Fix aspect ratio.
-    aspr <- if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
-
+    aspr <- if (is.null(dx) || is.na(dx) || dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
     ## Derive various labels.
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
                      collapse='; ')
