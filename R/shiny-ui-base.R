@@ -1157,7 +1157,6 @@ mk_shinyscreen_server <- function(projects,init) {
             labs <- req(rf_get_cindex_labs())
             projdir <- rvs$gui$paths$project
             fn <- paste0(file.path(projdir,input$report_name),'.pdf')
-            print(fn)
             pdf(file=fn,paper="a4")
             for (ri in 1:NROW(cind)) {
                 rowtab <- cind[ri][,..key] 
@@ -1190,6 +1189,12 @@ mk_shinyscreen_server <- function(projects,init) {
                 print(cmb)
             }
             dev.off()
+        })
+
+        observeEvent(input$summ_tab_b,{
+            projdir <- rvs$gui$paths$project
+            fn <- file.path(projdir,input$summ_name)
+            tab2file(rvs$m$out$tab$summ,fn)
         })
 
         ## observeEvent(input$plot_save_single,{

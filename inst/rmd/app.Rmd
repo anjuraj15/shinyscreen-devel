@@ -711,17 +711,21 @@ plotOutput("plot_spec_ms2",
 ##              label="Save this plot")
 ## actionButton("plot_save_all",
 ##              label="Save all plots")
-actionButton("make_report_b",
-             label="Create report")
 textInput("report_name",
           label="Report Name",
           value="report")
+actionButton("make_report_b",
+             label="Create report")
+textInput("summ_name",
+          label="Summary table name",
+          value="summary.csv")
+actionButton("summ_tab_b", "Save summary table")
 ## textInput("plot_ext",
 ##           label = "Plot extension",
 ##           value = "pdf")
 ```
 
-</div> <\!-- Control Bar -\-> -->
+</div> <!-- Control Bar -->
 
 
 <!-- <div style="display: flex-flow: column nowrap"> <\!-- Main -\-> -->
