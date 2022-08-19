@@ -337,8 +337,10 @@ plot_save_single <- function(plot,decotab,extension,proj_path,subdir=FIG_TOPDIR,
 
 
 
-## NEW BEGINNINGS
+## PLOTTING
 
+
+### PLOTTING: AESTHETIC FUNCTIONS
 smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
                        zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
                        showTitle=FALSE, smaLimit=100, sma=NULL) {
@@ -351,6 +353,13 @@ smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
     grid::rasterGrob(z)
 }
 
+guide_fun <- function() {
+    ## ggplot2::guides(colour=ggplot2::guide_legend(nrow=2,
+    ##                                              byrow=T,
+    ##                                              override.aes=list(shape=15)))
+    NULL
+}
+
 theme_eic <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::element_text(size=15L),
                                                         axis.text=ggplot2::element_text(size=12L,colour="black"),
                                                         legend.title=ggplot2::element_text(size=15L),
@@ -358,7 +367,20 @@ theme_eic <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::elem
                                                         plot.subtitle=ggplot2::element_text(size=12L),
                                                         legend.text=ggplot2::element_text(size=12L),
                                                         plot.caption=ggplot2::element_text(size=12L),
-                                                        legend.position='bottom',...)
+                                                        legend.position='bottom',...)+guide_fun()
+
+
+theme_print <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::element_text(size=5L),
+                                                        axis.text=ggplot2::element_text(size=4L,colour="black"),
+                                                        plot.title=ggplot2::element_text(size=5L),
+                                                        plot.subtitle=ggplot2::element_text(size=4L),
+                                                        legend.text=ggplot2::element_text(size=4L),
+                                                        plot.caption=ggplot2::element_text(size=7L),
+                                                        legend.position='bottom',
+                                                        legend.spacing=ggplot2::unit(0.5,'lines'),
+                                                        legend.key.size=unit(0.5,'lines'),
+                                                        legend.title=ggplot2::element_blank(),
+                                                        ...)+guide_fun()
                                
 
 theme_empty <- ggplot2::theme_bw()
@@ -368,6 +390,10 @@ theme_empty$strip.text <- ggplot2::element_blank()
 theme_empty$axis.text <- ggplot2::element_blank()
 theme_empty$plot.title <- ggplot2::element_blank()
 theme_empty$axis.title <- ggplot2::element_blank()
+
+
+cust_geom_line <- function(key_glyph="rect",...) geom_line(...,key_glyph=key_glyph)
+cust_geom_linerange <- function(key_glyph="rect",...) geom_linerange(...,key_glyph=key_glyph)
 
 sci10 <- function(x) {
     prefmt <- formatC(x,format="e",digits=2)
@@ -399,6 +425,8 @@ scale_y<- function (axis="linear", ...) if (axis!="log") {
                                             ggplot2::scale_y_log10(...)
                                         }
 
+
+### PLOTTING: DATA WRANGLING
 
 ## Concatenates items of a named list in a chain of &-s: x==xval &
 ## y=yval & z=zval ...)
@@ -485,10 +513,6 @@ get_rows_from_summ <- function(summ,kvals,...) {
     get_data_from_key(summ,key=kvals)[,unique(.SD),.SDcol=summ_rows_cols]
 }
 
-guide_fun <- function() {
-    ggplot2::guides(colour=ggplot2::guide_legend(nrow=2,byrow=T),shape='square')
-}
-
 narrow_summ <- function(summ,kvals,labs,...) {
         keys <- names(kvals)
         ## keys <- keys[!is.na(keys)]
@@ -497,6 +521,9 @@ narrow_summ <- function(summ,kvals,labs,...) {
         x <- c(list(summ,kvals),x)
         do.call(get_rows_from_summ,x)
 }
+
+
+### PLOTTING: TOP-LEVEL PLOT CREATION
 
 make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=1) {
     ## Get metadata.
@@ -520,7 +547,12 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     title_txt = paste0("MS1 EIC for ion m/z = ",paste0(signif(unique(summ_rows$mz),digits=7L),collapse=", "))
     nm <- paste(unique(summ_rows$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
-    p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("retention time")+ggplot2::geom_line()+scale_y(axis=axis,labels=sci10)+rt_lim
+    p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+
+        ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+
+        ggplot2::xlab("retention time")+
+        cust_geom_line()+
+        scale_y(axis=axis,labels=sci10)+
+        rt_lim
     ## annt_dx <- 5*dx/100.
     ## annt <- summ_rows[,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
     ## ## Annotate.
@@ -558,9 +590,9 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1)
     subt_txt = if (!length(summ_rows$Name)==0L && !is.na(summ_rows$Name) && nchar(summ_rows$Name)>0L) summ_rows$Name else NULL
     ## Base plot.
     p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label)) +
-        ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
-        ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+ggplot2::geom_linerange()+
-        scale_y(axis=axis,labels=sci10)+rt_lim+guide_fun()
+         ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
+         ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+cust_geom_linerange()+
+         scale_y(axis=axis,labels=sci10)+rt_lim+guide_fun()
     ans <- pdata[,unique(an)]
     ## annt_dx <- 5*dx/100.
     ## annt <- summ[an %in% (ans),.(an=an,x=ms2_rt+..annt_dx,y=1.1*ms2_int,txt=signif(ms2_rt,5))]
@@ -605,7 +637,7 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1) {
     nm <- paste(unique(mdata$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
 
-    p <- ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+ggplot2::geom_linerange()+scale_y(axis=axis,labels=sci10)+guide_fun()
+    p <- ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+cust_geom_linerange()+scale_y(axis=axis,labels=sci10)+guide_fun()
 
     ## Add theme.
     p + theme_eic()
@@ -613,7 +645,8 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1) {
 }
 
 combine_plots <- function(p_eic_ms1,p_eic_ms2,p_spec_ms2,p_struct) {
-    cowplot::plot_grid(p_eic_ms1,p_struct,p_eic_ms2,p_spec_ms2,ncol=2,align='v',axis='l')
+    cowplot::plot_grid(p_eic_ms1,p_struct,p_eic_ms2,
+                       p_spec_ms2,ncol=2,rel_widths=c(2,1),align='v',axis='l')
 }
 
 
