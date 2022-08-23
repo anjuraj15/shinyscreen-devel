@@ -196,17 +196,17 @@ gen_summ <- function(comp,qa_ms1,qa_ms2) {
     data.table::setcolorder(summ,SUMM_COLS)
 
     ## Quality scores for ms1 and ms2.
-    summ[,qa_ms1 := as.integer(Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
-                                   as.integer(qa_ms1_exists),
-                                   as.integer(qa_ms1_above_noise),
-                                   as.integer(qa_ms1_good_int)))]
-    summ[,qa_ms2 := as.integer(Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
-                                   as.integer(qa_ms2_exists),
-                                   as.integer(qa_ms2_near),
-                                   as.integer(qa_ms2_good_int)))]
+    summ[,qlt_ms1 := as.integer(Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
+                                    as.integer(qa_ms1_exists),
+                                    as.integer(qa_ms1_above_noise),
+                                    as.integer(qa_ms1_good_int)))]
+    summ[,qlt_ms2 := as.integer(Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
+                                    as.integer(qa_ms2_exists),
+                                    as.integer(qa_ms2_near),
+                                    as.integer(qa_ms2_good_int)))]
 
-    summ[is.na(qa_ms1),qa_ms1:=0L]
-    summ[is.na(qa_ms2),qa_ms2:=0L]
+    summ[is.na(qlt_ms1),qlt_ms1:=0L]
+    summ[is.na(qlt_ms2),qlt_ms2:=0L]
 
     summ
     
@@ -603,12 +603,13 @@ create_qa_table <- function(extr,conf_presc) {
     
     qa <- list(prescreen=conf_presc)
     
-    checks <- extr$ms2[,{
-        z <-..QA_FLAGS
-        z[1:length(z)]<-F
-        names(z)<-..QA_FLAGS
-        z
-    },keyby=BASE_KEY_MS2]
+    ## checks <- extr$ms2[,{
+    ## },keyby=BASE_KEY_MS2]
+    checks <- extr$ms2
+    checks[,(QA_FLAGS):=F]
+    ## message("checks:")
+    ## print(checks)
+    ## message("done checks")
     checks[,(QA_NUM_INT):=NA_integer_]
     checks[,(QA_NUM_REAL):=NA_real_]
     setkeyv(checks,BASE_KEY_MS2)

@@ -722,22 +722,14 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$datatab$tag
             rvs$gui$datatab$adduct
             rvs$gui$datatab$set
+            rvs$gui$paths$data
+            rvs$gui$paths$project
             isolate({
                 req(pre_setup_val_block(rvs$gui))
                 q = app_state2state(input,rvs$gui)
                 
             })
             run(m=q,phases=c("setup","comptab"))
-        })
-
-        rf_get_cmpd_tab <- reactive({
-            m <- rf_setup_state()
-            m$input$tab$cmpds
-            })
-
-        rf_get_sets_tab <- reactive({
-            m <- rf_setup_state()
-            m$input$tab$setid
         })
 
         rf_cindex_key <- reactive({
@@ -921,10 +913,17 @@ mk_shinyscreen_server <- function(projects,init) {
                 pack <- readRDS(file=fn_packed_state)
                 rvs$gui <- unpack_app_state(session=session,
                                             input=input,
+                                            top_data_dir=init$userdir,
                                             project_path=fullwd,
                                             packed_state=pack)
                 ## Load computational state.
                 rvs$m <- readRDS(file=fn_state)
+                rvs$m$run <- reinit_run_data(init$userdir,
+                                             project=rvs$gui$project(),
+                                             run = rvs$m$run)
+                
+                ## If prescreen config invalid, reinit.
+                if (length(rvs$m$conf$prescreen)==0) rvs$m$conf <- input2conf_prescreen(input=input,conf=rvs$m$conf)
 
                 ## Update status variables.
                 m <- rvs$m
@@ -938,16 +937,20 @@ mk_shinyscreen_server <- function(projects,init) {
                 rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
                 if (NROW(m$extr$ms1)>0L) rvs$status$is_extracted_stat <- "Yes."
                 if (NROW(m$out$tab$summ)>0L) rvs$status$is_qa_stat <- "Yes."
+
             } else {
                 message("Initialising project: ",wd)
                 rvs$gui <- create_gui(project_path=fullwd)
+                
+
+                
                 
             }
             message("project: ",rvs$gui$project())
         }, label = "project-b")
 
         observeEvent(input$extract_b,{
-            rvs$m <-req(rf_setup_state())
+            rvs$m <- app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
             m <- rvs$m
             shinymsg("Extraction has started. This may take a while.")
             rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
@@ -966,7 +969,7 @@ mk_shinyscreen_server <- function(projects,init) {
                     rv_extr_flag(F)
                     m <-rvs$m
                     
-                    promises::future_promise(run(m=m,phases="extract")) %...>% {
+                    promises::future_promise(run(m=m,phases=c("setup","comptab","extract"))) %...>% {
                         rvs$m = .
                         rvs$status$is_extracted_stat = "Yes."
                         fn_c_state <- file.path(rvs$m$run$paths$project,
@@ -1002,7 +1005,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$presc_b,{
             if (NROW(rvs$m$extr$ms1)>0L) {
-                rvs$m$conf <- input2conf_prescreen(input=input,conf=rvs$m$conf)
+                rvs$m <- app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
                 rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh"]]
                 rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
                 rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
@@ -1265,29 +1268,31 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$comp_table <- DT::renderDataTable({
-            cmpds <- rf_get_cmpd_tab()
-            validate(need(NROW(cmpds)>0,"No compound list loaded yet."))
-            DT::datatable(cmpds,
-                          ## style = 'bootstrap',
-                          ## class = 'table-condensed',
-                          extensions = 'Scroller',
-                          options = list(scrollX = T,
-                                         scrollY = 300,
-                                         deferRender = T,
-                                         scroller = T))
+            ## TODO FIXME
+            ## cmpds <- rf_get_cmpd_tab()
+            ## validate(need(NROW(cmpds)>0,"No compound list loaded yet."))
+            ## DT::datatable(cmpds,
+            ##               ## style = 'bootstrap',
+            ##               ## class = 'table-condensed',
+            ##               extensions = 'Scroller',
+            ##               options = list(scrollX = T,
+            ##                              scrollY = 300,
+            ##                              deferRender = T,
+            ##                              scroller = T))
         })
 
         output$setid_table <- DT::renderDataTable({
-            setid <- rf_get_sets_tab()
-            validate(need(NROW(setid)>0,"No set id list loaded yet."))
-            DT::datatable(setid,
-                          ## style = 'bootstrap',
-                          ## class = 'table-condensed',
-                          extensions = 'Scroller',
-                          options = list(scrollX = T,
-                                         scrollY = 300,
-                                         deferRender = T,
-                                         scroller = T))
+            ## TODO FIXME
+            ## setid <- rf_get_sets_tab()
+            ## validate(need(NROW(setid)>0,"No set id list loaded yet."))
+            ## DT::datatable(setid,
+            ##               ## style = 'bootstrap',
+            ##               ## class = 'table-condensed',
+            ##               extensions = 'Scroller',
+            ##               options = list(scrollX = T,
+            ##                              scrollY = 300,
+            ##                              deferRender = T,
+            ##                              scroller = T))
         })
 
         ## RENDER: STATUS
@@ -1875,7 +1880,7 @@ mk_shinyscreen_server <- function(projects,init) {
             }
 
             if (NROW(rv_tran$qa_ms2sel_tab)>0) {
-                qa_names <- c("ms2_sel",colnames(flt_summ)[grepl("qa_ms2",colnames(flt_summ))])
+                qa_names <- c("ms2_sel",colnames(flt_summ)[grepl("qlt_ms2",colnames(flt_summ))])
                 qatab <- copy(rv_tran$qa_ms2sel_tab)
                 qatab[,(qa_names):=lapply(.SD,yesno2log),.SDcol=qa_names]
                 entries <- cbind(compsel[the_row][,.(adduct,tag,ID)],

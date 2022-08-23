@@ -141,7 +141,7 @@ which_gui_radio_inputs <- function() {
     GUI_RADIO_INPUTS
 }
 
-unpack_app_state <- function(session,input,project_path,packed_state) {
+unpack_app_state <- function(session,input,top_data_dir,project_path,packed_state) {
     shiny::isolate({
         for (inp in which_gui_select_inputs()) {
             shiny::updateSelectInput(session = session,
@@ -174,14 +174,15 @@ unpack_app_state <- function(session,input,project_path,packed_state) {
         gui$datatab$adduct <- packed_state$datatab$adduct
         gui$datatab$tag <- packed_state$datatab$tag
         gui$datatab$set <- packed_state$datatab$set
-        gui$paths$data <- packed_state$paths$data
+        x <- packed_state$paths$data
+        gui$paths$data <- if (length(x)>0 & nchar(x)>0) file.path(top_data_dir,basename(x))
+        if (!dir.exists(gui$paths$data)) {warning("Data directory ", gui$paths$data, " does not exist. You must select one.")}
         gui
     })
 
  
 
 }
-
 
 input2conf_setup <- function(input,gui,conf=list()) {
     if (length(conf)==0L) {
@@ -237,10 +238,13 @@ input2conf <- function(input,gui,conf=list()) {
     conf
 }
 
-app_state2state <- function(input,gui) {
-    m <- new_project(gui$paths$project)
+app_state2state <- function(input,gui,m=NULL) {
+    if (is.null(m)) m <- new_project(gui$paths$project)
     m$run$paths <- shiny::reactiveValuesToList(gui$paths)
     m$conf <- input2conf_setup(input,gui=gui)
+    m$conf <- input2conf_prescreen(input=input,conf=m$conf)
+    m$conf <- input2conf_figures(input,conf=m$conf)
+    m$conf <- input2conf_report(input,conf=m$conf)
     m$input$tab$mzml <- gui2datatab(gui)
     m
 }
@@ -357,12 +361,12 @@ gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
     allc <- c(by.,cols)
     xsumm <- summ[,..allc]
     setnames(xsumm,old="ms1_rt",new="rt",skip_absent=T)
-    res <- xsumm[,.SD[max(qa_ms1)==qa_ms1][max(qa_ms2)==qa_ms2],by=by.]
-    res <- res[,c("mz","rt","Name","qa_ms1","qa_ms2"):=.(first(mz),
+    res <- xsumm[,.SD[max(qlt_ms1)==qlt_ms1][max(qlt_ms2)==qlt_ms2],by=by.]
+    res <- res[,c("mz","rt","Name","qlt_ms1","qlt_ms2"):=.(first(mz),
                                                          first(mean(rt)),
                                                          first(Name),
-                                                         first(qa_ms1),
-                                                         first(qa_ms2)),
+                                                         first(qlt_ms1),
+                                                         first(qlt_ms2)),
                by=by.]
     res <- res[,unique(.SD),by=by.]
    
@@ -372,12 +376,12 @@ gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
     if (length(quality)>0L) {
         pre <- head(sorder,quality-1L)
         post <- tail(sorder,-quality)
-        sorder <- c(pre,"qa_ms1","qa_ms2",post)
+        sorder <- c(pre,"qlt_ms1","qlt_ms2",post)
     }
     ord <- rep(1L,length(sorder))
 
-    if ("qa_ms1" %in% sorder) {
-        ind <- which(sorder %in% c("qa_ms1","qa_ms2"))
+    if ("qlt_ms1" %in% sorder) {
+        ind <- which(sorder %in% c("qlt_ms1","qlt_ms2"))
         ord[ind] <- -1L
     }
     if (length(sorder)>0) setorderv(res,cols=sorder,order=ord)

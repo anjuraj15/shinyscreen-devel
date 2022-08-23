@@ -284,7 +284,7 @@ SET_LIST_PATT <- CMPD_LIST_PATT
 DFILES_LIST_PATT <- ".*\\.mz[Mm][Ll]$"
 
 CINDEX_BY <- c("set","ID","adduct","tag")
-CINDEX_COLS <- c("mz", "ms1_rt","Name","qa_ms1","qa_ms2")
+CINDEX_COLS <- c("mz", "ms1_rt","Name","qlt_ms1","qlt_ms2")
 ARRANGE_CHOICES <- c(nothing="nothing",
                      quality="quality",
                      set="set",

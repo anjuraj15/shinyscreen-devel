@@ -40,6 +40,19 @@ runtime_from_conf <- function(run,conf) {
     run
 }
 
+reinit_run_data <- function(userdir,project,run) {
+    olddata <- run$paths$data
+    oldproject <- basename(run$paths$project)
+    if (project != oldproject) {
+        message("Project has been renamed to: ",project)
+        message("Old project name was: ", oldproject)
+    }
+    if (isTruthy(olddata)) run$paths$data <- file.path(userdir,basename(olddata))
+    run$project <- project
+    run$paths$project <- file.path(userdir,project)
+    run
+}
+
 
 ## This helps decouple "cross-platform" configuration from the
 ## (file-)system dependent facts.
@@ -108,6 +121,10 @@ refresh_state <- function(m) {
 
 ##' @export
 new_rv_state <- function() react_v(m=list2rev(new_state()))
+
+
+
+
 
 
 write_conf <- function(m,fn) {

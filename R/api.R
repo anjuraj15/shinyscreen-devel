@@ -139,6 +139,7 @@ load_data_input <- function(m) {
     m$input$tab$mzml <- as.data.table(m$input$tab$mzml)
     assert(all(unique(m$input$tab$mzml[,.N,by=c("adduct","tag")]$N)<=1),msg="Some rows in the data table contain multiple entries with same tag and adduct fields.")
     pref<-m$run$paths$data
+    message("load_data_input: ", pref)
     for (fn in m$input$tab$mzml$file) {
         if (!file.exists(file.path(pref,fn))) stop("File ",fn," does not exist.")
     }
