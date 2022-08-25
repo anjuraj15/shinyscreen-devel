@@ -554,6 +554,9 @@ conf_trans_pres <- function(pres_list) {
         assert(!is.na(x),msg = paste("Time unit parameter error for",par,"Only s(econds) or min(utes) allowed."))
         pres_list[[par]] <- x
     }
+
+    if (is.null(pres_list$det_ms2_noise)) pres_list$det_ms2_noise <- T
+    if (is.null(pres_list$ms2_int_thresh) || is.na(pres_list$ms2_int_thresh)) pres_list$ms2_int_thresh <- 0.
     pres_list
 }
 
@@ -680,6 +683,102 @@ assess_ms2 <- function(m) {
     setkeyv(qa_ms2,BASE_KEY_MS2)
     m$qa$ms2 <- qa_ms2
     m    
+}
+
+## Analyze extracted data.
+analyse_extracted_data <- function(extr,prescreen_param) {
+    ms1 <- extr$ms1
+    ms2 <- extr$ms2
+
+    ## Parameters.
+    presconf <- conf_trans_pres(prescreen_param)
+    rt_shift <- presconf$ret_time_shift_tol
+    det_ms2_noise <- presconf$det_ms2_noise
+    ms2_int_thresh <- presconf$ms2_int_thresh
+
+    ## Detect MS2 noise.
+    ms2_clc_ns <- if (det_ms2_noise) {
+                      if (ms2_int_thresh>0) {
+                          warning("Ignore user specified ms2_int_thresh value and autodetect noise instead.")
+                      }
+                      ms2[,ms2_thr:=0.33333333*mean(intensity),by="tag"]
+
+                          
+                  } else {
+                      ms2[,ms2_thr:=ms2_int_thresh]
+                      
+                  }
+
+    ## message('ms2_clc_ns:',key(ms2_clc_ns))
+    ## ms2_clc_ns <- ms2_clc_ns[intensity>ms2_thr]
+
+    message('ms2_clc_ns:',key(ms2_clc_ns))
+    ## We drop mz info.
+    tab_ms2 <- ms2_clc_ns[,.(ms2_rt=first(rt),ms2_int=max(intensity),ms2_thr=first(ms2_thr)),by='an']
+    tab_ms2[,qa_ms2_good_int:=ms2_int>ms2_thr,by="an"]
+    data.table::setkeyv(tab_ms2,c(BASE_KEY_MS2))
+    message('key tab ms2:',key(tab_ms2))
+
+    ## TODO FIXME: now an and ms1 data.
+    ## ## res <- EMPTY_SUMM
+    ## ## ## res <- res[ms2,.(on=BASE_KEY_MS2]
+    ## rttab_ms2
+}
+
+
+## After we independently QA ms1 and ms2, we run another check to see
+## if some of the smaller ms1 peaks correspond to MS2 peaks.
+relocate_selected_peaks <- function(qa,extr,prescreen_param) {
+
+    ## Only those which have good MS1 intensity peaks need to be
+    ## reconsidered.
+    message("AAA")
+    key <- qa$ms1[qa_ms1_good_int == T & qa_ms1_above_noise == T][,.(adduct,tag,ID)]
+
+    ## Potential ms2 candidates (only those that haven't been already selected).
+    ms2_to_check <- qa$ms2[key,on=c("adduct","tag","ID"),nomatch=NULL]
+    ms2_to_check <- ms2_to_check[qa_ms2_good_int==T]## [
+    ##    ## ,no_chosen_spec:={message(length(ms2_sel));all(ms2_sel==F)},
+    ##    ##  by=c("adduct","tag","ID")][
+    ##    ##  no_chosen_spec==T,
+    ##    ##  .(adduct,tag,ID,ms2_rt,an)]
+
+    message("BBB")
+    ## Only the relevant columns.
+    ## ms2_to_check <- ms2_to_check[,.(an,ms2_rt),by=c("adduct","tag","ID")]
+
+    ## Retrieve EICs for key.
+    eics4key <- extr$ms1[key,on=c("adduct","tag","ID"),
+                         nomatch=NULL][
+                        ,.(adduct,tag,ID,ms1_rt=rt,ms1_int=intensity)]
+
+    message("CCC")
+    ## Parameters.
+    presconf <- conf_trans_pres(prescreen_param)
+
+
+    rt_shift <- presconf$ret_time_shift_tol
+
+    message("DDD")
+
+    data.table::setkey(ms2_to_check,adduct,tag,ID)
+    message("key ms2:",data.table::key(ms2_to_check))
+    message("key eics4key:",data.table::key(eics4key))
+    ## eics4key[ms2_to_check,c("an","ms1_max"):=.(i.an,ms1_max=max(fifelse(ms1_int<i.ms2_rt+rt_shift &
+    ##                           ms1_int>i.ms2_rt-rt_shift,
+    ##                           ms1_int,0.))),on=c("adduct","tag","ID")]
+    ## ## Focus on RT intervals of interest.
+    ## ms2_to_check[eics4key,
+    ##          ms1_int:=vapply(ms2_rt,function(t) max(fifelse(i.ms1_int<t+rt_shift &
+    ##                           i.ms1_int>t-rt_shift,
+    ##                           ms1_int,0.)),
+    ##                          1.),
+    ##          on=c("adduct","tag","ID")]
+    ## ## ms2s[subms1,.(new_ms1_int:=max(on=c("adduct","tag","ID")]
+    ## message("EEE")
+    ## ms2_to_check
+    ms2_to_check
+    
 }
 
 gen_mz_err_f <- function(entry,msg) {
