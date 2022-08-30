@@ -689,12 +689,12 @@ assess_ms2 <- function(m) {
 analyse_extracted_data <- function(extr,prescreen_param) {
     ms1 <- extr$ms1
     ms2 <- extr$ms2
-
     ## Parameters.
     presconf <- conf_trans_pres(prescreen_param)
     rt_shift <- presconf$ret_time_shift_tol
     det_ms2_noise <- presconf$det_ms2_noise
     ms2_int_thresh <- presconf$ms2_int_thresh
+    ms1_int_thresh <- presconf$ms1_int_thresh
 
     ## Detect MS2 noise.
     ms2_clc_ns <- if (det_ms2_noise) {
@@ -712,17 +712,63 @@ analyse_extracted_data <- function(extr,prescreen_param) {
     ## message('ms2_clc_ns:',key(ms2_clc_ns))
     ## ms2_clc_ns <- ms2_clc_ns[intensity>ms2_thr]
 
-    message('ms2_clc_ns:',key(ms2_clc_ns))
-    ## We drop mz info.
-    tab_ms2 <- ms2_clc_ns[,.(ms2_rt=first(rt),ms2_int=max(intensity),ms2_thr=first(ms2_thr)),by='an']
-    tab_ms2[,qa_ms2_good_int:=ms2_int>ms2_thr,by="an"]
-    data.table::setkeyv(tab_ms2,c(BASE_KEY_MS2))
-    message('key tab ms2:',key(tab_ms2))
 
-    ## TODO FIXME: now an and ms1 data.
-    ## ## res <- EMPTY_SUMM
-    ## ## ## res <- res[ms2,.(on=BASE_KEY_MS2]
-    ## rttab_ms2
+    ## We drop mz info.
+    tab_ms2 <- ms2_clc_ns[,.(ms2_rt=first(rt),ms2_int=max(intensity),ms2_thr=first(ms2_thr)),by=c(BASE_KEY_MS2,'an')]
+    tab_ms2[,qa_ms2_good_int:=ms2_int>ms2_thr,by="an"]
+    data.table::setkeyv(tab_ms2,BASE_KEY_MS2)
+    tab_ms2[,`:=`(rt_left = ms2_rt - rt_shift,rt_right = ms2_rt + rt_shift)]
+
+    ## Get mean ms1 value.
+    tab_ms1 <- extr$ms1
+    tab_ms1_mean <- tab_ms1[,.(ms1_mean=mean(intensity)),keyby=BASE_KEY]
+
+    ## This function extracts intensity maxima on intervals given by
+    ## RT vectors rt_1 and rt_2.
+    find_ms1_max <- function(rt,intensity,rt_1,rt_2)
+    {
+        mapply(function (rt_1,rt_2) {
+            rt_ival <- c(rt_1,rt_2)
+            intv <- findInterval(rt,rt_ival)
+            lintv = length(intv)
+            if (intv[1]==0L && intv[lintv] == 2L) {
+                pos = match(c(1L,2L),intv)
+            } else if (intv[1]==1L && intv[lintv]!=1L) {
+                pos = c(1L,match(2L,intv))
+            } else if (intv[1]==0L && intv[lintv]!=0L) {
+                pos = c(match(1L,intv),lintv)
+            } else {
+                pos = c(1L,lintv)
+            }
+            pmax = pos[[1]] + which.max(intensity[pos[[1]]:pos[[2]]]) - 1L
+            c(rt[pmax],intensity[pmax])
+        }, rt_1, rt_2, USE.NAMES=F)
+        
+    }
+
+    ## Perform MS1 maxima calculation in the neighbourhood of each
+    ## MS2 result.
+    tmp = tab_ms1[tab_ms2,{
+        xx = find_ms1_max(rt,intensity,i.rt_left,i.rt_right)
+        .(an=i.an,
+          ms1_rt = xx[1,],
+          ms1_int = xx[2,])
+    },by=.EACHI, nomatch=NULL]
+
+    ## Calculate QA values.
+    tab_ms2[tmp,c("ms1_rt","ms1_int"):=.(i.ms1_rt,i.ms1_int)]
+    tab_ms2[,c("rt_left","rt_right"):=c(NULL,NULL)]
+    tab_ms2[tab_ms1_mean,ms1_mean:=i.ms1_mean]
+    tab_ms2[,`:=`(qa_ms1_good_int=fifelse(ms1_int>ms1_int_thresh,T,F),
+               qa_ms1_above_noise=F,
+               qa_ms2_near=F)]
+
+    ## TODO: I wonder if auto-calculated ms1 noise should be taking
+    ## into account at all?
+    tab_ms2[qa_ms1_good_int==T,qa_ms1_above_noise:=fifelse(ms1_int>ms1_mean/3.,T,F)]
+    tab_ms2[qa_ms1_good_int==T & qa_ms1_above_noise==T & qa_ms2_good_int==T,qa_ms2_near:=T]
+
+    tab_ms2
 }
 
 
