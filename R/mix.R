@@ -763,69 +763,36 @@ analyse_extracted_data <- function(extr,prescreen_param) {
                qa_ms1_above_noise=F,
                qa_ms2_near=F)]
 
-    ## TODO: I wonder if auto-calculated ms1 noise should be taking
-    ## into account at all?
+    ## TODO: I wonder if so stupidly auto-calculated ms1 noise should
+    ## be taken into account at all? My recollection from earlier
+    ## times was that it was helpful, at least sometimes.
     tab_ms2[qa_ms1_good_int==T,qa_ms1_above_noise:=fifelse(ms1_int>ms1_mean/3.,T,F)]
     tab_ms2[qa_ms1_good_int==T & qa_ms1_above_noise==T & qa_ms2_good_int==T,qa_ms2_near:=T]
 
-    tab_ms2
+
+    ## Find MS1 with no corresponding MS2.
+    ms1key <- tab_ms1[,unique(.SD),.SDcol=BASE_KEY]
+    ms2key <- tab_ms2[,unique(.SD),.SDcol=BASE_KEY]
+    ms2key$mch=T
+    tabmatches <- ms2key[ms1key]
+    ms1woms2 <- tabmatches[is.na(mch)][,mch:=NULL]
+
+    ## Calculate the most intense peak, its location and the mean for
+    ## childless MS1.
+    tab_noms2 <- tab_ms1[ms1woms2,.(ms1_mean=mean(intensity),ms1_rt=rt[which.max(intensity)],ms1_int=max(intensity)),by=.EACHI,nomatch=NULL]
+
+    ## QA for the above (lazy qa ... take only the max peak into account).
+    tab_noms2[,c("qa_ms1_good_int","qa_ms1_above_noise"):=.(ms1_int>ms1_int_thresh,ms1_int>ms1_mean/3.)]
+
+    ## Bind MS1-only and MS1/MS2 entries together.
+    res <- rbind(tab_ms2,tab_noms2,fill=T)
+    data.table::setkeyv(res,BASE_KEY)
+    res
+
 }
 
 
-## After we independently QA ms1 and ms2, we run another check to see
-## if some of the smaller ms1 peaks correspond to MS2 peaks.
-relocate_selected_peaks <- function(qa,extr,prescreen_param) {
 
-    ## Only those which have good MS1 intensity peaks need to be
-    ## reconsidered.
-    message("AAA")
-    key <- qa$ms1[qa_ms1_good_int == T & qa_ms1_above_noise == T][,.(adduct,tag,ID)]
-
-    ## Potential ms2 candidates (only those that haven't been already selected).
-    ms2_to_check <- qa$ms2[key,on=c("adduct","tag","ID"),nomatch=NULL]
-    ms2_to_check <- ms2_to_check[qa_ms2_good_int==T]## [
-    ##    ## ,no_chosen_spec:={message(length(ms2_sel));all(ms2_sel==F)},
-    ##    ##  by=c("adduct","tag","ID")][
-    ##    ##  no_chosen_spec==T,
-    ##    ##  .(adduct,tag,ID,ms2_rt,an)]
-
-    message("BBB")
-    ## Only the relevant columns.
-    ## ms2_to_check <- ms2_to_check[,.(an,ms2_rt),by=c("adduct","tag","ID")]
-
-    ## Retrieve EICs for key.
-    eics4key <- extr$ms1[key,on=c("adduct","tag","ID"),
-                         nomatch=NULL][
-                        ,.(adduct,tag,ID,ms1_rt=rt,ms1_int=intensity)]
-
-    message("CCC")
-    ## Parameters.
-    presconf <- conf_trans_pres(prescreen_param)
-
-
-    rt_shift <- presconf$ret_time_shift_tol
-
-    message("DDD")
-
-    data.table::setkey(ms2_to_check,adduct,tag,ID)
-    message("key ms2:",data.table::key(ms2_to_check))
-    message("key eics4key:",data.table::key(eics4key))
-    ## eics4key[ms2_to_check,c("an","ms1_max"):=.(i.an,ms1_max=max(fifelse(ms1_int<i.ms2_rt+rt_shift &
-    ##                           ms1_int>i.ms2_rt-rt_shift,
-    ##                           ms1_int,0.))),on=c("adduct","tag","ID")]
-    ## ## Focus on RT intervals of interest.
-    ## ms2_to_check[eics4key,
-    ##          ms1_int:=vapply(ms2_rt,function(t) max(fifelse(i.ms1_int<t+rt_shift &
-    ##                           i.ms1_int>t-rt_shift,
-    ##                           ms1_int,0.)),
-    ##                          1.),
-    ##          on=c("adduct","tag","ID")]
-    ## ## ms2s[subms1,.(new_ms1_int:=max(on=c("adduct","tag","ID")]
-    ## message("EEE")
-    ## ms2_to_check
-    ms2_to_check
-    
-}
 
 gen_mz_err_f <- function(entry,msg) {
     eppm <- grab_unit(entry,"ppm")
