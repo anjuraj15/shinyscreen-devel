@@ -754,9 +754,8 @@ analyse_extracted_data <- function(extr,prescreen_param) {
           ms1_rt = xx[1,],
           ms1_int = xx[2,])
     },by=.EACHI, nomatch=NULL]
-
     ## Calculate QA values.
-    tab_ms2[tmp,c("ms1_rt","ms1_int"):=.(i.ms1_rt,i.ms1_int)]
+    tab_ms2[tmp,c("ms1_rt","ms1_int"):=.(i.ms1_rt,i.ms1_int),on=c(BASE_KEY,'an')]
     tab_ms2[,c("rt_left","rt_right"):=c(NULL,NULL)]
     tab_ms2[tab_ms1_mean,ms1_mean:=i.ms1_mean]
     tab_ms2[,`:=`(qa_ms1_good_int=fifelse(ms1_int>ms1_int_thresh,T,F),
@@ -778,7 +777,7 @@ analyse_extracted_data <- function(extr,prescreen_param) {
     tabmatches <- ms2key[ms1key]
     ms1woms2 <- tabmatches[is.na(mch)][,mch:=NULL]
 
-    ## Calculate the most intense peak, its location and the mean for
+    ## calculate the most intense peak, its location and the mean for
     ## childless MS1.
     tab_noms2 <- tab_ms1[ms1woms2,.(ms1_mean=mean(intensity),ms1_rt=rt[which.max(intensity)],ms1_int=max(intensity)),by=.EACHI,nomatch=NULL]
 
@@ -798,7 +797,8 @@ analyse_extracted_data <- function(extr,prescreen_param) {
     qflg <- QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
     res[,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
     res[.(T),del_rt:=abs(ms2_rt - ms1_rt),on="qa_pass",by='an']
-    res[.(T),ms2_sel:=ms2_rt[which.min(del_rt)]==ms2_rt,on="qa_pass",by=BASE_KEY_MS2]
+    res[.(T),qa_tmp_ms1_max:= ms1_int==max(ms1_int),on="qa_pass",by=BASE_KEY_MS2]
+    res[.(T,T),ms2_sel:= del_rt == del_rt[which.min(del_rt)],on=c("qa_pass","qa_tmp_ms1_max"),by=BASE_KEY_MS2]
     res[,qlt_ms1:=apply(.SD,1,function(rw) sum(c(5L,3L,2L)*rw)),.SDcol=c("qa_ms1_exists",
                                                                  "qa_ms1_above_noise",
                                                                  "qa_ms1_good_int")]
@@ -806,7 +806,6 @@ analyse_extracted_data <- function(extr,prescreen_param) {
                                                                  "qa_ms2_near",
                                                                  "qa_ms2_good_int")]
     res
-
 }
 
 ## Based on the `comprehensive' and `qa' tabs, greate `summ'.
