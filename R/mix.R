@@ -177,40 +177,40 @@ gen_empty_summ <- function() {
     EMPTY_SUMM
 }
 
-gen_summ <- function(comp,qa_ms1,qa_ms2) {
-    comp_cols <- intersect(SUMM_COLS,colnames(comp))
-    summ <- comp[,..comp_cols]
-    data.table::setkeyv(summ,BASE_KEY)
-    ms1_cols <- intersect(SUMM_COLS,colnames(qa_ms1))
-    ms1_cols <- setdiff(ms1_cols,colnames(summ))
-    summ <- qa_ms1[summ,c(..comp_cols,..ms1_cols),on=BASE_KEY]
-    ms2_cols <- intersect(colnames(qa_ms2),SUMM_COLS)
-    ms2_cols <- setdiff(ms2_cols,colnames(summ))
-    summ <- qa_ms2[summ,c(..comp_cols,..ms1_cols,..ms2_cols),on=BASE_KEY]
-    data.table::setkeyv(summ,c(BASE_KEY_MS2,"an"))
-    summ[,qa_ms1_exists:=the_ifelse(!is.na(qa_ms1_good_int),T,F)]
-    summ[,qa_ms2_exists:=the_ifelse(!is.na(CE),T,F)]
-    summ[,qa_pass:=apply(.SD,1,all),.SDcols=QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]]
-    summ$Comments<-""
-    data.table::setkeyv(summ,DEF_KEY_SUMM)
-    data.table::setcolorder(summ,SUMM_COLS)
+## gen_summ <- function(comp,qa_ms1,qa_ms2) {
+##     comp_cols <- intersect(SUMM_COLS,colnames(comp))
+##     summ <- comp[,..comp_cols]
+##     data.table::setkeyv(summ,BASE_KEY)
+##     ms1_cols <- intersect(SUMM_COLS,colnames(qa_ms1))
+##     ms1_cols <- setdiff(ms1_cols,colnames(summ))
+##     summ <- qa_ms1[summ,c(..comp_cols,..ms1_cols),on=BASE_KEY]
+##     ms2_cols <- intersect(colnames(qa_ms2),SUMM_COLS)
+##     ms2_cols <- setdiff(ms2_cols,colnames(summ))
+##     summ <- qa_ms2[summ,c(..comp_cols,..ms1_cols,..ms2_cols),on=BASE_KEY]
+##     data.table::setkeyv(summ,c(BASE_KEY_MS2,"an"))
+##     summ[,qa_ms1_exists:=the_ifelse(!is.na(qa_ms1_good_int),T,F)]
+##     summ[,qa_ms2_exists:=the_ifelse(!is.na(CE),T,F)]
+##     summ[,qa_pass:=apply(.SD,1,all),.SDcols=QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]]
+##     summ$Comments<-""
+##     data.table::setkeyv(summ,DEF_KEY_SUMM)
+##     data.table::setcolorder(summ,SUMM_COLS)
 
-    ## Quality scores for ms1 and ms2.
-    summ[,qlt_ms1 := as.integer(Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
-                                    as.integer(qa_ms1_exists),
-                                    as.integer(qa_ms1_above_noise),
-                                    as.integer(qa_ms1_good_int)))]
-    summ[,qlt_ms2 := as.integer(Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
-                                    as.integer(qa_ms2_exists),
-                                    as.integer(qa_ms2_near),
-                                    as.integer(qa_ms2_good_int)))]
+##     ## Quality scores for ms1 and ms2.
+##     summ[,qlt_ms1 := as.integer(Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
+##                                     as.integer(qa_ms1_exists),
+##                                     as.integer(qa_ms1_above_noise),
+##                                     as.integer(qa_ms1_good_int)))]
+##     summ[,qlt_ms2 := as.integer(Map(function(m1,m2,m3) { m1*5L + m2*3L + m3*2L},
+##                                     as.integer(qa_ms2_exists),
+##                                     as.integer(qa_ms2_near),
+##                                     as.integer(qa_ms2_good_int)))]
 
-    summ[is.na(qlt_ms1),qlt_ms1:=0L]
-    summ[is.na(qlt_ms2),qlt_ms2:=0L]
+##     summ[is.na(qlt_ms1),qlt_ms1:=0L]
+##     summ[is.na(qlt_ms2),qlt_ms2:=0L]
 
-    summ
+##     summ
     
-}
+## }
 pp_touch_q<-function(summ) {
     ## Returns indices that are ok to be auto processed.
     which(summ$checked==SUMM_CHK_NONE | summ$checked==SUMM_CHK_AUTO)
@@ -768,6 +768,7 @@ analyse_extracted_data <- function(extr,prescreen_param) {
     ## times was that it was helpful, at least sometimes.
     tab_ms2[qa_ms1_good_int==T,qa_ms1_above_noise:=fifelse(ms1_int>ms1_mean/3.,T,F)]
     tab_ms2[qa_ms1_good_int==T & qa_ms1_above_noise==T & qa_ms2_good_int==T,qa_ms2_near:=T]
+    tab_ms2$qa_ms2_exists=T
 
 
     ## Find MS1 with no corresponding MS2.
@@ -784,11 +785,41 @@ analyse_extracted_data <- function(extr,prescreen_param) {
     ## QA for the above (lazy qa ... take only the max peak into account).
     tab_noms2[,c("qa_ms1_good_int","qa_ms1_above_noise"):=.(ms1_int>ms1_int_thresh,ms1_int>ms1_mean/3.)]
 
+    ## MS2 QA criteria all fail.
+    tab_noms2[,c("qa_ms2_exists","qa_ms2_good_int","qa_ms2_near"):=.(F,F,F)]
+
     ## Bind MS1-only and MS1/MS2 entries together.
-    res <- rbind(tab_ms2,tab_noms2,fill=T)
+    res <- rbind(tab_ms2,tab_noms2,fill=T,use.names=T)
+
+    ## Every single entry which was extracted has at least MS1.
+    res[,qa_ms1_exists:=T]
     data.table::setkeyv(res,BASE_KEY)
+    
+    qflg <- QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
+    res[,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
+    res[.(T),del_rt:=abs(ms2_rt - ms1_rt),on="qa_pass",by='an']
+    res[.(T),ms2_sel:=ms2_rt[which.min(del_rt)]==ms2_rt,on="qa_pass",by=BASE_KEY_MS2]
+    res[,qlt_ms1:=apply(.SD,1,function(rw) sum(c(5L,3L,2L)*rw)),.SDcol=c("qa_ms1_exists",
+                                                                 "qa_ms1_above_noise",
+                                                                 "qa_ms1_good_int")]
+    res[,qlt_ms2:=apply(.SD,1,function(rw) sum(c(5L,3L,2L)*rw)),.SDcol=c("qa_ms2_exists",
+                                                                 "qa_ms2_near",
+                                                                 "qa_ms2_good_int")]
     res
 
+}
+
+## Based on the `comprehensive' and `qa' tabs, greate `summ'.
+gen_summ <- function(comp,qa) {
+    comp_cols <- intersect(SUMM_COLS,colnames(comp))
+    rdcomp <- comp[,..comp_cols]
+    data.table::setkeyv(rdcomp,BASE_KEY)
+    summ <- qa[rdcomp,nomatch=NA]
+    flgs <- c(QA_FLAGS,"ms2_sel")
+    summ[is.na(qa_ms1_exists),(flgs):=F]
+    data.table::setkeyv(summ,c(BASE_KEY_MS2,'an'))
+    summ[.(F),c("qlt_ms1","qlt_ms2"):=0.,on="qa_ms1_exists"]
+    summ
 }
 
 
