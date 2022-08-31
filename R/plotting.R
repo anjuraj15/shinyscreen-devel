@@ -482,13 +482,13 @@ get_data_4_eic_ms1 <- function(extr_ms1,summ_rows,kvals,labs) {
     xlxx <- intersect(labs,names(extr_ms1))
     xlxx <- as.character(xlxx)
     pdata <- tab[,.(rt,intensity),by=xlxx]
-    print(xlxx)
-    print(unique(pdata$ID))
-    ## Now, add the RTs in.
-    pdata[summ_rows,ms1_rt:=signif(i.ms1_rt,5),on=xlxx]
+
+
+    ## TODO: FIXME: This fails because summ_rows sux wrt calcing of ms1_rt for labels. #Now, add the RTs in.
+    ## pdata[summ_rows,ms1_rt:=signif(i.ms1_rt,5),on=xlxx]
 
     ## Create labels.
-    xlxx <- unique(c(xlxx,"ms1_rt"))
+    ## xlxx <- unique(c(xlxx,"ms1_rt"))
     pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=xlxx],splice=T))
     setkeyv(pdata,cols=unique(as.character(xlxx),"rt"))
     pdata
@@ -526,12 +526,26 @@ narrow_summ <- function(summ,kvals,labs,...) {
 ### PLOTTING: TOP-LEVEL PLOT CREATION
 
 make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1) {
+    key <- names(kvals)
     ## Get metadata.
-    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula")
+
+    ## TODO: FIXME: Somehow calculating representationve ms1_rt for
+    ## plots is wrong. Horrible and wrong. Will remove those labels
+    ## until we fix.
+    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula","qa_ms1_exists","an","ms2_sel")
+    rows_key <- union(data.table::key(summ_rows),labs)
+    summ_rows$sel_ms1_rt=NA_real_
+    summ_rows[ms2_sel==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]
+    summ_rows[is.na(sel_ms1_rt) & ms2_sel==F & qa_ms1_exists==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]
+    summ_rows[,ms1_rt:=sel_ms1_rt]
+    summ_rows[,sel_ms1_rt:=NULL]
+    summ_rows[,c("an","qa_ms1_exists","ms2_sel"):=NULL]
+    summ_rows <- summ_rows[,unique(.SD)]
+    
     ## Get the table with ms1 data.
     pdata <- get_data_4_eic_ms1(extr_ms1, summ_rows, kvals, labs)
 
-    key <- names(kvals)
+
     ## Deal with retention time range.
     coord <- if (is.null(rt_range) && is.null(i_range)) {
                  NULL
