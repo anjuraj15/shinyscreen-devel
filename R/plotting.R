@@ -525,7 +525,7 @@ narrow_summ <- function(summ,kvals,labs,...) {
 
 ### PLOTTING: TOP-LEVEL PLOT CREATION
 
-make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL, asp=1) {
+make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1) {
     ## Get metadata.
     summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula")
     ## Get the table with ms1 data.
@@ -533,7 +533,12 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
 
     key <- names(kvals)
     ## Deal with retention time range.
-    rt_lim <- if (is.null(rt_range)) NULL else ggplot2::coord_cartesian(xlim=rt_range)#ggplot2::xlim(rt_range[[1]],rt_range[[2]])
+    coord <- if (is.null(rt_range) && is.null(i_range)) {
+                 NULL
+             } else {
+                 ggplot2::coord_cartesian(xlim=rt_range,
+                                          ylim=i_range)
+             }
     xrng <- range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
     dx <- abs(xrng[[2]]-xrng[[1]])
     yrng <- range(pdata$intensity)
@@ -552,7 +557,7 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
         ggplot2::xlab("retention time")+
         cust_geom_line()+
         scale_y(axis=axis,labels=sci10)+
-        rt_lim
+        coord
     ## annt_dx <- 5*dx/100.
     ## annt <- summ_rows[,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
     ## ## Annotate.

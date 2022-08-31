@@ -795,6 +795,16 @@ mk_shinyscreen_server <- function(projects,init) {
             if (is.na(x2)) x2 <- NA_real_
             c(x1,x2)
         })
+
+        rf_get_irange <- reactive({
+            y1 <- input$plot_i_min
+            y2 <- input$plot_i_max
+
+            if (is.na(y1)) y1 <- NA_real_
+            if (is.na(y2)) y2 <- NA_real_
+            c(y1,y2)
+
+        })
         rf_plot_eic_ms1 <- reactive({
             isolate({
                 ms1 <- rvs$m$extr$ms1
@@ -806,7 +816,18 @@ mk_shinyscreen_server <- function(projects,init) {
             make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),
                               labs=req(rf_get_cindex_labs()),
                               asp=PLOT_EIC_ASPECT,
-                              rt_range=rf_get_rtrange())
+                              rt_range=rf_get_rtrange(),
+                              i_range=rf_get_irange())
+        })
+
+        rf_get_ms2_eic_rtrange <- reactive({
+            pms1 <- rf_plot_eic_ms1()
+            drng <- range(pms1$data$rt)
+            urng <- rf_get_rtrange()
+            if (is.na(urng[[1]])) urng[[1]] <- drng[[1]]
+            if (is.na(urng[[2]])) urng[[2]] <- drng[[2]]
+            print(urng)
+            urng
         })
 
         rf_plot_eic_ms2 <- reactive({
@@ -821,7 +842,7 @@ mk_shinyscreen_server <- function(projects,init) {
             make_eic_ms2_plot(summ,
                               kvals=rf_get_cindex_kval(),
                               labs=rf_get_cindex_labs(),
-                              rt_range = rf_get_rtrange(),
+                              rt_range = rf_get_ms2_eic_rtrange(),
                               asp=PLOT_EIC_ASPECT)
             
             
@@ -1365,12 +1386,22 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$plot_brush,{
             xmin <- input$plot_brush[["xmin"]]
             xmax <- input$plot_brush[["xmax"]]
+            ymin <- input$plot_brush[["ymin"]]
+            ymax <- input$plot_brush[["ymax"]]
+
             if (!is.null(xmin)) updateNumericInput(session=session,
                                                    inputId="plot_rt_min",
                                                    value=xmin)
             if (!is.null(xmax)) updateNumericInput(session=session,
                                                    inputId="plot_rt_max",
                                                    value=xmax)
+
+            if (!is.null(ymin)) updateNumericInput(session=session,
+                                                   inputId="plot_i_min",
+                                                   value=ymin)
+            if (!is.null(ymax)) updateNumericInput(session=session,
+                                                   inputId="plot_i_max",
+                                                   value=ymax)
             session$resetBrush("plot_brush")
             
         },label = "get_rt_from_selection")
@@ -1383,6 +1414,12 @@ mk_shinyscreen_server <- function(projects,init) {
                                value=NA_real_)
             updateNumericInput(session=session,
                                inputId="plot_rt_max",
+                               value=NA_real_)
+            updateNumericInput(session=session,
+                               inputId="plot_i_min",
+                               value=NA_real_)
+            updateNumericInput(session=session,
+                               inputId="plot_i_max",
                                value=NA_real_)
         }, label = "reset_rt_range")
 
