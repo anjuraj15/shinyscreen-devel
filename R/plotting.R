@@ -12,7 +12,30 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-## Format the y labels.
+plot_save_single <- function(plot,decotab,extension,proj_path,subdir=FIG_TOPDIR,tabl=NULL,figtag="") {
+    if (is.null(plot)) return()
+    
+    fname <- plot_fname_prefix(decotab,proj_path,subdir=subdir)
+    
+    fnplot <- paste0(fname,"__",figtag,".",extension)
+    
+    if (extension == "rds" || extension == "RDS") {
+        saveRDS(plot,file=fnplot)
+    } else ggplot2::ggsave(filename = fnplot,
+                           plot = plot)
+    fntab <- paste0(fname,"__",figtag,".csv")
+    if (! is.null(tabl)) data.table::fwrite(tabl,file=fntab,sep = ",")
+    list(plot=plot,tab=tabl,fn_plot=fnplot)
+    
+}
+
+
+
+
+## PLOTTING
+
+### PLOTTING: HELPERS
+
 sci10 <- function(x) {
     prefmt <- formatC(x,format="e",digits=2)
     bits <- strsplit(prefmt,split="e")
@@ -36,69 +59,6 @@ sci10 <- function(x) {
     
 
 }
-
-
-
-
-data4plot_ms1_cgram <- function(tab,select=dtable(adduct=character(0),ID=character(0))) {
-    res <- tab[select,.(adduct,tag,ID,rt,intensity),on=c('ID','adduct'),nomatch=NULL]
-    if (NROW(res) == 0) return(res)
-    data.table::setkeyv(res,c('ID','adduct','tag','rt'))
-    res[,max_int:=max(intensity),by=c('ID','adduct','tag')]
-    res[,rt_at_max:=rt[which(max_int == intensity)],by=c('ID','adduct','tag')]
-    res[,`:=`(lab_id=factor(ID),
-              lab_adduct=factor(adduct),
-              lab_tag=factor(tag),
-              lab_adduct_break = paste0(adduct,":",tag),
-              lab_adduct_tag = paste0(adduct,', ',tag))]
-    
-    
-    res
-}
-
-data4plot_ms2_cgram <- function(tab,select=dtable(adduct=character(0),ID=character(0))) {
-    res <- tab[select,.(adduct,tag,ID,CE,an,rt,intensity),on=c('ID','adduct'),nomatch=NULL]
-    if (NROW(res) == 0) return(res)
-    data.table::setkeyv(res,c('ID','adduct','tag','CE','an'))
-    ## NOTE: I used to not have 'an' in keyby here, but that obviously
-    ## generates bad MS2 chromatogram. So, why?
-    res <- res[,.(rt,intensity=max(intensity)),keyby=c('ID','adduct','tag','CE','an')]
-    res[,`:=`(lab_id=factor(ID),
-              lab_adduct=factor(adduct),
-              lab_tag=factor(tag),
-              lab_adduct_break = paste0(adduct,":",tag))]
-    ## Create a table where NCE counts the number of CEs per tab.
-    tmp <- res[,.(CE=unique(CE)),keyby=c("ID","adduct","tag")]
-    tmp <- tmp[,.(CE=CE,NCE=.N),by=c("ID","adduct","tag")]
-    
-    tmp[,lab_ce:=fifelse(NCE>0,as.character(CE),NA_character_),by=c("ID","adduct","tag")]
-    res <- res[tmp,on=c("ID","adduct","tag","CE")]
-    res
-}
-
-data4plot_ms2_spec <- function(tab,qatab,select=dtable(adduct=character(0),ID=character(0))) {
-    fullkeys <- c('ID','adduct','tag','CE','an')
-    select <- qatab[select,on=c('adduct','ID'),nomatch=NULL]
-    select <- select[ms2_sel==T,..fullkeys]
-    setkeyv(select,fullkeys)
-    res <- tab[select,.(adduct,tag,ID,CE,an,rt,mz,intensity),on=fullkeys,nomatch=NULL]
-    if (NROW(res) == 0) return(res)
-    ## Create a table where NCE counts the number of CEs per tab.
-    tmp <- res[,.(CE=unique(CE)),keyby=c("ID","adduct","tag")]
-    tmp <- tmp[,.(CE=CE,NCE=.N),by=c("ID","adduct","tag")]
-    tmp[,lab_ce:=fifelse(NCE>0,as.character(CE),NA_character_),by=c("ID","adduct","tag")]
-    res <- res[tmp,on=c("ID","adduct","tag","CE")]
-    res <- res[,.(NCE,lab_ce,rt,mz,intensity),keyby=fullkeys]
-    
-    res[,`:=`(lab_id=factor(ID),
-              lab_adduct=factor(adduct),
-              lab_tag=factor(tag),
-              lab_adduct_break = paste0(adduct,":",tag),
-              lab_adduct_tag = paste0(adduct,', ',tag))]
-    res
-}
-
-
 
 pal_maker <- function(n,palname = NULL) {
     ## The silliest implementation possible. There may be cases when
@@ -126,218 +86,6 @@ pal_maker <- function(n,palname = NULL) {
     
 }
 
-plot_text <- function(text) {
-    theme <- ggplot2::theme_bw() + ggplot2::theme(axis.text.x=ggplot2::element_blank(),
-                                                  axis.ticks.x=ggplot2::element_blank(),
-                                                  axis.text.y=ggplot2::element_blank(),
-                                                  axis.ticks.y=ggplot2::element_blank())
-    p <- ggplot2::ggplot(data.frame(x=1:10,y=1:10),
-                         ggplot2::aes(x=x,y=y))+
-        ggplot2::geom_blank()+ggplot2::labs(x="",y="")
-
-    p <- p + ggplot2::annotate(geom="text",
-                               x=5,
-                               y=5,
-                               size=6,
-                               label=text,
-                               color="black") + theme
-
-    p
-    
-}
-
-
-plot_theme <- function(base_size = 14,
-                       panel.grid.major = ggplot2::element_blank(),
-                       panel.grid.minor = ggplot2::element_blank(),
-                       ...) ggplot2::theme_bw(base_size = base_size) +
-                                ggplot2::theme(panel.grid.major=panel.grid.major,
-                                               panel.grid.minor=panel.grid.minor)
-
-
-plot_base <- function(pdata,aes,labs,geom) {
-    ggplot2::ggplot(pdata,mapping = aes()) +
-        geom() +
-        labs +
-        plot_theme()
-}
-
-
-
-
-plot_palette <- function(pdata) {
-    breakslabs  <- pdata[,unique(.SD),.SDcol=c("lab_adduct_break","lab_adduct_tag")]
-    breaks <- breakslabs$lab_adduct_break
-    labels <- breakslabs$lab_adduct_tag
-    values <- pal_maker(length(breaks),palname="Paired")
-    names(values) <- breaks
-    list(breaks=breaks,
-         labels=labels,
-         values=values)
-}
-plot_eic_w_facet <- function(pdata_ms1,pdata_ms2,rt_range,palette) {
-    if (NROW(pdata_ms1)==0) return(NULL)
-    aes <- function () ggplot2::aes(x=rt,
-                                    y = intensity)
-    
-    aes_ms1 <- function() ggplot2::aes(## y = intensity,
-                                       colour = lab_adduct_break)
-    aes_ms2 <- if (NROW(pdata_ms2)>0) {
-                   if (pdata_ms2[,all(NCE==1)]) {
-                       function() ggplot2::aes(colour = lab_adduct_break,
-                                               ymin = 0,
-                                               ymax = intensity)
-                   } else {
-                       function() ggplot2::aes(colour = lab_adduct_break,
-                                               linetype = lab_ce,
-                                               ymin = 0,
-                                               ymax = intensity)
-                   }
-               } else function() ggplot2::aes()
-
-    
-    
-    scale_colour <- function(name,...) ggplot2::scale_colour_manual(values = palette$values,
-                                                                    breaks = palette$breaks,
-                                                                    labels = palette$labels,
-                                                                    name = name,...)
-
-
-
-    pdata_ms1$plottype <- "MS1 EIC"
-    pdata_ms2$plottype <- "MS2 EIC"
-
-    labs <- ggplot2::labs(x="retention time [min]",
-                          y="intensity")
-
-    
-    obj <- ggplot2::ggplot(pdata_ms1, aes()) +
-        ggplot2::geom_line(data = pdata_ms1,
-                           key_glyph = KEY_GLYPH,
-                           aes_ms1())
-
-    if (NROW(pdata_ms2)>0) {
-     obj <- obj + ggplot2::geom_linerange(data = pdata_ms2,
-                                          aes_ms2()) 
-    }
-
-    obj + labs  + scale_y(labels=sci10) + scale_colour(name = "MS1") +
-        ggplot2::facet_grid(plottype ~ ID) +
-        ggplot2::coord_cartesian(xlim = rt_range) +
-        plot_theme()
-
-}
-
-
-plot_spec_w_facet <- function(pdata_ms2,mz_range,palette) {
-
-    if (NROW(pdata_ms2)==0) return(NULL)
-    
-    aes_ms2 <- if (NROW(pdata_ms2)>0) {
-                   if (pdata_ms2[,all(NCE==1)]) {
-                       function() ggplot2::aes(colour = lab_adduct_break,
-                                               x = mz,
-                                               ymin = 0,
-                                               ymax = intensity)
-                   } else {
-                       function() ggplot2::aes(colour = lab_adduct_break,
-                                               linetype = lab_ce,
-                                               x = mz,
-                                               ymin = 0,
-                                               ymax = intensity)
-                   }
-               } else function() ggplot2::aes()
-
-    breakslabs <- pdata_ms2[,unique(.SD),.SDcol=c("lab_adduct_break","lab_adduct_tag")]
-    breaks <-  breakslabs$lab_adduct_break
-    labels <- breakslabs$lab_adduct_tag
-    
-    scale_colour <- function(name,...) ggplot2::scale_colour_manual(values = palette$values,
-                                                                    breaks = palette$breaks,
-                                                                    labels = palette$labels,
-                                                                    name = name,...)
-    
-
-    pdata_ms2$plottype <- "MS2 SPECTRA"
-
-    labs <- ggplot2::labs(x="mz",
-                          y="intensity")
-
-    
-
-    obj <- if (NROW(pdata_ms2)>0) {
-        ggplot2::ggplot(pdata_ms2, aes_ms2()) +
-            ggplot2::geom_linerange(key_glyph=KEY_GLYPH) + labs  + scale_y(labels=sci10) +
-            scale_colour(name = "MS2") + ggplot2::facet_grid(plottype ~ ID) +
-            ggplot2::coord_cartesian(xlim = mz_range) +
-            plot_theme()
-           } else NULL
-
-    obj
-
-}
-
-
-## Table legends.
-
-table_eic <- function(pdata) {
-    tbl <- pdata[,.(rt=first(rt_at_max)),by=c("ID","adduct","tag")]
-    tbl$rt <- format(tbl$rt,digits = 5)
-    data.table::setnames(tbl,old = c("adduct","tag","rt"),new = c("Adduct","Tag","RT (MS1) [min]"))
-    tbl
-}
-
-table_spec <- function(pdata) {
-    tbl <- pdata[,.(rt=first(rt)),by=c("ID","adduct","tag","CE")]
-    tbl$rt <- format(tbl$rt,digits = 5)
-    data.table::setnames(tbl,old = c("adduct","tag","rt"),new = c("Adduct","Tag","RT (MS2) [min]"))
-    tbl
-}
-
-plot_fname_prefix <- function(decotab,proj_path,subdir=FIG_TOPDIR) {
-    if (NROW(decotab)==0) return()
-    adducts <- decotab[,adduct]
-    ids <- decotab[,ID]
-    rpls <- list("\\["="","\\]"="","\\+"="p","\\-"="m")
-    fname<-"plot_adduct_"
-    for (adduct in adducts) {
-        chunk <- adduct
-        for (rp in names(rpls)) chunk <- gsub(rp,rpls[[rp]],chunk)
-        fname <- paste(fname,chunk,sep = "_")
-            
-    }
-    ddir <- file.path(proj_path,subdir)
-    if (!dir.exists(ddir)) dir.create(ddir,recursive = T)
-    
-    fname <- paste0(fname,"__id_")
-    fname <- paste0(fname,paste(ids,collapse = "_"))
-
-    fname <- file.path(ddir,fname)
-    fname
-    
-}
-
-plot_save_single <- function(plot,decotab,extension,proj_path,subdir=FIG_TOPDIR,tabl=NULL,figtag="") {
-    if (is.null(plot)) return()
-    
-    fname <- plot_fname_prefix(decotab,proj_path,subdir=subdir)
-    
-    fnplot <- paste0(fname,"__",figtag,".",extension)
-    
-    if (extension == "rds" || extension == "RDS") {
-        saveRDS(plot,file=fnplot)
-    } else ggplot2::ggsave(filename = fnplot,
-                           plot = plot)
-    fntab <- paste0(fname,"__",figtag,".csv")
-    if (! is.null(tabl)) data.table::fwrite(tabl,file=fntab,sep = ",")
-    list(plot=plot,tab=tabl,fn_plot=fnplot)
-    
-}
-
-
-
-
-## PLOTTING
 
 
 ### PLOTTING: AESTHETIC FUNCTIONS
@@ -395,29 +143,7 @@ theme_empty$axis.title <- ggplot2::element_blank()
 cust_geom_line <- function(key_glyph="rect",...) geom_line(...,key_glyph=key_glyph)
 cust_geom_linerange <- function(key_glyph="rect",...) geom_linerange(...,key_glyph=key_glyph)
 
-sci10 <- function(x) {
-    prefmt <- formatC(x,format="e",digits=2)
-    bits <- strsplit(prefmt,split="e")
-    bits1 <-sapply(bits,function(x) {
-        if (length(x) > 1) {
-            res <- x[[1]]
-            sub(" ","~",res)
-        } else {
-            x
-        }
-    })
-    bits2 <-sapply(bits,function(x) if (length(x)>1) paste0(" %*% 10^","'",sub("[+]"," ",x[[2]]),"'") else "")
-    txt <- mapply(function(b1,b2) if (nchar(b2)!=0) {paste0("'",b1,"'",b2)} else NA,
-                  bits1,
-                  bits2,
-                  SIMPLIFY = F)
-    names(txt) <- NULL
-    txt <- gsub(pattern = "^'0\\.00'.*$","  0",x=txt)
-    parse(text=txt)
-    
-    
 
-}
 
 scale_y<- function (axis="linear", ...) if (axis!="log") {
                                             ggplot2::scale_y_continuous(...)
