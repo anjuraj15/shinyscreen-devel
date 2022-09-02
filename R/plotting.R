@@ -187,6 +187,35 @@ make_line_label <- function(...) {
     paste(...,sep="; ")
 }
 
+
+
+
+define_labels_colours <- function(dt,keys,labs) {
+        one_keyset <- function(dt) {
+            labtab = dt[,unique(.SD),.SDcol=labs]
+            labtab[,label:=do.call(make_line_label,.SD)]
+            n <- NROW(labtab)
+            cols <- if (n<13L) {
+                        RColorBrewer::brewer.pal(n=n,name="Paired")
+                    } else {
+                        scales::viridis_pal()(n)
+                    }
+            labtab[,colour:=(cols)]
+            data.table::setkeyv(labtab,labs)
+            labtab
+        }
+        res <- dt[,one_keyset(.SD),by=keys]
+        data.table::setkeyv(res,keys)
+        res
+}
+
+get_scale_values <- function(dt,kval) {
+        tab_lab <- dt[.(kval)]
+        x <- tab_lab$colour
+        names(x) <- tab_lab$label
+        x
+}
+
 ## Prepare MS1 eic data: rt and intensity of a subset of extracted
 ## data defined by the key named list. Argument `summ_rows' is a
 ## subset of the `summ' table based on `kvals'. We need it for rt-s in
@@ -251,7 +280,7 @@ narrow_summ <- function(summ,kvals,labs,...) {
 
 ### PLOTTING: TOP-LEVEL PLOT CREATION
 
-make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1) {
+make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1,scale_legend=NULL) {
     key <- names(kvals)
     ## Get metadata.
 
@@ -304,11 +333,11 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     ## p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)+guide_fun()
 
     ## Add theme.
-    p + theme_eic()
+    p + scale_legend + theme_eic()
 }
 
 
-make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1) {
+make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1, scale_legend=NULL) {
     ## Get metadata.
     summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES","Formula")
 
@@ -345,11 +374,11 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1)
     ## p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=3,check_overlap=T)
 
     ## Add theme.
-    p + theme_eic()
+    p + scale_legend + theme_eic()
 }
 
 
-make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1) {
+make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, scale_legend=NULL) {
 
     
     ## Only the chosen ones.
@@ -385,7 +414,7 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1) {
     p <- ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+cust_geom_linerange()+scale_y(axis=axis,labels=sci10)+guide_fun()
 
     ## Add theme.
-    p + theme_eic()
+    p + scale_legend + theme_eic()
  
 }
 

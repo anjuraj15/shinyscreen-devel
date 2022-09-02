@@ -786,6 +786,27 @@ mk_shinyscreen_server <- function(projects,init) {
             if (length(res)!=0L) res else CINDEX_BY
         })
 
+        ## Calculate the palette.
+        rf_get_legend_tab <- reactive({
+            keys <- req(rf_get_cindex_key())
+            labs <- req(rf_get_cindex_labs())
+            cind <- req(rf_get_cindex())
+
+            ## When determining the number of colours, we only need to
+            ## know about sets, adducts and tags.
+            keys <- keys[keys!="ID"]
+            labs <- labs[labs!="ID"]
+
+            define_labels_colours(cind,keys,labs)
+        })
+
+        rf_scale_legend <- reactive({
+            leg_tab <- rf_get_legend_tab()
+            kval <- rf_get_cindex_kval()
+            lkval <- kval[names(kval)!="ID"]
+            get_scale_values(leg_tab,lkval)
+        })
+
         ## REACTIVE FUNCTIONS: PLOTS
         rf_get_rtrange <- reactive({
             x1 <- input$plot_rt_min
@@ -813,11 +834,14 @@ mk_shinyscreen_server <- function(projects,init) {
             })
             req(NROW(summ)>0L)
             req(NROW(ms1)>0L)
+
+
             make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),
                               labs=req(rf_get_cindex_labs()),
                               asp=PLOT_EIC_ASPECT,
                               rt_range=rf_get_rtrange(),
-                              i_range=rf_get_irange())
+                              i_range=rf_get_irange(),
+                              scale_legend = rf_scale_legend())
         })
 
         rf_get_ms2_eic_rtrange <- reactive({
@@ -843,7 +867,8 @@ mk_shinyscreen_server <- function(projects,init) {
                               kvals=rf_get_cindex_kval(),
                               labs=rf_get_cindex_labs(),
                               rt_range = rf_get_ms2_eic_rtrange(),
-                              asp=PLOT_EIC_ASPECT)
+                              asp=PLOT_EIC_ASPECT,
+                              scale_legend=rf_scale_legend())
             
             
             
@@ -875,7 +900,8 @@ mk_shinyscreen_server <- function(projects,init) {
             make_spec_ms2_plot(ms2,
                                summ,
                                kvals=req(rf_get_cindex_kval()),
-                               labs=req(rf_get_cindex_labs()))
+                               labs=req(rf_get_cindex_labs()),
+                               scale_legend=rf_scale_legend())
         })
 
         
