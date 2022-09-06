@@ -60,6 +60,25 @@ sci10 <- function(x) {
 
 }
 
+scale_legend <- function(colrdata,pdata) {
+    if (is.null(colrdata) || is.null(pdata)) NULL
+    labs <- data.table::key(colrdata)
+    message("labslabs")
+    print(labs)
+    sdcols <- c(labs,"label")
+    print("pdata")
+    print(names(pdata))
+    print("namesnames")
+    print(names(colrdata))
+    tab_lab <- pdata[,unique(.SD),.SDcols=sdcols][colrdata,.(colour=i.colour),on=labs,nomatch=NULL]
+    print("tablab")
+    print(tab_lab)
+    print("-------")
+    x <- tab_lab$colour
+    names(x) <- tab_lab$label
+    scale_colour_manual(values=x)
+}
+
 pal_maker <- function(n,palname = NULL) {
     ## The silliest implementation possible. There may be cases when
     ## user requires more than the number of colours accessible in any
@@ -85,8 +104,6 @@ pal_maker <- function(n,palname = NULL) {
     
     
 }
-
-
 
 ### PLOTTING: AESTHETIC FUNCTIONS
 smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
@@ -189,32 +206,53 @@ make_line_label <- function(...) {
 
 
 
+## Define a table which matches labelling columns to colours for
+## plotting.
+define_colrdata <- function(comptab,labs) {
+    ## Determine colours based on `labs'. 
+    one_keyset <- function(dt) {
+        labtab = dt[,unique(.SD),.SDcol=labs]
+        n <- NROW(labtab)
+        cols <- if (n<13L) {
+                    pal <- RColorBrewer::brewer.pal(n=n,name="Paired") 
+                    if (n>3L) pal else if (n>0L) pal[1:n] else character()
+                } else {
+                    scales::viridis_pal()(n)
+                }
+        labtab[,colour:=(cols)]
+        labtab
+    }
 
-define_labels_colours <- function(dt,keys,labs) {
-        one_keyset <- function(dt) {
-            labtab = dt[,unique(.SD),.SDcol=labs]
-            labtab[,label:=do.call(make_line_label,.SD)]
-            n <- NROW(labtab)
-            cols <- if (n<13L) {
-                        RColorBrewer::brewer.pal(n=n,name="Paired")
-                    } else {
-                        scales::viridis_pal()(n)
-                    }
-            labtab[,colour:=(cols)]
-            data.table::setkeyv(labtab,labs)
-            labtab
-        }
-        res <- dt[,one_keyset(.SD),by=keys]
-        data.table::setkeyv(res,keys)
-        res
+    ## Calculate lengths of all the COLRDATA_KEY subgroups.
+    dt <- comptab[,unique(.SD),.SDcols=labs,by=COLRDATA_KEY]
+
+    ## Arrange colours to map to specific labels by sorting.
+    allcols <- union(COLRDATA_KEY,labs)
+    data.table::setkeyv(dt,allcols)
+    print(dt)
+
+    ## Assign colours to labels subgroups.
+    res <- dt[,one_keyset(.SD),by=COLRDATA_KEY]
+
+    ## Sort everything again, 
+    data.table::setkeyv(res,allcols)
+    res
 }
 
-get_scale_values <- function(dt,kval) {
-        tab_lab <- dt[.(kval)]
-        x <- tab_lab$colour
-        names(x) <- tab_lab$label
-        x
+
+## Narrow to a specific subset that will be plotted together (eg, one
+## compound set.).
+narrow_colrdata <- function(colrdata,kvals) {
+    if (is.null(colrdata)) return(NULL)
+    theset <- kvals[[COLRDATA_KEY]]
+    labs <- data.table::key(colrdata)
+    labs <- c(labs[labs!=COLRDATA_KEY],"colour")
+    res <- eval(bquote(colrdata[(.(as.symbol(COLRDATA_KEY))==theset),.SD,.SDcol=labs]))
+    data.table::setkeyv(res,labs)
+    res
 }
+
+
 
 ## Prepare MS1 eic data: rt and intensity of a subset of extracted
 ## data defined by the key named list. Argument `summ_rows' is a
@@ -280,7 +318,7 @@ narrow_summ <- function(summ,kvals,labs,...) {
 
 ### PLOTTING: TOP-LEVEL PLOT CREATION
 
-make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1,scale_legend=NULL) {
+make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1,colrdata=NULL) {
     key <- names(kvals)
     ## Get metadata.
 
@@ -333,11 +371,12 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     ## p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)+guide_fun()
 
     ## Add theme.
-    p + scale_legend + theme_eic()
+    colrdata <- narrow_colrdata(colrdata,kvals)
+    p + scale_legend(colrdata,pdata) + theme_eic()
 }
 
 
-make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1, scale_legend=NULL) {
+make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1, colrdata=NULL) {
     ## Get metadata.
     summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES","Formula")
 
@@ -374,11 +413,12 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1,
     ## p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=3,check_overlap=T)
 
     ## Add theme.
-    p + scale_legend + theme_eic()
+    colrdata <- narrow_colrdata(colrdata,kvals)
+    p + scale_legend(colrdata,pdata) + theme_eic()
 }
 
 
-make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, scale_legend=NULL) {
+make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, colrdata=NULL) {
 
     
     ## Only the chosen ones.
@@ -414,7 +454,8 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, sca
     p <- ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+cust_geom_linerange()+scale_y(axis=axis,labels=sci10)+guide_fun()
 
     ## Add theme.
-    p + scale_legend + theme_eic()
+    colrdata <- narrow_colrdata(colrdata,kvals)
+    p + scale_legend(colrdata,pdata) + theme_eic()
  
 }
 

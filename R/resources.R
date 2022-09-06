@@ -294,3 +294,8 @@ ARRANGE_CHOICES <- c(nothing="nothing",
                      id="ID")
 
 PLOT_EIC_ASPECT <- 0.75
+
+## Each set should have it's different colourscheme, because of the
+## possibility that each set connects to a different collection of
+## files.
+COLRDATA_KEY <- "set"
