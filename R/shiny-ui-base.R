@@ -1190,24 +1190,32 @@ mk_shinyscreen_server <- function(projects,init) {
             cind <- rf_get_cindex()
             key <- rf_get_cindex_key()
             rt_range <- rf_get_rtrange()
+            i_range <- rf_get_irange()
             labs <- req(rf_get_cindex_labs())
             projdir <- rvs$gui$paths$project
             fn <- paste0(file.path(projdir,input$report_name),'.pdf')
             pdf(file=fn,paper="a4",height=7,width=11)
+            colrdata <- rf_colrdata()
             for (ri in 1:NROW(cind)) {
                 rowtab <- cind[ri][,..key] 
                 kvals <- lapply(rowtab,function (x) x[[1]])
                 names(kvals) <- key
                 message('Compound index row: ',ri)
+
                 p1 <- make_eic_ms1_plot(ms1,summ,kvals=kvals,
                                         labs=labs,
                                         asp=PLOT_EIC_ASPECT,
-                                        rt_range=rt_range)+theme_print()
-                p2 <- make_eic_ms2_plot(summ,
-                                        kvals=kvals,
+                                        rt_range=rt_range,
+                                        i_range=i_range,
+                                        colrdata = colrdata) + theme_print()
+
+                p2 <- make_eic_ms2_plot(summ,kvals=kvals,
                                         labs=labs,
-                                        rt_range = rt_range,
-                                        asp=PLOT_EIC_ASPECT)+theme_print()
+                                        asp=PLOT_EIC_ASPECT,
+                                        rt_range=rt_range,
+                                        colrdata = colrdata) + theme_print()
+
+                
 
                 id <- rowtab <- cind[ri][,..key][["ID"]][[1]]
                 smi <- rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
@@ -1219,7 +1227,8 @@ mk_shinyscreen_server <- function(projects,init) {
                 p_spec <- make_spec_ms2_plot(ms2,
                                              summ,
                                              kvals=kvals,
-                                             labs=labs)+theme_print()
+                                             labs=labs,
+                                             colrdata=colrdata)+theme_print()
 
                 cmb <- combine_plots(p1,p2,p_spec,p_struc)
                 print(cmb)

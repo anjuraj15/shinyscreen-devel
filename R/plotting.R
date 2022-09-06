@@ -63,18 +63,13 @@ sci10 <- function(x) {
 scale_legend <- function(colrdata,pdata) {
     if (is.null(colrdata) || is.null(pdata)) NULL
     labs <- data.table::key(colrdata)
-    message("labslabs")
-    print(labs)
+
     sdcols <- c(labs,"label")
-    print("pdata")
-    print(names(pdata))
-    print("namesnames")
-    print(names(colrdata))
+
     tab_lab <- pdata[,unique(.SD),.SDcols=sdcols][colrdata,.(colour=i.colour),on=labs,nomatch=NULL]
-    print("tablab")
-    print(tab_lab)
-    print("-------")
+
     x <- tab_lab$colour
+
     names(x) <- tab_lab$label
     scale_colour_manual(values=x)
 }
@@ -249,7 +244,6 @@ narrow_colrdata <- function(colrdata,kvals) {
     res <- colrdata[,(COLRDATA_KEY):=NULL]
     labs <- names(res)[names(res)!="colour"]
     data.table::setkeyv(res,labs)
-    print(res)
     res
 }
 
@@ -452,7 +446,7 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, col
 }
 
 combine_plots <- function(p_eic_ms1,p_eic_ms2,p_spec_ms2,p_struct) {
-    cowplot::plot_grid(p_eic_ms1,p_struct,p_eic_ms2,
+    cowplot::plot_grid(p_eic_ms1,p_struct,p_eic_ms2,NULL,
                        p_spec_ms2,ncol=2,rel_widths=c(2,1),align='v',axis='l')
 }
 
