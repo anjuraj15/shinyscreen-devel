@@ -244,11 +244,12 @@ define_colrdata <- function(comptab,labs) {
 ## compound set.).
 narrow_colrdata <- function(colrdata,kvals) {
     if (is.null(colrdata)) return(NULL)
-    theset <- kvals[[COLRDATA_KEY]]
-    labs <- data.table::key(colrdata)
-    labs <- c(labs[labs!=COLRDATA_KEY],"colour")
-    res <- eval(bquote(colrdata[(.(as.symbol(COLRDATA_KEY))==theset),.SD,.SDcol=labs]))
+    vals <- as.list(kvals[COLRDATA_KEY])
+
+    res <- colrdata[,(COLRDATA_KEY):=NULL]
+    labs <- names(res)[names(res)!="colour"]
     data.table::setkeyv(res,labs)
+    print(res)
     res
 }
 
@@ -365,12 +366,7 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
         cust_geom_line()+
         scale_y(axis=axis,labels=sci10)+
         coord
-    ## annt_dx <- 5*dx/100.
-    ## annt <- summ_rows[,.(x=..annt_dx+ms1_rt,y=ms1_int,txt=signif(ms1_rt,5))]
-    ## ## Annotate.
-    ## p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=4,check_overlap=T)+guide_fun()
 
-    ## Add theme.
     colrdata <- narrow_colrdata(colrdata,kvals)
     p + scale_legend(colrdata,pdata) + theme_eic()
 }
@@ -407,10 +403,6 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1,
          ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+cust_geom_linerange()+
          scale_y(axis=axis,labels=sci10)+rt_lim+guide_fun()
     ans <- pdata[,unique(an)]
-    ## annt_dx <- 5*dx/100.
-    ## annt <- summ[an %in% (ans),.(an=an,x=ms2_rt+..annt_dx,y=1.1*ms2_int,txt=signif(ms2_rt,5))]
-    ## ## Annotate.
-    ## p <- p + annotate("text",x=annt$x,y=annt$y,label=annt$txt,size=3,check_overlap=T)
 
     ## Add theme.
     colrdata <- narrow_colrdata(colrdata,kvals)
@@ -435,7 +427,7 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, col
     common_labels <- unique(c("an",common_key,intersect(names(extr_ms2),labs)))
     pdata <- subxdata[ans,on="an"][,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=common_labels]
     pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
-    pdata <- pdata[,.(mz=mz,intensity=intensity,label=label)]
+
     if (NROW(pdata)==0L) return(NULL)
     # Aspect ratio.
     xrng <- range(pdata$mz)
