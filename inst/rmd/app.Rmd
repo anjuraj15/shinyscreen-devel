@@ -640,8 +640,8 @@ DT::DTOutput("cindex")
 </div> <!-- Compound Explorer Panel -->
 
 ### Viewer
-<div class="plot-layout">
-<div>
+<div class="plot-layout"> <!-- Plot Section -->
+<div> 
 ```{r, echo=F}
 plotOutput("plot_eic_ms1",
            hover = hoverOpts(id="plot_hover",
@@ -666,7 +666,7 @@ plotOutput("plot_eic_ms2",
            brush = "plot_brush")
 ```
 </div>
-<div>
+<div> 
 
 #### Tweak Plot Parameters
 
@@ -712,19 +712,8 @@ numericInput(inputId = "plot_i_max",
 ```
 </div> <!-- Intensity div -->
 
-</div>
-<div>
-```{r, echo=F}
-plotOutput("plot_spec_ms2",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_mz_click",
-           brush = brushOpts(id="plot_mz_brush"))
-```
-</div>
-<div></div>
-</div>
+#### Report
+
 <div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
 ```{r, echo=F}
 ## actionButton("plot_save_single",
@@ -746,6 +735,22 @@ actionButton("summ_tab_b", "Save summary table")
 ```
 
 </div> <!-- Control Bar -->
+
+</div>
+<div>
+```{r, echo=F}
+plotOutput("plot_spec_ms2",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
+           dblclick = "plot_mz_click",
+           brush = brushOpts(id="plot_mz_brush"))
+```
+</div>
+<div></div>
+</div> <!-- Plots -->
+
+
 
 
 <!-- <div style="display: flex-flow: column nowrap"> <\!-- Main -\-> -->
