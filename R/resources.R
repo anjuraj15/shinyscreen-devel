@@ -164,6 +164,14 @@ QA_FLAGS <- c("qa_pass",
               "qa_ms2_near",
               "qa_ms2_good_int")
 
+QABOX_VALS <- c("MS1 exists"="qa_ms1_exists",
+                "MS1 good intensity"="qa_ms1_good_int",
+                "MS1 above noise"="qa_ms1_above_noise",
+                "MS2 exists"="qa_ms2_exists",
+                "MS2 good intensity"="qa_ms2_good_int",
+                "MS2 no RT shift"="qa_ms2_near")
+
+
 QA_NUM_REAL <- c("ms1_int","ms1_rt","ms1_mean")
 
 QA_NUM_INT <- c("ms2_sel","ms1_rt_ind")

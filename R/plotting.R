@@ -224,7 +224,6 @@ define_colrdata <- function(comptab,labs) {
     ## Arrange colours to map to specific labels by sorting.
     allcols <- union(COLRDATA_KEY,labs)
     data.table::setkeyv(dt,allcols)
-    print(dt)
 
     ## Assign colours to labels subgroups.
     res <- dt[,one_keyset(.SD),by=COLRDATA_KEY]

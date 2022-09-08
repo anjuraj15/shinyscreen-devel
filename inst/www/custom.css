@@ -33,3 +33,25 @@
     grid-template-columns: 3fr 1fr;
     column-gap: 1em;
 }
+
+.measure-prop-sec {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    column-gap: 1em;
+}
+
+.spec-tab {
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.sel-spec {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+
+.measure-props {
+    grid-column: 2;
+    grid-row: 1;
+}

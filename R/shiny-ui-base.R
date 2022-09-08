@@ -353,32 +353,6 @@ dt_summ_subset_callback = function () DT::JS(c(
                                               "  ]",
                                               "});"))
 
-## FIXME: order_summ reordering/editing unstable. Therefore temporarily removed.
-## dt_order_summ_callback = function () DT::JS(c(
-##                                               "var tbl = $(table.table().node());",
-##                                               "var id = tbl.closest('.datatables').attr('id');",
-##                                               "function onUpdate(updatedCell, updatedRow, oldValue) {",
-##                                               "  var cellinfo = [{",
-##                                               "    row: updatedCell.index().row + 1,",
-##                                               "    col: updatedCell.index().column,",
-##                                               "    value: updatedCell.data()",
-##                                               "  }];",
-##                                               "  Shiny.setInputValue(id + '_cell_edit:DT.cellInfo', cellinfo);",
-##                                               "}",
-##                                               "table.MakeCellsEditable({",
-##                                               "  onUpdate: onUpdate,",
-##                                               "  inputCss: 'my-input-class',",
-##                                               "  columns: [1],",
-##                                               "  confirmationButton: false,",
-##                                               "  inputTypes: [",
-##                                               celledit_values('1',c('Descending','Ascending')),
-##                                               "  ]",
-##                                              "});",
-##                                              "//pass on data to R",
-##                                              "table.on('row-reorder', function(e, details, changes) {",
-##                                                  "Shiny.onInputChange(id +'_row_reorder', JSON.stringify(details));",
-##                                              "});"))
-
 
 render_dt <- function(data, server = T) {
     DT::renderDT(data, server = server)
@@ -755,6 +729,14 @@ mk_shinyscreen_server <- function(projects,init) {
             }
             })
         })
+
+        rf_get_keyed_cindex <- reactive({
+            cind <- req(rf_get_cindex())
+            grp <- req(rf_cindex_key())
+
+            data.table::setkeyv(cind,grp)
+            cind
+        })
         
         ## Get current grouping categories (`cindex key').
         rf_get_cindex_key <- reactive({
@@ -786,6 +768,45 @@ mk_shinyscreen_server <- function(projects,init) {
             if (length(res)!=0L) res else CINDEX_BY
         })
 
+        rf_get_cindex_parents <- reactive({
+            rvs$m
+            isolate({
+                ms1 <- rvs$m$extr$ms1
+                ms2 <- rvs$m$extr$ms2
+                summ <- rvs$m$out$tab$summ
+            })
+
+            key <- rf_get_cindex_key()
+            kvals <- req(rf_get_cindex_kval())
+            labs <- rf_get_cindex_labs()
+            ## Get kvals part of summ.
+            tab <- get_data_from_key(summ,kvals)[,unique(.SD),.SDcols=labs,by=key]
+            tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcol=labs]
+            keys <- names(tab)[names(tab)!="item"]
+            data.table::setkeyv(tab,keys)
+            tab
+
+        })
+
+        rf_select_from_summ <- reactive({
+            summ <- req(rvs$m$out$tab$summ)
+            parent <- req(input$sel_parent_trace)
+            kvals <- req(rf_get_cindex_kval())
+            ptab <- req(rf_get_cindex_parents())
+            select <- ptab[item==(parent)]
+            tab <- get_data_from_key(summ,kvals)[select,nomatch=NULL,on=key(ptab)]
+            tab
+        })
+
+        rf_fill_sel_spec <- reactive({
+            cols <- c("an","ms2_rt","ms2_sel")
+            tab <- req(rf_select_from_summ())
+            if (NROW(tab)==1L && is.na(tab$an)) return(data.table::data.table(item=character()))
+            res <- tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcols=cols]
+            data.table::setkey(res,"ms2_rt")
+            res
+        })
+
         ## Calculate the palette.
         rf_colrdata <- reactive({
             keys <- req(rf_get_cindex_key())
@@ -793,6 +814,7 @@ mk_shinyscreen_server <- function(projects,init) {
             comp <- req(rvs$m$out$tab$comp)
             define_colrdata(comp,labs)
         })
+        
         ## REACTIVE FUNCTIONS: PLOTS
         rf_get_rtrange <- reactive({
             x1 <- input$plot_rt_min
@@ -812,6 +834,7 @@ mk_shinyscreen_server <- function(projects,init) {
             c(y1,y2)
 
         })
+        
         rf_plot_eic_ms1 <- reactive({
             isolate({
                 ms1 <- rvs$m$extr$ms1
@@ -822,12 +845,14 @@ mk_shinyscreen_server <- function(projects,init) {
             req(NROW(ms1)>0L)
 
 
-            make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),
-                              labs=req(rf_get_cindex_labs()),
-                              asp=PLOT_EIC_ASPECT,
-                              rt_range=rf_get_rtrange(),
-                              i_range=rf_get_irange(),
-                              colrdata = rf_colrdata())
+            p <- make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),
+                                   labs=req(rf_get_cindex_labs()),
+                                   asp=PLOT_EIC_ASPECT,
+                                   rt_range=rf_get_rtrange(),
+                                   i_range=rf_get_irange(),
+                                   colrdata = rf_colrdata())
+
+            p
         })
 
         rf_get_ms2_eic_rtrange <- reactive({
@@ -836,7 +861,6 @@ mk_shinyscreen_server <- function(projects,init) {
             urng <- rf_get_rtrange()
             if (is.na(urng[[1]])) urng[[1]] <- drng[[1]]
             if (is.na(urng[[2]])) urng[[2]] <- drng[[2]]
-            print(urng)
             urng
         })
 
@@ -849,15 +873,16 @@ mk_shinyscreen_server <- function(projects,init) {
 
             gg <- rf_plot_eic_ms1()
             rt_rng <- range(gg$data$rt)
-            make_eic_ms2_plot(summ,
-                              kvals=rf_get_cindex_kval(),
-                              labs=rf_get_cindex_labs(),
-                              rt_range = rf_get_ms2_eic_rtrange(),
-                              asp=PLOT_EIC_ASPECT,
-                              colrdata=rf_colrdata())
+            p <- make_eic_ms2_plot(summ,
+                                   kvals=rf_get_cindex_kval(),
+                                   labs=rf_get_cindex_labs(),
+                                   rt_range = rf_get_ms2_eic_rtrange(),
+                                   asp=PLOT_EIC_ASPECT,
+                                   colrdata=rf_colrdata())
+
             
-            
-            
+
+            p
         })
 
         rf_plot_struct <- reactive({
@@ -867,8 +892,6 @@ mk_shinyscreen_server <- function(projects,init) {
             row <- req(input$cindex_row_last_clicked)
             id <- rowtab <- cind[row][,..key][["ID"]][[1]]
             smi <- rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
-            print("smiles:")
-            print(smi)
             grb <- smiles2img(smi)
             xx <- qplot(1:5, 2*(1:5), geom="blank") +
                 annotation_custom(grb, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
@@ -883,11 +906,14 @@ mk_shinyscreen_server <- function(projects,init) {
             })
             req(NROW(summ)>0L)
             req(NROW(ms2)>0L)
-            make_spec_ms2_plot(ms2,
-                               summ,
-                               kvals=req(rf_get_cindex_kval()),
-                               labs=req(rf_get_cindex_labs()),
-                               colrdata=rf_colrdata())
+            p <- make_spec_ms2_plot(ms2,
+                                    summ,
+                                    kvals=req(rf_get_cindex_kval()),
+                                    labs=req(rf_get_cindex_labs()),
+                                    colrdata=rf_colrdata())
+            
+            p
+
         })
 
         
@@ -1236,6 +1262,25 @@ mk_shinyscreen_server <- function(projects,init) {
             dev.off()
         })
 
+
+
+        observe({
+            ptab <- rf_get_cindex_parents()
+            req(NROW(ptab)>0L)
+            updateSelectInput(session = session,
+                              inputId = "sel_parent_trace",
+                              choices = ptab$item)
+        }, label = "measure-props-parent")
+
+        observe({
+            ctab <- rf_fill_sel_spec()
+            disp <- if (any(ctab$ms2_sel==T)) ctab[ms2_sel==T,item] else ctab[1L,item]
+            updateSelectInput(session = session,
+                              inputId = "sel_spec",
+                              choices = ctab$item,
+                              selected = disp)
+        }, label = "measure-props-sel-spec")
+
         observeEvent(input$summ_tab_b,{
             projdir <- rvs$gui$paths$project
             fn <- file.path(projdir,input$summ_name)
@@ -1395,13 +1440,6 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         ## RENDER: PLOTS
-
-        ## output$plot_eic_combined <- renderPlot({
-        ##     p1 <- rf_plot_eic_ms1()
-        ##     p2 <- rf_plot_eic_ms2()
-        ##     p3 <- rf_plot_spec_ms2()
-        ##     combine_plots(p1,p2,p3)
-            
             
         ## },height=1000)
         observeEvent(input$plot_brush,{
@@ -1474,20 +1512,34 @@ mk_shinyscreen_server <- function(projects,init) {
         output$plot_struct <- renderPlot({
             rf_plot_struct()
         })
-        ## output$plot_eic_ms1 <- renderPlot({
-        ##     rf_plot_eic_ms1()
-        ## })
-
-        ## output$plot_eic_ms2 <- renderPlot({
-        ##     rf_plot_eic_ms2()
-        ## })
-
-        ## output$plot_spec_ms2 <- renderPlot({
-        ##     NULL
-        ## })
 
         
-
+        output$print_spec_tab <- renderPrint({
+            notfound <- "No MS2 spectrum has been found for this entry."
+            ms2tabsel <- req(rf_fill_sel_spec())
+            selMS2 <- req(input$sel_spec)
+            if (NROW(ms2tabsel)!=0L) {
+                lval <- lapply(ms2tabsel[item==(selMS2)],function(x) x)
+                ms2 <- rvs$m$extr$ms2
+                kval <- rf_get_cindex_kval()
+                allval <- c(kval,lval)
+                ## There can be some duplicates.
+                common <- union(names(kval),names(lval))
+                allval <- allval[common]
+                #Because in current implementation, kval may contain
+                #more than the names existing in extr$ms2. Also,
+                #BASE_KEY_MS2 does not contain `an', so we need to readd
+                #it.
+                key <- unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"an"))
+                kval2 <- allval[key]
+                spec <- get_data_from_key(ms2,kval2)[,.(mz,intensity)]
+                ## as.character(lapply(1L:NROW(spec),function(nr) paste0(spec[nr,mz]," ",spec[nr,intensity])))
+                print(as.data.frame(spec),row.names=F)
+                
+            } else {
+                notfound
+            }
+        })
         
             
             
