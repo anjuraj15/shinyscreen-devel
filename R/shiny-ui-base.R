@@ -1343,14 +1343,9 @@ mk_shinyscreen_server <- function(projects,init) {
             updateNumericInput(session = session,
                                inputId = "chg_ms1_int",
                                value = res$int)
-            print(".......RES.......")
-            print(res)
             selqa <- res$qa[QABOX_VALS]
-            print(".....seqa1......")
-            print(selqa)
             selqa <- QABOX_VALS[selqa]
-            print("......selqa2.....")
-            print(selqa)
+
             updateCheckboxGroupInput(session=session,
                                      choices=QABOX_VALS,
                                      inputId="qabox",
