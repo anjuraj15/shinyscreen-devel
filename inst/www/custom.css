@@ -41,6 +41,8 @@
 }
 
 .spec-tab {
+    overflow-y: auto;
+    height: 60%;
     grid-column: 3;
     grid-row: 1;
 }
@@ -52,6 +54,8 @@
 
 
 .measure-props {
+
     grid-column: 2;
+
     grid-row: 1;
 }

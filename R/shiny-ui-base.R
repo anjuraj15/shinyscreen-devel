@@ -852,6 +852,8 @@ mk_shinyscreen_server <- function(projects,init) {
                                    i_range=rf_get_irange(),
                                    colrdata = rf_colrdata())
 
+            p <- if (!is.null(p)) p else empty_plot("Nothing to plot")
+
             p
         })
 
@@ -881,7 +883,7 @@ mk_shinyscreen_server <- function(projects,init) {
                                    colrdata=rf_colrdata())
 
             
-
+            p <- if (!is.null(p)) p else empty_plot("Nothing to plot")
             p
         })
 
@@ -911,7 +913,8 @@ mk_shinyscreen_server <- function(projects,init) {
                                     kvals=req(rf_get_cindex_kval()),
                                     labs=req(rf_get_cindex_labs()),
                                     colrdata=rf_colrdata())
-            
+
+            p <- if (!is.null(p)) p else empty_plot("Nothing to plot")
             p
 
         })
@@ -919,6 +922,7 @@ mk_shinyscreen_server <- function(projects,init) {
         
         ## OBSERVERS
 
+        ## OBSERVERS: PROJECT MANAGEMENT
         observe({
             indir <- rvs$gui$paths$project
             req(isTruthy(indir) && dir.exists(indir))
@@ -955,7 +959,22 @@ mk_shinyscreen_server <- function(projects,init) {
                                                    pattern = DFILES_LIST_PATT))
         })
 
+        ## Update projects and data directories every second.
+        observeEvent(rtimer1000(),{
+            projects <- rv_projects()
+            curr_projects <- list.dirs(path=init$userdir, full.names = F, recursive = F)
+            if (length(union(curr_projects,projects)) != length(intersect(curr_projects,projects))) {
+                updateSelectInput(session=session,
+                                  inputId="proj_list",
+                                  choices=curr_projects)
+                updateSelectInput(session=session,
+                                  inputId="indir_list",
+                                  choices=curr_projects)
+                rv_projects(curr_projects)
+            }
 
+            
+        }, label = "update-proj-list")
         
         observeEvent(input$load_proj_b,{
             ## A single place where a new project is initialised, or
@@ -1007,94 +1026,6 @@ mk_shinyscreen_server <- function(projects,init) {
             }
             message("project: ",rvs$gui$project())
         }, label = "project-b")
-
-        observeEvent(input$extract_b,{
-            rvs$m <- app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
-            m <- rvs$m
-            shinymsg("Extraction has started. This may take a while.")
-            rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
-            rvs$status$ms1_fine_stat = m$conf$tolerance[["ms1 fine"]]
-            rvs$status$ms1_eic_stat = m$conf$tolerance[["eic"]]
-            rvs$status$rt_stat = m$conf$tolerance[["rt"]]
-            rvs$status$is_extracted_stat = "In progress."
-            rv_extr_flag(T)
-    
-        })
-
-        observe({
-            rtimer1000()
-            isolate({
-                if (rv_extr_flag()) {
-                    rv_extr_flag(F)
-                    m <-rvs$m
-                    
-                    promises::future_promise(run(m=m,phases=c("setup","comptab","extract"))) %...>% {
-                        rvs$m = .
-                        rvs$status$is_extracted_stat = "Yes."
-                        fn_c_state <- file.path(rvs$m$run$paths$project,
-                                                paste0("extract.",shinyscreen:::FN_CONF))
-                        yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
-                        message("(extract) Done extracting.")
-                        message("(extract) Config written to ", fn_c_state)
-                        shinymsg("Extraction has been completed.")
-
-                    }
-
-
-                }
-            })
-        })
-
-        ## Update projects and data directories every second.
-        observeEvent(rtimer1000(),{
-            projects <- rv_projects()
-            curr_projects <- list.dirs(path=init$userdir, full.names = F, recursive = F)
-            if (length(union(curr_projects,projects)) != length(intersect(curr_projects,projects))) {
-                updateSelectInput(session=session,
-                                  inputId="proj_list",
-                                  choices=curr_projects)
-                updateSelectInput(session=session,
-                                  inputId="indir_list",
-                                  choices=curr_projects)
-                rv_projects(curr_projects)
-            }
-
-            
-        }, label = "update-proj-list")
-
-        observeEvent(input$presc_b,{
-            if (NROW(rvs$m$extr$ms1)>0L) {
-                rvs$m <- app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
-                rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh"]]
-                rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
-                rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
-                rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
-                rvs$status$is_qa_stat = "In progress."
-                rv_presc_flag(T)
-            } else {
-                shinymsg("You must extract the data first.",type="warning")
-            }
-        })
-        
-        
-
-        observe({
-            rtimer_presc()
-            isolate({
-                if (rv_presc_flag()) {
-                    shinymsg("Prescreening started. Please wait.")
-                    rv_presc_flag(F)
-                    m <-rvs$m
-                    promises::future_promise(run(m=m,phases="prescreen")) %...>% {
-                        rvs$m = .
-                        rvs$status$is_qa_stat = "Yes."
-                        shinymsg("Prescreening has been completed.")
-
-
-                    }
-                }
-            })
-        })
 
         observeEvent(input$save_proj_b,{
             fn <- file.path(rvs$gui$paths$project,FN_STATE)
@@ -1202,6 +1133,89 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$datatab$adduct <- z$adduct
         }, label = "datatab-edit")
 
+        ## OBSERVERS: CONFIGURATION AND EXTRACTION
+        
+        observeEvent(input$extract_b,{
+            rvs$m <- app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
+            m <- rvs$m
+            shinymsg("Extraction has started. This may take a while.")
+            rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
+            rvs$status$ms1_fine_stat = m$conf$tolerance[["ms1 fine"]]
+            rvs$status$ms1_eic_stat = m$conf$tolerance[["eic"]]
+            rvs$status$rt_stat = m$conf$tolerance[["rt"]]
+            rvs$status$is_extracted_stat = "In progress."
+            rv_extr_flag(T)
+    
+        })
+
+        observe({
+            rtimer1000() #Just so we separate the display of status
+                         #from extraction/prescreening. Otherwise, the
+                         #status will only update after the extraction
+                         #is done.
+            isolate({
+                if (rv_extr_flag()) {
+                    rv_extr_flag(F)
+                    m <-rvs$m
+                    
+                    promises::future_promise(run(m=m,phases=c("setup","comptab","extract"))) %...>% {
+                        rvs$m = .
+                        rvs$status$is_extracted_stat = "Yes."
+                        fn_c_state <- file.path(rvs$m$run$paths$project,
+                                                paste0("extract.",shinyscreen:::FN_CONF))
+                        yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
+                        message("(extract) Done extracting.")
+                        message("(extract) Config written to ", fn_c_state)
+                        shinymsg("Extraction has been completed.")
+
+                    }
+
+
+                }
+            })
+        })
+
+        
+
+        observeEvent(input$presc_b,{
+            if (NROW(rvs$m$extr$ms1)>0L) {
+                rvs$m <- app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
+                rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh"]]
+                rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
+                rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
+                rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
+                rvs$status$is_qa_stat = "In progress."
+                rv_presc_flag(T)
+            } else {
+                shinymsg("You must extract the data first.",type="warning")
+            }
+        })
+        
+        
+
+        observe({
+            rtimer_presc() #Just so we separate the display of status
+                           #from extraction/prescreening. Otherwise, the status
+                           #will only update after the extraction is
+                           #done.
+            isolate({
+                if (rv_presc_flag()) {
+                    shinymsg("Prescreening started. Please wait.")
+                    rv_presc_flag(F)
+                    m <-rvs$m
+                    promises::future_promise(run(m=m,phases="prescreen")) %...>% {
+                        rvs$m = .
+                        rvs$status$is_qa_stat = "Yes."
+                        shinymsg("Prescreening has been completed.")
+
+
+                    }
+                }
+            })
+        })
+
+        
+        ## OBSERVERS: VIEWER
         observeEvent(input$make_report_b,{
             isolate({
                 ms1 <- rvs$m$extr$ms1
@@ -1261,8 +1275,6 @@ mk_shinyscreen_server <- function(projects,init) {
             }
             dev.off()
         })
-
-
 
         observe({
             ptab <- rf_get_cindex_parents()

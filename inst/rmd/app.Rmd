@@ -774,13 +774,13 @@ selectInput("sel_spec",label="Select spectrum", choices=character(),size=10L,sel
 
 <div class="measure-props"> <!-- measure-props -->
 
-#### Measurement Properties
+#### Properties
 
 ```{r,echo=F}
-numericInput(inputId="chq_ms1_rt",
+numericInput(inputId="chg_ms1_rt",
              label="Retention time (MS1)",
              value=NA_real_)
-numericInput(inputId="chq_ms1_int",
+numericInput(inputId="chg_ms1_int",
              label="Intensity (MS1)",
              value=NA_real_)
 ```

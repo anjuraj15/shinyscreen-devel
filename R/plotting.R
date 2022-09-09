@@ -453,3 +453,6 @@ combine_plots <- function(p_eic_ms1,p_eic_ms2,p_spec_ms2,p_struct) {
 
     
     
+empty_plot <- function(label) {
+    ggplot()+xlim(0,1)+ylim(0,1)+theme_void()+annotate(0.5,0.5,geom="text",label=label)
+}
