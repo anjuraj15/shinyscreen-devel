@@ -790,8 +790,11 @@ checkboxGroupInput(inputId="qabox",
                    label="Quality Control",
                    choices=QABOX_VALS)
 ```
-
-
+```{r,echo=F}
+checkboxInput(inputId="chg_ms2sel",
+              label="MS2 Selected",
+              value=F)
+```
 </div> <!-- measure-props -->
 
 <div class="spec-tab"> <!-- spec tab -->

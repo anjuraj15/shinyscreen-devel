@@ -710,6 +710,7 @@ mk_shinyscreen_server <- function(projects,init) {
             if (isTruthy(input$cindex_group)) setdiff(CINDEX_BY,input$cindex_group) else CINDEX_BY
         })
 
+        ## REACTIVE FUNCTIONS: COMPOUND INDEX
         rf_get_cindex <- reactive({
             rvs$status$is_qa_stat
             grp <- rf_cindex_key()
@@ -799,13 +800,20 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         rf_fill_sel_spec <- reactive({
-            cols <- c("an","ms2_rt","ms2_sel")
+            cols <- c("an","ms2_rt")
             tab <- req(rf_select_from_summ())
             if (NROW(tab)==1L && is.na(tab$an)) return(data.table::data.table(item=character()))
-            res <- tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcols=cols]
+            tab[is.na(ms2_sel),ms2_sel:=F] #TODO FIXME: Check why NAs exist at all?
+            tab[,passval:=fifelse(qa_pass==T,"OK","BAD")]
+            tab[ms2_sel==T,passval:="SELECTED"]
+            res <- tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcols=c(cols,"passval")]
             data.table::setkey(res,"ms2_rt")
             res
         })
+
+        
+        
+        ## REACTIVE FUNCTIONS: PLOTS
 
         ## Calculate the palette.
         rf_colrdata <- reactive({
@@ -815,7 +823,6 @@ mk_shinyscreen_server <- function(projects,init) {
             define_colrdata(comp,labs)
         })
         
-        ## REACTIVE FUNCTIONS: PLOTS
         rf_get_rtrange <- reactive({
             x1 <- input$plot_rt_min
             x2 <- input$plot_rt_max
@@ -917,6 +924,34 @@ mk_shinyscreen_server <- function(projects,init) {
             p <- if (!is.null(p)) p else empty_plot("Nothing to plot")
             p
 
+        })
+
+        ## REACTIVE FUNCTIONS: MEASUREMENT PROPERTIES
+
+        rf_msrprop_get_vals <- reactive({
+           ptab <- rf_get_cindex_parents()
+           stab <- rf_select_from_summ()
+
+           res <- if (NROW(stab)==1L && is.na(stab[1,an])) {
+                      x1 <- list(rt=stab[1,ms1_rt],int=stab[1,ms1_int])
+                      x2 <- stab[1,.SD,.SDcols=patterns("qa_ms[12].*")]
+                      qa <- as.logical(x2)
+                      names(qa) <- names(x2)
+                      c(x1,list(qa=qa),ms2_sel=F)
+               
+                  } else {
+                      selMS2 <- req(input$sel_spec)
+                      xx <- rf_fill_sel_spec()
+                      x1 <- list(rt=xx[item==(selMS2),ms1_rt],
+                                 int=xx[item==(selMS2),ms1_int])
+                      x2 <- xx[item==(selMS2),.SD,.SDcols=patterns("qa_ms[12].*")]
+                      qa <- as.logical(x2)
+                      names(qa) <- names(x2)
+                      x3 <- list(ms2_sel=xx[item==(selMS2),ms2_sel])
+                      c(x1,list(qa=qa),x3)
+                  }
+
+           res
         })
 
         
@@ -1276,6 +1311,13 @@ mk_shinyscreen_server <- function(projects,init) {
             dev.off()
         })
 
+        observeEvent(input$summ_tab_b,{
+            projdir <- rvs$gui$paths$project
+            fn <- file.path(projdir,input$summ_name)
+            tab2file(rvs$m$out$tab$summ,fn)
+        })
+
+        ## OBSERVERS: VIEWER: MEASUREMENT PROPERTIES
         observe({
             ptab <- rf_get_cindex_parents()
             req(NROW(ptab)>0L)
@@ -1293,11 +1335,35 @@ mk_shinyscreen_server <- function(projects,init) {
                               selected = disp)
         }, label = "measure-props-sel-spec")
 
-        observeEvent(input$summ_tab_b,{
-            projdir <- rvs$gui$paths$project
-            fn <- file.path(projdir,input$summ_name)
-            tab2file(rvs$m$out$tab$summ,fn)
+        observe({
+            res <- req(rf_msrprop_get_vals())
+            updateNumericInput(session = session,
+                               inputId = "chg_ms1_rt",
+                               value = res$rt)
+            updateNumericInput(session = session,
+                               inputId = "chg_ms1_int",
+                               value = res$int)
+            print(".......RES.......")
+            print(res)
+            selqa <- res$qa[QABOX_VALS]
+            print(".....seqa1......")
+            print(selqa)
+            selqa <- QABOX_VALS[selqa]
+            print("......selqa2.....")
+            print(selqa)
+            updateCheckboxGroupInput(session=session,
+                                     choices=QABOX_VALS,
+                                     inputId="qabox",
+                                     selected = selqa)
+            
+            updateCheckboxInput(session=session,
+                                inputId="chg_ms2sel",
+                                value = res$ms2_sel)
         })
+
+        
+
+        
 
         ## observeEvent(input$plot_save_single,{
 
@@ -1445,15 +1511,11 @@ mk_shinyscreen_server <- function(projects,init) {
             validate(need(NROW(tab)>0L,message="Need to prescreen, first."))
             scroll_style_dt(tab,options=list(filter=T,ordering=F),
                             selection="single")
-            ## DT::datatable(tab,
-            ##               rownames=NULL,
-            ##               options=list(filter=T,ordering=F),
-            ##               selection="single")
         })
 
         ## RENDER: PLOTS
             
-        ## },height=1000)
+        
         observeEvent(input$plot_brush,{
             xmin <- input$plot_brush[["xmin"]]
             xmax <- input$plot_brush[["xmax"]]

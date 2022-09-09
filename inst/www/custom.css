@@ -42,7 +42,7 @@
 
 .spec-tab {
     overflow-y: auto;
-    height: 60%;
+    height: 50%;
     grid-column: 3;
     grid-row: 1;
 }
