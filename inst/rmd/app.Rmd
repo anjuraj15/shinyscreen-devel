@@ -770,6 +770,10 @@ selectInput("sel_parent_trace",label="Select parent", choices=character(),size=1
 selectInput("sel_spec",label="Select spectrum", choices=character(),size=10L,selectize=F)
 ```
 
+```{r, echo=F}
+actionButton("cmt_changes_b",label="Commit changes")
+```
+
 </div> <!-- sel-spec -->
 
 <div class="measure-props"> <!-- measure-props -->

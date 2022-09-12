@@ -205,16 +205,18 @@ REPORT_TITLE <- "Plots of EICs and MS2 Spectra"
 ## Select the most fundamental group of entries. Within this group,
 ## each ID is unique.
 BASE_KEY <- c("adduct","tag","ID")
-BASE_KEY_MS2 <- c(BASE_KEY,"CE")
+BASE_KEY_MS2 <- c(BASE_KEY,"CE","an")
 
 FIG_DEF_CONF <-list(grouping=list(group="adduct",
                                   plot="ID",
                                   label="tag"))
 
 
-## File table properties
+## Summary table properties.
 SUMM_COLS=c("set",BASE_KEY_MS2,"an","mz","ms1_rt", "ms1_int", "ms2_rt", "ms2_int",
             "ms1_mean","ms2_sel",QA_FLAGS,"Name", "SMILES", "Formula", "known","Comments","file")
+
+SUMM_KEY <- c("set","ID","adduct","tag","an")
 
 PLOT_FEATURES <- c("adduct",
                    "tag",

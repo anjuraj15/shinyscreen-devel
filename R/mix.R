@@ -816,7 +816,7 @@ gen_summ <- function(comp,qa) {
     summ <- qa[rdcomp,nomatch=NA]
     flgs <- c(QA_FLAGS,"ms2_sel")
     summ[is.na(qa_ms1_exists),(flgs):=F]
-    data.table::setkeyv(summ,c(BASE_KEY_MS2,'an'))
+    data.table::setkeyv(summ,SUMM_KEY)
     summ[.(F),c("qlt_ms1","qlt_ms2"):=0.,on="qa_ms1_exists"]
     summ
 }
@@ -1056,5 +1056,19 @@ add_msms_peaks <- function(summ,ms2) {
     data.table::setcolorder(res,newcols)
     res
     
+
+}
+
+## Return a subset of dt table with rows matching kvals and columns
+## the names of kvals contained in key(dt).
+tabkey <- function(dt,kvals=list()) {
+    if (length(kvals)==0L) return(dt)
+    dtkeys <- key(dt)
+    x <- as.list(rep(NA,(length(dtkeys))))
+    names(x) <- dtkeys
+    common <- intersect(dtkeys,names(kvals))
+    x[common] <- kvals[common]
+    x <- x[!is.na(x)]
+    dt[(x),on=names(x),nomatch=NULL][,.SD,.SDcols=key(dt)]
 
 }
