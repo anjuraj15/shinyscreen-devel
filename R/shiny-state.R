@@ -388,3 +388,56 @@ gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
     setnames(res,old="rt",new="rt(ms1)")
     res
 }
+
+
+get_cindex_parents <- function(summ,ckey,kvals,labs) {
+    ## Get kvals part of summ.
+    tab <- get_data_from_key(summ,kvals)[,unique(.SD),.SDcols=labs,by=key]
+    tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcol=labs]
+    keys <- names(tab)[names(tab)!="item"]
+    data.table::setkeyv(tab,keys)
+    tab
+}
+update_on_commit_chg <- function(summ,input,ptab,ltab) {
+    n_ms1_rt = input$chg_ms1_rt
+    n_ms1_int = input$chg_ms1_int
+    
+    n_qa = rep(F,length(QABOX_VALS))
+    names(n_qa) = QABOX_VALS
+    n_qa[input$qabox] = T
+
+    n_ms2_sel = input$chg_ms2sel
+    
+    sel_par <- input$sel_parent_trace
+    sel_spec <- input$sel_spec
+    
+    ptab <- req(rf_get_cindex_parents())
+    ltab <- req(rf_fill_sel_spec())
+
+    pkvals <- ptab[item==(sel_par),.SD,.SDcols=intersect(SUMM_KEY,names(ptab))]
+    lkvals <- ltab[item==(sel_spec),.SD,.SDcols=intersect(SUMM_KEY,names(ltab))]
+    kvals <- c(as.list(pkvals),as.list(lkvals))
+    kvals <- kvals[unique(names(kvals))]
+    if ('an' %in% names(kvals)) {
+        rkvals <- kvals[!(names(kvals) %in% 'an')]
+        rktab <- tabkey(summ,kvals=rkvals)
+        tabsel <- summ[rktab,.(an,ms2_sel)]
+        ansel <- tabsel[ms2_sel == T,an]
+        print('ansel')
+        print(ansel)
+        if (length(ansel)!=0) {
+            rktab$an = ansel
+            summ[rktab,ms2_sel:=F]
+        }
+        
+        
+    }
+    ## TODO: CHECK IF THIS WORKS!!!!! ESPECIALLY THE ABOVE AN TREATMENT.
+    tgts <- c("ms1_rt","ms1_int",names(n_qa),"ms2_sel")
+    srcs <- c(list(n_ms1_rt,n_ms1_int),as.list(n_qa),as.list(n_ms2_sel))
+    
+    summ[tabkey(summ,kvals=kvals),(tgts):=..srcs]
+
+    summ
+            
+}
