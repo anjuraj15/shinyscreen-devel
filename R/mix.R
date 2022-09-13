@@ -797,8 +797,10 @@ analyse_extracted_data <- function(extr,prescreen_param) {
     qflg <- QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
     res[,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
     res[.(T),del_rt:=abs(ms2_rt - ms1_rt),on="qa_pass",by='an']
-    res[.(T),qa_tmp_ms1_max:= ms1_int==max(ms1_int),on="qa_pass",by=BASE_KEY_MS2]
-    res[.(T,T),ms2_sel:= del_rt == del_rt[which.min(del_rt)],on=c("qa_pass","qa_tmp_ms1_max"),by=BASE_KEY_MS2]
+    resby <- BASE_KEY_MS2[! (BASE_KEY_MS2 %in% 'an')]
+    res[.(T),qa_tmp_ms1_max:= ms1_int==max(ms1_int),on="qa_pass",by=resby]
+    res[,ms2_sel:=F]
+    res[.(T,T),ms2_sel:= del_rt == del_rt[which.min(del_rt)],on=c("qa_pass","qa_tmp_ms1_max"),by=resby]
     res[,qlt_ms1:=apply(.SD,1,function(rw) sum(c(5L,3L,2L)*rw)),.SDcol=c("qa_ms1_exists",
                                                                  "qa_ms1_above_noise",
                                                                  "qa_ms1_good_int")]
@@ -813,9 +815,11 @@ gen_summ <- function(comp,qa) {
     comp_cols <- intersect(SUMM_COLS,colnames(comp))
     rdcomp <- comp[,..comp_cols]
     data.table::setkeyv(rdcomp,BASE_KEY)
-    summ <- qa[rdcomp,nomatch=NA]
-    flgs <- c(QA_FLAGS,"ms2_sel")
-    summ[is.na(qa_ms1_exists),(flgs):=F]
+    summ <- qa[rdcomp,nomatch=F] #We changed `nomatch' cases from NA
+                                 #to F, because NA does not work well
+                                 #with X == F condition.
+    ## flgs <- c(QA_FLAGS,"ms2_sel")
+    ## summ[is.na(qa_ms1_exists),(flgs):=F]
     data.table::setkeyv(summ,SUMM_KEY)
     summ[.(F),c("qlt_ms1","qlt_ms2"):=0.,on="qa_ms1_exists"]
     summ
