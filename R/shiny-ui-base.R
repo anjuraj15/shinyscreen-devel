@@ -706,37 +706,20 @@ mk_shinyscreen_server <- function(projects,init) {
             run(m=q,phases=c("setup","comptab"))
         })
 
-        rf_cindex_key <- reactive({
-            if (isTruthy(input$cindex_group)) setdiff(CINDEX_BY,input$cindex_group) else CINDEX_BY
-        })
+        
 
         ## REACTIVE FUNCTIONS: COMPOUND INDEX
         rf_get_cindex <- reactive({
+            input$cmt_changes_b
             rvs$status$is_qa_stat
-            grp <- rf_cindex_key()
             s1 <- input$sort1
             s2 <- input$sort2
             s3 <- input$sort3
             s4 <- input$sort4
-            sorder <- setdiff(c(s1,s2,s3,s4),input$cindex_group)
-            summ <- req(rvs$m$out$tab$summ)
-            isolate({
-            if (NROW(summ)>0L) {
-                gen_cindex(summ,
-                           sorder=sorder,
-                           by.=grp)
-            } else {
-                NULL
-            }
-            })
-        })
+            cindex_from_input(clabs=input$cindex_group,
+                              sort_catg=c(s1,s2,s3,s4),
+                              summ=req(rvs$m$out$tab$summ))
 
-        rf_get_keyed_cindex <- reactive({
-            cind <- req(rf_get_cindex())
-            grp <- req(rf_cindex_key())
-
-            data.table::setkeyv(cind,grp)
-            cind
         })
         
         ## Get current grouping categories (`cindex key').
@@ -745,9 +728,7 @@ mk_shinyscreen_server <- function(projects,init) {
             cind <- rf_get_cindex()
             req(NROW(cind)>0L)
             
-            ## Select only valid category names.
-            x <- which(CINDEX_BY %in% names(cind))
-            CINDEX_BY[x]
+            get_cindex_key(cind)
         })
 
         ## Get currently selected cindex values as a list.
@@ -756,10 +737,7 @@ mk_shinyscreen_server <- function(projects,init) {
             key <- rf_get_cindex_key()
             req(NROW(cind)>0L)
             row <- req(input$cindex_row_last_clicked)
-            rowtab <- cind[row][,..key]
-            res <- lapply(rowtab,function (x) x[[1]])
-            names(res) <- key
-            res
+            get_cindex_kval(cind,row,key)
         })
 
         ## Get the labels which will define plot curves in EIC MS1.
@@ -774,12 +752,12 @@ mk_shinyscreen_server <- function(projects,init) {
             isolate({
                 ms1 <- rvs$m$extr$ms1
                 ms2 <- rvs$m$extr$ms2
-                summ <- rvs$m$out$tab$summ
+                summ <- req(rvs$m$out$tab$summ)
             })
 
-            key <- rf_get_cindex_key()
+            key <- req(rf_get_cindex_key())
             kvals <- req(rf_get_cindex_kval())
-            labs <- rf_get_cindex_labs()
+            labs <- req(rf_get_cindex_labs())
             get_cindex_parents(summ,key,kvals,labs)
 
         })
@@ -790,21 +768,17 @@ mk_shinyscreen_server <- function(projects,init) {
             parent <- req(input$sel_parent_trace)
             kvals <- req(rf_get_cindex_kval())
             ptab <- req(rf_get_cindex_parents())
-            select <- ptab[item==(parent)]
-            tab <- get_data_from_key(summ,kvals)[select,nomatch=NULL,on=key(ptab)]
-            tab
+            get_summ_subset(summ=summ,
+                            ptab=ptab,
+                            paritem=parent,
+                            kvals=kvals)
         })
 
-        rf_fill_sel_spec <- reactive({
+        rf_get_ltab <- reactive({
+            input$cmt_changes_b
             cols <- c("an","ms2_rt")
             tab <- req(rf_select_from_summ())
-            if (NROW(tab)==1L && is.na(tab$an)) return(data.table::data.table(item=character()))
-            tab[is.na(ms2_sel),ms2_sel:=F] #TODO FIXME: Check why NAs exist at all?
-            tab[,passval:=fifelse(qa_pass==T,"OK","BAD")]
-            tab[ms2_sel==T,passval:="SELECTED"]
-            res <- tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcols=c(cols,"passval")]
-            data.table::setkey(res,"ms2_rt")
-            res
+            get_ltab(tab)
         })
 
         
@@ -937,7 +911,7 @@ mk_shinyscreen_server <- function(projects,init) {
                
                   } else {
                       selMS2 <- req(input$sel_spec)
-                      xx <- rf_fill_sel_spec()
+                      xx <- rf_get_ltab()
                       x1 <- list(rt=xx[item==(selMS2),ms1_rt],
                                  int=xx[item==(selMS2),ms1_int])
                       x2 <- xx[item==(selMS2),.SD,.SDcols=patterns("qa_ms[12].*")]
@@ -1323,7 +1297,7 @@ mk_shinyscreen_server <- function(projects,init) {
         }, label = "measure-props-parent")
 
         observe({
-            ctab <- rf_fill_sel_spec()
+            ctab <- rf_get_ltab()
             disp <- if (any(ctab$ms2_sel==T)) ctab[ms2_sel==T,item] else ctab[1L,item]
             updateSelectInput(session = session,
                               inputId = "sel_spec",
@@ -1354,6 +1328,14 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         observeEvent(input$cmt_changes_b,{
+            summ <- req(rvs$m$out$tab$summ)
+
+            ptab <- req(rf_get_cindex_parents())
+            ltab <- req(rf_get_ltab())
+            rvs$m$out$tab$summ <- update_on_commit_chg(summ,
+                                                       input=input,
+                                                       ptab=ptab,
+                                                       ltab=ltab)
             
         })
 
@@ -1586,7 +1568,7 @@ mk_shinyscreen_server <- function(projects,init) {
         
         output$print_spec_tab <- renderPrint({
             notfound <- "No MS2 spectrum has been found for this entry."
-            ms2tabsel <- req(rf_fill_sel_spec())
+            ms2tabsel <- req(rf_get_ltab())
             selMS2 <- req(input$sel_spec)
             if (NROW(ms2tabsel)!=0L) {
                 lval <- lapply(ms2tabsel[item==(selMS2)],function(x) x)

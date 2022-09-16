@@ -351,6 +351,9 @@ pre_setup_val_block <- function(gui) {
     T
 }
 
+## SHINY HELPERS: COMPOUND INDEX
+
+
 ## Creating compound index table
 ##
 ## Take `summ', group first by set, adduct and id. Then, pick only the
@@ -358,6 +361,7 @@ pre_setup_val_block <- function(gui) {
 ## this as the group rt. This is, then, a row representing the group
 ## (of tags, CEs) in the index.
 gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
+    if (NROW(summ) == 0L) return(NULL)
     allc <- c(by.,cols)
     xsumm <- summ[,..allc]
     setnames(xsumm,old="ms1_rt",new="rt",skip_absent=T)
@@ -390,13 +394,52 @@ gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
 }
 
 
+cindex_from_input <- function(clabs,sort_catg=character(4),summ) {
+    grp <- if (isTruthy(clabs)) setdiff(CINDEX_BY,clabs) else CINDEX_BY
+    sorder <- setdiff(sort_catg,clabs)
+    gen_cindex(summ,sorder=sorder,by=grp)
+}
+
+get_cindex_key <- function(cindex) {
+    ## Select only valid category names.
+    x <- which(CINDEX_BY %in% names(cindex))
+    CINDEX_BY[x]
+}
+
 get_cindex_parents <- function(summ,ckey,kvals,labs) {
     ## Get kvals part of summ.
-    tab <- get_data_from_key(summ,kvals)[,unique(.SD),.SDcols=labs,by=key]
+    tab <- summ[(kvals),on=names(kvals)][,unique(.SD),.SDcols=labs,by=ckey] #get_data_from_key(summ,kvals)
     tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcol=labs]
     keys <- names(tab)[names(tab)!="item"]
     data.table::setkeyv(tab,keys)
     tab
+}
+
+get_cindex_kval <- function(cindex,row,key) {
+    rowtab <- cindex[(row),..key]
+    res <- lapply(rowtab,function (x) x[[1]])
+    names(res) <- key
+    res
+}
+
+get_summ_subset <- function(summ,ptab,paritem,kvals) {
+    select <- ptab[item==(paritem)]
+    tab <- get_data_from_key(summ,kvals)[select,nomatch=NULL,on=key(ptab)]
+    if ("an.1" %in% names(tab)) tab[,an.1:=NULL] #TODO: This is
+                                                 #probably a lousy
+                                                 #hack.
+    tab
+}
+
+get_ltab <- function(summ_subs,cols=c("an","ms2_rt")) {
+    tab <- summ_subs
+    if (NROW(tab)==1L && is.na(tab$an)) return(data.table::data.table(item=character()))
+    tab[is.na(ms2_sel),ms2_sel:=F] #TODO FIXME: Check why NAs exist at all?
+    tab[,passval:=fifelse(qa_pass==T,"OK","BAD")]
+    tab[ms2_sel==T,passval:="SELECTED"]
+    res <- tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcols=c(cols,"passval")]
+    data.table::setkey(res,"ms2_rt")
+    res
 }
 update_on_commit_chg <- function(summ,input,ptab,ltab) {
     n_ms1_rt = input$chg_ms1_rt
@@ -410,15 +453,12 @@ update_on_commit_chg <- function(summ,input,ptab,ltab) {
     
     sel_par <- input$sel_parent_trace
     sel_spec <- input$sel_spec
-    
-    ptab <- req(rf_get_cindex_parents())
-    ltab <- req(rf_fill_sel_spec())
 
     pkvals <- ptab[item==(sel_par),.SD,.SDcols=intersect(SUMM_KEY,names(ptab))]
     lkvals <- ltab[item==(sel_spec),.SD,.SDcols=intersect(SUMM_KEY,names(ltab))]
     kvals <- c(as.list(pkvals),as.list(lkvals))
     kvals <- kvals[unique(names(kvals))]
-    if ('an' %in% names(kvals)) {
+    if ('an' %in% names(kvals) && n_ms2_sel) {
         rkvals <- kvals[!(names(kvals) %in% 'an')]
         rktab <- tabkey(summ,kvals=rkvals)
         tabsel <- summ[rktab,.(an,ms2_sel)]
@@ -432,12 +472,14 @@ update_on_commit_chg <- function(summ,input,ptab,ltab) {
         
         
     }
-    ## TODO: CHECK IF THIS WORKS!!!!! ESPECIALLY THE ABOVE AN TREATMENT.
+
     tgts <- c("ms1_rt","ms1_int",names(n_qa),"ms2_sel")
     srcs <- c(list(n_ms1_rt,n_ms1_int),as.list(n_qa),as.list(n_ms2_sel))
-    
-    summ[tabkey(summ,kvals=kvals),(tgts):=..srcs]
 
+    the_row <- tabkey(summ,kvals=kvals)
+    summ[the_row,(tgts):=..srcs]
+    summ[,an.1:=NULL] #FIXME: an.1 pops up somewhere.
+    qflg <- QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
+    summ[the_row,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
     summ
-            
 }
