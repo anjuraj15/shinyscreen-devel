@@ -179,7 +179,7 @@ list2rev <- function(lst) {
 }
 
 mk_roots <- function(wd) local({
-    addons <- c("project"=normalizePath(wd,winslash = '/'))
+    addons <- c("project"=norm_path(wd))
     def_vol <- function() {
              path <- addons[['project']]
              svols <- shinyFiles::getVolumes()()

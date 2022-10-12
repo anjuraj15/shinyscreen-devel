@@ -38,7 +38,7 @@ run <- function(project="",m=NULL,phases=NULL,help=F) {
                                                   }
     
     m <- if (nchar(project)!=0) new_project(project) else if (!is.null(m)) m else stop("(run): Either the YAML config file (project),\n or the starting state (m) must be provided\n as the argument to the run function.")
-    ## m$conf$project <- normalizePath(m$conf$project) #FIXME: Test in all workflows!
+    ## m$conf$project <- norm_path(m$conf$project) #FIXME: Test in all workflows!
     m <- withr::with_dir(new=m$run$paths$project,code = Reduce(function (prev,f) f(prev),
                                                             x = the_phases,
                                                             init = m))
@@ -144,7 +144,7 @@ load_data_input <- function(m) {
         if (!file.exists(file.path(pref,fn))) stop("File ",fn," does not exist.")
     }
     ## m$input$tab$mzml[,file:=fifelse(file.exists(file),file,file.path(..pref,file))]
-    ## m$input$tab$mzml[,file:=normalizePath(file)]
+    ## m$input$tab$mzml[,file:=norm_path(file)]
     m
 
 }
@@ -709,8 +709,8 @@ app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd()
     dir_before <- getwd()
     init <- list()
     init$dir_before <- dir_before
-    init$indir <- normalizePath(indir)
-    init$userdir <- normalizePath(userdir)
+    init$indir <- norm_path(indir)
+    init$userdir <- norm_path(userdir)
     if (!dir.exists(init$indir)) stop("Data directory (indir), currently `",
                                         init$indir,
                                         "` does not exist. Abort.")

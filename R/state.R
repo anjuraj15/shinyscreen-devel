@@ -61,7 +61,7 @@ new_runtime_state <- function(project,conf=NULL) {
     
     if (!is.character(project)) stop("Argument `project' must be a character string.")
     if (!dir.exists(project)) stop('Project directory either does not exist, or is unreadable.')
-    project_path <- normalizePath(project)
+    project_path <- norm_path(project)
     project <- basename(project)
     run <- list()
     run$project <- project
@@ -70,7 +70,7 @@ new_runtime_state <- function(project,conf=NULL) {
     run$paths$data <- if (is.null(conf$paths$data)) {
                           project_path
                       } else {
-                          run$paths$data <- normalizePath(conf$paths$data)
+                          run$paths$data <- norm_path(conf$paths$data)
                       }
     
     if (!dir.exists(run$paths$data)) stop("Path to data directory either does not exist, or is inaccesible.")
