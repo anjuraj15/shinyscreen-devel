@@ -1028,6 +1028,7 @@ mk_shinyscreen_server <- function(projects,init) {
             } else {
                 message("Initialising project: ",wd)
                 rvs$gui <- create_gui(project_path=fullwd)
+                rvs$m$run <- new_runtime_state(fullwd)
                 
 
                 
