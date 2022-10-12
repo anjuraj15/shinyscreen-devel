@@ -992,7 +992,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 stop("The project path does not exist!?")
             }
             ## Load saved state if existing, create if it does not.
-            fn_packed_state b<- file.path(fullwd,FN_GUI_STATE)
+            fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
             fn_state <- file.path(fullwd,FN_STATE)
             if (file.exists(fn_packed_state)) {
                 message("Loading project: ",wd)
