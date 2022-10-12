@@ -987,21 +987,25 @@ mk_shinyscreen_server <- function(projects,init) {
             wd <- input$proj_list
             req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
             fullwd <- file.path(init$userdir,wd)
-
+            fullwdq <- file.exists(fullwd)
+            if (!fullwdq) {
+                stop("The project path does not exist!?")
+            }
             ## Load saved state if existing, create if it does not.
-            fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
+            fn_packed_state b<- file.path(fullwd,FN_GUI_STATE)
             fn_state <- file.path(fullwd,FN_STATE)
             if (file.exists(fn_packed_state)) {
                 message("Loading project: ",wd)
                 pack <- readRDS(file=fn_packed_state)
                 rvs$gui <- unpack_app_state(session=session,
                                             input=input,
-                                            top_data_dir=init$userdir,
+                                            top_data_dir=init$indir,
                                             project_path=fullwd,
                                             packed_state=pack)
                 ## Load computational state.
                 rvs$m <- readRDS(file=fn_state)
-                rvs$m$run <- reinit_run_data(init$userdir,
+                rvs$m$run <- reinit_run_data(userdir=init$userdir,
+                                             top_data_dir=init$indir,
                                              project=rvs$gui$project(),
                                              run = rvs$m$run)
                 
