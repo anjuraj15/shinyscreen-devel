@@ -1004,10 +1004,6 @@ mk_shinyscreen_server <- function(projects,init) {
                                             packed_state=pack)
                 ## Load computational state.
                 rvs$m <- readRDS(file=fn_state)
-                rvs$m$run <- reinit_run_data(userdir=init$userdir,
-                                             top_data_dir=init$indir,
-                                             project=rvs$gui$project(),
-                                             run = rvs$m$run)
                 
                 ## If prescreen config invalid, reinit.
                 if (length(rvs$m$conf$prescreen)==0) rvs$m$conf <- input2conf_prescreen(input=input,conf=rvs$m$conf)
@@ -1028,11 +1024,6 @@ mk_shinyscreen_server <- function(projects,init) {
             } else {
                 message("Initialising project: ",wd)
                 rvs$gui <- create_gui(project_path=fullwd)
-                rvs$m$run <- new_runtime_state(fullwd)
-                
-
-                
-                
             }
             message("project: ",rvs$gui$project())
         }, label = "project-b")

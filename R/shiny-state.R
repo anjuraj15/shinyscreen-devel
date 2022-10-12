@@ -167,7 +167,7 @@ unpack_app_state <- function(session,input,top_data_dir,project_path,packed_stat
                                       selected = packed_state$input[[inp]])
         }
         
-        gui <- create_gui(project_path)
+        gui <- create_gui(project_path=project_path)
         gui$compounds$lists <- packed_state$compounds$lists
         gui$compounds$sets <- packed_state$compounds$sets
         gui$datatab$file <- packed_state$datatab$file
@@ -240,11 +240,14 @@ input2conf <- function(input,gui,conf=list()) {
 
 app_state2state <- function(input,gui,m=NULL) {
     if (is.null(m)) m <- new_project(gui$paths$project)
-    m$run$paths <- shiny::reactiveValuesToList(gui$paths)
+    ## m$run$paths <- shiny::reactiveValuesToList(gui$paths)
     m$conf <- input2conf_setup(input,gui=gui)
     m$conf <- input2conf_prescreen(input=input,conf=m$conf)
     m$conf <- input2conf_figures(input,conf=m$conf)
     m$conf <- input2conf_report(input,conf=m$conf)
+    m$conf$paths$data <- gui$paths$data
+    m$run <- new_runtime_state(project=gui$paths$project,
+                               conf=m$conf)
     m$input$tab$mzml <- gui2datatab(gui)
     m
 }
