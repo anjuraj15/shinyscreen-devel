@@ -40,7 +40,7 @@ runtime_from_conf <- function(run,conf) {
     run
 }
 
-reinit_run_data <- function(userdir,top_data_dir,project,run=NULL) {
+reinit_run_data <- function(projects,top_data_dir,project,run=NULL) {
     if (!is.null(run)) {
         olddata <- run$paths$data
         oldproject <- basename(run$paths$project)
@@ -51,7 +51,7 @@ reinit_run_data <- function(userdir,top_data_dir,project,run=NULL) {
         if (isTruthy(olddata)) run$paths$data <- file.path(top_user_dir,basename(olddata))
     }
     run$project <- project
-    run$paths$project <- file.path(userdir,project)
+    run$paths$project <- file.path(projects,project)
     run
 }
 

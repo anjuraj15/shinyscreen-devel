@@ -700,22 +700,22 @@ create_plots <- function(m) {
 #'     `rmarkdown::run` `shiny_args` argument.
 #' @param render_args `list`, optional list of arguments conveyed to
 #'     `rmarkdown::run` `render_args` argument.
-#' @param indir `character(1)`, a location on the server side
+#' @param top_data_dir `character(1)`, a location on the server side
 #'     containing data directories.
-#' @param userdir `character(1)`, a location on the server side containing project directories.
+#' @param projects `character(1)`, a location on the server side containing project directories.
 #' @return Nada.
 #' @author Todor Kondić
-app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd(),userdir=getwd()) {
+app <- function(shiny_args=list(launch.browser=F),render_args=NULL,top_data_dir=getwd(),projects=getwd()) {
     dir_before <- getwd()
     init <- list()
     init$dir_before <- dir_before
-    init$indir <- norm_path(indir)
-    init$userdir <- norm_path(userdir)
-    if (!dir.exists(init$indir)) stop("Data directory (indir), currently `",
-                                        init$indir,
+    init$top_data_dir <- norm_path(top_data_dir)
+    init$projects <- norm_path(projects)
+    if (!dir.exists(init$top_data_dir)) stop("Data directory (top_data_dir), currently `",
+                                        init$top_data_dir,
                                         "` does not exist. Abort.")
-    if (!dir.exists(init$userdir)) stop("User root directory (userdir), currently `",
-                                          init$userdir,"` does not exist.. Abort.")
+    if (!dir.exists(init$projects)) stop("User root directory (projects), currently `",
+                                          init$projects,"` does not exist.. Abort.")
     on.exit(expr=setwd(dir_before))
     
     dir_start <- tempfile("shinyscreen")
@@ -731,27 +731,27 @@ app <- function(shiny_args=list(launch.browser=F),render_args=NULL,indir=getwd()
 
 #' @export
 #' @title serve
-#' @param indir `character(1)`, a location on the server side
+#' @param top_data_dir `character(1)`, a location on the server side
 #'     containing data directories.
-#' @param topuserdir `character(1)`, a location on the server side
+#' @param usersdir `character(1)`, a location on the server side
 #'     containing individual user directories.
-#' @param user `character(1)`, subdir of topuserdir.
+#' @param user `character(1)`, subdir of usersdir.
 #' @param host `character(1)`, optional, address where the page is
 #'     served.
 #' @param port `integer(1)`, optional, port at which the page is
 #'     served.
 #' @return Nada.
 #' @author Todor Kondić
-serve <- function(indir,topuserdir,user,host='0.0.0.0',port=7777) {
+serve <- function(top_data_dir,usersdir,user,host='0.0.0.0',port=7777) {
     shiny_args <- c(list(launch.browser=F),list(host=host,port=port))
-    userdir <- file.path(topuserdir,user)
-    if (!dir.exists(userdir)) {
-        dir.create(userdir)
-        message('Created userdir: ',userdir)
+    projects <- file.path(usersdir,user)
+    if (!dir.exists(projects)) {
+        dir.create(projects)
+        message('Created projects: ',projects)
     } else {
-        message('Using existing userdir: ', userdir)
+        message('Using existing projects: ', projects)
     }
-    app(shiny_args=shiny_args,indir=indir,userdir=userdir)
+    app(shiny_args=shiny_args,top_data_dir=top_data_dir,projects=projects)
 }
 
 

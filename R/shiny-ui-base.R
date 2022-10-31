@@ -929,51 +929,51 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## OBSERVERS: PROJECT MANAGEMENT
         observe({
-            indir <- rvs$gui$paths$project
-            req(isTruthy(indir) && dir.exists(indir))
+            top_data_dir <- rvs$gui$paths$project
+            req(isTruthy(top_data_dir) && dir.exists(top_data_dir))
             updateSelectInput(session = session,
                               inputId = "comp_list",
-                              choices = list.files(path=indir,
+                              choices = list.files(path=top_data_dir,
                                                    pattern = CMPD_LIST_PATT))
 
             updateSelectInput(session = session,
                               inputId = "set_list",
-                              choices = list.files(path=indir,
+                              choices = list.files(path=top_data_dir,
                                                    pattern = SET_LIST_PATT))
 
             updateSelectInput(session = session,
                               inputId = "dfile_list",
-                              choices = list.files(path=indir,
+                              choices = list.files(path=top_data_dir,
                                                    pattern = DFILES_LIST_PATT))
             
             updateSelectInput(session = session,
-                              inputId = "indir_list",
-                              selected = basename(indir),
-                              choices = list.dirs(path = init$indir,
+                              inputId = "top_data_dir_list",
+                              selected = basename(top_data_dir),
+                              choices = list.dirs(path = init$top_data_dir,
                                                   full.names = F,
                                                   recursive = F))
         })
 
         observe({
-            indir <- rvs$gui$paths$data
-            req(isTruthy(indir) && dir.exists(indir))
+            top_data_dir <- rvs$gui$paths$data
+            req(isTruthy(top_data_dir) && dir.exists(top_data_dir))
             
             updateSelectInput(session = session,
                               inputId = "dfile_list",
-                              choices = list.files(path=indir,
+                              choices = list.files(path=top_data_dir,
                                                    pattern = DFILES_LIST_PATT))
         })
 
         ## Update projects and data directories every second.
         observeEvent(rtimer1000(),{
             projects <- rv_projects()
-            curr_projects <- list.dirs(path=init$userdir, full.names = F, recursive = F)
+            curr_projects <- list.dirs(path=init$projects, full.names = F, recursive = F)
             if (length(union(curr_projects,projects)) != length(intersect(curr_projects,projects))) {
                 updateSelectInput(session=session,
                                   inputId="proj_list",
                                   choices=curr_projects)
                 updateSelectInput(session=session,
-                                  inputId="indir_list",
+                                  inputId="top_data_dir_list",
                                   choices=curr_projects)
                 rv_projects(curr_projects)
             }
@@ -986,7 +986,7 @@ mk_shinyscreen_server <- function(projects,init) {
             ## loaded. Everything else works off rvs$m and rvs$gui.
             wd <- input$proj_list
             req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
-            fullwd <- file.path(init$userdir,wd)
+            fullwd <- file.path(init$projects,wd)
             fullwdq <- file.exists(fullwd)
             if (!fullwdq) {
                 stop("The project path does not exist!?")
@@ -999,7 +999,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 pack <- readRDS(file=fn_packed_state)
                 rvs$gui <- unpack_app_state(session=session,
                                             input=input,
-                                            top_data_dir=init$indir,
+                                            top_data_dir=init$top_data_dir,
                                             project_path=fullwd,
                                             packed_state=pack)
                 ## Load computational state.
@@ -1052,10 +1052,10 @@ mk_shinyscreen_server <- function(projects,init) {
             shinymsg("Saving state completed.")
         })
 
-        observeEvent(input$sel_indir_b,{
-            indir <- input$indir_list
-            req(isTruthy(indir))
-            rvs$gui$paths$data <- file.path(init$indir, indir)
+        observeEvent(input$sel_data_dir_b,{
+            data_dir <- input$top_data_dir_list
+            req(isTruthy(data_dir))
+            rvs$gui$paths$data <- file.path(init$top_data_dir, data_dir)
             
             message("Selected data dir:",rvs$gui$paths$data)
 

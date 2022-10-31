@@ -58,8 +58,8 @@ rv_rtrange <- reactiveValues(min=def_state$conf$rt_min,
 rv_mzrange <- reactiveValues(min=NA,
                              max=NA)
 
-projects <- list.dirs(path=init$userdir, full.names = F, recursive = F)
-inputdirs <- list.dirs(path=init$indir, full.names = F, recursive = F)
+projects <- list.dirs(path=init$projects, full.names = F, recursive = F)
+inputdirs <- list.dirs(path=init$top_data_dir, full.names = F, recursive = F)
 
 ```
 <style type="text/css">
@@ -78,7 +78,7 @@ inputdirs <- list.dirs(path=init$indir, full.names = F, recursive = F)
 <summary>Projects, input directories and compound lists</summary>
 
 When you start the program with `app` function, you define two
-superdirecotories: `userdir` and `indir`. Directory `userdir` contains
+superdirectories: `projects` and `top_data_dir`. Directory `projects` contains
 all the existing projects and any new projects defined during the
 current session will be saved here. Data inside a project directory
 consists of intermediate files, saved states and workflow outputs.
@@ -93,7 +93,7 @@ settings and selected inputs.
 Each `Shinyscreen` project needs input data: mass spectrometry files
 (in mzML format), compound and set lists. These should all be present
 before starting `Shinyscreen` in one of the directories under
-`userdir`.
+`projects`.
 
 
 
@@ -157,7 +157,7 @@ downloadButtonRmd("dwn_proj_b",
 <details>
 <summary>More on data directories</summary>
 
-Data directory is a subdirectory of the `indir` directory which is
+Data directory is a subdirectory of the `top_data_dir` directory which is
 one of the arguments to `app` function used to start Shinyscreen
 GUI. It contains the `mzML` data files.
 
@@ -167,10 +167,10 @@ Select one of the data directories from the list by clicking the
 </details>
 
 ```{r, echo=F}
-selectInput('indir_list',
+selectInput('top_data_dir_list',
             label = "Input directories",
             choices = inputdirs)
-actionButton(inputId = "sel_indir_b",
+actionButton(inputId = "sel_data_dir_b",
              label= "Select")
 textOutput("curr_data_dir")
 ```
