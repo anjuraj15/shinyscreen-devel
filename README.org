@@ -130,46 +130,55 @@
    [[https://git-r3lab.uni.lu/eci/eci-pkg-menu][channel]] and install from there.
 
 * Running Shinyscreen
-  Provided Shinyscreen is successfully installed this snippet will
+  Provided Shinyscreen is successfully installed the snippets below will
   run it.
-  #+BEGIN_SRC R
-    ## Some low-level R magic to install packages and their dependencies
-    ## locally. In this way, the system-wide distribution is
-    ## untouched. These days, `renv` package is used to achieve the same
-    ## result, plus some bells and whistles. 
-    ## projdir="./pkgs"
-    ## srcdir="path/to/shinyscreen/source"
-    ## unlink(projdir,recursive=T,force=T)
-    ## if (!dir.exists(projdir)) dir.create(projdir)
-    ## .libPaths(projdir)
-    ## if ("package:shinyscreen" %in% search()) detach("package:shinyscreen",unload=T)
-    ## devtools::install(pkg=srcdir,upgrade = "never")
+#+BEGIN_SRC R
+  
+
+  ##   This is a custom installation function from a local source
+  ##   path. Not necessary if you have other means to install
+  ##   shinyscreen.
+
+  ##   reloadss <- function() {
+  ##     projdir="./pkgs"
+  ##     srcdir="path/to/source"
+  ##     unlink(projdir,recursive=T,force=T) if
+  ##     (!dir.exists(projdir)) dir.create(projdir)
+  ##     .libPaths(projdir)
+  ##     if ("package:shinyscreen" %in% search()) detach("package:shinyscreen",unload=T)
+  ##     devtools::install(pkg=srcdir,upgrade = "never")
+  ##   }
 
 
-    ## Load shinyscreen.
-    library(shinyscreen)
-    library(future)
+  replan <- function() {
+    ## Leave the first `tweak' as it is, then change the second one to
+    ## the number of cores of your cpu you are willing to dedicate to
+    ## shinyscreen.
+      
+    future::plan("sequential")
+    future::plan(list(tweak("multisession",workers=2L),tweak("multisession",workers=6L)))
+  }
 
-    ## Define the input top-level directory, containing subdirectories
-    ## with input data. The input data consists of mzML files,
-    ## compound and set lists). All the input data must exist before
-    ## your launch shinyscreen.
-    indir <- "shinyscreen_inputs"
+  rerun <- function(work_dir=".") {
+      ## Adapt `projects' and `top_data_dir' arguments to your
+      ## paths. The argument `projects' is a top-level directory
+      ## containing shinyscreen projects and `top_data_dir' is the
+      ## top-level directory containing data directories (those that
+      ## have `mzML' files).
 
-    ## Define the output top-level directory, containing
-    ## subdirectiories which will hold results of different
-    ## projects. Each project directory holds the project state,
-    ## intermediate and final results. Projects can be created from
-    ## within Shinyscreen application.
-    userdir <- "shinyscreen_projects"
+    withr::with_dir(work_dir,app(projects="projects",top_data_dir="data",shiny_args=list(launch.browser=F,port=4321)))
+ }
+ 
+#+END_SRC
 
-    ## Support parallelisation with `multisession` (windows,linux), or
-    ## `multicore` (linux).
-    future::plan("multisession",workers=4L)
+  Commands to start shinyscreen from a R session.
 
-    ## Start shinyscreen.
-    app(indir=indir,userdir = userdir)
-  #+END_SRC
+#+BEGIN_SRC R
+  library(future)
+  library(shinyscreen)
+  replan();rerun()
+
+#+END_SRC
   
 * Usage
   Shinyscreen (version > 1.0.0) is a self-documented application. The
