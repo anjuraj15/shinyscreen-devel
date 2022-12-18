@@ -871,11 +871,7 @@ mk_shinyscreen_server <- function(projects,init) {
             row <- req(input$cindex_row_last_clicked)
             id <- rowtab <- cind[row][,..key][["ID"]][[1]]
             smi <- rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
-            grb <- smiles2img(smi)
-            xx <- qplot(1:5, 2*(1:5), geom="blank") +
-                annotation_custom(grb, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
-                theme_empty
-            xx
+            make_struct_plot(smi)
         })
 
         rf_plot_spec_ms2 <- reactive({
@@ -1260,10 +1256,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
                 id <- rowtab <- cind[ri][,..key][["ID"]][[1]]
                 smi <- rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
-                grb <- smiles2img(smi)
-                p_struc <- qplot(1:5, 2*(1:5), geom="blank") +
-                    annotation_custom(grb, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
-                    theme_empty
+                p_struc <- make_struct_plot(smi)
 
                 p_spec <- make_spec_ms2_plot(ms2,
                                              summ,

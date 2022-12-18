@@ -101,17 +101,34 @@ pal_maker <- function(n,palname = NULL) {
 }
 
 ### PLOTTING: AESTHETIC FUNCTIONS
-smiles2img <- function(smiles, kekulise=TRUE, width=300, height=300,
+
+
+make_struct_plot <- function(smiles, kekulise=TRUE, width=300, height=300,
                        zoom=1.3,style="cow", annotate="off", abbr="on",suppressh=TRUE,
                        showTitle=FALSE, smaLimit=100, sma=NULL) {
-    dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
-                              abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
-                              sma = NULL)
 
-    mol <- RMassBank::getMolecule(smiles)
-    z<-rcdk::view.image.2d(mol, depictor=dep)
-    grid::rasterGrob(z)
+    ## structure -> grob
+    smiles2img <- function() {
+        if (is.na(smiles) || nchar(smiles)==0) return(NULL) #Handle empty SMILES.
+        dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
+                                  abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
+                                  sma = NULL)
+        
+        mol <- RMassBank::getMolecule(smiles)
+        z<-rcdk::view.image.2d(mol, depictor=dep)
+        grid::rasterGrob(z)
+    }
+
+    grob <- smiles2img()
+
+    if (!is.null(grob)) {
+        qplot(1:5, 2*(1:5), geom="blank") +
+            annotation_custom(grob, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
+            theme_empty
+    } else NULL
+    
 }
+
 
 guide_fun <- function() {
     ## ggplot2::guides(colour=ggplot2::guide_legend(nrow=2,

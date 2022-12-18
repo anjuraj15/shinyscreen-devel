@@ -132,6 +132,9 @@ calc_mz_from_formula <- function(chform,adduct,id) {
 
 
 smiles2form <- function(smiles) {
+    res <- character(length(smiles))
+    res <- NA_character_
+    isomething <- which(!is.na(smiles) | nchar(smiles) > 0L) 
     one2form <- function (s) {
         mol <- try(RMassBank::getMolecule(s), silent = T)
         if (!is.atomic(mol)) {
@@ -139,7 +142,8 @@ smiles2form <- function(smiles) {
         } else ""
     }
 
-    sapply(smiles,one2form,USE.NAMES = F)
+    res[isomething] <- sapply(smiles[isomething],one2form,USE.NAMES = F)
+    res
 }
 
 
