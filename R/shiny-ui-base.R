@@ -775,15 +775,14 @@ mk_shinyscreen_server <- function(projects,init) {
             parent <- req(input$sel_parent_trace)
             kvals <- req(rf_get_cindex_kval())
             ptab <- req(rf_get_cindex_parents())
-            res <- get_summ_subset(summ=summ,
-                                   ptab=ptab,
-                                   paritem=parent,
-                                   kvals=kvals)
+            get_summ_subset(summ=summ,
+                            ptab=ptab,
+                            paritem=parent,
+                            kvals=kvals)
+
         })
 
         rf_get_ltab <- reactive({
-            input$cmt_changes_b
-            cols <- c("an","ms2_rt")
             tab <- req(rf_select_from_summ())
             get_ltab(tab)
         })
@@ -1297,7 +1296,6 @@ mk_shinyscreen_server <- function(projects,init) {
         }, label = "sel_spec-clear")
 
         observe({
-            isolate({message("We changed par trace to: ",input$sel_parent_trace)})
             ctab <- rf_get_ltab()
             rv_summ_subset(ctab)
         }, label = "update-rv_summ_subset")
@@ -1309,47 +1307,51 @@ mk_shinyscreen_server <- function(projects,init) {
                 choices <- ctab$item
             } else {
                 choices <- character()
-                disp <- NA
+                disp <- NULL
             }
+            message("*** choices ***")
+            print(choices)
+            message("*** end choices ***")
             updateSelectInput(session = session,
                               inputId = "sel_spec",
                               choices = choices,
                               selected = disp)
-        }, label = "measure-props-sel-spec")
+        }, label = "update-sel_spec")
 
-        observe({
-            input$cmt_changes_b
-            res <- req(rf_msrprop_get_vals())
-            updateNumericInput(session = session,
-                               inputId = "chg_ms1_rt",
-                               value = res$rt)
-            updateNumericInput(session = session,
-                               inputId = "chg_ms1_int",
-                               value = res$int)
-            selqa <- res$qa[QABOX_VALS]
-            selqa <- QABOX_VALS[selqa]
+        ## FIXME: TODO: Uncomment this after debug.
+        ## observe({
+        ##     input$cmt_changes_b
+        ##     res <- req(rf_msrprop_get_vals())
+        ##     updateNumericInput(session = session,
+        ##                        inputId = "chg_ms1_rt",
+        ##                        value = res$rt)
+        ##     updateNumericInput(session = session,
+        ##                        inputId = "chg_ms1_int",
+        ##                        value = res$int)
+        ##     selqa <- res$qa[QABOX_VALS]
+        ##     selqa <- QABOX_VALS[selqa]
 
-            updateCheckboxGroupInput(session=session,
-                                     choices=QABOX_VALS,
-                                     inputId="qabox",
-                                     selected = selqa)
+        ##     updateCheckboxGroupInput(session=session,
+        ##                              choices=QABOX_VALS,
+        ##                              inputId="qabox",
+        ##                              selected = selqa)
             
-            updateCheckboxInput(session=session,
-                                inputId="chg_ms2sel",
-                                value = res$ms2_sel)
-        })
+        ##     updateCheckboxInput(session=session,
+        ##                         inputId="chg_ms2sel",
+        ##                         value = res$ms2_sel)
+        ## })
 
-        observeEvent(input$cmt_changes_b,{
-            summ <- req(rvs$m$out$tab$summ)
+        ## observeEvent(input$cmt_changes_b,{
+        ##     summ <- req(rvs$m$out$tab$summ)
 
-            ptab <- req(rf_get_cindex_parents())
-            ltab <- req(rf_get_ltab())
-            rvs$m$out$tab$summ <- update_on_commit_chg(summ,
-                                                       input=input,
-                                                       ptab=ptab,
-                                                       ltab=ltab)
+        ##     ptab <- req(rf_get_cindex_parents())
+        ##     ltab <- req(rf_get_ltab())
+        ##     rvs$m$out$tab$summ <- update_on_commit_chg(summ,
+        ##                                                input=input,
+        ##                                                ptab=ptab,
+        ##                                                ltab=ltab)
             
-        })
+        ## })
 
         
 
@@ -1577,33 +1579,34 @@ mk_shinyscreen_server <- function(projects,init) {
             rf_plot_struct()
         })
 
-        
-        output$print_spec_tab <- renderPrint({
-            notfound <- "No MS2 spectrum has been found for this entry."
-            ms2tabsel <- req(rf_get_ltab())
-            selMS2 <- req(input$sel_spec)
-            if (NROW(ms2tabsel)!=0L) {
-                lval <- lapply(ms2tabsel[item==(selMS2)],function(x) x)
-                ms2 <- rvs$m$extr$ms2
-                kval <- rf_get_cindex_kval()
-                allval <- c(kval,lval)
-                ## There can be some duplicates.
-                common <- union(names(kval),names(lval))
-                allval <- allval[common]
-                #Because in current implementation, kval may contain
-                #more than the names existing in extr$ms2. Also,
-                #BASE_KEY_MS2 does not contain `an', so we need to readd
-                #it.
-                key <- unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"an"))
-                kval2 <- allval[key]
-                spec <- get_data_from_key(ms2,kval2)[,.(mz,intensity)]
-                ## as.character(lapply(1L:NROW(spec),function(nr) paste0(spec[nr,mz]," ",spec[nr,intensity])))
-                print(as.data.frame(spec),row.names=F)
+
+        ## FIXME: TODO: Uncomment after fixing.
+        ## output$print_spec_tab <- renderPrint({
+        ##     notfound <- "No MS2 spectrum has been found for this entry."
+        ##     ms2tabsel <- req(rf_get_ltab())
+        ##     selMS2 <- req(input$sel_spec)
+        ##     if (NROW(ms2tabsel)!=0L) {
+        ##         lval <- lapply(ms2tabsel[item==(selMS2)],function(x) x)
+        ##         ms2 <- rvs$m$extr$ms2
+        ##         kval <- rf_get_cindex_kval()
+        ##         allval <- c(kval,lval)
+        ##         ## There can be some duplicates.
+        ##         common <- union(names(kval),names(lval))
+        ##         allval <- allval[common]
+        ##         #Because in current implementation, kval may contain
+        ##         #more than the names existing in extr$ms2. Also,
+        ##         #BASE_KEY_MS2 does not contain `an', so we need to readd
+        ##         #it.
+        ##         key <- unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"an"))
+        ##         kval2 <- allval[key]
+        ##         spec <- get_data_from_key(ms2,kval2)[,.(mz,intensity)]
+        ##         ## as.character(lapply(1L:NROW(spec),function(nr) paste0(spec[nr,mz]," ",spec[nr,intensity])))
+        ##         print(as.data.frame(spec),row.names=F)
                 
-            } else {
-                notfound
-            }
-        })
+        ##     } else {
+        ##         notfound
+        ##     }
+        ## })
         
             
             
