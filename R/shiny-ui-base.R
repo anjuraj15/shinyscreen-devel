@@ -667,10 +667,17 @@ mk_shinyscreen_server <- function(projects,init) {
 
     server <- function(input,output,session) {
         ## REACTIVE VALUES
+
+        ## RUNTIME REACTIVE VALUES
+        
+        ## Those that we don't care about when saving state; Usually
+        ## can be inferred by the program.
+
         rv_extr_flag <- reactiveVal(F)
         rv_presc_flag <- reactiveVal(F)
         rtimer1000 <- reactiveTimer(1000)
         rtimer_presc <- reactiveTimer(500)
+        rv_summ_subset <- reactiveVal(data.frame())
         
         ## REACTIVE FUNCTIONS
         rf_compound_set <- reactive({
@@ -768,10 +775,10 @@ mk_shinyscreen_server <- function(projects,init) {
             parent <- req(input$sel_parent_trace)
             kvals <- req(rf_get_cindex_kval())
             ptab <- req(rf_get_cindex_parents())
-            get_summ_subset(summ=summ,
-                            ptab=ptab,
-                            paritem=parent,
-                            kvals=kvals)
+            res <- get_summ_subset(summ=summ,
+                                   ptab=ptab,
+                                   paritem=parent,
+                                   kvals=kvals)
         })
 
         rf_get_ltab <- reactive({
@@ -1285,12 +1292,28 @@ mk_shinyscreen_server <- function(projects,init) {
                               choices = ptab$item)
         }, label = "measure-props-parent")
 
+        observeEvent(input$cindex_row_last_clicked,{
+            rv_summ_subset(data.frame())
+        }, label = "sel_spec-clear")
+
         observe({
+            isolate({message("We changed par trace to: ",input$sel_parent_trace)})
             ctab <- rf_get_ltab()
-            disp <- if (any(ctab$ms2_sel==T)) ctab[ms2_sel==T,item] else ctab[1L,item]
+            rv_summ_subset(ctab)
+        }, label = "update-rv_summ_subset")
+
+        observe({
+            ctab <- rv_summ_subset()
+            if (NROW(ctab)!=0) {
+                disp <- if (any(ctab$ms2_sel==T)) ctab[ms2_sel==T,item] else ctab[1L,item]
+                choices <- ctab$item
+            } else {
+                choices <- character()
+                disp <- NA
+            }
             updateSelectInput(session = session,
                               inputId = "sel_spec",
-                              choices = ctab$item,
+                              choices = choices,
                               selected = disp)
         }, label = "measure-props-sel-spec")
 
