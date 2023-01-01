@@ -486,3 +486,21 @@ update_on_commit_chg <- function(summ,input,ptab,ltab) {
     summ[the_row,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
     summ
 }
+
+
+get_mprop_ms2_metadata <- function(ltab_entry) {
+ res <- list(rt=NA_real_,int=NA_real_,qa=character(0),ms2_sel=F)
+
+ if (NROW(ltab_entry)==0L) return(res)
+ 
+ res$rt = ltab_entry$ms1_rt
+ res$int = ltab_entry$ms1_int
+ z <- ltab_entry[.SD,.SDcols=patterns("qa_ms[12].*")]
+ lqa_vals <- as.list(ltab_entry[,.SD,.SDcols=patterns("qa_ms[12].*")])
+ qa_names <- names(lqa_vals)
+ res$qa <- qa_names[as.logical(lqa_vals)]
+ res$ms2_sel = ltab_entry$ms2_sel
+
+ res
+  
+}

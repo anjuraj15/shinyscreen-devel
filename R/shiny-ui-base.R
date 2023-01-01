@@ -786,8 +786,15 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         rf_get_ltab <- reactive({
-            tab <- req(rf_select_from_summ())
+            tab <- rf_select_from_summ()
             if (NROW(tab)!=0) get_ltab(tab) else data.frame()
+        })
+
+        rf_get_ltab_entry <- reactive({
+            ltab <- rf_get_ltab()
+            if (NROW(ltab)>0L && isTruthy(input$sel_spec)) {
+                ltab[item==input$sel_spec]
+            } else data.frame()
         })
 
         
@@ -899,34 +906,6 @@ mk_shinyscreen_server <- function(projects,init) {
             p <- if (!is.null(p)) p else empty_plot("Nothing to plot")
             p
 
-        })
-
-        ## REACTIVE FUNCTIONS: MEASUREMENT PROPERTIES
-
-        rf_msrprop_get_vals <- reactive({
-           ptab <- rf_get_cindex_parents()
-           stab <- rf_select_from_summ()
-
-           res <- if (NROW(stab)==1L && is.na(stab[1,an])) {
-                      x1 <- list(rt=stab[1,ms1_rt],int=stab[1,ms1_int])
-                      x2 <- stab[1,.SD,.SDcols=patterns("qa_ms[12].*")]
-                      qa <- as.logical(x2)
-                      names(qa) <- names(x2)
-                      c(x1,list(qa=qa),ms2_sel=F)
-               
-                  } else {
-                      selMS2 <- req(input$sel_spec)
-                      xx <- rf_get_ltab()
-                      x1 <- list(rt=xx[item==(selMS2),ms1_rt],
-                                 int=xx[item==(selMS2),ms1_int])
-                      x2 <- xx[item==(selMS2),.SD,.SDcols=patterns("qa_ms[12].*")]
-                      qa <- as.logical(x2)
-                      names(qa) <- names(x2)
-                      x3 <- list(ms2_sel=xx[item==(selMS2),ms2_sel])
-                      c(x1,list(qa=qa),x3)
-                  }
-
-           res
         })
 
         
@@ -1326,22 +1305,14 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observe({
             input$cmt_changes_b
-            res <- rf_msrprop_get_vals()
-            ## TODO: FIXME: Uncomment after debug.
-            if (isTruthy(res)) {
-                valrt = res$rt
-                valint = res$int
-                valms2sel = res$ms2_sel
-                selqa <- res$qa[QABOX_VALS]
-                selqa <- QABOX_VALS[selqa]
-                message("valms2sel: ", valms2sel)
-                message("selqa: ", paste(selqa,collapse=','))
-            } else {
-                valrt = NA_real_
-                valint = NA_real_
-                selqa <- character(0)
-                valms2sel = F
-            }
+            ltab_entry <- rf_get_ltab_entry()
+            ## res <- rf_msrprop_get_vals()
+            res <- get_mprop_ms2_metadata(ltab_entry)
+            valrt = res$rt
+            valint = res$int
+            valms2sel = res$ms2_sel
+            selqa <- res$qa
+
             updateNumericInput(session = session,
                                inputId = "chg_ms1_rt",
                                value = valrt)
@@ -1360,18 +1331,18 @@ mk_shinyscreen_server <- function(projects,init) {
                                 value = valms2sel)
         })
 
-        ## TODO: FIXME: Uncomment after debug?
-        ## observeEvent(input$cmt_changes_b,{
-        ##     summ <- req(rvs$m$out$tab$summ)
 
-        ##     ptab <- req(rf_get_cindex_parents())
-        ##     ltab <- req(rf_get_ltab())
-        ##     rvs$m$out$tab$summ <- update_on_commit_chg(summ,
-        ##                                                input=input,
-        ##                                                ptab=ptab,
-        ##                                                ltab=ltab)
+        observeEvent(input$cmt_changes_b,{
+            summ <- req(rvs$m$out$tab$summ)
+
+            ptab <- req(rf_get_cindex_parents())
+            ltab <- req(rf_get_ltab())
+            rvs$m$out$tab$summ <- update_on_commit_chg(summ,
+                                                       input=input,
+                                                       ptab=ptab,
+                                                       ltab=ltab)
             
-        ## })
+        })
 
         
 
@@ -1600,33 +1571,33 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
 
-        ## FIXME: TODO: Uncomment after fixing.
-        ## output$print_spec_tab <- renderPrint({
-        ##     notfound <- "No MS2 spectrum has been found for this entry."
-        ##     ms2tabsel <- req(rf_get_ltab())
-        ##     selMS2 <- req(input$sel_spec)
-        ##     if (NROW(ms2tabsel)!=0L) {
-        ##         lval <- lapply(ms2tabsel[item==(selMS2)],function(x) x)
-        ##         ms2 <- rvs$m$extr$ms2
-        ##         kval <- rf_get_cindex_kval()
-        ##         allval <- c(kval,lval)
-        ##         ## There can be some duplicates.
-        ##         common <- union(names(kval),names(lval))
-        ##         allval <- allval[common]
-        ##         #Because in current implementation, kval may contain
-        ##         #more than the names existing in extr$ms2. Also,
-        ##         #BASE_KEY_MS2 does not contain `an', so we need to readd
-        ##         #it.
-        ##         key <- unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"an"))
-        ##         kval2 <- allval[key]
-        ##         spec <- get_data_from_key(ms2,kval2)[,.(mz,intensity)]
-        ##         ## as.character(lapply(1L:NROW(spec),function(nr) paste0(spec[nr,mz]," ",spec[nr,intensity])))
-        ##         print(as.data.frame(spec),row.names=F)
+
+        output$print_spec_tab <- renderPrint({
+            notfound <- "No MS2 spectrum has been found for this entry."
+            ms2tabsel <- rf_get_ltab()
+            selMS2 <- req(input$sel_spec)
+            if (NROW(ms2tabsel)!=0L) {
+                lval <- lapply(ms2tabsel[item==(selMS2)],function(x) x)
+                ms2 <- rvs$m$extr$ms2
+                kval <- rf_get_cindex_kval()
+                allval <- c(kval,lval)
+                ## There can be some duplicates.
+                common <- union(names(kval),names(lval))
+                allval <- allval[common]
+                #Because in current implementation, kval may contain
+                #more than the names existing in extr$ms2. Also,
+                #BASE_KEY_MS2 does not contain `an', so we need to readd
+                #it.
+                key <- unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"an"))
+                kval2 <- allval[key]
+                spec <- get_data_from_key(ms2,kval2)[,.(mz,intensity)]
+                ## as.character(lapply(1L:NROW(spec),function(nr) paste0(spec[nr,mz]," ",spec[nr,intensity])))
+                print(as.data.frame(spec),row.names=F)
                 
-        ##     } else {
-        ##         notfound
-        ##     }
-        ## })
+            } else {
+                notfound
+            }
+        })
         
             
             
