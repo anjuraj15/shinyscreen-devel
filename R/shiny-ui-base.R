@@ -677,7 +677,8 @@ mk_shinyscreen_server <- function(projects,init) {
         rv_presc_flag <- reactiveVal(F)
         rtimer1000 <- reactiveTimer(1000)
         rtimer_presc <- reactiveTimer(500)
-        rv_summ_subset <- reactiveVal(data.frame())
+        rv_summ_subset <- reactiveVal(data.frame()) # Used to generate sel_spec list (among other things?).
+
         
         ## REACTIVE FUNCTIONS
         rf_compound_set <- reactive({
@@ -743,7 +744,7 @@ mk_shinyscreen_server <- function(projects,init) {
             cind <- rf_get_cindex()
             key <- rf_get_cindex_key()
             req(NROW(cind)>0L)
-            row <- req(input$cindex_row_last_clicked)
+            row <- req(input$cindex_rows_selected)
             get_cindex_kval(cind,row,key)
         })
 
@@ -772,19 +773,21 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_select_from_summ <- reactive({
             input$cmt_changes_b
             summ <- req(rvs$m$out$tab$summ)
-            parent <- req(input$sel_parent_trace)
+            parent <- input$sel_parent_trace
             kvals <- req(rf_get_cindex_kval())
-            ptab <- req(rf_get_cindex_parents())
-            get_summ_subset(summ=summ,
-                            ptab=ptab,
-                            paritem=parent,
-                            kvals=kvals)
+            ptab <- rf_get_cindex_parents()
+            if (isTruthy(parent) && isTruthy(ptab)) {
+                get_summ_subset(summ=summ,
+                                ptab=ptab,
+                                paritem=parent,
+                                kvals=kvals)
+            } else data.frame()
 
         })
 
         rf_get_ltab <- reactive({
             tab <- req(rf_select_from_summ())
-            get_ltab(tab)
+            if (NROW(tab)!=0) get_ltab(tab) else data.frame()
         })
 
         
@@ -1283,16 +1286,18 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         ## OBSERVERS: VIEWER: MEASUREMENT PROPERTIES
-        observe({
+        ## observe({
+        ## }, label = "measure-props-parent")
+
+
+        observeEvent(input$cindex_rows_selected,{
+            rv_summ_subset(data.frame())
             ptab <- rf_get_cindex_parents()
             req(NROW(ptab)>0L)
             updateSelectInput(session = session,
                               inputId = "sel_parent_trace",
-                              choices = ptab$item)
-        }, label = "measure-props-parent")
-
-        observeEvent(input$cindex_row_last_clicked,{
-            rv_summ_subset(data.frame())
+                              choices = ptab$item,
+                              selected = NULL)
         }, label = "sel_spec-clear")
 
         observe({
@@ -1309,9 +1314,6 @@ mk_shinyscreen_server <- function(projects,init) {
                 choices <- character()
                 disp <- NULL
             }
-            message("*** choices ***")
-            print(choices)
-            message("*** end choices ***")
             updateSelectInput(session = session,
                               inputId = "sel_spec",
                               choices = choices,
