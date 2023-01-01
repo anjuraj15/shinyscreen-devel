@@ -776,7 +776,7 @@ mk_shinyscreen_server <- function(projects,init) {
             parent <- input$sel_parent_trace
             kvals <- req(rf_get_cindex_kval())
             ptab <- rf_get_cindex_parents()
-            if (isTruthy(parent) && isTruthy(ptab)) {
+            if (isTruthy(parent)) {
                 get_summ_subset(summ=summ,
                                 ptab=ptab,
                                 paritem=parent,
@@ -1293,10 +1293,13 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$cindex_rows_selected,{
             rv_summ_subset(data.frame())
             ptab <- rf_get_cindex_parents()
-            req(NROW(ptab)>0L)
+            if (NROW(ptab)>0L) {
+                choices = ptab$item
+            } else choices = character()
+            
             updateSelectInput(session = session,
                               inputId = "sel_parent_trace",
-                              choices = ptab$item,
+                              choices = choices,
                               selected = NULL)
         }, label = "sel_spec-clear")
 
@@ -1320,29 +1323,44 @@ mk_shinyscreen_server <- function(projects,init) {
                               selected = disp)
         }, label = "update-sel_spec")
 
-        ## FIXME: TODO: Uncomment this after debug.
-        ## observe({
-        ##     input$cmt_changes_b
-        ##     res <- req(rf_msrprop_get_vals())
-        ##     updateNumericInput(session = session,
-        ##                        inputId = "chg_ms1_rt",
-        ##                        value = res$rt)
-        ##     updateNumericInput(session = session,
-        ##                        inputId = "chg_ms1_int",
-        ##                        value = res$int)
-        ##     selqa <- res$qa[QABOX_VALS]
-        ##     selqa <- QABOX_VALS[selqa]
 
-        ##     updateCheckboxGroupInput(session=session,
-        ##                              choices=QABOX_VALS,
-        ##                              inputId="qabox",
-        ##                              selected = selqa)
+        observe({
+            input$cmt_changes_b
+            res <- rf_msrprop_get_vals()
+            ## TODO: FIXME: Uncomment after debug.
+            if (isTruthy(res)) {
+                valrt = res$rt
+                valint = res$int
+                valms2sel = res$ms2_sel
+                selqa <- res$qa[QABOX_VALS]
+                selqa <- QABOX_VALS[selqa]
+                message("valms2sel: ", valms2sel)
+                message("selqa: ", paste(selqa,collapse=','))
+            } else {
+                valrt = NA_real_
+                valint = NA_real_
+                selqa <- character(0)
+                valms2sel = F
+            }
+            updateNumericInput(session = session,
+                               inputId = "chg_ms1_rt",
+                               value = valrt)
+            updateNumericInput(session = session,
+                               inputId = "chg_ms1_int",
+                               value = valint)
             
-        ##     updateCheckboxInput(session=session,
-        ##                         inputId="chg_ms2sel",
-        ##                         value = res$ms2_sel)
-        ## })
 
+            updateCheckboxGroupInput(session=session,
+                                     choices=QABOX_VALS,
+                                     inputId="qabox",
+                                     selected = selqa)
+            
+            updateCheckboxInput(session=session,
+                                inputId="chg_ms2sel",
+                                value = valms2sel)
+        })
+
+        ## TODO: FIXME: Uncomment after debug?
         ## observeEvent(input$cmt_changes_b,{
         ##     summ <- req(rvs$m$out$tab$summ)
 
