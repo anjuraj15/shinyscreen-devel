@@ -743,8 +743,7 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_get_cindex_kval <- reactive({
             cind <- rf_get_cindex()
             key <- rf_get_cindex_key()
-            req(NROW(cind)>0L)
-            row <- req(input$cindex_rows_selected)
+            row <- input$cindex_rows_selected
             get_cindex_kval(cind,row,key)
         })
 
@@ -838,8 +837,8 @@ mk_shinyscreen_server <- function(projects,init) {
             req(NROW(ms1)>0L)
 
 
-            p <- make_eic_ms1_plot(ms1,summ,kvals=req(rf_get_cindex_kval()),
-                                   labs=req(rf_get_cindex_labs()),
+            p <- make_eic_ms1_plot(ms1,summ,kvals=rf_get_cindex_kval(),
+                                   labs=rf_get_cindex_labs(),
                                    asp=PLOT_EIC_ASPECT,
                                    rt_range=rf_get_rtrange(),
                                    i_range=rf_get_irange(),
@@ -1201,6 +1200,13 @@ mk_shinyscreen_server <- function(projects,init) {
 
         
         ## OBSERVERS: VIEWER
+
+        observeEvent(input$cindex_rows_selected,{
+            kval <- rf_get_cindex_kval()
+            fname <- plot_fname(kval)
+            updateTextInput(session=session,inputId="single_plot_fname",value=fname)
+        })
+        
         observeEvent(input$make_report_b,{
             isolate({
                 ms1 <- rvs$m$extr$ms1
@@ -1263,6 +1269,48 @@ mk_shinyscreen_server <- function(projects,init) {
             fn <- file.path(projdir,input$summ_name)
             tab2file(rvs$m$out$tab$summ,fn)
         })
+
+
+        observeEvent(input$plot_brush,{
+            xmin <- round(input$plot_brush[["xmin"]],3)
+            xmax <- round(input$plot_brush[["xmax"]],3)
+            ymin <- round(input$plot_brush[["ymin"]],3)
+            ymax <- round(input$plot_brush[["ymax"]],3)
+
+            if (!is.null(xmin)) updateNumericInput(session=session,
+                                                   inputId="plot_rt_min",
+                                                   value=xmin)
+            if (!is.null(xmax)) updateNumericInput(session=session,
+                                                   inputId="plot_rt_max",
+                                                   value=xmax)
+
+            if (!is.null(ymin)) updateNumericInput(session=session,
+                                                   inputId="plot_i_min",
+                                                   value=ymin)
+            if (!is.null(ymax)) updateNumericInput(session=session,
+                                                   inputId="plot_i_max",
+                                                   value=ymax)
+            session$resetBrush("plot_brush")
+            
+            
+        },label = "get_rt_from_selection")
+
+        observeEvent(input$plot_rt_click,
+        {
+            ## TODO: update to sensible range.
+            updateNumericInput(session=session,
+                               inputId="plot_rt_min",
+                               value=NA_real_)
+            updateNumericInput(session=session,
+                               inputId="plot_rt_max",
+                               value=NA_real_)
+            updateNumericInput(session=session,
+                               inputId="plot_i_min",
+                               value=NA_real_)
+            updateNumericInput(session=session,
+                               inputId="plot_i_max",
+                               value=NA_real_)
+        }, label = "reset_rt_range")
 
         ## OBSERVERS: VIEWER: MEASUREMENT PROPERTIES
         ## observe({
@@ -1348,18 +1396,35 @@ mk_shinyscreen_server <- function(projects,init) {
 
         
 
-        ## observeEvent(input$plot_save_single,{
+        observeEvent(input$plot_save_single,{
 
-        ##     p1 <- rf_plot_eic_ms1()
-        ##     p2 <- rf_plot_eic_ms2()
-        ##     p3 <- rf_plot_spec_ms2()
-        ##     str <- rf_plot_struct()
+            p1 <- rf_plot_eic_ms1()
+            p2 <- rf_plot_eic_ms2()
+            p3 <- rf_plot_spec_ms2()
+            pstr <- rf_plot_struct()
 
-        ##     message("Plots saved to ",file.path(rvs$gui$paths$project,
-        ##                                         FIG_TOPDIR))
+            combo_p <- combine_plots(p1,p2,p3,pstr)
+            dirname <- file.path(rvs$gui$paths$project,
+                                  FIG_TOPDIR)
+            if (!is.null(dirname) && nchar(dirname)>0L && !dir.exists(dirname)) dir.create(dirname)
+            absfname <- file.path(rvs$gui$paths$project,
+                                  FIG_TOPDIR,
+                                  input$single_plot_fname)
+
+            if (!is_fname_rds(absfname)) {
+                ggplot2::ggsave(filename=absfname,
+                                width=21.0,
+                                height=29.7,
+                                units="cm",
+                                plot=combo_p)
+            } else {
+                saveRDS(object=combo_p,file=absfname)
+            }
+
+            message("Plots saved to ",absfname)
 
             
-        ## })
+        })
 
         
         ## RENDER
@@ -1499,45 +1564,7 @@ mk_shinyscreen_server <- function(projects,init) {
         ## RENDER: PLOTS
             
         
-        observeEvent(input$plot_brush,{
-            xmin <- input$plot_brush[["xmin"]]
-            xmax <- input$plot_brush[["xmax"]]
-            ymin <- input$plot_brush[["ymin"]]
-            ymax <- input$plot_brush[["ymax"]]
-
-            if (!is.null(xmin)) updateNumericInput(session=session,
-                                                   inputId="plot_rt_min",
-                                                   value=xmin)
-            if (!is.null(xmax)) updateNumericInput(session=session,
-                                                   inputId="plot_rt_max",
-                                                   value=xmax)
-
-            if (!is.null(ymin)) updateNumericInput(session=session,
-                                                   inputId="plot_i_min",
-                                                   value=ymin)
-            if (!is.null(ymax)) updateNumericInput(session=session,
-                                                   inputId="plot_i_max",
-                                                   value=ymax)
-            session$resetBrush("plot_brush")
-            
-        },label = "get_rt_from_selection")
-
-        observeEvent(input$plot_rt_click,
-        {
-            ## TODO: update to sensible range.
-            updateNumericInput(session=session,
-                               inputId="plot_rt_min",
-                               value=NA_real_)
-            updateNumericInput(session=session,
-                               inputId="plot_rt_max",
-                               value=NA_real_)
-            updateNumericInput(session=session,
-                               inputId="plot_i_min",
-                               value=NA_real_)
-            updateNumericInput(session=session,
-                               inputId="plot_i_max",
-                               value=NA_real_)
-        }, label = "reset_rt_range")
+        
 
 
         output$plot_eic_ms1 <- renderPlot({

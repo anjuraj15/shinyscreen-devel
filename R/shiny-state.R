@@ -419,6 +419,9 @@ get_cindex_parents <- function(summ,ckey,kvals,labs) {
 }
 
 get_cindex_kval <- function(cindex,row,key) {
+    ## Accounting for not fully initialised state.
+    if (!is.numeric(row) || is.na(row) || length(key)==0L || is.na(key) || NROW(cindex)==0L) return(NULL)
+    
     rowtab <- cindex[(row),..key]
     res <- lapply(rowtab,function (x) x[[1]])
     names(res) <- key

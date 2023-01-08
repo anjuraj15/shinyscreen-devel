@@ -684,13 +684,13 @@ textOutput("plot_hover_out")
 numericInput(inputId = "plot_rt_min",
              label="Start",
              value=NA_real_,
-             width="15%")
+             width="30%")
 ```
 ```{r, echo=F}
 numericInput(inputId = "plot_rt_max",
              label="End",
              value=NA_real_,
-             width="15%")
+             width="30%")
 
 
 ```
@@ -703,13 +703,13 @@ numericInput(inputId = "plot_rt_max",
 numericInput(inputId = "plot_i_min",
              label="Start",
              value=NA_real_,
-             width="15%")
+             width="30%")
 ```
 ```{r, echo=F}
 numericInput(inputId = "plot_i_max",
              label="End",
              value=NA_real_,
-             width="15%")
+             width="30%")
 
 
 ```
@@ -719,10 +719,11 @@ numericInput(inputId = "plot_i_max",
 
 <div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
 ```{r, echo=F}
-## actionButton("plot_save_single",
-##              label="Save this plot")
-## actionButton("plot_save_all",
-##              label="Save all plots")
+textInput("single_plot_fname",
+          label="Filename of the single entry plot",
+          value="default.pdf")
+actionButton("plot_save_single",
+             label="Save single entry plot")
 textInput("report_name",
           label="Report Name",
           value="report")
@@ -732,9 +733,6 @@ textInput("summ_name",
           label="Summary table name",
           value="summary.csv")
 actionButton("summ_tab_b", "Save summary table")
-## textInput("plot_ext",
-##           label = "Plot extension",
-##           value = "pdf")
 ```
 
 </div> <!-- Control Bar -->

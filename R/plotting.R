@@ -12,29 +12,23 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-plot_save_single <- function(plot,decotab,extension,proj_path,subdir=FIG_TOPDIR,tabl=NULL,figtag="") {
-    if (is.null(plot)) return()
-    
-    fname <- plot_fname_prefix(decotab,proj_path,subdir=subdir)
-    
-    fnplot <- paste0(fname,"__",figtag,".",extension)
-    
-    if (extension == "rds" || extension == "RDS") {
-        saveRDS(plot,file=fnplot)
-    } else ggplot2::ggsave(filename = fnplot,
-                           plot = plot)
-    fntab <- paste0(fname,"__",figtag,".csv")
-    if (! is.null(tabl)) data.table::fwrite(tabl,file=fntab,sep = ",")
-    list(plot=plot,tab=tabl,fn_plot=fnplot)
-    
-}
-
-
-
-
 ## PLOTTING
 
 ### PLOTTING: HELPERS
+
+
+plot_fname <- function(kvals) {
+    if (!is.null(kvals)) {
+        kparts <- mapply(paste0,names(kvals),kvals,USE.NAMES=F)
+        stump <- paste(kparts,collapse="_")
+        paste0("plot_",stump,".pdf")
+    } else 'default.pdf'
+}
+
+
+is_fname_rds <- function(fn) {
+    grepl("rds$",fn)
+}
 
 sci10 <- function(x) {
     prefmt <- formatC(x,format="e",digits=2)
@@ -71,7 +65,7 @@ scale_legend <- function(colrdata,pdata) {
     x <- tab_lab$colour
 
     names(x) <- tab_lab$label
-    scale_colour_manual(values=x)
+    ggplot2::scale_colour_manual(values=x)
 }
 
 pal_maker <- function(n,palname = NULL) {
@@ -137,7 +131,7 @@ guide_fun <- function() {
     NULL
 }
 
-theme_eic <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::element_text(size=15L),
+theme_eic <- function(...) ggplot2::theme_light()+ggplot2::theme(axis.title=ggplot2::element_text(size=15L),
                                                         axis.text=ggplot2::element_text(size=12L,colour="black"),
                                                         legend.title=ggplot2::element_text(size=15L),
                                                         plot.title=ggplot2::element_text(size=15L),
@@ -147,7 +141,7 @@ theme_eic <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::elem
                                                         legend.position='bottom',...)+guide_fun()
 
 
-theme_print <- function(...) theme_light()+ggplot2::theme(axis.title=ggplot2::element_text(size=5L),
+theme_print <- function(...) ggplot2::theme_light()+ggplot2::theme(axis.title=ggplot2::element_text(size=5L),
                                                         axis.text=ggplot2::element_text(size=4L,colour="black"),
                                                         plot.title=ggplot2::element_text(size=5L),
                                                         plot.subtitle=ggplot2::element_text(size=4L),
@@ -169,8 +163,8 @@ theme_empty$plot.title <- ggplot2::element_blank()
 theme_empty$axis.title <- ggplot2::element_blank()
 
 
-cust_geom_line <- function(key_glyph="rect",...) geom_line(...,key_glyph=key_glyph)
-cust_geom_linerange <- function(key_glyph="rect",...) geom_linerange(...,key_glyph=key_glyph)
+cust_geom_line <- function(key_glyph="rect",...) ggplot2::geom_line(...,key_glyph=key_glyph)
+cust_geom_linerange <- function(key_glyph="rect",...) ggplot2::geom_linerange(...,key_glyph=key_glyph)
 
 
 
@@ -330,6 +324,10 @@ narrow_summ <- function(summ,kvals,labs,...) {
 ### PLOTTING: TOP-LEVEL PLOT CREATION
 
 make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1,colrdata=NULL) {
+
+    ## If nothing selected, just return NULL.
+    if (is.null(kvals)) return(NULL)
+
     key <- names(kvals)
     ## Get metadata.
 
@@ -383,6 +381,10 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
 
 
 make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1, colrdata=NULL) {
+
+    ## If nothing selected, just return NULL.
+    if (is.null(kvals)) return(NULL)
+
     ## Get metadata.
     summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES","Formula")
 
@@ -406,7 +408,7 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1,
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
                      collapse='; ')
     title_txt = paste0("MS2 EIC for ion m/z = ",paste0(signif(unique(summ_rows$mz),digits=7L),collapse=", "))
-    subt_txt = if (!length(summ_rows$Name)==0L && !is.na(summ_rows$Name) && nchar(summ_rows$Name)>0L) summ_rows$Name else NULL
+    subt_txt = if (!length(summ_rows$Name)==0L && !is.na(summ_rows$Name[[1]]) && nchar(summ_rows$Name[[1]])>0L) summ_rows$Name[[1]] else NULL
     ## Base plot.
     p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label)) +
          ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
