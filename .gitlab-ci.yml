@@ -10,7 +10,7 @@ test:
     - R -e 'devtools::install_git("https://github.com/CDK-R/rinchi")'
     - R -e 'devtools::install_git("https://github.com/CDK-R/cdkr", subdir="rcdklibs", dependencies=F)'
     - R -e 'devtools::install_git("https://github.com/CDK-R/cdkr", subdir="rcdk", dependencies=F)'
-    - R -e 'devtools::install_git("https://github.com/schymane/RChemMass.git", dependencies=F)'
+    - R -e 'devtools::install_git("https://github.com/schymane/RChemMass", dependencies=F)'
     - R CMD build . --no-build-vignettes --no-manual
     - PKG_FILE_NAME=$(ls -1t *.tar.gz | head -n 1)
     - R CMD check "${PKG_FILE_NAME}" --no-build-vignettes --no-manual
