@@ -1,19 +1,6 @@
-image: rocker/rstudio
+image: kontrapunkt/eci
 test:
    script:
-    - apt-get update
-    - apt install --yes --no-install-recommends xdg-utils automake autoconf gcc make net-tools git git-all default-jre-headless zlib1g zlib1g-dev libnetcdf* openbabel libhdf5 hdf5-tools
-    - R -e 'install.packages(c("devtools", "testthat","BiocManager","installr","promises","assertthat","data.table","withr","yaml","rmarkdown","htmltools","ggplot2","cowplot","RColorBrewer","shiny","DT","future"))'
-    - R -e 'library(installr);install.Rtools()'
-    - R -e 'install.packages(c("curl","rsvg","enviPat","rJava", "fingerprint", "png", "rcdk", "rcdklibs"), dependencies=TRUE)'
-    - R -e 'BiocManager::install("Rhdf5lib")'
-    - R -e 'BiocManager::install("mzR")'
-    - R -e 'BiocManager::install("MSnbase")'
-    - R -e 'BiocManager::install(c("RMassBank"))'
-    - R -e 'devtools::install_git("https://github.com/CDK-R/rinchi")'
-    - R -e 'devtools::install_git("https://github.com/CDK-R/rcdklibs", dependencies=F)'
-    - R -e 'devtools::install_git("https://github.com/CDK-R/cdkr", subdir="rcdk", dependencies=F)'
-    - R -e 'devtools::install_git("https://github.com/schymane/RChemMass", dependencies=F)'
     - R CMD build . --no-build-vignettes --no-manual
     - PKG_FILE_NAME=$(ls -1t *.tar.gz | head -n 1)
     - R CMD check "${PKG_FILE_NAME}" --no-build-vignettes --no-manual
