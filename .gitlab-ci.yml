@@ -7,7 +7,7 @@ test:
     - R -e 'library(installr);install.Rtools()'
     - R -e 'install.packages(c("curl","rsvg","enviPat","rJava", "fingerprint", "png", "rcdk", "rcdklibs"), dependencies=TRUE)'
     - R -e 'BiocManager::install(c("MSnbase", "mzR", "RMassBank"))'
-    - R -e 'devtools::install_git("https://github.com/CDK-R/cdkr/rinchi")'
+    - R -e 'devtools::install_git("https://github.com/CDK-R/rinchi")'
     - R -e 'devtools::install_git("https://github.com/CDK-R/cdkr", subdir="rcdklibs")'
     - R -e 'devtools::install_git("https://github.com/CDK-R/cdkr", subdir="rcdk")'
     - R -e 'devtools::install_git("schymane/RChemMass", dependencies=FALSE)'
