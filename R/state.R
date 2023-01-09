@@ -237,3 +237,18 @@ new_conf <- function() fig_conf(
                            presc_conf(
                                extr_conf(
                                    base_conf())))
+
+encode_ms2_to_line <- function(ms2) {
+    ## ms2 is a data.frame whose first column is mz and the second intensity.
+    paste0(paste(ms2[[1]],ms2[[2]],sep=':'),collapse=';')
+}
+
+
+pack_ms2_w_summ <- function(summ,ms2) {
+    ## Takes summ, finds entries with high quality spectra and subsets ms2 based on that.
+
+    ## Take the columns we need from summ.
+    x = summ[ms2_sel==T,.SD,.SDcols=c(key(summ),"mz","SMILES","Formula","Name")]
+    mrg_keys = c(intersect(key(ms2),key(summ)),"an")
+    ms2[x,.(mz=i.mz,ms2_spectrum=encode_ms2_to_line(.SD[,c("mz","intensity")])),on=mrg_keys,by=.EACHI]
+}

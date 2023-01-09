@@ -1270,6 +1270,17 @@ mk_shinyscreen_server <- function(projects,init) {
             tab2file(rvs$m$out$tab$summ,fn)
         })
 
+        observeEvent(input$ms2_spectra_tab_b,{
+            req(NROW(rvs$m$out$tab$summ)>0L)
+            projdir <- rvs$gui$paths$project
+            fn <- file.path(projdir,input$ms2_spectra_tab_name)
+            shinymsg(paste0("Saving MS2 spectra table to: ",basename(fn)))
+            tab2file(pack_ms2_w_summ(rvs$m$out$tab$summ,
+                                    rvs$m$extr$ms2),
+                     fn)
+            shinymsg("Done saving MS2 spectra table.")
+        })
+
 
         observeEvent(input$plot_brush,{
             xmin <- round(input$plot_brush[["xmin"]],3)
