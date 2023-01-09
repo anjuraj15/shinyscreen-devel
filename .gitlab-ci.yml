@@ -2,7 +2,7 @@ image: rocker/rstudio
 test:
    script:
     - apt-get update
-    - apt install --yes --no-install-recommends xdg-utils automake autoconf gcc make net-tools git
+    - apt install --yes --no-install-recommends xdg-utils automake autoconf gcc make net-tools git git-all
     - R -e 'install.packages(c("devtools", "testthat","BiocManager","installr","promises","assertthat","data.table","withr","yaml","rmarkdown","htmltools","ggplot2","cowplot","RColorBrewer","shiny","DT","future"))'
     - R -e 'library(installr);install.Rtools()'
     - R -e 'install.packages(c("curl","rsvg","enviPat","rJava", "fingerprint", "png", "rcdk", "rcdklibs"), dependencies=TRUE)'
