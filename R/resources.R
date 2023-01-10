@@ -309,3 +309,18 @@ PLOT_EIC_ASPECT <- 0.75
 ## possibility that each set connects to a different collection of
 ## files.
 COLRDATA_KEY <- "set"
+
+## METFRAG
+
+METFRAG_ADDUCTS = c("[M+H]+","[M+NH4]+","[M+Na]+","[M+K]+",
+                    "[M+CH3OH+H]+","[M+ACN+H]+","[M+ACN+Na]+","[M+2ACN+H]+",
+                    "[M-H]-","[M+Cl]-","[M+HCOO]-","[M+CH3COO]-","[M]+/-")
+METFRAG_WRITER_CHOICES = c("CSV","PSV","XLS")
+METFRAG_DEFAULT_WRITER = "CSV"
+METFRAG_DATABASE_TYPE = c("KEGG","PubChem","ExtendedPubChem","LocalSDF","LocalPSV","LocalCSV")
+METFRAG_DEFAULT_DATABASE_TYPE = "LocalCSV"
+METFRAG_PREPFLT_CHOICES = c("UnconnectedCompoundFilter","IsotopeFilter")
+METFRAG_PREPFLT_DEFAULT = c("UnconnectedCompoundFilter","IsotopeFilter")
+METFRAG_POSTPFLT_CHOICES = c("InChIKeyFilter")
+METFRAG_POSTPFLT_DEFAULT = c("InChIKeyFilter")
+
