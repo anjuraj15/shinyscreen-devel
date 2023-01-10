@@ -533,8 +533,8 @@ selectInput("mf_post_processing_candidate_filter",
             choices=shinyscreen:::METFRAG_POSTPFLT_CHOICES,
             selected=shinyscreen:::METFRAG_POSTPFLT_DEFAULT,
             multiple=T)
-textInput("mf_score_types",label="Score Types",value="FragmenterScore,AutomatedPeakFingerprintAnnotationScore,AutomatedLossFingerprintAnnotationScore,OfflineIndividualMoNAScore")
-textInput("mf_score_weights",label="Score Weights",value="1.,1.,1.,1.")
+textInput("mf_score_types",label="Score Types",value=METFRAG_STANDARD_SCORES)
+textInput("mf_score_weights",label="Score Weights",value=METFRAG_STANDARD_WEIGHTS)
 ```
 ### Report
 
