@@ -1,4 +1,4 @@
-## Copyright (C) 2020,2021 by University of Luxembourg
+## Copyright (C) 2020,2021,2023 by University of Luxembourg
 
 ## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
@@ -12,8 +12,22 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
+init_state <- function(m) {
+    m$out$tab = list()
+    m$input$datafiles = NULL
+    m$input$tab$mzml = EMPTY_MZML
+    lab = gen_uniq_lab(list(),pref="L")
+    m$input$tab$lists = list()
+    m$input$tab[[lab[[1]]]] = EMPTY_CMPD_LIST
+    m$out$tab$comp = EMPTY_COMP_TAB
+    m
+}
 
-##' @export
+#' @title Create Initial State
+#' @details Creates an initial, bare state.
+#' @return A state object.
+#' @export
+#' @author Todor Kondić
 new_state <- function() {
     m <- new_conf()
     init_state(m)
@@ -55,25 +69,57 @@ reinit_run_data <- function(projects,top_data_dir,project,run=NULL) {
     run
 }
 
+is_metfrag_available <- function(conf) {
+    rtime = conf$metfrag$runtime
+    dbpath = conf$metfrag$db_path
 
-## This helps decouple "cross-platform" configuration from the
-## (file-)system dependent facts.
-##' @export
+    if (nchar(rtime)==0L && nchar(dbpath)==0L) return(F)
+    if (!file.exists(rtime)) stop(errc_mf_jar_absent)
+    if (!file.exists(dbpath)) stop(errc_mf_db_file_absent)
+    T
+}
+
+#' @title Create Runtime Configuration
+#' @details This is a part of the configuration that can only be
+#'     diagnosed at runtime.
+#' @param project `character(1)`, project title (and the directory name under `projects`)
+#' @param conf `conf`, configuration object, optional 
+#' @return `run` substate
+#' @author Todor Kondić
+#' @export
 new_runtime_state <- function(project,conf=NULL) {
     
     if (!is.character(project)) stop("Argument `project' must be a character string.")
     if (!dir.exists(project)) stop('Project directory either does not exist, or is unreadable.')
-    project_path <- norm_path(project)
-    project <- basename(project)
-    run <- list()
-    run$project <- project
-    run$paths$project <- project_path
+    project_path = norm_path(project)
+    project = basename(project)
+    run = list()
+    run$project = project
+    run$paths$project = project_path
 
-    run$paths$data <- if (is.null(conf$paths$data)) {
-                          project_path
-                      } else {
-                          run$paths$data <- norm_path(conf$paths$data)
-                      }
+    if (is.null(conf)) {
+        run$metfrag$available = F
+    } else {
+        run$metfrag$available = is_metfrag_available(conf)
+    }
+
+    if (run$metfrag$available) {
+        mfdir = file.path(run$paths$project,"metfrag")
+        dir.create(mfdir)
+        dir.create(file.path(mfdir,"results"))
+        dir.create(file.path(mfdir,"config"))
+        dir.create(file.path(mfdir,"spec"))
+        dir.create(file.path(mfdir,"log"))
+        run$metfrag$path=mfdir
+    }
+
+    
+    run$paths$data = if (is.null(conf$paths$data)) {
+        project_path
+    } else {
+        norm_path(conf$paths$data)
+    }
+    
     
     if (!dir.exists(run$paths$data)) stop("Path to data directory either does not exist, or is inaccesible.")
 
@@ -89,16 +135,23 @@ new_empty_project <- function(project) {
 }
 
 ##' @export
+##' @title Create a New Project
+##' @param project `character(1)`, path to a directory containing all the projects
+##' @param datatab `datatab`, a `data.table` describing data files, optional
+##' @param conf `conf`, a configuration object, optional
+##' @author Todor Kondić
 new_project <- function(project,datatab=NULL,conf=NULL) {
-    m <- new_state()
-    m$run <- new_runtime_state(project)
-    fn_conf <- file.path(m$run$paths$project,FN_CONF)
-    m$conf <- if (is.null(conf)) {yaml::yaml.load_file(fn_conf)} else conf 
-    m$conf$compounds$lists <- label_cmpd_lists(m$conf$compounds$lists)
-    m$run <- new_runtime_state(project,conf=m$conf)
-
+    m = new_state()
+    m$run = new_runtime_state(project)
+    fn_conf = file.path(m$run$paths$project,FN_CONF)
+    m$conf = if (is.null(conf)) {
+                 if (!file.exists(fn_conf)) stop(errc_conf_file_absent)
+                 yaml::yaml.load_file(fn_conf)
+             } else conf 
+    m$conf$compounds$lists = label_cmpd_lists(m$conf$compounds$lists)
+    m$run = new_runtime_state(project,conf=m$conf)
     if (!is.null(datatab)) {
-        m$input$tab$mzml <- datatab
+        m$input$tab$mzml = datatab
     }
     
     m
@@ -188,18 +241,8 @@ get_fn_ftab <- function(m) {
     file.path(m$run$paths$project, FN_DATA_TAB)
 }
 
-init_state <- function(m) {
-    m$out$tab <- list()
-    m$input$datafiles <- NULL
-    m$input$tab$mzml <- EMPTY_MZML
-    lab <- gen_uniq_lab(list(),pref="L")
-    m$input$tab$lists <- list()
-    m$input$tab[[lab[[1]]]] <- EMPTY_CMPD_LIST
-    m$out$tab$comp <- EMPTY_COMP_TAB
-    m
-}
-
 base_conf <- function () {
+    ## Base state.
     m <- list()
     m$conf <- list(project=NA_character_,
                    compounds=list(lists=list(),
@@ -209,6 +252,7 @@ base_conf <- function () {
 }
 
 extr_conf <- function(m) {
+    ## Extraction defaults.
     m$conf$tolerance <- list("ms1 coarse"=MS1_ERR_COARSE,
                              "ms1 fine"=MS1_ERR_FINE,
                              "eic"=EIC_ERR,
@@ -219,6 +263,7 @@ extr_conf <- function(m) {
 }
 
 presc_conf <- function(m) {
+    ## Prescreening defaults.
     m$conf$prescreen <- list("ms1_int_thresh"=MS1_INT_THOLD,
                              "ms2_int_thresh"=MS2_INT_THOLD,
                              "s2n"=MS1_SN_FAC,
@@ -227,16 +272,25 @@ presc_conf <- function(m) {
 }
 
 fig_conf <- function(m) {
+    ## Plotting defaults.
     m$conf$figures$rt_min <- "NA_real_ min"
     m$conf$figures$rt_max <- "NA_real_ min"
     m$conf$figures$ext <- "pdf"
     m
 }
 
-new_conf <- function() fig_conf(
-                           presc_conf(
-                               extr_conf(
-                                   base_conf())))
+metfrag_conf <- function(m) {
+    ## MetFrag configuration defaults.
+    m$conf$metfrag$runtime = ""
+    m$conf$metfrag$db_path = ""
+    m
+}
+
+new_conf <- function() metfrag_conf(
+                           fig_conf(
+                               presc_conf(
+                                   extr_conf(
+                                       base_conf()))))
 
 encode_ms2_to_line <- function(ms2) {
     ## ms2 is a data.frame whose first column is mz and the second intensity.

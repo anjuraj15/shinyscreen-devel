@@ -684,16 +684,12 @@ prepare_app <- function(dir_before,
     init$projects <- norm_path(projects)
     init$metfrag_db_dir <- if (nchar(norm_path(metfrag_db_dir))>0L) norm_path(metfrag_db_dir) else ""
     init$metfrag_runtime <- if (nchar(norm_path(metfrag_runtime))>0L) norm_path(metfrag_runtime) else ""
-    if (!dir.exists(init$top_data_dir)) stop(errorCondition(paste0("Data directory (top_data_dir), currently `",
-                                                              init$top_data_dir,
-                                                              "` does not exist. Abort."),
-                                                       class = "top-data-dir-absent"))
-    if (!dir.exists(init$projects)) stop(errorCondition(paste0("User root directory (projects), currently `",
-                                                          init$projects,"` does not exist.. Abort."),
-                                                   class= "projects-absent"))
+    
+    if (!dir.exists(init$top_data_dir)) stop(errc_top_data_dir_absent)
+    if (!dir.exists(init$projects)) stop(errc_projects_absent)
 
-    if (nchar(init$metfrag_db_dir)>0L && !dir.exists(init$metfrag_db_dir)) stop(errorCondition("MetFrag DB directory specified, but cannot be found.", class = "mf-db-dir-absent"))
-    if (nchar(init$metfrag_runtime)>0L && !file.exists(init$metfrag_runtime)) stop(errorCondition("MetFrag jar file specified, but cannot be found.", class = "mf-jar-absent"))
+    if (nchar(init$metfrag_db_dir)>0L && !dir.exists(init$metfrag_db_dir)) stop(errc_mf_db_dir_absent)
+    if (nchar(init$metfrag_runtime)>0L && !file.exists(init$metfrag_runtime)) stop(errc_mf_jar_absent)
     
     dir_start <- tempfile("shinyscreen")
     dir.create(dir_start, recursive = T)
