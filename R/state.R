@@ -110,7 +110,7 @@ new_runtime_state <- function(project,conf=NULL) {
         dir.create(file.path(mfdir,"config"))
         dir.create(file.path(mfdir,"spec"))
         dir.create(file.path(mfdir,"log"))
-        run$metfrag$path=mfdir
+        run$metfrag$path="metfrag"
     }
 
     
