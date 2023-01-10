@@ -16,6 +16,8 @@
 
 ### PLOTTING: HELPERS
 
+## Bleed the eyes of normie hackers ;) .
+aes <- ggplot2::aes
 
 plot_fname <- function(kvals) {
     if (!is.null(kvals)) {
