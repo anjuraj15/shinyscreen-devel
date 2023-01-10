@@ -681,14 +681,18 @@ create_plots <- function(m) {
 #'     `rmarkdown::run` `render_args` argument.
 #' @param top_data_dir `character(1)`, a location on the server side
 #'     containing data directories.
-#' @param projects `character(1)`, a location on the server side containing project directories.
+#' @param metfrag_db_dir `character(1)`, a location on the server side
+#'     containing MetFrag databases.
+#' @param projects `character(1)`, a location on the server side
+#'     containing project directories.
 #' @return Nada.
 #' @author Todor Kondić
-app <- function(shiny_args=list(launch.browser=F),render_args=NULL,top_data_dir=getwd(),projects=getwd()) {
+app <- function(shiny_args=list(launch.browser=F),render_args=NULL,top_data_dir=getwd(),projects=getwd(),metfrag_db_dir="") {
     dir_before <- getwd()
     init <- list()
     init$dir_before <- dir_before
     init$top_data_dir <- norm_path(top_data_dir)
+    init$metfrag_db_dir <- metfrag_db_dir
     init$projects <- norm_path(projects)
     if (!dir.exists(init$top_data_dir)) stop("Data directory (top_data_dir), currently `",
                                         init$top_data_dir,
