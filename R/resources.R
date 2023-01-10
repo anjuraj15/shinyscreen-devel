@@ -323,4 +323,11 @@ METFRAG_PREPFLT_CHOICES = c("UnconnectedCompoundFilter","IsotopeFilter")
 METFRAG_PREPFLT_DEFAULT = c("UnconnectedCompoundFilter","IsotopeFilter")
 METFRAG_POSTPFLT_CHOICES = c("InChIKeyFilter")
 METFRAG_POSTPFLT_DEFAULT = c("InChIKeyFilter")
-
+METFRAG_STANDARD_SCORES = "FragmenterScore,OfflineIndividualMoNAScore" # AutomatedPeakFingerprintAnnotationScore,
+                                                                       # AutomatedLossFingerprintAnnotationScore
+                                                                       # supposedly
+                                                                       # do
+                                                                       # not
+                                                                       # work
+                                                                       # well.
+METFRAG_STANDARD_WEIGHTS = "1,1"

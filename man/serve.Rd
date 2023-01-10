@@ -4,16 +4,16 @@
 \alias{serve}
 \title{serve}
 \usage{
-serve(indir, topuserdir, user, host = "0.0.0.0", port = 7777)
+serve(top_data_dir, usersdir, user, host = "0.0.0.0", port = 7777)
 }
 \arguments{
-\item{indir}{\code{character(1)}, a location on the server side
+\item{top_data_dir}{\code{character(1)}, a location on the server side
 containing data directories.}
 
-\item{topuserdir}{\code{character(1)}, a location on the server side
+\item{usersdir}{\code{character(1)}, a location on the server side
 containing individual user directories.}
 
-\item{user}{\code{character(1)}, subdir of topuserdir.}
+\item{user}{\code{character(1)}, subdir of usersdir.}
 
 \item{host}{\code{character(1)}, optional, address where the page is
 served.}

@@ -673,41 +673,72 @@ create_plots <- function(m) {
     m
 }
 
+prepare_app <- function(dir_before,
+                        projects,
+                        top_data_dir,
+                        metfrag_db_dir,
+                        metfrag_runtime) {
+    init <- list()
+    init$dir_before <- dir_before
+    init$top_data_dir <- norm_path(top_data_dir)
+    init$projects <- norm_path(projects)
+    init$metfrag_db_dir <- if (nchar(norm_path(metfrag_db_dir))>0L) norm_path(metfrag_db_dir) else ""
+    init$metfrag_runtime <- if (nchar(norm_path(metfrag_runtime))>0L) norm_path(metfrag_runtime) else ""
+    if (!dir.exists(init$top_data_dir)) stop(errorCondition(paste0("Data directory (top_data_dir), currently `",
+                                                              init$top_data_dir,
+                                                              "` does not exist. Abort."),
+                                                       class = "top-data-dir-absent"))
+    if (!dir.exists(init$projects)) stop(errorCondition(paste0("User root directory (projects), currently `",
+                                                          init$projects,"` does not exist.. Abort."),
+                                                   class= "projects-absent"))
+
+    if (nchar(init$metfrag_db_dir)>0L && !dir.exists(init$metfrag_db_dir)) stop(errorCondition("MetFrag DB directory specified, but cannot be found.", class = "mf-db-dir-absent"))
+    if (nchar(init$metfrag_runtime)>0L && !file.exists(init$metfrag_runtime)) stop(errorCondition("MetFrag jar file specified, but cannot be found.", class = "mf-jar-absent"))
+    
+    dir_start <- tempfile("shinyscreen")
+    dir.create(dir_start, recursive = T)
+
+    dir.create(file.path(dir_start,'www'), showWarnings=F)
+    saveRDS(object = init,file=file.path(dir_start,"init.rds"))
+    file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),file.path(dir_start,"app_run.Rmd"))
+    file.copy(system.file(file.path("www","custom.css"),package = "shinyscreen"),file.path(dir_start,"www","custom.css"))
+    dir_start
+}
+
 #' @export
 #' @title app
-#' @param shiny_args `list`, optional list of arguments conveyed to
-#'     `rmarkdown::run` `shiny_args` argument.
-#' @param render_args `list`, optional list of arguments conveyed to
-#'     `rmarkdown::run` `render_args` argument.
+#' @param projects `character(1)`, a location on the server side
+#'     containing project directories.
 #' @param top_data_dir `character(1)`, a location on the server side
 #'     containing data directories.
 #' @param metfrag_db_dir `character(1)`, a location on the server side
 #'     containing MetFrag databases.
-#' @param projects `character(1)`, a location on the server side
-#'     containing project directories.
+#' @param metfrag_runtime `character(1)`, a location on the server side
+#'     of the MetFrag jar file.
+#' @param shiny_args `list`, optional list of arguments conveyed to
+#'     `rmarkdown::run` `shiny_args` argument.
+#' @param render_args `list`, optional list of arguments conveyed to
+#'     `rmarkdown::run` `render_args` argument.
 #' @return Nada.
 #' @author Todor Kondić
-app <- function(shiny_args=list(launch.browser=F),render_args=NULL,top_data_dir=getwd(),projects=getwd(),metfrag_db_dir="") {
-    dir_before <- getwd()
-    init <- list()
-    init$dir_before <- dir_before
-    init$top_data_dir <- norm_path(top_data_dir)
-    init$metfrag_db_dir <- metfrag_db_dir
-    init$projects <- norm_path(projects)
-    if (!dir.exists(init$top_data_dir)) stop("Data directory (top_data_dir), currently `",
-                                        init$top_data_dir,
-                                        "` does not exist. Abort.")
-    if (!dir.exists(init$projects)) stop("User root directory (projects), currently `",
-                                          init$projects,"` does not exist.. Abort.")
+app <- function(projects=getwd(),
+                top_data_dir=getwd(),
+                metfrag_db_dir="",
+                metfrag_runtime="",
+                shiny_args=list(launch.browser=F),
+                render_args=NULL) {
+    dir_before = getwd()
+    message("dir_before: ", dir_before)
+    message("top_data_dir: ", top_data_dir)
+    message("projects: ", projects)
+    dir_start = prepare_app(dir_before=dir_before,
+                            projects=projects,
+                            top_data_dir=top_data_dir,
+                            metfrag_db_dir=metfrag_db_dir,
+                            metfrag_runtime=metfrag_runtime)
+
     on.exit(expr=setwd(dir_before))
-    
-    dir_start <- tempfile("shinyscreen")
-    dir.create(dir_start, recursive = T)
     setwd(dir_start)
-    dir.create('www', showWarnings=F)
-    saveRDS(object = init,file="init.rds")
-    file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),"app_run.Rmd")
-    file.copy(system.file(file.path("www","custom.css"),package = "shinyscreen"),file.path("www","custom.css"))
     rmarkdown::run(file = "app_run.Rmd", shiny_args = shiny_args, render_args = render_args)
 }
 
