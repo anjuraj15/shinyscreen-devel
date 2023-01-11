@@ -12,12 +12,18 @@
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
 
-errc_mf_jar_absent = errorCondition("MetFrag jar file specified, but cannot be found.", class = "mf-jar-absent")
-errc_mf_db_dir_absent = errorCondition("MetFrag DB directory specified, but cannot be found.", class = "mf-db-dir-absent")
-errc_mf_db_file_absent = errorCondition("MetFrag DB file specified, but cannot be found.", class = "mf-db-dir-absent")
-
-errc_projects_absent = errorCondition("User root directory (projects), currently does not exist.. Abort.", class= "projects-absent")
-errc_top_data_dir_absent = errorCondition("Data directory (top_data_dir) does not exist. Abort.",
-                                         class = "top-data-dir-absent")
-
 errc_conf_file_absent <- errorCondition("There is no config file in the project directory.",class="conf-file-absent")
+
+check_notastring <- function(value,what) {
+    if (!is.character(value)) stop(errorCondition(paste0("The value (",str(value),") of, ",what," is not a character vector."),class=paste0(what,'-notastring')))
+}
+
+check_dir_absent <- function(dir,what) {
+    check_notastring(dir,what)
+    if (nchar(dir)>0L && !dir.exists(dir)) stop(errorCondition(paste0("The ", what, " directory --- ", dir, "--- does not exist, or cannot be found."), class=paste0(what,'-absent')))
+}
+
+check_file_absent <- function(file,what) {
+    check_notastring(file,what)
+    if (nchar(file)>0L && !file.exists(file)) stop(errorCondition(paste0("The ", what, " file --- ", file, "--- does not exist, or cannot be found."), class=paste0(what,'-absent')))
+}

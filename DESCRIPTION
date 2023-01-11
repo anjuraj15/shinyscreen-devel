@@ -48,6 +48,7 @@ Collate:
     'resources.R'
     'errors.R'
     'mix.R'
+    'envopts.R'
     'state.R'
     'plotting.R'
     'extraction.R'
