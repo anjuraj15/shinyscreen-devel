@@ -69,16 +69,6 @@ reinit_run_data <- function(projects,top_data_dir,project,run=NULL) {
     run
 }
 
-is_metfrag_available <- function(conf) {
-    rtime = conf$metfrag$runtime
-    dbpath = conf$metfrag$db_path
-
-    if (nchar(rtime)==0L && nchar(dbpath)==0L) return(F)
-    if (!file.exists(rtime)) stop(errc_mf_jar_absent)
-    if (!file.exists(dbpath)) stop(errc_mf_db_file_absent)
-    T
-}
-
 #' @title Create Runtime Configuration
 #' @details This is a part of the configuration that can only be
 #'     diagnosed at runtime.
@@ -87,31 +77,67 @@ is_metfrag_available <- function(conf) {
 #' @return `run` substate
 #' @author Todor Kondić
 #' @export
-new_runtime_state <- function(project,conf=NULL) {
-    
-    if (!is.character(project)) stop("Argument `project' must be a character string.")
-    if (!dir.exists(project)) stop('Project directory either does not exist, or is unreadable.')
+new_runtime_state <- function(project,envopts,conf=NULL) {
+
+    ## A little helper for metfrag.
+    .metfrag <- function(project_path) {
+
+
+        ## Defensive default.
+        metfrag = list(cando_local=F,
+                       cando_remote=F,
+                       cando_metfrag=F,
+                       path="",
+                       runtime="",
+                       db_path="")
+
+        ## If jar defined.
+        metfrag$runtime = envopts$metfrag$jar
+        if (nchar(metfrag$runtime)>0L) {
+            metfrag$cando_metfrag = T
+            metfrag$cando_remote = T
+        }
+
+        ## If `conf` not null, fully setup metfrag.
+        if (!is.null(conf)) {
+
+            ## Check for local DBs.
+            root = envopts$metfrag$db_dir
+            bname = conf$metfrag$db_file
+            if (nchar(bname)>0L) {
+                fpath = file.path(root,bname)
+                check_file_absent(fpath,what="metfrag-db-file")
+                metfrag$cando_local = T
+                metfrag$db_path = fpath
+            }
+
+            ## If MetFrag possible, set up the file structure.
+            if (metfrag$cando_metfrag) {
+                mfdir = file.path(project_path,"metfrag")
+                dir.create(mfdir)
+                dir.create(file.path(mfdir,"results"))
+                dir.create(file.path(mfdir,"config"))
+                dir.create(file.path(mfdir,"spec"))
+                dir.create(file.path(mfdir,"log"))
+                metfrag$path=mfdir
+
+            }
+            
+        }
+
+        metfrag
+    }
+
+    ## Check if all OK with project name.
+    check_notastring(project,"project")
     project_path = norm_path(project)
+    check_dir_absent(project_path,"project")
     project = basename(project)
     run = list()
     run$project = project
     run$paths$project = project_path
 
-    if (is.null(conf)) {
-        run$metfrag$available = F
-    } else {
-        run$metfrag$available = is_metfrag_available(conf)
-    }
-
-    if (run$metfrag$available) {
-        mfdir = file.path(run$paths$project,"metfrag")
-        dir.create(mfdir)
-        dir.create(file.path(mfdir,"results"))
-        dir.create(file.path(mfdir,"config"))
-        dir.create(file.path(mfdir,"spec"))
-        dir.create(file.path(mfdir,"log"))
-        run$metfrag$path="metfrag"
-    }
+    run$metfrag = .metfrag(project_path)
 
     
     run$paths$data = if (is.null(conf$paths$data)) {
@@ -120,36 +146,53 @@ new_runtime_state <- function(project,conf=NULL) {
         norm_path(conf$paths$data)
     }
     
-    
-    if (!dir.exists(run$paths$data)) stop("Path to data directory either does not exist, or is inaccesible.")
+    check_dir_absent(run$paths$data,"data-dir")
 
     if (!is.null(conf)) runtime_from_conf(run=run,conf=conf) else run
 
 }
 
-##' @export
-new_empty_project <- function(project) {
+#' @title Create a Bare Project
+#' @details This function creates a `shinyscreen` project with no
+#'     configuration. This is not enough to run a pipeline, but will
+#'     start things for incremental configuration using the GUI.
+#' @param project `character(1)`, path to a directory containing all the projects
+#' @param envopts `envopts`, an `envopts` object. 
+#' @return New project `state`
+#' @rdname new_project
+#' @seealso [shinyscreen::new_state()]
+#' @author Todor Kondić
+#' @export
+new_empty_project <- function(project,envopts) {
     m <- new_state()
-    m$run <- new_runtime_state(project)
+    m$run <- new_runtime_state(project,envopts)
     m
 }
 
 ##' @export
-##' @title Create a New Project
-##' @param project `character(1)`, path to a directory containing all the projects
-##' @param datatab `datatab`, a `data.table` describing data files, optional
+##' @title Create a New Fully Defined Project
+##' @param project `character(1)`, path to a directory containing all
+##'     the projects
+##' @param envopts `envopts`, an `envopts` object.
+##' @param datatab `datatab`, a `data.table` describing data files,
+##'     optional
 ##' @param conf `conf`, a configuration object, optional
+##' @details After the call to `new_project`, the `shinyscreen`
+##'     pipeline should be ready to start.
+##' @rdname new_project
+##' @seealso [shinyscreen::envopts()],
+##'     [shinyscreen::new_empty_project()]
 ##' @author Todor Kondić
-new_project <- function(project,datatab=NULL,conf=NULL) {
+new_project <- function(project,envopts,datatab=NULL,conf=NULL) {
     m = new_state()
-    m$run = new_runtime_state(project)
+    m$run = new_runtime_state(project,envopts=envopts)
     fn_conf = file.path(m$run$paths$project,FN_CONF)
     m$conf = if (is.null(conf)) {
-                 if (!file.exists(fn_conf)) stop(errc_conf_file_absent)
+                 check_file_absent(fn_conf,what="conf-file")
                  yaml::yaml.load_file(fn_conf)
              } else conf 
     m$conf$compounds$lists = label_cmpd_lists(m$conf$compounds$lists)
-    m$run = new_runtime_state(project,conf=m$conf)
+    m$run = new_runtime_state(project,envopts=envopts,conf=m$conf)
     if (!is.null(datatab)) {
         m$input$tab$mzml = datatab
     }
@@ -158,8 +201,8 @@ new_project <- function(project,datatab=NULL,conf=NULL) {
 }
 
 ##' @export
-import_project <- function(project) {
-    m <- new_project(project)
+import_project <- function(project,envopts=envopts) {
+    m <- new_project(project,envopts=envopts)
     fn_state <- file.path(m$run$paths$project,FN_STATE)
     if (!file.exists(fn_state)) stop(paste0("Cannot import project. State file ",fn_state," does not exist, or is unreadable."))
     lm <- readRDS(file=fn_state)
@@ -169,18 +212,7 @@ import_project <- function(project) {
 }
 
 ##' @export
-refresh_state <- function(m) {
-    m$run <- new_runtime_state(m$run$project,conf=m$conf)
-    m
-}
-
-##' @export
 new_rv_state <- function() react_v(m=list2rev(new_state()))
-
-
-
-
-
 
 write_conf <- function(m,fn) {
     m$conf$paths$data <- get_fn_ftab(m)
@@ -281,8 +313,7 @@ fig_conf <- function(m) {
 
 metfrag_conf <- function(m) {
     ## MetFrag configuration defaults.
-    m$conf$metfrag$runtime = ""
-    m$conf$metfrag$db_path = ""
+    m$conf$metfrag$db_file = ""
     m
 }
 

@@ -4,7 +4,7 @@
 \alias{new_runtime_state}
 \title{Create Runtime Configuration}
 \usage{
-new_runtime_state(project, conf = NULL)
+new_runtime_state(project, envopts, conf = NULL)
 }
 \arguments{
 \item{project}{\code{character(1)}, project title (and the directory name under \code{projects})}
