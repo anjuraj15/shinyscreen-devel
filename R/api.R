@@ -678,22 +678,24 @@ prepare_app <- function(dir_before,
                         top_data_dir,
                         metfrag_db_dir,
                         metfrag_runtime) {
+
+    ## Information that needs to be availabe to the shiny server.
     init <- list()
     init$dir_before <- dir_before
     init$top_data_dir <- norm_path(top_data_dir)
     init$projects <- norm_path(projects)
-    init$metfrag_db_dir <- if (nchar(norm_path(metfrag_db_dir))>0L) norm_path(metfrag_db_dir) else ""
-    init$metfrag_runtime <- if (nchar(norm_path(metfrag_runtime))>0L) norm_path(metfrag_runtime) else ""
-    
-    if (!dir.exists(init$top_data_dir)) stop(errc_top_data_dir_absent)
-    if (!dir.exists(init$projects)) stop(errc_projects_absent)
+    init$envopts = envopts(metfrag_db_dir=metfrag_db_dir,
+                           metfrag_jar=metfrag_runtime)
 
-    if (nchar(init$metfrag_db_dir)>0L && !dir.exists(init$metfrag_db_dir)) stop(errc_mf_db_dir_absent)
-    if (nchar(init$metfrag_runtime)>0L && !file.exists(init$metfrag_runtime)) stop(errc_mf_jar_absent)
-    
+    check_dir_absent(init$top_data_dir,what="top-data-dir")
+    check_dir_absent(init$projects,what="projects")
+
+
+    ## Create independent starting `home' for the server.
     dir_start <- tempfile("shinyscreen")
     dir.create(dir_start, recursive = T)
 
+    ## Copy startup files to that location.
     dir.create(file.path(dir_start,'www'), showWarnings=F)
     saveRDS(object = init,file=file.path(dir_start,"init.rds"))
     file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),file.path(dir_start,"app_run.Rmd"))
