@@ -15,33 +15,33 @@
 ##' @importFrom shiny validate
 ##' @importFrom promises future_promise
 ##' @importFrom promises %...>%
-react_v <- shiny::reactiveValues
-react_f <- shiny::reactive
-react_e <- shiny::eventReactive
-obsrv <- shiny::observe
-obsrv_e <- shiny::observeEvent
-isol <- shiny::isolate
+react_v = shiny::reactiveValues
+react_f = shiny::reactive
+react_e = shiny::eventReactive
+obsrv = shiny::observe
+obsrv_e = shiny::observeEvent
+isol = shiny::isolate
 
 
 celledit_values <- function(col,values,labels=NULL,addna=T) {
-    if (is.null(labels)) labels <- values
+    if (is.null(labels)) labels = values
     if (length(values)==0 || nchar(values)==0) return(character(0))
 
     
-    part1 <- mapply(function (v,l) {
+    part1 = mapply(function (v,l) {
         sprintf("{value: '%s', display: '%s'},",v,l)
     },
     head(values,-1),
     head(labels,-1),
     USE.NAMES = F)
     
-    part2 <- sprintf("{value: '%s', display: '%s'}",tail(values,1),tail(labels,1))
+    part2 = sprintf("{value: '%s', display: '%s'}",tail(values,1),tail(labels,1))
 
-    res <- if (length(part1)>0 || length(part2)>0) {
-               a1 <- c("{",sprintf("column: %s, ",col),
+    res = if (length(part1)>0 || length(part2)>0) {
+               a1 = c("{",sprintf("column: %s, ",col),
                        "type: 'list', ",
                        "options: [")
-               a2 <- c(part1,part2,"]","}")
+               a2 = c(part1,part2,"]","}")
                if (addna) c(a1,"{value: 'NA', display: 'NA'},",a2) else c(a1,a2)
                        
            } else character(0)
@@ -61,7 +61,7 @@ validate1 <- function(expr,msg) shiny::validate(shiny::need(expr,msg))
 
 path2vol <- function(path) {
     ## This function returns shinyFiles compatible volumes.
-    splits <- split_path(path)
+    splits = split_path(path)
     file.path(tail(splits,1),'')
 }
 
@@ -99,16 +99,16 @@ num_input_unit <- function(inputId,l1,l2,width=NUM_INP_WIDTH,...) {
 
 txt_file_input <- function(inputId,input,fileB,label,volumes,default = "") {
 
-    fnobj<-shinyFiles::parseFilePaths(roots = volumes,
+    fnobj=shinyFiles::parseFilePaths(roots = volumes,
                                       selection = input[[fileB]])
-    fn <- fnobj[['datapath']]
+    fn = fnobj[['datapath']]
     
     if (isThingFile(fn)) {
         shiny::textInput(inputId = inputId,
                          label = label,
                          value = fn)
     } else {
-        shiny::isolate(currFn <- input[[inputId]])
+        shiny::isolate(currFn = input[[inputId]])
         if (!isThingFile(currFn)) {
             shiny::textInput(inputId = inputId,
                              label = label,
@@ -124,8 +124,8 @@ txt_file_input <- function(inputId,input,fileB,label,volumes,default = "") {
 
 ##' @export
 mz_input <- function(input_mz,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_mz=0,def_unit="Da",pref="+/-") {
-    style <- "display: inline-block; vertical-align:top; width: "
-    stylel <- "display: inline-block; vertical-align:top;"
+    style = "display: inline-block; vertical-align:top; width: "
+    stylel = "display: inline-block; vertical-align:top;"
     style=paste0(style,width,"; ")
     shiny::div(shiny::div(style=stylel,
                           shiny::tags$label(pref,`for`=input_mz)),
@@ -147,8 +147,8 @@ rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,width_u=1-NUM_INP_W
 
     style="display: inline-block; vertical-align:top; width: "
     style=paste0(style,width,"; ")
-    stylel <- "display: inline-block; vertical-align:top;"
-    styleu <- paste0("display: inline-block; vertical-align:top; color: black; width: ",width_u,";")
+    stylel = "display: inline-block; vertical-align:top;"
+    styleu = paste0("display: inline-block; vertical-align:top; color: black; width: ",width_u,";")
     shiny::div(shiny::div(style=stylel,
                           shiny::tags$label(pref,`for`=input_rt)),
                shiny::div(style=style,
@@ -179,23 +179,23 @@ list2rev <- function(lst) {
 }
 
 mk_roots <- function(wd) local({
-    addons <- c("project"=norm_path(wd))
+    addons = c("project"=norm_path(wd))
     def_vol <- function() {
-             path <- addons[['project']]
-             svols <- shinyFiles::getVolumes()()
-             vol <- path2vol(path)
-             sel <- match(vol,svols)
-             res <- names(svols)[[sel]]
+             path = addons[['project']]
+             svols = shinyFiles::getVolumes()()
+             vol = path2vol(path)
+             sel = match(vol,svols)
+             res = names(svols)[[sel]]
              res
          }
     list(set=function (rts) {addons <<- rts},
          get=function () c(addons,shinyFiles::getVolumes()()),
          def_vol=def_vol,
          def_path=function() {
-             vol <- def_vol()
-             svols <- shinyFiles::getVolumes()()
-             pref <- svols[[vol]]
-             res <- sub(paste0(pref,'(.*)'),'\\1',addons[["project"]])
+             vol = def_vol()
+             svols = shinyFiles::getVolumes()()
+             pref = svols[[vol]]
+             res = sub(paste0(pref,'(.*)'),'\\1',addons[["project"]])
              message('Relative path: ',res)
              res
          })
@@ -204,7 +204,7 @@ mk_roots <- function(wd) local({
 #' @export
 merge2rev <- function(rev,lst) {
     crawllist <- function(lst,currname=""){
-    cls <- class(lst)
+    cls = class(lst)
 
     if (cls[[1]]=="list" && length(names(lst)) > 0)
         invisible(lapply(names(lst),
@@ -217,20 +217,20 @@ merge2rev <- function(rev,lst) {
         }
     }
 
-    vars <- unlist(crawllist(lst),recursive = T)
+    vars = unlist(crawllist(lst),recursive = T)
     vars
-    pref_r <- deparse(substitute(rev))
-    pref_l <- deparse(substitute(lst))
-    lhs <- paste0(pref_r,vars)
-    rhs <- paste0(pref_l,vars)
-    exprs <- Map(function (a,b) call("<-",
+    pref_r = deparse(substitute(rev))
+    pref_l = deparse(substitute(lst))
+    lhs = paste0(pref_r,vars)
+    rhs = paste0(pref_l,vars)
+    exprs = Map(function (a,b) call("<-",
                                      parse(text=a)[[1]],
                                      parse(text=b)[[1]]),
                  lhs,
                  rhs)
-    code <- quote({})
+    code = quote({})
     for (n in 1:length(exprs)) {
-        code[[n+1]] <- exprs[[n]]
+        code[[n+1]] = exprs[[n]]
         
     }
     code
@@ -241,10 +241,10 @@ merge2rev <- function(rev,lst) {
 ## names used in DTs.
 style_tab_cols <- function (dt) {
     
-    old <- colnames(dt)
-    new <- list()
+    old = colnames(dt)
+    new = list()
     for (nm in old) {
-        new <- c(switch(EXPR = nm,
+        new = c(switch(EXPR = nm,
                         "adduct" = "Adduct",
                         "tag" = "File Tag",
                         "ms1_int" = "I(ms1)",
@@ -266,13 +266,13 @@ style_tab_cols <- function (dt) {
 
 ## Format typical cols with typical digits for a DT `dt`.
 style_tab_signif <- function(dt) {
-    numcols <- c(mz=SIGNF_MZ,
+    numcols = c(mz=SIGNF_MZ,
                  "ms1_int"=SIGNF_I,
                  "ms2_int"=SIGNF_I,
                  "ms1_rt"=SIGNF_RT,
                  "ms2_rt"=SIGNF_RT)
     for (col in names(numcols)) {
-        dt <- tryCatch(DT::formatSignif(dt,col,digits = numcols[[col]]),
+        dt = tryCatch(DT::formatSignif(dt,col,digits = numcols[[col]]),
                        error = function(e) dt)
 
         }
@@ -359,19 +359,19 @@ render_dt <- function(data, server = T) {
 }
 
 dropdown_dt <- function(tab,callback,rownames=F,editable="cell",selection = "none",...) {
-    ce_path <- system.file("www", package = "shinyscreen")
-    dep <- htmltools::htmlDependency(
+    ce_path = system.file("www", package = "shinyscreen")
+    dep = htmltools::htmlDependency(
       "CellEdit", "1.0.19", ce_path, 
       script = "dataTables.cellEdit.js",
       stylesheet = "dataTables.cellEdit.css", 
       all_files = FALSE)
-    tab <- DT::datatable(tab,
+    tab = DT::datatable(tab,
                          callback = callback,
                          rownames = rownames,
                          selection = selection,
                          fillContainer = T,
                          ...)
-    tab$dependencies <- c(tab$dependencies, list(dep))
+    tab$dependencies = c(tab$dependencies, list(dep))
     tab
     
 }
@@ -381,7 +381,7 @@ simple_style_dt <- function(tab,
                             rownames = F,
                             ...) {
 
-    tab <- DT::datatable(tab,
+    tab = DT::datatable(tab,
                          rownames = rownames,
                          fillContainer=T,
                          ...)
@@ -405,18 +405,18 @@ scroll_style_dt <- function(tab,
 }
 
 scroll_dropdown_dt <- function(tab,callback,rownames=F,editable="cell",selection = "none",...) {
-    ce_path <- system.file("www", package = "shinyscreen")
-    dep <- htmltools::htmlDependency(
+    ce_path = system.file("www", package = "shinyscreen")
+    dep = htmltools::htmlDependency(
       "CellEdit", "1.0.19", ce_path, 
       script = "dataTables.cellEdit.js",
       stylesheet = "dataTables.cellEdit.css", 
       all_files = FALSE)
-    tab <- scroll_style_dt(tab,
+    tab = scroll_style_dt(tab,
                            callback = callback,
                            rownames = rownames,
                            selection = selection,
                            ...)
-    tab$dependencies <- c(tab$dependencies, list(dep))
+    tab$dependencies = c(tab$dependencies, list(dep))
     tab
     
 }
@@ -425,22 +425,22 @@ scroll_dropdown_dt <- function(tab,callback,rownames=F,editable="cell",selection
 mk_shinyscreen_server <- function(projects,init) {
     ## This used to be context='setup'.
     ## library(shinydashboard)
-    def_state <- new_state()
-    def_datafiles <- shinyscreen:::dtable(file=character(0),
+    def_state = new_state()
+    def_datafiles = shinyscreen:::dtable(file=character(0),
                                           tag=character(0))
-    def_datatab <- shinyscreen:::dtable("tag"=factor(),
+    def_datatab = shinyscreen:::dtable("tag"=factor(),
                                         "adduct"=factor(levels=shinyscreen:::DISP_ADDUCTS),
                                         "set"=factor())
 
-    def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
+    def_summ_subset = shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
                                             "Select"=factor("ignore",levels=shinyscreen:::SUBSET_VALS))
     ## RMassBank masks shiny::validate. Unmask it.
-    validate <- shiny::validate
-    ## def_state$input$tab$tags <- def_datatab
+    validate = shiny::validate
+    ## def_state$input$tab$tags = def_datatab
 
 
     ## The reactive world.
-    rvs <- reactiveValues(m=def_state,
+    rvs = reactiveValues(m=def_state,
                           gui=create_gui(),
                           status=reactiveValues(is_extracted_stat=NA_character_,
                                                 is_qa_stat=NA_character_,
@@ -453,55 +453,55 @@ mk_shinyscreen_server <- function(projects,init) {
                                                 s2n_stat=NA_character_,
                                                 ret_time_shift_tol_stat=NA_character_))
     
-    compl_sets <- eventReactive(rvs$m$input$tab$setid,
+    compl_sets = eventReactive(rvs$m$input$tab$setid,
                                 rvs$m$input$tab$setid[,unique(set)])
 
 
     ## Reactive values to support some of the UI elements.
 
     ## Modifiable version.
-    the_summ_subset <- data.table::copy(def_summ_subset)
+    the_summ_subset = data.table::copy(def_summ_subset)
     
     
     ## Re-definitions.
-    PLOT_FEATURES <- shinyscreen:::PLOT_FEATURES
+    PLOT_FEATURES = shinyscreen:::PLOT_FEATURES
 
     ## Plotting parameters.
 
     ## Transient rt range.
-    rv_rtrange <- reactiveValues(min=Inf,
+    rv_rtrange = reactiveValues(min=Inf,
                                  max=-Inf)
 
     ## Transient mz range.
-    rv_mzrange <- reactiveValues(min=NA,
+    rv_mzrange = reactiveValues(min=NA,
                                  max=NA)
 
 
 
     
     ## Other transient values.
-    rv_tran <- reactiveValues(qa_compsel_tab=dtable(), # QA clickable table for MS1.
+    rv_tran = reactiveValues(qa_compsel_tab=dtable(), # QA clickable table for MS1.
                               qa_ms2sel_tab=dtable())  # QA clickable table for MS2.
 
 
-    rv_projects <- reactiveVal(projects)
+    rv_projects = reactiveVal(projects)
     ## Some more setup.
-    ord_nms <- gsub("^-(.+)","\\1",DEF_INDEX_SUMM)
-    ord_asc <- grepl("^-.+",DEF_INDEX_SUMM)
-    ord_asc <- factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
-    def_ord_summ <- shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
+    ord_nms = gsub("^-(.+)","\\1",DEF_INDEX_SUMM)
+    ord_asc = grepl("^-.+",DEF_INDEX_SUMM)
+    ord_asc = factor(ifelse(ord_asc, "descending", "ascending"),levels = c("ascending","descending"))
+    def_ord_summ = shinyscreen:::dtable("Column Name"=ord_nms,"Direction"=ord_asc)
     ## Modifiable version.
-    the_ord_summ <- data.table::copy(def_ord_summ)
+    the_ord_summ = data.table::copy(def_ord_summ)
 
     gen_compsel_tab <- function(summ,criteria=character(0)) {
         ## Given summary table, create a table with only adduct/tag/ID
         ## entries and associated MS1 quantities.
-        seln <- logical(length(criteria))
-        res <-if (length(seln)>0) {
-                  names(seln) <-criteria
-                  seln[] <- T
-                  critab <- do.call(data.table::data.table,as.list(seln))
-                  summ <- summ[critab,on=names(critab)]
+        seln = logical(length(criteria))
+        res =if (length(seln)>0) {
+                  names(seln) =criteria
+                  seln[] = T
+                  critab = do.call(data.table::data.table,as.list(seln))
+                  summ = summ[critab,on=names(critab)]
                   summ[,unique(.SD),.SDcol=c("adduct","tag","ID",
                                              "mz","ms1_rt","ms1_int",
                                              "Name")]
@@ -519,7 +519,7 @@ mk_shinyscreen_server <- function(projects,init) {
     gen_qa_compsel_tab <- function(clicked,compsel,summ) {
         ## Given the info about what was clicked in compsel table,
         ## retrieve QA information and return it as a table.
-        info <- get_key_sel_cmpd(clicked,compsel)
+        info = get_key_sel_cmpd(clicked,compsel)
         if (NROW(info$key)==0) return (dtable(qa_ms1_exists=character(0),
                                                   qa_ms1_good_int=character(0),
                                                   qa_ms1_above_noise=character(0)))
@@ -530,7 +530,7 @@ mk_shinyscreen_server <- function(projects,init) {
     }
 
     gen_ms2_sel <- function(tab,sel_dt) {
-        triv <- dtable(an=character(0),
+        triv = dtable(an=character(0),
                        ms2_rt=character(0),
                        ms2_int=character(0),
                        CE=character(0),
@@ -538,9 +538,9 @@ mk_shinyscreen_server <- function(projects,init) {
                        qa_ms2_good_int=character(0),
                        qa_ms2_near=character(0),
                        qa_ms2_exists=character(0))
-        coln <- colnames(triv)
+        coln = colnames(triv)
         
-        res <- if (NROW(sel_dt)>0) {
+        res = if (NROW(sel_dt)>0) {
                    
                    tab[sel_dt,..coln,on=c("adduct","tag","ID")]
                } else triv
@@ -558,11 +558,11 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
     gen_ms2_sel_spec <- function(tab,sel_dt) {
-        triv <- dtable(mz=numeric(0),
+        triv = dtable(mz=numeric(0),
                        intensity=numeric(0))
-        coln <- colnames(triv)
+        coln = colnames(triv)
         
-        res <- if (NROW(sel_dt)>0) {
+        res = if (NROW(sel_dt)>0) {
                    
                    tab[sel_dt,..coln,on=c("adduct","tag","ID","an")]
                } else triv
@@ -572,7 +572,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
     gen_plot_comp_sel <- function(summ) {
-        res <- summ[,unique(.SD),.SDcol=c("adduct","ID",
+        res = summ[,unique(.SD),.SDcol=c("adduct","ID",
                                           "mz",
                                           "Name")]
         data.table::setkeyv(res,c("adduct", "mz"))
@@ -590,24 +590,24 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
     plot_boiler <- function(m,tab,row,plot_fun,rv_x_range,adapt_x_range=T) {
-        plot_group <- m$conf$figures$grouping$group
-        plot_plot <- m$conf$figures$grouping$plot
+        plot_group = m$conf$figures$grouping$group
+        plot_plot = m$conf$figures$grouping$plot
         req(row)
-        idx <- get_plot_idx(tab = tab,
+        idx = get_plot_idx(tab = tab,
                             plot_group = plot_group,
                             plot_plot = plot_plot,
                             row =row)
-        fig <- plot_fun(m=m,plot_index = idx)
-        x_range <- if (adapt_x_range) c(rv_x_range$min,rv_x_range$max) else NULL
+        fig = plot_fun(m=m,plot_index = idx)
+        x_range = if (adapt_x_range) c(rv_x_range$min,rv_x_range$max) else NULL
         adapt_range(fig,x_range=x_range)
     }
 
 
     get_plot_idx <- function(tab,plot_group,plot_plot,row) {
-        pg <- tab[row,..plot_group]
-        pp <- tab[row,..plot_plot]
-        res <- c(pg,pp)
-        names(res) <- c(plot_group,plot_plot)
+        pg = tab[row,..plot_group]
+        pp = tab[row,..plot_plot]
+        res = c(pg,pp)
+        names(res) = c(plot_group,plot_plot)
         res
         
     }
@@ -632,20 +632,20 @@ mk_shinyscreen_server <- function(projects,init) {
 
     get_pos_from_dblclick <- function(pos,currrows=NULL) {
         if (length(pos) == 0) return(NULL)
-        nr <- pos$row
-        nc <- pos$col
-        rows <- if (!is.null(currrows)) currrows[nr] else nr
+        nr = pos$row
+        nc = pos$col
+        rows = if (!is.null(currrows)) currrows[nr] else nr
         data.frame(row=rows,col=nc)
     }
 
 
     
     get_tab_sel <- function(clicked,selector,keys) {
-        nr <- clicked$row
-        nc <- clicked$col
-        colnms <- names(selector)
-        the_name <- colnms[[nc]]
-        sel_row <- selector[nr,..keys]
+        nr = clicked$row
+        nc = clicked$col
+        colnms = names(selector)
+        the_name = colnms[[nc]]
+        sel_row = selector[nr,..keys]
         list(col=the_name,
              key=sel_row)
     }
@@ -673,11 +673,11 @@ mk_shinyscreen_server <- function(projects,init) {
         ## Those that we don't care about when saving state; Usually
         ## can be inferred by the program.
 
-        rv_extr_flag <- reactiveVal(F)
-        rv_presc_flag <- reactiveVal(F)
-        rtimer1000 <- reactiveTimer(1000)
-        rtimer_presc <- reactiveTimer(500)
-        rv_summ_subset <- reactiveVal(data.frame()) # Used to generate sel_spec list (among other things?).
+        rv_extr_flag = reactiveVal(F)
+        rv_presc_flag = reactiveVal(F)
+        rtimer1000 = reactiveTimer(1000)
+        rtimer_presc = reactiveTimer(500)
+        rv_summ_subset = reactiveVal(data.frame()) # Used to generate sel_spec list (among other things?).
 
         
         ## REACTIVE FUNCTIONS
@@ -720,10 +720,10 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_get_cindex <- reactive({
             input$cmt_changes_b
             rvs$status$is_qa_stat
-            s1 <- input$sort1
-            s2 <- input$sort2
-            s3 <- input$sort3
-            s4 <- input$sort4
+            s1 = input$sort1
+            s2 = input$sort2
+            s3 = input$sort3
+            s4 = input$sort4
             cindex_from_input(clabs=input$cindex_group,
                               sort_catg=c(s1,s2,s3,s4),
                               summ=req(rvs$m$out$tab$summ))
@@ -733,7 +733,7 @@ mk_shinyscreen_server <- function(projects,init) {
         ## Get current grouping categories (`cindex key').
         rf_get_cindex_key <- reactive({
 
-            cind <- rf_get_cindex()
+            cind = rf_get_cindex()
             req(NROW(cind)>0L)
             
             get_cindex_key(cind)
@@ -741,40 +741,40 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Get currently selected cindex values as a list.
         rf_get_cindex_kval <- reactive({
-            cind <- rf_get_cindex()
-            key <- rf_get_cindex_key()
-            row <- input$cindex_rows_selected
+            cind = rf_get_cindex()
+            key = rf_get_cindex_key()
+            row = input$cindex_rows_selected
             get_cindex_kval(cind,row,key)
         })
 
         ## Get the labels which will define plot curves in EIC MS1.
         rf_get_cindex_labs <- reactive({
-            key <- rf_get_cindex_key()
-            res <- setdiff(CINDEX_BY,key)
+            key = rf_get_cindex_key()
+            res = setdiff(CINDEX_BY,key)
             if (length(res)!=0L) res else CINDEX_BY
         })
 
         rf_get_cindex_parents <- reactive({
             rvs$m
             isolate({
-                ms1 <- rvs$m$extr$ms1
-                ms2 <- rvs$m$extr$ms2
-                summ <- req(rvs$m$out$tab$summ)
+                ms1 = rvs$m$extr$ms1
+                ms2 = rvs$m$extr$ms2
+                summ = req(rvs$m$out$tab$summ)
             })
 
-            key <- req(rf_get_cindex_key())
-            kvals <- req(rf_get_cindex_kval())
-            labs <- req(rf_get_cindex_labs())
+            key = req(rf_get_cindex_key())
+            kvals = req(rf_get_cindex_kval())
+            labs = req(rf_get_cindex_labs())
             get_cindex_parents(summ,key,kvals,labs)
 
         })
 
         rf_select_from_summ <- reactive({
             input$cmt_changes_b
-            summ <- req(rvs$m$out$tab$summ)
-            parent <- input$sel_parent_trace
-            kvals <- req(rf_get_cindex_kval())
-            ptab <- rf_get_cindex_parents()
+            summ = req(rvs$m$out$tab$summ)
+            parent = input$sel_parent_trace
+            kvals = req(rf_get_cindex_kval())
+            ptab = rf_get_cindex_parents()
             if (isTruthy(parent)) {
                 get_summ_subset(summ=summ,
                                 ptab=ptab,
@@ -785,12 +785,12 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         rf_get_ltab <- reactive({
-            tab <- rf_select_from_summ()
+            tab = rf_select_from_summ()
             if (NROW(tab)!=0) get_ltab(tab) else data.frame()
         })
 
         rf_get_ltab_entry <- reactive({
-            ltab <- rf_get_ltab()
+            ltab = rf_get_ltab()
             if (NROW(ltab)>0L && isTruthy(input$sel_spec)) {
                 ltab[item==input$sel_spec]
             } else data.frame()
@@ -802,72 +802,72 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Calculate the palette.
         rf_colrdata <- reactive({
-            keys <- req(rf_get_cindex_key())
-            labs <- req(rf_get_cindex_labs())
-            comp <- req(rvs$m$out$tab$comp)
+            keys = req(rf_get_cindex_key())
+            labs = req(rf_get_cindex_labs())
+            comp = req(rvs$m$out$tab$comp)
             define_colrdata(comp,labs)
         })
         
         rf_get_rtrange <- reactive({
-            x1 <- input$plot_rt_min
-            x2 <- input$plot_rt_max
+            x1 = input$plot_rt_min
+            x2 = input$plot_rt_max
 
-            if (is.na(x1)) x1 <- NA_real_
-            if (is.na(x2)) x2 <- NA_real_
+            if (is.na(x1)) x1 = NA_real_
+            if (is.na(x2)) x2 = NA_real_
             c(x1,x2)
         })
 
         rf_get_irange <- reactive({
-            y1 <- input$plot_i_min
-            y2 <- input$plot_i_max
+            y1 = input$plot_i_min
+            y2 = input$plot_i_max
 
-            if (is.na(y1)) y1 <- NA_real_
-            if (is.na(y2)) y2 <- NA_real_
+            if (is.na(y1)) y1 = NA_real_
+            if (is.na(y2)) y2 = NA_real_
             c(y1,y2)
 
         })
         
         rf_plot_eic_ms1 <- reactive({
             isolate({
-                ms1 <- rvs$m$extr$ms1
-                summ <- rvs$m$out$tab$summ
+                ms1 = rvs$m$extr$ms1
+                summ = rvs$m$out$tab$summ
 
             })
             req(NROW(summ)>0L)
             req(NROW(ms1)>0L)
 
 
-            p <- make_eic_ms1_plot(ms1,summ,kvals=rf_get_cindex_kval(),
+            p = make_eic_ms1_plot(ms1,summ,kvals=rf_get_cindex_kval(),
                                    labs=rf_get_cindex_labs(),
                                    asp=PLOT_EIC_ASPECT,
                                    rt_range=rf_get_rtrange(),
                                    i_range=rf_get_irange(),
                                    colrdata = rf_colrdata())
 
-            p <- if (!is.null(p)) p else empty_plot("Nothing to plot")
+            p = if (!is.null(p)) p else empty_plot("Nothing to plot")
 
             p
         })
 
         rf_get_ms2_eic_rtrange <- reactive({
-            pms1 <- rf_plot_eic_ms1()
-            drng <- range(pms1$data$rt)
-            urng <- rf_get_rtrange()
-            if (is.na(urng[[1]])) urng[[1]] <- drng[[1]]
-            if (is.na(urng[[2]])) urng[[2]] <- drng[[2]]
+            pms1 = rf_plot_eic_ms1()
+            drng = range(pms1$data$rt)
+            urng = rf_get_rtrange()
+            if (is.na(urng[[1]])) urng[[1]] = drng[[1]]
+            if (is.na(urng[[2]])) urng[[2]] = drng[[2]]
             urng
         })
 
         rf_plot_eic_ms2 <- reactive({
             isolate({
-                summ <- rvs$m$out$tab$summ
+                summ = rvs$m$out$tab$summ
             })
             req(NROW(summ)>0L)
 
 
-            gg <- rf_plot_eic_ms1()
-            rt_rng <- range(gg$data$rt)
-            p <- make_eic_ms2_plot(summ,
+            gg = rf_plot_eic_ms1()
+            rt_rng = range(gg$data$rt)
+            p = make_eic_ms2_plot(summ,
                                    kvals=rf_get_cindex_kval(),
                                    labs=rf_get_cindex_labs(),
                                    rt_range = rf_get_ms2_eic_rtrange(),
@@ -875,34 +875,34 @@ mk_shinyscreen_server <- function(projects,init) {
                                    colrdata=rf_colrdata())
 
             
-            p <- if (!is.null(p)) p else empty_plot("Nothing to plot")
+            p = if (!is.null(p)) p else empty_plot("Nothing to plot")
             p
         })
 
         rf_plot_struct <- reactive({
-            cind <- rf_get_cindex()
-            key <- rf_get_cindex_key()
+            cind = rf_get_cindex()
+            key = rf_get_cindex_key()
             req(NROW(cind)>0L)
-            row <- req(input$cindex_row_last_clicked)
-            id <- rowtab <- cind[row][,..key][["ID"]][[1]]
-            smi <- rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
+            row = req(input$cindex_row_last_clicked)
+            id = rowtab = cind[row][,..key][["ID"]][[1]]
+            smi = rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
             make_struct_plot(smi)
         })
 
         rf_plot_spec_ms2 <- reactive({
             isolate({
-                summ <- rvs$m$out$tab$summ
-                ms2 <- rvs$m$extr$ms2
+                summ = rvs$m$out$tab$summ
+                ms2 = rvs$m$extr$ms2
             })
             req(NROW(summ)>0L)
             req(NROW(ms2)>0L)
-            p <- make_spec_ms2_plot(ms2,
+            p = make_spec_ms2_plot(ms2,
                                     summ,
                                     kvals=req(rf_get_cindex_kval()),
                                     labs=req(rf_get_cindex_labs()),
                                     colrdata=rf_colrdata())
 
-            p <- if (!is.null(p)) p else empty_plot("Nothing to plot")
+            p = if (!is.null(p)) p else empty_plot("Nothing to plot")
             p
 
         })
@@ -912,7 +912,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## OBSERVERS: PROJECT MANAGEMENT
         observe({
-            top_data_dir <- rvs$gui$paths$project
+            top_data_dir = rvs$gui$paths$project
             req(isTruthy(top_data_dir) && dir.exists(top_data_dir))
             updateSelectInput(session = session,
                               inputId = "comp_list",
@@ -938,7 +938,7 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         observe({
-            top_data_dir <- rvs$gui$paths$data
+            top_data_dir = rvs$gui$paths$data
             req(isTruthy(top_data_dir) && dir.exists(top_data_dir))
             
             updateSelectInput(session = session,
@@ -949,8 +949,8 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Update projects and data directories every second.
         observeEvent(rtimer1000(),{
-            projects <- rv_projects()
-            curr_projects <- list.dirs(path=init$projects, full.names = F, recursive = F)
+            projects = rv_projects()
+            curr_projects = list.dirs(path=init$projects, full.names = F, recursive = F)
             if (length(union(curr_projects,projects)) != length(intersect(curr_projects,projects))) {
                 updateSelectInput(session=session,
                                   inputId="proj_list",
@@ -967,29 +967,29 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$load_proj_b,{
             ## A single place where a new project is initialised, or
             ## loaded. Everything else works off rvs$m and rvs$gui.
-            wd <- input$proj_list
+            wd = input$proj_list
             req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
-            fullwd <- file.path(init$projects,wd)
+            fullwd = file.path(init$projects,wd)
             check_dir_absent(fullwd,what="project")
             ## Load saved state if existing, create if it does not.
-            fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
-            fn_state <- file.path(fullwd,FN_STATE)
+            fn_packed_state = file.path(fullwd,FN_GUI_STATE)
+            fn_state = file.path(fullwd,FN_STATE)
             if (file.exists(fn_packed_state)) {
                 message("Loading project: ",wd)
-                pack <- readRDS(file=fn_packed_state)
-                rvs$gui <- unpack_app_state(session=session,
+                pack = readRDS(file=fn_packed_state)
+                rvs$gui = unpack_app_state(session=session,
                                             input=input,
                                             top_data_dir=init$top_data_dir,
                                             project_path=fullwd,
                                             packed_state=pack)
                 ## Load computational state.
-                rvs$m <- readRDS(file=fn_state)
+                rvs$m = readRDS(file=fn_state)
                 
                 ## If prescreen config invalid, reinit.
-                if (length(rvs$m$conf$prescreen)==0) rvs$m$conf <- input2conf_prescreen(input=input,conf=rvs$m$conf)
+                if (length(rvs$m$conf$prescreen)==0) rvs$m$conf = input2conf_prescreen(input=input,conf=rvs$m$conf)
 
                 ## Update status variables.
-                m <- rvs$m
+                m = rvs$m
                 rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
                 rvs$status$ms1_fine_stat = m$conf$tolerance[["ms1 fine"]]
                 rvs$status$ms1_eic_stat = m$conf$tolerance[["eic"]]
@@ -998,33 +998,33 @@ mk_shinyscreen_server <- function(projects,init) {
                 rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
                 rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
                 rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
-                if (NROW(m$extr$ms1)>0L) rvs$status$is_extracted_stat <- "Yes."
-                if (NROW(m$out$tab$summ)>0L) rvs$status$is_qa_stat <- "Yes."
+                if (NROW(m$extr$ms1)>0L) rvs$status$is_extracted_stat = "Yes."
+                if (NROW(m$out$tab$summ)>0L) rvs$status$is_qa_stat = "Yes."
 
             } else {
                 message("Initialising project: ",wd)
-                rvs$gui <- create_gui(project_path=fullwd)
+                rvs$gui = create_gui(project_path=fullwd)
             }
             message("project: ",rvs$gui$project())
         }, label = "project-b")
 
         observeEvent(input$save_proj_b,{
-            fn <- file.path(rvs$gui$paths$project,FN_STATE)
-            fn_packed_state <- file.path(rvs$gui$paths$project,FN_GUI_STATE)
-            fn_tab <- file.path(rvs$gui$paths$project,FN_DATA_TAB)
-            fn_conf <-file.path(rvs$gui$paths$project,FN_CONF)
+            fn = file.path(rvs$gui$paths$project,FN_STATE)
+            fn_packed_state = file.path(rvs$gui$paths$project,FN_GUI_STATE)
+            fn_tab = file.path(rvs$gui$paths$project,FN_DATA_TAB)
+            fn_conf =file.path(rvs$gui$paths$project,FN_CONF)
             shinymsg(paste("Saving state to: ",fn,"Please wait.",sep="\n"))
             message("(config) Saving state to: ", paste(fn,collapse = ","))
             message("(config) Saving app state to: ", fn_packed_state)
-            fn <- if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
+            fn = if (length(fn)>0 && nchar(fn[[1]])>0) fn else ""
 
             if (nchar(fn) > 0) {
-                m <- rvs$m
+                m = rvs$m
                 yaml::write_yaml(m$conf,
                                  file = fn_conf)
                 shinyscreen:::tab2file(tab=gui2datatab(rvs$gui),file=fn_tab)
                 
-                pack <- pack_app_state(input=input,gui=rvs$gui)
+                pack = pack_app_state(input=input,gui=rvs$gui)
                 saveRDS(pack,file=fn_packed_state)
                 saveRDS(rvs$m,file=fn)
                 
@@ -1033,9 +1033,9 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         observeEvent(input$sel_data_dir_b,{
-            data_dir <- input$top_data_dir_list
+            data_dir = input$top_data_dir_list
             req(isTruthy(data_dir))
-            rvs$gui$paths$data <- file.path(init$top_data_dir, data_dir)
+            rvs$gui$paths$data = file.path(init$top_data_dir, data_dir)
             
             message("Selected data dir:",rvs$gui$paths$data)
 
@@ -1044,37 +1044,37 @@ mk_shinyscreen_server <- function(projects,init) {
         
 
         observeEvent(input$comp_list_b, {
-            sels <- input$comp_list
+            sels = input$comp_list
             req(isTruthy(sels))
-            rvs$gui$compounds$lists <- sels
+            rvs$gui$compounds$lists = sels
             message("(config) Selected compound lists: ", paste(sels,collapse = ","))
         })
 
         observeEvent(input$set_list_b, {
-            sels <- input$set_list
+            sels = input$set_list
             req(isTruthy(sels))
             message("(config) Selected set lists: ", paste(sels,collapse = ","))
-            rvs$gui$compounds$sets <- sels
+            rvs$gui$compounds$sets = sels
         })
 
         observeEvent(input$datafiles_b,{
-            new_file <- input$dfile_list
+            new_file = input$dfile_list
             if (isTruthy(new_file)) {
-                curr_file <- rvs$gui$datatab$file
-                curr_tag <- rvs$gui$datatab$tag
-                curr_adduct <- rvs$gui$datatab$adduct
-                curr_set <- rvs$gui$datatab$set
+                curr_file = rvs$gui$datatab$file
+                curr_tag = rvs$gui$datatab$tag
+                curr_adduct = rvs$gui$datatab$adduct
+                curr_set = rvs$gui$datatab$set
 
-                nb <- length(curr_file)
-                nd <- length(new_file)
-                res_file <- c(curr_file,new_file)
-                res_adduct <- c(curr_adduct,rep(NA_character_,nd))
-                res_set <- c(curr_set,rep(NA_character_,nd))
+                nb = length(curr_file)
+                nd = length(new_file)
+                res_file = c(curr_file,new_file)
+                res_adduct = c(curr_adduct,rep(NA_character_,nd))
+                res_set = c(curr_set,rep(NA_character_,nd))
 
-                rvs$gui$datatab$file <- res_file
-                rvs$gui$datatab$tag <- add_new_def_tag(as.character(rvs$gui$datatab$tag),nd)
-                rvs$gui$datatab$adduct <- res_adduct
-                rvs$gui$datatab$set <- res_set
+                rvs$gui$datatab$file = res_file
+                rvs$gui$datatab$tag = add_new_def_tag(as.character(rvs$gui$datatab$tag),nd)
+                rvs$gui$datatab$adduct = res_adduct
+                rvs$gui$datatab$set = res_set
             }
 
             updateSelectInput(session=session,
@@ -1086,39 +1086,39 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$rem_dfiles_b,{
             if (isTruthy(input$datafiles_rows_selected)) {
-                rmv <- input$datafiles_rows_selected
-                rvs$gui$datatab$file <- rvs$gui$datatab$file[-rmv]
-                rvs$gui$datatab$set <- rvs$gui$datatab$set[-rmv]
-                rvs$gui$datatab$adduct <- rvs$gui$datatab$adduct[-rmv]
-                rvs$gui$datatab$tag <- rvs$gui$datatab$tag[-rmv]
+                rmv = input$datafiles_rows_selected
+                rvs$gui$datatab$file = rvs$gui$datatab$file[-rmv]
+                rvs$gui$datatab$set = rvs$gui$datatab$set[-rmv]
+                rvs$gui$datatab$adduct = rvs$gui$datatab$adduct[-rmv]
+                rvs$gui$datatab$tag = rvs$gui$datatab$tag[-rmv]
             }
         })
         
         observeEvent(input$datafiles_cell_edit,{
-            df <- gen_dfiles_tab(rvs$gui)
-            df <- DT::editData(df,
+            df = gen_dfiles_tab(rvs$gui)
+            df = DT::editData(df,
                                input$datafiles_cell_edit,
                                rownames = F)
-            rvs$gui$datatab$file <- as.character(df$file)
-            rvs$gui$datatab$tag <- as.character(df$tag)
+            rvs$gui$datatab$file = as.character(df$file)
+            rvs$gui$datatab$tag = as.character(df$tag)
             
         }, label = "datafiles-edit")
 
         observeEvent(input$datatab_cell_edit,{
-            df <- gen_dtab(rvs$gui$datatab,sets=rf_get_sets())
-            z <- DT::editData(df,
+            df = gen_dtab(rvs$gui$datatab,sets=rf_get_sets())
+            z = DT::editData(df,
                               input$datatab_cell_edit,
                               rownames = F)
 
-            rvs$gui$datatab$set <- z$set
-            rvs$gui$datatab$adduct <- z$adduct
+            rvs$gui$datatab$set = z$set
+            rvs$gui$datatab$adduct = z$adduct
         }, label = "datatab-edit")
 
         ## OBSERVERS: CONFIGURATION AND EXTRACTION
         
         observeEvent(input$extract_b,{
-            rvs$m <- app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
-            m <- rvs$m
+            rvs$m = app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
+            m = rvs$m
             shinymsg("Extraction has started. This may take a while.")
             rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
             rvs$status$ms1_fine_stat = m$conf$tolerance[["ms1 fine"]]
@@ -1137,12 +1137,12 @@ mk_shinyscreen_server <- function(projects,init) {
             isolate({
                 if (rv_extr_flag()) {
                     rv_extr_flag(F)
-                    m <-rvs$m
+                    m =rvs$m
                     
                     promises::future_promise(run(m=m,phases=c("setup","comptab","extract"))) %...>% {
                         rvs$m = .
                         rvs$status$is_extracted_stat = "Yes."
-                        fn_c_state <- file.path(rvs$m$run$paths$project,
+                        fn_c_state = file.path(rvs$m$run$paths$project,
                                                 paste0("extract.",shinyscreen:::FN_CONF))
                         yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
                         message("(extract) Done extracting.")
@@ -1160,7 +1160,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$presc_b,{
             if (NROW(rvs$m$extr$ms1)>0L) {
-                rvs$m <- app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
+                rvs$m = app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
                 rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh"]]
                 rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
                 rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
@@ -1183,7 +1183,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 if (rv_presc_flag()) {
                     shinymsg("Prescreening started. Please wait.")
                     rv_presc_flag(F)
-                    m <-rvs$m
+                    m =rvs$m
                     promises::future_promise(run(m=m,phases="prescreen")) %...>% {
                         rvs$m = .
                         rvs$status$is_qa_stat = "Yes."
@@ -1217,45 +1217,45 @@ mk_shinyscreen_server <- function(projects,init) {
         ## OBSERVERS: VIEWER
 
         observeEvent(input$cindex_rows_selected,{
-            kval <- rf_get_cindex_kval()
-            fname <- plot_fname(kval)
+            kval = rf_get_cindex_kval()
+            fname = plot_fname(kval)
             updateTextInput(session=session,inputId="single_plot_fname",value=fname)
         })
         
         observeEvent(input$make_report_b,{
             isolate({
-                ms1 <- rvs$m$extr$ms1
-                ms2 <- rvs$m$extr$ms2
-                summ <- rvs$m$out$tab$summ
+                ms1 = rvs$m$extr$ms1
+                ms2 = rvs$m$extr$ms2
+                summ = rvs$m$out$tab$summ
 
             })
             req(NROW(summ)>0L)
             req(NROW(ms1)>0L)
             req(NROW(ms2)>0L)
 
-            cind <- rf_get_cindex()
-            key <- rf_get_cindex_key()
-            rt_range <- rf_get_rtrange()
-            i_range <- rf_get_irange()
-            labs <- req(rf_get_cindex_labs())
-            projdir <- rvs$gui$paths$project
-            fn <- paste0(file.path(projdir,input$report_name),'.pdf')
+            cind = rf_get_cindex()
+            key = rf_get_cindex_key()
+            rt_range = rf_get_rtrange()
+            i_range = rf_get_irange()
+            labs = req(rf_get_cindex_labs())
+            projdir = rvs$gui$paths$project
+            fn = paste0(file.path(projdir,input$report_name),'.pdf')
             pdf(file=fn,paper="a4",height=7,width=11)
-            colrdata <- rf_colrdata()
+            colrdata = rf_colrdata()
             for (ri in 1:NROW(cind)) {
-                rowtab <- cind[ri][,..key] 
-                kvals <- lapply(rowtab,function (x) x[[1]])
-                names(kvals) <- key
+                rowtab = cind[ri][,..key] 
+                kvals = lapply(rowtab,function (x) x[[1]])
+                names(kvals) = key
                 message('Compound index row: ',ri)
 
-                p1 <- make_eic_ms1_plot(ms1,summ,kvals=kvals,
+                p1 = make_eic_ms1_plot(ms1,summ,kvals=kvals,
                                         labs=labs,
                                         asp=PLOT_EIC_ASPECT,
                                         rt_range=rt_range,
                                         i_range=i_range,
                                         colrdata = colrdata) + theme_print()
 
-                p2 <- make_eic_ms2_plot(summ,kvals=kvals,
+                p2 = make_eic_ms2_plot(summ,kvals=kvals,
                                         labs=labs,
                                         asp=PLOT_EIC_ASPECT,
                                         rt_range=rt_range,
@@ -1263,32 +1263,32 @@ mk_shinyscreen_server <- function(projects,init) {
 
                 
 
-                id <- rowtab <- cind[ri][,..key][["ID"]][[1]]
-                smi <- rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
-                p_struc <- make_struct_plot(smi)
+                id = rowtab = cind[ri][,..key][["ID"]][[1]]
+                smi = rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
+                p_struc = make_struct_plot(smi)
 
-                p_spec <- make_spec_ms2_plot(ms2,
+                p_spec = make_spec_ms2_plot(ms2,
                                              summ,
                                              kvals=kvals,
                                              labs=labs,
                                              colrdata=colrdata)+theme_print()
 
-                cmb <- combine_plots(p1,p2,p_spec,p_struc)
+                cmb = combine_plots(p1,p2,p_spec,p_struc)
                 print(cmb)
             }
             dev.off()
         })
 
         observeEvent(input$summ_tab_b,{
-            projdir <- rvs$gui$paths$project
-            fn <- file.path(projdir,input$summ_name)
+            projdir = rvs$gui$paths$project
+            fn = file.path(projdir,input$summ_name)
             tab2file(rvs$m$out$tab$summ,fn)
         })
 
         observeEvent(input$ms2_spectra_tab_b,{
             req(NROW(rvs$m$out$tab$summ)>0L)
-            projdir <- rvs$gui$paths$project
-            fn <- file.path(projdir,input$ms2_spectra_tab_name)
+            projdir = rvs$gui$paths$project
+            fn = file.path(projdir,input$ms2_spectra_tab_name)
             shinymsg(paste0("Saving MS2 spectra table to: ",basename(fn)))
             tab2file(pack_ms2_w_summ(rvs$m$out$tab$summ,
                                     rvs$m$extr$ms2),
@@ -1298,10 +1298,10 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
         observeEvent(input$plot_brush,{
-            xmin <- round(input$plot_brush[["xmin"]],3)
-            xmax <- round(input$plot_brush[["xmax"]],3)
-            ymin <- round(input$plot_brush[["ymin"]],3)
-            ymax <- round(input$plot_brush[["ymax"]],3)
+            xmin = round(input$plot_brush[["xmin"]],3)
+            xmax = round(input$plot_brush[["xmax"]],3)
+            ymin = round(input$plot_brush[["ymin"]],3)
+            ymax = round(input$plot_brush[["ymax"]],3)
 
             if (!is.null(xmin)) updateNumericInput(session=session,
                                                    inputId="plot_rt_min",
@@ -1345,7 +1345,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$cindex_rows_selected,{
             rv_summ_subset(data.frame())
-            ptab <- rf_get_cindex_parents()
+            ptab = rf_get_cindex_parents()
             if (NROW(ptab)>0L) {
                 choices = ptab$item
             } else choices = character()
@@ -1357,18 +1357,18 @@ mk_shinyscreen_server <- function(projects,init) {
         }, label = "sel_spec-clear")
 
         observe({
-            ctab <- rf_get_ltab()
+            ctab = rf_get_ltab()
             rv_summ_subset(ctab)
         }, label = "update-rv_summ_subset")
 
         observe({
-            ctab <- rv_summ_subset()
+            ctab = rv_summ_subset()
             if (NROW(ctab)!=0) {
-                disp <- if (any(ctab$ms2_sel==T)) ctab[ms2_sel==T,item] else ctab[1L,item]
-                choices <- ctab$item
+                disp = if (any(ctab$ms2_sel==T)) ctab[ms2_sel==T,item] else ctab[1L,item]
+                choices = ctab$item
             } else {
-                choices <- character()
-                disp <- NULL
+                choices = character()
+                disp = NULL
             }
             updateSelectInput(session = session,
                               inputId = "sel_spec",
@@ -1379,13 +1379,13 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observe({
             input$cmt_changes_b
-            ltab_entry <- rf_get_ltab_entry()
-            ## res <- rf_msrprop_get_vals()
-            res <- get_mprop_ms2_metadata(ltab_entry)
+            ltab_entry = rf_get_ltab_entry()
+            ## res = rf_msrprop_get_vals()
+            res = get_mprop_ms2_metadata(ltab_entry)
             valrt = res$rt
             valint = res$int
             valms2sel = res$ms2_sel
-            selqa <- res$qa
+            selqa = res$qa
 
             updateNumericInput(session = session,
                                inputId = "chg_ms1_rt",
@@ -1407,11 +1407,11 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
         observeEvent(input$cmt_changes_b,{
-            summ <- req(rvs$m$out$tab$summ)
+            summ = req(rvs$m$out$tab$summ)
 
-            ptab <- req(rf_get_cindex_parents())
-            ltab <- req(rf_get_ltab())
-            rvs$m$out$tab$summ <- update_on_commit_chg(summ,
+            ptab = req(rf_get_cindex_parents())
+            ltab = req(rf_get_ltab())
+            rvs$m$out$tab$summ = update_on_commit_chg(summ,
                                                        input=input,
                                                        ptab=ptab,
                                                        ltab=ltab)
@@ -1424,16 +1424,16 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$plot_save_single,{
 
-            p1 <- rf_plot_eic_ms1()
-            p2 <- rf_plot_eic_ms2()
-            p3 <- rf_plot_spec_ms2()
-            pstr <- rf_plot_struct()
+            p1 = rf_plot_eic_ms1()
+            p2 = rf_plot_eic_ms2()
+            p3 = rf_plot_spec_ms2()
+            pstr = rf_plot_struct()
 
-            combo_p <- combine_plots(p1,p2,p3,pstr)
-            dirname <- file.path(rvs$gui$paths$project,
+            combo_p = combine_plots(p1,p2,p3,pstr)
+            dirname = file.path(rvs$gui$paths$project,
                                   FIG_TOPDIR)
             if (!is.null(dirname) && nchar(dirname)>0L && !dir.exists(dirname)) dir.create(dirname)
-            absfname <- file.path(rvs$gui$paths$project,
+            absfname = file.path(rvs$gui$paths$project,
                                   FIG_TOPDIR,
                                   input$single_plot_fname)
 
@@ -1454,19 +1454,19 @@ mk_shinyscreen_server <- function(projects,init) {
 
         
         ## RENDER
-        output$curr_proj <- renderText({
-            xx <- rvs$gui$project()
-            txt <- if (is.null(xx) || length(xx) == 0L || is.na(xx) || nchar(xx)=="") "Nothing selected." else basename(xx)
+        output$curr_proj = renderText({
+            xx = rvs$gui$project()
+            txt = if (is.null(xx) || length(xx) == 0L || is.na(xx) || nchar(xx)=="") "Nothing selected." else basename(xx)
             paste0("Current project: ", txt)})
         
-        output$curr_data_dir <- renderText({
-            xx <- rvs$gui$paths$data
-            txt <- if (is.null(xx)) "Nothing selected" else basename(xx)
+        output$curr_data_dir = renderText({
+            xx = rvs$gui$paths$data
+            txt = if (is.null(xx)) "Nothing selected" else basename(xx)
             paste0("Current data directory: ", txt)
         })
 
-        output$comp_list_report <- renderUI({
-            lsts <- rvs$gui$compounds$lists
+        output$comp_list_report = renderUI({
+            lsts = rvs$gui$compounds$lists
             HTML(if (length(lsts) > 0 &&
                      isTruthy(lsts) &&
                      lsts != "Nothing selected.") {
@@ -1477,38 +1477,38 @@ mk_shinyscreen_server <- function(projects,init) {
                  } else "No compound list selected yet.")
         })
 
-        output$sets_report <- renderUI({
-            sets <- rvs$gui$compounds$sets
+        output$sets_report = renderUI({
+            sets = rvs$gui$compounds$sets
             HTML(if (isTruthy(sets) && sets != "Nothing selected.")
                      paste("selected <em>setid</em> table:",
                            sets) else "No <em>setid</em> table selected.")
         })
 
-        output$datafiles <- DT::renderDT(
+        output$datafiles = DT::renderDT(
         {
             rvs$gui$datatab$file
             rvs$gui$datatab$tag
-            res <- gen_dfiles_tab(rvs$gui)
+            res = gen_dfiles_tab(rvs$gui)
             ## simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
             scroll_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
         })
 
-        output$datatab <- DT::renderDT({
+        output$datatab = DT::renderDT({
             rvs$gui$datatab$tag
             rvs$gui$datatab$set
             rvs$gui$datatab$adduct
-            sets <- rf_get_sets()
-            dtab <- gen_dtab(rvs$gui$datatab,
+            sets = rf_get_sets()
+            dtab = gen_dtab(rvs$gui$datatab,
                              sets=sets)
-            tab <- scroll_dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
-            ## tab <- dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
+            tab = scroll_dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
+            ## tab = dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
             tab
             
         })
 
-        output$comp_table <- DT::renderDataTable({
+        output$comp_table = DT::renderDataTable({
             ## TODO FIXME
-            ## cmpds <- rf_get_cmpd_tab()
+            ## cmpds = rf_get_cmpd_tab()
             ## validate(need(NROW(cmpds)>0,"No compound list loaded yet."))
             ## DT::datatable(cmpds,
             ##               ## style = 'bootstrap',
@@ -1520,9 +1520,9 @@ mk_shinyscreen_server <- function(projects,init) {
             ##                              scroller = T))
         })
 
-        output$setid_table <- DT::renderDataTable({
+        output$setid_table = DT::renderDataTable({
             ## TODO FIXME
-            ## setid <- rf_get_sets_tab()
+            ## setid = rf_get_sets_tab()
             ## validate(need(NROW(setid)>0,"No set id list loaded yet."))
             ## DT::datatable(setid,
             ##               ## style = 'bootstrap',
@@ -1548,52 +1548,52 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## RENDER: STATUS
 
-        output$is_extracted_stat <- renderText({
-            x <- rvs$status$is_extracted_stat
+        output$is_extracted_stat = renderText({
+            x = rvs$status$is_extracted_stat
             if (isTruthy(x)) x else "No."
         })
 
-        output$is_qa_stat <- renderText({
-            x <- rvs$status$is_qa_stat
+        output$is_qa_stat = renderText({
+            x = rvs$status$is_qa_stat
             if (isTruthy(x)) x else "No."
         })
 
-        output$ms1_coarse_stat <- renderText({
+        output$ms1_coarse_stat = renderText({
             req(rvs$status$ms1_coarse_stat)
         })
 
-        output$ms1_fine_stat <- renderText({
+        output$ms1_fine_stat = renderText({
             req(rvs$status$ms1_fine_stat)
         })
 
-        output$ms1_eic_stat <- renderText({
+        output$ms1_eic_stat = renderText({
             req(rvs$status$ms1_eic_stat)
         })
 
-        output$rt_stat <- renderText({
+        output$rt_stat = renderText({
             req(rvs$status$rt_stat)
         })
 
-        output$ms1_int_thresh_stat <- renderText({
+        output$ms1_int_thresh_stat = renderText({
             req(rvs$status$ms1_int_thresh_stat)
         })
 
-        output$ms2_int_thresh_stat <- renderText({
+        output$ms2_int_thresh_stat = renderText({
             req(rvs$status$ms2_int_thresh_stat)
         })
 
-        output$s2n_stat <- renderText({
+        output$s2n_stat = renderText({
             req(rvs$status$s2n_stat)
         })
 
-        output$ret_time_shift_tol <- renderText({
+        output$ret_time_shift_tol = renderText({
             req(rvs$status$ret_time_shift_tol_stat)
         })
 
         ## RENDER: COMPOUND INDEX
 
-        output$cindex <- DT::renderDT({
-            tab <- rf_get_cindex()
+        output$cindex = DT::renderDT({
+            tab = rf_get_cindex()
             validate(need(NROW(tab)>0L,message="Need to prescreen, first."))
             scroll_style_dt(tab,options=list(filter=T,ordering=F),
                             selection="single")
@@ -1605,23 +1605,23 @@ mk_shinyscreen_server <- function(projects,init) {
         
 
 
-        output$plot_eic_ms1 <- renderPlot({
+        output$plot_eic_ms1 = renderPlot({
             rf_plot_eic_ms1()
         })
 
-        output$plot_eic_ms2 <- renderPlot({
+        output$plot_eic_ms2 = renderPlot({
             rf_plot_eic_ms2()
         })
 
-        output$plot_spec_ms2 <- renderPlot({
+        output$plot_spec_ms2 = renderPlot({
             rf_plot_spec_ms2()
         })
 
 
-        output$plot_hover_out <- renderText({
-            inp1 <- input$plot_hover[[1]]
-            inp2 <- input$plot_hover[[2]]
-            res <- if (all(!(c(is.null(inp1),is.null(inp2))))) {
+        output$plot_hover_out = renderText({
+            inp1 = input$plot_hover[[1]]
+            inp2 = input$plot_hover[[2]]
+            res = if (all(!(c(is.null(inp1),is.null(inp2))))) {
                        paste0('(',
                               format(inp1,digits=5),
                               ',',
@@ -1631,31 +1631,31 @@ mk_shinyscreen_server <- function(projects,init) {
             
         })
 
-        output$plot_struct <- renderPlot({
+        output$plot_struct = renderPlot({
             rf_plot_struct()
         })
 
 
 
-        output$print_spec_tab <- renderPrint({
-            notfound <- "No MS2 spectrum has been found for this entry."
-            ms2tabsel <- rf_get_ltab()
-            selMS2 <- req(input$sel_spec)
+        output$print_spec_tab = renderPrint({
+            notfound = "No MS2 spectrum has been found for this entry."
+            ms2tabsel = rf_get_ltab()
+            selMS2 = req(input$sel_spec)
             if (NROW(ms2tabsel)!=0L) {
-                lval <- lapply(ms2tabsel[item==(selMS2)],function(x) x)
-                ms2 <- rvs$m$extr$ms2
-                kval <- rf_get_cindex_kval()
-                allval <- c(kval,lval)
+                lval = lapply(ms2tabsel[item==(selMS2)],function(x) x)
+                ms2 = rvs$m$extr$ms2
+                kval = rf_get_cindex_kval()
+                allval = c(kval,lval)
                 ## There can be some duplicates.
-                common <- union(names(kval),names(lval))
-                allval <- allval[common]
+                common = union(names(kval),names(lval))
+                allval = allval[common]
                 #Because in current implementation, kval may contain
                 #more than the names existing in extr$ms2. Also,
                 #BASE_KEY_MS2 does not contain `an', so we need to readd
                 #it.
-                key <- unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"an"))
-                kval2 <- allval[key]
-                spec <- get_data_from_key(ms2,kval2)[,.(mz,intensity)]
+                key = unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"an"))
+                kval2 = allval[key]
+                spec = get_data_from_key(ms2,kval2)[,.(mz,intensity)]
                 ## as.character(lapply(1L:NROW(spec),function(nr) paste0(spec[nr,mz]," ",spec[nr,intensity])))
                 print(as.data.frame(spec),row.names=F)
                 
