@@ -884,7 +884,7 @@ mk_shinyscreen_server <- function(projects,init) {
             key = rf_get_cindex_key()
             req(NROW(cind)>0L)
             row = req(input$cindex_row_last_clicked)
-            id = rowtab = cind[row][,..key][["ID"]][[1]]
+            id = cind[row][,..key][["ID"]][[1]]
             smi = rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
             make_struct_plot(smi)
         })
@@ -1263,7 +1263,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
                 
 
-                id = rowtab = cind[ri][,..key][["ID"]][[1]]
+                id = cind[ri][,..key][["ID"]][[1]]
                 smi = rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
                 p_struc = make_struct_plot(smi)
 
