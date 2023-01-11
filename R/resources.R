@@ -317,7 +317,10 @@ METFRAG_ADDUCTS = c("[M+H]+","[M+NH4]+","[M+Na]+","[M+K]+",
                     "[M-H]-","[M+Cl]-","[M+HCOO]-","[M+CH3COO]-","[M]+/-")
 METFRAG_WRITER_CHOICES = c("CSV","PSV","XLS")
 METFRAG_DEFAULT_WRITER = "CSV"
-METFRAG_DATABASE_TYPE = c("KEGG","PubChem","ExtendedPubChem","LocalSDF","LocalPSV","LocalCSV")
+METFRAG_LOCAL_DATABASE_TYPE = c("LocalSDF","LocalPSV","LocalCSV")
+METFRAG_REMOTE_DATABASE_TYPE = c("KEGG","PubChem","ExtendedPubChem")
+METFRAG_DATABASE_TYPE = c(METFRAG_REMOTE_DATABASE_TYPE, METFRAG_LOCAL_DATABASE_TYPE)
+METFRAG_DEFAULT_REMOTE_DATABASE_TYPE = "PubChem"
 METFRAG_DEFAULT_DATABASE_TYPE = "LocalCSV"
 METFRAG_PREPFLT_CHOICES = c("UnconnectedCompoundFilter","IsotopeFilter")
 METFRAG_PREPFLT_DEFAULT = c("UnconnectedCompoundFilter","IsotopeFilter")

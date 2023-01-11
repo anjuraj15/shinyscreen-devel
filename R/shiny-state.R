@@ -1,4 +1,25 @@
-## Managing the state of shiny application.
+## Copyright (C) 2020,2021,2023 by University of Luxembourg
+
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+
+##     http://www.apache.org/licenses/LICENSE-2.0
+
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+
+## Description
+## 
+## Helpers used in shiny server. Makes testing easier.
+
+
+## Imports from shiny:
+
+#' @importFrom shiny selectInput numericInput textInput HTML
 
 
 GUI_SELECT_INPUTS <- c("proj_list",
@@ -506,4 +527,62 @@ get_mprop_ms2_metadata <- function(ltab_entry) {
 
  res
   
+}
+
+make_metfrag_panel <- function(envopts) {
+
+    ctrls = list(HTML("MetFrag submodule has been disabled, because no MetFrag runtime has been specified in `envopts'"))
+    if (is_metfrag_available(envopts)) {
+
+        if (is_metfrag_local_available(envopts)) {
+            dbtype = selectInput("mf_database_type", label="Database type",
+                                 choices=METFRAG_DATABASE_TYPE,
+                                 selected=METFRAG_DEFAULT_DATABASE_TYPE)
+            dbselect = selectInput("mf_local_database_path",
+                                   "Local Database Path",
+                                   choices=character(0))
+            
+        } else {
+            dbtype = selectInput("mf_database_type", label="Database type",
+                                 choices=METFRAG_REMOTE_DATABASE_TYPE,
+                                 selected=METFRAG_DEFAULT_REMOTE_DATABASE_TYPE)
+            dbselect = HTML("No local MetFrag databases available.")
+        }
+        
+        
+        ctrls = list(numericInput("mf_database_search_relative_mass_deviation",
+                              label="Database search relative mass deviation",
+                              value=5),
+                     numericInput("mf_fragment_peak_match_absolute_mass_deviation",
+                                  label="Fragment peak match absolute mass deviation",
+                                  value=5),
+                     numericInput("mf_fragment_peak_match_relative_mass_deviation",
+                                  label="Fragment peak match relative mass deviation",
+                                  value=5),
+                     numericInput("mf_maximum_tree_depth", label="MaximumTreeDepth",
+                                  value=2),
+                     selectInput("mf_metfrag_candidate_writer",
+                                 label="MetFrag Candidate Writer",
+                                 choices=shinyscreen:::METFRAG_WRITER_CHOICES,
+                                 selected=shinyscreen:::METFRAG_DEFAULT_WRITER),
+                     dbtype,
+                     dbselect,
+                     selectInput("mf_pre_processing_candidate_filter",
+                                 label="Preprocessing candidate filter",
+                                 choices=shinyscreen:::METFRAG_PREPFLT_CHOICES,
+                                 selected=shinyscreen:::METFRAG_PREPFLT_DEFAULT,
+                                 multiple=T),
+                     selectInput("mf_post_processing_candidate_filter",
+                                 label="Postprocessing candidate filter",
+                                 choices=shinyscreen:::METFRAG_POSTPFLT_CHOICES,
+                                 selected=shinyscreen:::METFRAG_POSTPFLT_DEFAULT,
+                                 multiple=T),
+                     textInput("mf_score_types",label="Score
+             Types",value=METFRAG_STANDARD_SCORES),
+             textInput("mf_score_weights",label="Score Weights",
+                       value=METFRAG_STANDARD_WEIGHTS))
+    }
+
+
+    ctrls
 }

@@ -970,10 +970,7 @@ mk_shinyscreen_server <- function(projects,init) {
             wd <- input$proj_list
             req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
             fullwd <- file.path(init$projects,wd)
-            fullwdq <- file.exists(fullwd)
-            if (!fullwdq) {
-                stop("The project path does not exist!?")
-            }
+            check_dir_absent(fullwd,what="project")
             ## Load saved state if existing, create if it does not.
             fn_packed_state <- file.path(fullwd,FN_GUI_STATE)
             fn_state <- file.path(fullwd,FN_STATE)
@@ -1198,6 +1195,24 @@ mk_shinyscreen_server <- function(projects,init) {
             })
         })
 
+        ## OBSERVERS: METFRAG
+
+        observeEvent(input$mf_database_type,{
+            dtype = input$mf_database_type
+            if (dtype %in% METFRAG_LOCAL_DATABASE_TYPE) {
+                if (dtype == "LocalCSV") patt = "(csv)|(CSV)$"
+                if (dtype == "LocalSDF") patt = "(sdf)|(SDF)$"
+                if (dtype == "LocalPSV") patt = "(psv)|(PSV)$"
+                updateSelectInput(session=session,
+                                  inputId="mf_local_database_path",
+                                  choices=list.files(path=init$envopts$metfrag$db_dir,
+                                                     pattern=patt))
+            } else {
+                   updateSelectInput(session=session,
+                                     inputId="mf_local_database_path",
+                                     choices=character(0))
+            }
+        }, label = "mf-database-type")
         
         ## OBSERVERS: VIEWER
 
@@ -1517,6 +1532,18 @@ mk_shinyscreen_server <- function(projects,init) {
             ##                              scrollY = 300,
             ##                              deferRender = T,
             ##                              scroller = T))
+        })
+
+        ## RENDER: METFRAG
+
+        output$cando_metfrag = renderText({
+            if (is_metfrag_available(init$envopts))
+                "available" else "unavailable"
+        })
+
+        output$metfrag_panel = renderUI({
+            ctrls = make_metfrag_panel(envopts=init$envopts)
+            do.call(tagList,ctrls)
         })
 
         ## RENDER: STATUS

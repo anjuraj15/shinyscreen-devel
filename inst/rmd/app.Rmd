@@ -493,48 +493,14 @@ shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
                       def_unit = vu[['unit']])
 ```
 
-### MetFrag (experimental, optional)
+### MetFrag (`r htmlOutput("cando_metfrag", inline=T)`)
 
 If `java` and `MetFragCL` are available, Shinyscreen can run
 `MetFragCL`. The configuration is a subset of what a MetFrag config
 file looks like.
 
 ```{r, echo=F}
-numericInput("mf_database_search_relative_mass_deviation",
-             label="Database search relative mass deviation",
-             value=5)
-numericInput("mf_fragment_peak_match_absolute_mass_deviation",
-             label="Fragment peak match absolute mass deviation",
-             value=5)
-numericInput("mf_fragment_peak_match_relative_mass_deviation",
-             label="Fragment peak match relative mass deviation",
-             value=5)
-numericInput("mf_maximum_tree_depth",
-             label="MaximumTreeDepth",
-             value=2)
-selectInput("mf_metfrag_candidate_writer",
-            label="MetFrag Candidate Writer",
-            choices=shinyscreen:::METFRAG_WRITER_CHOICES,
-            selected=shinyscreen:::METFRAG_DEFAULT_WRITER)
-selectInput("mf_database_type",
-            label="Database type",
-            choices=shinyscreen:::METFRAG_DATABASE_TYPE,
-            selected=shinyscreen:::METFRAG_DEFAULT_DATABASE_TYPE)
-selectInput("mf_local_database_path","Local Database Path",
-            choices=NA_character_,
-            selected=NA_character_)
-selectInput("mf_pre_processing_candidate_filter",
-            label="Preprocessing candidate filter",
-            choices=shinyscreen:::METFRAG_PREPFLT_CHOICES,
-            selected=shinyscreen:::METFRAG_PREPFLT_DEFAULT,
-            multiple=T)
-selectInput("mf_post_processing_candidate_filter",
-            label="Postprocessing candidate filter",
-            choices=shinyscreen:::METFRAG_POSTPFLT_CHOICES,
-            selected=shinyscreen:::METFRAG_POSTPFLT_DEFAULT,
-            multiple=T)
-textInput("mf_score_types",label="Score Types",value=METFRAG_STANDARD_SCORES)
-textInput("mf_score_weights",label="Score Weights",value=METFRAG_STANDARD_WEIGHTS)
+uiOutput('metfrag_panel')
 ```
 ### Report
 

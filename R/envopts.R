@@ -38,10 +38,19 @@ envopts <- function(metfrag_db_dir="",metfrag_jar="") {
                                      #object.
 
     check_dir_absent(metfrag_db_dir,what="mf-db-dir")
-    res$metfrag$db_dir = metfrag_db_dir
+    res$metfrag$db_dir = norm_path(metfrag_db_dir)
 
     check_file_absent(metfrag_jar,what="mf-jar")
-    res$metfrag$jar = metfrag_jar
+    res$metfrag$jar = norm_path(metfrag_jar)
 
     res
+}
+
+
+is_metfrag_available <- function(e) {
+    nchar(e$metfrag$jar)>0L
+}
+
+is_metfrag_local_available <- function(e) {
+    is_metfrag_available(e) && nchar(e$metfrag$db_dir)>0L
 }
