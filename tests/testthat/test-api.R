@@ -1,4 +1,4 @@
-test_that("Preparation for app start",{
+test_that("Preparation for app start",{withr::with_tempdir({
     dbef = "bef"
     dir.create("bef")
     ddata = "topdata"
@@ -15,7 +15,7 @@ test_that("Preparation for app start",{
                              metfrag_db_dir=ddbdir,
                              metfrag_runtime="absent.jar"),
                  class="mf-jar-absent")
-
+    
     expect_error(prepare_app(dir_before=dbef,
                              projects="absent",
                              top_data_dir=ddata,
@@ -34,7 +34,4 @@ test_that("Preparation for app start",{
                              metfrag_db_dir="absent",
                              metfrag_runtime=mrt),
                  class="mf-db-dir-absent")
-
-
-                             
-})
+})})
