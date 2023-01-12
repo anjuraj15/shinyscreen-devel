@@ -326,7 +326,7 @@ METFRAG_ADDUCT_SWITCHES = c("[M+H]+"=1L,
                             "[M-H]-"=-1L,
                             "[M+Cl]-"=35L,
                             "[M+HCOO]-"=45L,
-                            "[M+CH3COO]-"=49L
+                            "[M+CH3COO]-"=49L,
                             "[M+]+"=0L,
                             "[M-]-"=0L)
                             

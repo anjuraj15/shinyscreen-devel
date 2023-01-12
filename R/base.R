@@ -92,3 +92,16 @@ get_val_unit <- function(entry) {
     unit <- cntnt[[2]]
     c(val=val,unit=unit)
 }
+
+
+write_keyval_file <- function(namedl,fname) {
+    con = file(fname,open="w")
+    for (n in names(namedl)) {
+        cat(file=con,
+            paste0(n," = ",
+                   namedl[[n]]),
+            sep = "\n",
+            append = T)
+    }
+    close(con)
+}

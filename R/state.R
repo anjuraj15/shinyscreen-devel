@@ -88,6 +88,10 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                        cando_remote=F,
                        cando_metfrag=F,
                        path="",
+                       subpaths=list(results="",
+                                     config="",
+                                     spec="",
+                                     log=""),
                        runtime="",
                        db_path="")
 
@@ -115,11 +119,14 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
             if (metfrag$cando_metfrag) {
                 mfdir = file.path(project_path,"metfrag")
                 dir.create(mfdir)
-                dir.create(file.path(mfdir,"results"))
-                dir.create(file.path(mfdir,"config"))
-                dir.create(file.path(mfdir,"spec"))
-                dir.create(file.path(mfdir,"log"))
                 metfrag$path=mfdir
+                subpaths = list(results = "results",
+                                config = "config",
+                                spec = "spec",
+                                log = "log")
+                for (x in subpaths) dir.create(file.path(mfdir,x),showWarnings=F)
+                metfrag$subpaths = subpaths
+
 
             }
             
@@ -280,6 +287,8 @@ base_conf <- function () {
                    compounds=list(lists=list(),
                                   sets=""),
                     debug = F)
+    
+    class(m$conf) = c("conf","list")
     m
 }
 
@@ -313,27 +322,33 @@ fig_conf <- function(m) {
 
 metfrag_conf <- function(m) {
     ## MetFrag configuration defaults.
-    metfrag = list(MetFragDatabaseType="",
-                   FragmentPeakMatchAbsoluteMassDeviation=METFRAG_DEFAULT_ABSMASSDEV,
-                   FragmentPeakMatchRelativeMassDeviation=METFRAG_DEFAULT_RELMASSDEV,
-                   MetFragScoreTypes=METFRAG_DEFAULT_SCORES,
-                   MetFragScoreWeights=METFRAG_DEFAULT_WEIGHTS,
-                   MetFragCandidateWriter=METFRAG_DEFAULT_WRITER,
-                   SampleName=METFRAG_SAMPLE_NAME,
-                   MaximumTreeDepth=METFRAG_DEFAULT_MAX_TREE_DEPTH,
-                   MetFragPreProcessingCandidateFilter=METFRAG_PREPFLT_CHOICES,
-                   MetFragPostProcessingCandidateFilter=METFRAG_POSTPFLT_CHOICES,
-                   db_file = "")
+    metfrag = list(db_file = "")
+    param = list(MetFragDatabaseType="",
+                 FragmentPeakMatchAbsoluteMassDeviation=METFRAG_DEFAULT_ABSMASSDEV,
+                 FragmentPeakMatchRelativeMassDeviation=METFRAG_DEFAULT_RELMASSDEV,
+                 MetFragScoreTypes=METFRAG_DEFAULT_SCORES,
+                 MetFragScoreWeights=METFRAG_DEFAULT_WEIGHTS,
+                 MetFragCandidateWriter=METFRAG_DEFAULT_WRITER,
+                 SampleName=METFRAG_SAMPLE_NAME,
+                 MaximumTreeDepth=METFRAG_DEFAULT_MAX_TREE_DEPTH,
+                 MetFragPreProcessingCandidateFilter=METFRAG_PREPFLT_CHOICES,
+                 MetFragPostProcessingCandidateFilter=METFRAG_POSTPFLT_CHOICES)
     
+    metfrag$param = param
     m$conf$metfrag = metfrag
     m
 }
 
-new_conf <- function() metfrag_conf(
-                           fig_conf(
-                               presc_conf(
-                                   extr_conf(
-                                       base_conf()))))
+new_conf <- function() {
+    o = metfrag_conf(
+        fig_conf(
+            presc_conf(
+                extr_conf(
+                    base_conf()))))
+
+ 
+    o
+}
 
 encode_ms2_to_line <- function(ms2) {
     ## ms2 is a data.frame whose first column is mz and the second intensity.
@@ -348,4 +363,29 @@ pack_ms2_w_summ <- function(summ,ms2) {
     x = summ[ms2_sel==T,.SD,.SDcols=c(key(summ),"mz","SMILES","Formula","Name")]
     mrg_keys = c(intersect(key(ms2),key(summ)),"an")
     ms2[x,.(mz=i.mz,ms2_spectrum=encode_ms2_to_line(.SD[,c("mz","intensity")])),on=mrg_keys,by=.EACHI]
+}
+
+
+write_metfrag_config <- function(param,path,subpaths,stag,adduct,ion_mz,spec) {
+    dir_res = subpaths$results
+    dir_spec = subpaths$spec
+    dir_conf = subpaths$config
+
+    f_spec = file.path(dir_spec,paste0(param$SampleName,".",stag,".csv"))
+    f_conf = file.path(dir_conf,paste0(param$SampleName,".",stag,".conf"))
+    f_res = file.path(dir_res,paste0(param$SampleName,".",stag,".",param$MetFragCandidateWriter))
+
+    withr::with_dir(path,{
+        param = c(param,list(IonizedPrecursorMass=ion_mz,
+                             IsPositiveIonMode=ifelse(grepl(r"(\+$)",adduct),"True","False"),
+                             PrecursorIonMode=METFRAG_ADDUCT_SWITCHES[[adduct]],
+                             ResultsPath=f_res,
+                             PeakListPath=f_spec))
+        data.table::fwrite(spec,file=f_spec,col.names=F)
+        write_keyval_file(namedl=param,fname=f_conf)
+    })
+
+    c(f_conf=f_conf,
+      f_spec=f_spec)
+    
 }
