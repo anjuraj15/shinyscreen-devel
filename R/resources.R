@@ -314,7 +314,24 @@ COLRDATA_KEY <- "set"
 
 METFRAG_ADDUCTS = c("[M+H]+","[M+NH4]+","[M+Na]+","[M+K]+",
                     "[M+CH3OH+H]+","[M+ACN+H]+","[M+ACN+Na]+","[M+2ACN+H]+",
-                    "[M-H]-","[M+Cl]-","[M+HCOO]-","[M+CH3COO]-","[M]+/-")
+                    "[M-H]-","[M+Cl]-","[M+HCOO]-","[M+CH3COO]-","[M+]+","[M-]-")
+METFRAG_ADDUCT_SWITCHES = c("[M+H]+"=1L,
+                            "[M+NH4]+"=18L,
+                            "[M+Na]+"=23L,
+                            "[M+K]+"=39L,
+                            "[M+CH3OH+H]+"=33L,
+                            "[M+ACN+H]+"=42L,
+                            "[M+ACN+Na]+"=64L,
+                            "[M+2ACN+H]+"=83L,
+                            "[M-H]-"=-1L,
+                            "[M+Cl]-"=35L,
+                            "[M+HCOO]-"=45L,
+                            "[M+CH3COO]-"=49L
+                            "[M+]+"=0L,
+                            "[M-]-"=0L)
+                            
+                            
+                            
 METFRAG_WRITER_CHOICES = c("CSV","PSV","XLS","ExtendedXLS","ExtendedFragmentXLS")
 METFRAG_DEFAULT_WRITER = "CSV"
 METFRAG_LOCAL_DATABASE_TYPE = c("LocalSDF","LocalPSV","LocalCSV")
