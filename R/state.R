@@ -313,7 +313,19 @@ fig_conf <- function(m) {
 
 metfrag_conf <- function(m) {
     ## MetFrag configuration defaults.
-    m$conf$metfrag$db_file = ""
+    metfrag = list(MetFragDatabaseType="",
+                   FragmentPeakMatchAbsoluteMassDeviation=METFRAG_DEFAULT_ABSMASSDEV,
+                   FragmentPeakMatchRelativeMassDeviation=METFRAG_DEFAULT_RELMASSDEV,
+                   MetFragScoreTypes=METFRAG_DEFAULT_SCORES,
+                   MetFragScoreWeights=METFRAG_DEFAULT_WEIGHTS,
+                   MetFragCandidateWriter=METFRAG_DEFAULT_WRITER,
+                   SampleName=METFRAG_SAMPLE_NAME,
+                   MaximumTreeDepth=METFRAG_DEFAULT_MAX_TREE_DEPTH,
+                   MetFragPreProcessingCandidateFilter=METFRAG_PREPFLT_CHOICES,
+                   MetFragPostProcessingCandidateFilter=METFRAG_POSTPFLT_CHOICES,
+                   db_file = "")
+    
+    m$conf$metfrag = metfrag
     m
 }
 
