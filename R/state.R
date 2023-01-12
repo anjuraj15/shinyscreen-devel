@@ -370,9 +370,11 @@ write_metfrag_config <- function(param,path,subpaths,stag,adduct,ion_mz,spec) {
     dir_res = subpaths$results
     dir_spec = subpaths$spec
     dir_conf = subpaths$config
+    dir_log = subpaths$log
 
     f_spec = file.path(dir_spec,paste0(param$SampleName,".",stag,".csv"))
     f_conf = file.path(dir_conf,paste0(param$SampleName,".",stag,".conf"))
+    f_log = file.path(dir_log,paste0(param$SampleName,".",stag,".log"))
     f_res = file.path(dir_res,paste0(param$SampleName,".",stag,".",param$MetFragCandidateWriter))
 
     withr::with_dir(path,{
@@ -386,6 +388,7 @@ write_metfrag_config <- function(param,path,subpaths,stag,adduct,ion_mz,spec) {
     })
 
     c(f_conf=f_conf,
+      f_log=f_log,
       f_spec=f_spec)
     
 }
