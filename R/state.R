@@ -392,3 +392,19 @@ write_metfrag_config <- function(param,path,subpaths,stag,adduct,ion_mz,spec) {
       f_spec=f_spec)
     
 }
+
+
+metfrag_run <- function(fn_jar, fn_conf, fn_log, mem = NA_character_, java_bin = "java") {
+    ## Check if file exists.
+
+    ## Assemble arguments.
+    args <- c('-jar',fn_jar,fn_conf)
+    ## If total heap memory given (in quantities like '4m', or '2g')
+    ## then make this argument.
+    if (!is.na(mem)) args <- c(paste0('-Xmx', mem),args)
+    ## Start new java process.
+    p <- processx::process$new(java_bin,args=args,stdout=fn_log,stderr='2>&1')
+    p$wait()
+    p$get_exit_status()
+    
+}

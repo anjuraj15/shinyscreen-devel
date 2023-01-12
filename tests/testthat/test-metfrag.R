@@ -43,10 +43,27 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
         
 
     })
-    skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
-    
-    o = new_conf()
-
-
     
 })
+
+test_that("MetFrag example works.",{
+    skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
+    skip_if_offline()
+    withr::with_tempdir({
+        runtime = path.expand(Sys.getenv("METFRAG_JAR"))
+        fn_conf = system.file("testdata/example_parameter_file.txt",package = "shinyscreen")
+        fn_peaks = system.file("testdata/example_data.txt",package = "shinyscreen")
+        fn_log = "metfrag.log"
+        file.copy(fn_conf,basename(fn_conf))
+        file.copy(fn_peaks,basename(fn_peaks))
+
+        metfrag_run(fn_jar = runtime,
+                    fn_conf = basename(fn_conf),
+                    fn_log = fn_log)
+
+        content = readChar(fn_log,nchars=file.size(fn_log))
+        expect_true(grepl(r"(0 candidate\(s\) discarded during processing due to errors)",content))
+    })
+})
+
+
