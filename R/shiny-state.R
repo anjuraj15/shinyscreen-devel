@@ -64,18 +64,18 @@ add_new_def_tag <- function(old_tags,how_many) {
 
 #' @export
 create_stub_gui <- function() {
-    gui <- list()
+    gui = list()
     shiny::isolate({
-        gui$compounds <- shiny::reactiveValues(lists=character(),
+        gui$compounds = shiny::reactiveValues(lists=character(),
                                                sets=character())
-        gui$datatab <- shiny::reactiveValues(file=character(),
+        gui$datatab = shiny::reactiveValues(file=character(),
                                              tag=character(),
                                              adduct=character(),
                                              set=character())
 
-        gui$paths <- shiny::reactiveValues(project=NA_character_,
+        gui$paths = shiny::reactiveValues(project=NA_character_,
                                            data=NA_character_)
-        gui$project <- shiny::reactiveVal(NA_character_)
+        gui$project = shiny::reactiveVal(NA_character_)
     })
     gui
 }
@@ -83,7 +83,7 @@ create_stub_gui <- function() {
 
 create_gui <- function(project_path=NA_character_) {
     shiny::isolate({
-        gui <- create_stub_gui()
+        gui = create_stub_gui()
         if (!is.na(project_path)) {
             gui$paths$project = project_path
             gui$project(basename(project_path))
@@ -555,12 +555,12 @@ make_metfrag_panel <- function(envopts) {
                               value=5),
                      numericInput("mf_fragment_peak_match_absolute_mass_deviation",
                                   label="Fragment peak match absolute mass deviation",
-                                  value=5),
+                                  value=METFRAG_DEFAULT_ABSMASSDEV),
                      numericInput("mf_fragment_peak_match_relative_mass_deviation",
                                   label="Fragment peak match relative mass deviation",
-                                  value=5),
+                                  value=METFRAG_DEFAULT_RELMASSDEV),
                      numericInput("mf_maximum_tree_depth", label="MaximumTreeDepth",
-                                  value=2),
+                                  value=METFRAG_DEFAULT_MAX_TREE_DEPTH),
                      selectInput("mf_metfrag_candidate_writer",
                                  label="MetFrag Candidate Writer",
                                  choices=shinyscreen:::METFRAG_WRITER_CHOICES,
@@ -577,10 +577,10 @@ make_metfrag_panel <- function(envopts) {
                                  choices=shinyscreen:::METFRAG_POSTPFLT_CHOICES,
                                  selected=shinyscreen:::METFRAG_POSTPFLT_DEFAULT,
                                  multiple=T),
-                     textInput("mf_score_types",label="Score
-             Types",value=METFRAG_STANDARD_SCORES),
-             textInput("mf_score_weights",label="Score Weights",
-                       value=METFRAG_STANDARD_WEIGHTS))
+                     textInput("mf_score_types",label="Score Types",value=METFRAG_STANDARD_SCORES),
+                     textInput("mf_score_weights",label="Score Weights",
+                               value=METFRAG_STANDARD_WEIGHTS),
+                     numericInput("mf_num_threads",label="Number of threads", value=1L))
     }
 
 

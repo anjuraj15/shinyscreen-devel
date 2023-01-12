@@ -315,7 +315,7 @@ COLRDATA_KEY <- "set"
 METFRAG_ADDUCTS = c("[M+H]+","[M+NH4]+","[M+Na]+","[M+K]+",
                     "[M+CH3OH+H]+","[M+ACN+H]+","[M+ACN+Na]+","[M+2ACN+H]+",
                     "[M-H]-","[M+Cl]-","[M+HCOO]-","[M+CH3COO]-","[M]+/-")
-METFRAG_WRITER_CHOICES = c("CSV","PSV","XLS")
+METFRAG_WRITER_CHOICES = c("CSV","PSV","XLS","ExtendedXLS","ExtendedFragmentXLS")
 METFRAG_DEFAULT_WRITER = "CSV"
 METFRAG_LOCAL_DATABASE_TYPE = c("LocalSDF","LocalPSV","LocalCSV")
 METFRAG_REMOTE_DATABASE_TYPE = c("KEGG","PubChem","ExtendedPubChem")
@@ -334,3 +334,7 @@ METFRAG_STANDARD_SCORES = "FragmenterScore,OfflineIndividualMoNAScore" # Automat
                                                                        # work
                                                                        # well.
 METFRAG_STANDARD_WEIGHTS = "1,1"
+METFRAG_DEFAULT_MAX_TREE_DEPTH = 2
+METFRAG_SAMPLE_NAME = "sample"
+METFRAG_DEFAULT_ABSMASSDEV = 1.E-3
+METFRAG_DEFAULT_RELMASSDEV = 5
