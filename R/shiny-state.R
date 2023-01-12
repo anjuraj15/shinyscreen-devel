@@ -577,9 +577,9 @@ make_metfrag_panel <- function(envopts) {
                                  choices=shinyscreen:::METFRAG_POSTPFLT_CHOICES,
                                  selected=shinyscreen:::METFRAG_POSTPFLT_DEFAULT,
                                  multiple=T),
-                     textInput("mf_score_types",label="Score Types",value=METFRAG_STANDARD_SCORES),
+                     textInput("mf_score_types",label="Score Types",value=METFRAG_DEFAULT_SCORES),
                      textInput("mf_score_weights",label="Score Weights",
-                               value=METFRAG_STANDARD_WEIGHTS),
+                               value=METFRAG_DEFAULT_WEIGHTS),
                      numericInput("mf_num_threads",label="Number of threads", value=1L))
     }
 
