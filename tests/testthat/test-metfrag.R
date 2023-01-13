@@ -46,6 +46,38 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
     
 })
 
+test_that("Function get_metfrag_targets behaves as expected.",{
+
+    summ = STATE_DATA$out$tab$summ
+    ms2 = STATE_DATA$extr$ms2
+    res = get_metfrag_targets(summ=summ,
+                              ms2=ms2)
+    
+    expect_snapshot(head(res,5))
+    expect_snapshot(tail(res,5))
+  
+})
+
+ok_return_val("metfrag_on_state",{
+    skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
+    m = make_dummy_mf_project()
+    res = metfrag_on_state(m)
+    withr::with_dir(m$run$metfrag$path,{
+        fc_i = readChar(res[1,V1],nchars=file.size(res[1,V1]))
+        expect_snapshot(fc_i)
+    
+        fs_i = readChar(res[3,V1],nchars=file.size(res[3,V1]))
+        expect_snapshot(fs_i)
+    
+        fc_l = readChar(res[.N-2,V1],nchars=file.size(res[.N-2,V1]))
+        expect_snapshot(fc_l)
+
+        fs_l = readChar(res[.N,V1],nchars=file.size(res[.N,V1]))
+        expect_snapshot(fs_l)
+    })
+})
+
+
 test_that("MetFrag example works.",{
     skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
     skip_if_offline()

@@ -289,6 +289,7 @@ base_conf <- function () {
                     debug = F)
     
     class(m$conf) = c("conf","list")
+    class(m) = "state"
     m
 }
 
@@ -366,16 +367,46 @@ pack_ms2_w_summ <- function(summ,ms2) {
 }
 
 
+get_metfrag_targets <- function(summ,ms2) {
+    ## Take the columns we need from summ.
+    x = summ[ms2_sel==T,.SD,.SDcols=c(key(summ),"mz")]
+    mrg_keys = c(intersect(key(ms2),key(summ)),"an")
+    x=ms2[x,.(CE=CE,ion_mz=i.mz,mz,intensity),on=mrg_keys,by=.EACHI]
+    ## Get column order so that `an' follows `CE'.
+    resnms = setdiff(mrg_keys,"an")
+    nms = union(union(resnms,"CE"),c("an","ion_mz","mz","intensity"))
+    data.table::setcolorder(x,neworder = nms)
+    setkeyv(x,unique(c(resnms,"CE","an")))
+    x
+    
+}
+
+
+metfrag_on_state <- function(m,fmany=metfrag_run_many) {
+    tgts = get_metfrag_targets(m$out$tab$summ,m$extr$ms2)
+    tgts[,write_metfrag_config(param=m$conf$metfrag$param,
+                               path = m$run$metfrag$path,
+                               subpaths = m$run$metfrag$subpaths,
+                               stag = paste0(.BY,collapse="_"),
+                               adduct = adduct,
+                               ion_mz = ion_mz[1],
+                               spec = .SD[,c("mz","intensity")]),
+         by=key(tgts)]
+}
+
+
 write_metfrag_config <- function(param,path,subpaths,stag,adduct,ion_mz,spec) {
+    check_not_one(ion_mz,"ion_mz")
+    check_not_one(adduct,"adduct")
     dir_res = subpaths$results
     dir_spec = subpaths$spec
     dir_conf = subpaths$config
     dir_log = subpaths$log
 
-    f_spec = file.path(dir_spec,paste0(param$SampleName,".",stag,".csv"))
-    f_conf = file.path(dir_conf,paste0(param$SampleName,".",stag,".conf"))
-    f_log = file.path(dir_log,paste0(param$SampleName,".",stag,".log"))
-    f_res = file.path(dir_res,paste0(param$SampleName,".",stag,".",param$MetFragCandidateWriter))
+    f_spec = file.path(dir_spec,paste0(param$SampleName,"_",stag,".csv"))
+    f_conf = file.path(dir_conf,paste0(param$SampleName,"_",stag,".conf"))
+    f_log = file.path(dir_log,paste0(param$SampleName,"_",stag,".log"))
+    f_res = file.path(dir_res,paste0(param$SampleName,"_",stag,".",param$MetFragCandidateWriter))
 
     withr::with_dir(path,{
         param = c(param,list(IonizedPrecursorMass=ion_mz,
@@ -383,7 +414,7 @@ write_metfrag_config <- function(param,path,subpaths,stag,adduct,ion_mz,spec) {
                              PrecursorIonMode=METFRAG_ADDUCT_SWITCHES[[adduct]],
                              ResultsPath=f_res,
                              PeakListPath=f_spec))
-        data.table::fwrite(spec,file=f_spec,col.names=F)
+        data.table::fwrite(spec,file=f_spec,col.names=F,sep=" ")
         write_keyval_file(namedl=param,fname=f_conf)
     })
 
@@ -406,5 +437,53 @@ metfrag_run <- function(fn_jar, fn_conf, fn_log, mem = NA_character_, java_bin =
     p <- processx::process$new(java_bin,args=args,stdout=fn_log,stderr='2>&1')
     p$wait()
     p$get_exit_status()
+    
+}
+
+
+metfrag_run_many_w_futures <- function(fn_jar,fn_conf,fn_log, mem = NA_character_, java_bin = "java") {
+    ntasks = length(fn_conf)
+    procs = list()
+    compl_prev = 0
+    message("MetFrag started: ", ntasks," tasks.")
+    for (n in 1:ntasks) {
+        procs = c(future::future({
+            
+            st =  metfrag_run(fn_jar = fn_jar,
+                              fn_conf = fn_conf[n],
+                              fn_log = fn_log[n],
+                              mem = mem,
+                              java_bin = java_bin)
+            st
+            
+            
+        },seed = T), procs)
+
+        reslv = which(sapply(procs,future::resolved))
+        compl = length(reslv)
+        
+        if (compl > compl_prev) {
+            message("Completed MetFrag tasks: ", compl, "/",ntasks)
+            compl_prev <- compl
+        }
+
+        
+    }
+}
+
+
+metfrag_run_many <- function(fn_conf, fn_log, mem = NA_character_, java_bin = "java") {
+    ntasks = length(fn_conf)
+     message("MetFrag started: ", ntasks," tasks.")
+    for (n in 1:ntasks) {
+        metfrag_run(fn_jar = fn_jar,
+                    fn_conf = fn_conf[[n]],
+                    fn_log = fn_log[[n]],
+                    mem = mem,
+                    java_bin = java_bin)
+        
+        message("Completed MetFrag tasks: ", n, "/",ntasks)
+    }
+
     
 }
