@@ -27,3 +27,7 @@ check_file_absent <- function(file,what) {
     check_notastring(file,what)
     if (nchar(file)>0L && !file.exists(file)) stop(errorCondition(paste0("The ", what, " file --- ", file, "--- does not exist, or cannot be found."), class=paste0(what,'-absent')))
 }
+
+check_not_one <- function(value,what) {
+    if (length(value)!=1L) stop(errorCondition(paste0("Size of", what, " is not one."), class=paste0(what,'-not-one')))
+}
