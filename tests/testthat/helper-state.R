@@ -1,3 +1,4 @@
+
 STATE_DATA = readRDS(system.file("testdata","test-state.rds",package="shinyscreen"))
 
 ## Create a project that contains the metfrag dir structure and
@@ -27,7 +28,10 @@ make_dummy_mf_project <- function()  {
         yaml::write_yaml(x=x$conf,file=file.path(p_dir,"conf-state.yaml"))
         m = new_project(project = p_dir,
                         envopts = eo)
-        m$out$tab$summ = STATE_DATA$out$tab$summ
+
+        kkk = STATE_DATA$out$tab$summ[,.(ii=.GRP),by=key(STATE_DATA$out$tab$summ)][,ii:=NULL][1:4]
+        
+        m$out$tab$summ = STATE_DATA$out$tab$summ[kkk,on=key(STATE_DATA$out$tab$summ),nomatch=NULL]
         m$extr = STATE_DATA$extr
         m
     })

@@ -32,7 +32,7 @@
 #' @param metfrag_jar  `character(1)`, a path to MetFrag JAR file
 #' @return An `envopts` object.
 #' @author Todor Kondić
-envopts <- function(metfrag_db_dir="",metfrag_jar="") {
+envopts <- function(metfrag_db_dir="",metfrag_jar="",java_bin=Sys.which("java")) {
     res = list(metfrag=list())
     class(res) = c("envopts","list") #Just to officially make it an
                                      #object.
@@ -42,6 +42,11 @@ envopts <- function(metfrag_db_dir="",metfrag_jar="") {
 
     check_file_absent(metfrag_jar,what="mf-jar")
     res$metfrag$jar = norm_path(metfrag_jar)
+
+    if (nchar(res$metfrag$jar)>0L) {
+        check_file_absent(java_bin,"java-bin")
+        res$metfrag$java_bin = java_bin
+    }
 
     res
 }

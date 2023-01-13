@@ -97,6 +97,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
 
         ## If jar defined.
         metfrag$runtime = envopts$metfrag$jar
+        metfrag$java_bin = envopts$metfrag$java_bin
         if (nchar(metfrag$runtime)>0L) {
             metfrag$cando_metfrag = T
             metfrag$cando_remote = T
@@ -105,15 +106,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
         ## If `conf` not null, fully setup metfrag.
         if (!is.null(conf)) {
 
-            ## Check for local DBs.
-            root = envopts$metfrag$db_dir
-            bname = conf$metfrag$db_file
-            if (nchar(bname)>0L) {
-                fpath = file.path(root,bname)
-                check_file_absent(fpath,what="metfrag-db-file")
-                metfrag$cando_local = T
-                metfrag$db_path = fpath
-            }
+            
 
             ## If MetFrag possible, set up the file structure.
             if (metfrag$cando_metfrag) {
@@ -128,6 +121,17 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                 metfrag$subpaths = subpaths
 
 
+            }
+
+
+            ## Check for local DBs.
+            root = envopts$metfrag$db_dir
+            bname = conf$metfrag$db_file
+            if (nchar(bname)>0L) {
+                fpath = file.path(root,bname)
+                check_file_absent(fpath,what="metfrag-db-file")
+                metfrag$cando_local = T
+                metfrag$db_path = fpath
             }
             
         }
@@ -327,13 +331,14 @@ metfrag_conf <- function(m) {
     param = list(MetFragDatabaseType="",
                  FragmentPeakMatchAbsoluteMassDeviation=METFRAG_DEFAULT_ABSMASSDEV,
                  FragmentPeakMatchRelativeMassDeviation=METFRAG_DEFAULT_RELMASSDEV,
+                 DatabaseSearchRelativeMassDeviation=METFRAG_DB_SEARCH_RELDEV,
                  MetFragScoreTypes=METFRAG_DEFAULT_SCORES,
                  MetFragScoreWeights=METFRAG_DEFAULT_WEIGHTS,
                  MetFragCandidateWriter=METFRAG_DEFAULT_WRITER,
                  SampleName=METFRAG_SAMPLE_NAME,
                  MaximumTreeDepth=METFRAG_DEFAULT_MAX_TREE_DEPTH,
-                 MetFragPreProcessingCandidateFilter=METFRAG_PREPFLT_CHOICES,
-                 MetFragPostProcessingCandidateFilter=METFRAG_POSTPFLT_CHOICES)
+                 MetFragPreProcessingCandidateFilter=paste(METFRAG_PREPFLT_CHOICES,collapse=","),
+                 MetFragPostProcessingCandidateFilter=paste(METFRAG_POSTPFLT_CHOICES,collapse=","))
     
     metfrag$param = param
     m$conf$metfrag = metfrag
@@ -384,18 +389,36 @@ get_metfrag_targets <- function(summ,ms2) {
 
 metfrag_on_state <- function(m,fmany=metfrag_run_many) {
     tgts = get_metfrag_targets(m$out$tab$summ,m$extr$ms2)
-    tgts[,write_metfrag_config(param=m$conf$metfrag$param,
-                               path = m$run$metfrag$path,
-                               subpaths = m$run$metfrag$subpaths,
-                               stag = paste0(.BY,collapse="_"),
-                               adduct = adduct,
-                               ion_mz = ion_mz[1],
-                               spec = .SD[,c("mz","intensity")]),
-         by=key(tgts)]
+
+    if (NROW(tgts)==0L) stop("No good spectra for MetFrag.")
+    
+    files = tgts[,write_metfrag_config(param=m$conf$metfrag$param,
+                                       path = m$run$metfrag$path,
+                                       subpaths = m$run$metfrag$subpaths,
+                                       db_path = m$run$metfrag$db_path,
+                                       stag = paste0(.BY,collapse="_"),
+                                       adduct = adduct,
+                                       ion_mz = ion_mz[1],
+                                       spec = .SD[,c("mz","intensity")]),
+                 by=key(tgts)]
+
+    data.table::setnames(files,old="V1",new="files")
+
+    withr::with_dir(m$run$metfrag$path,{
+        x = files[,data.table(fn_conf= .SD[1,files],
+                     fn_log= .SD[2,files])
+                 ,by=key(files)]
+        fmany(fn_jar = m$run$metfrag$runtime,
+              fn_conf = x$fn_conf,
+              fn_log = x$fn_log,
+              java_bin = m$run$metfrag$java_bin)
+        
+        list(targets=files)
+    })
 }
 
 
-write_metfrag_config <- function(param,path,subpaths,stag,adduct,ion_mz,spec) {
+write_metfrag_config <- function(param,path,subpaths,db_path,stag,adduct,ion_mz,spec) {
     check_not_one(ion_mz,"ion_mz")
     check_not_one(adduct,"adduct")
     dir_res = subpaths$results
@@ -406,14 +429,16 @@ write_metfrag_config <- function(param,path,subpaths,stag,adduct,ion_mz,spec) {
     f_spec = file.path(dir_spec,paste0(param$SampleName,"_",stag,".csv"))
     f_conf = file.path(dir_conf,paste0(param$SampleName,"_",stag,".conf"))
     f_log = file.path(dir_log,paste0(param$SampleName,"_",stag,".log"))
-    f_res = file.path(dir_res,paste0(param$SampleName,"_",stag,".",param$MetFragCandidateWriter))
-
+    f_res = paste0(param$SampleName,"_",stag)
     withr::with_dir(path,{
+        param$SampleName = f_res
         param = c(param,list(IonizedPrecursorMass=ion_mz,
                              IsPositiveIonMode=ifelse(grepl(r"(\+$)",adduct),"True","False"),
                              PrecursorIonMode=METFRAG_ADDUCT_SWITCHES[[adduct]],
-                             ResultsPath=f_res,
+                             ResultsPath="results",
                              PeakListPath=f_spec))
+
+        if (nchar(db_path)>0L) param = c(param,list(LocalDatabasePath = db_path))
         data.table::fwrite(spec,file=f_spec,col.names=F,sep=" ")
         write_keyval_file(namedl=param,fname=f_conf)
     })
@@ -472,7 +497,7 @@ metfrag_run_many_w_futures <- function(fn_jar,fn_conf,fn_log, mem = NA_character
 }
 
 
-metfrag_run_many <- function(fn_conf, fn_log, mem = NA_character_, java_bin = "java") {
+metfrag_run_many <- function(fn_jar,fn_conf, fn_log, mem = NA_character_, java_bin = "java") {
     ntasks = length(fn_conf)
      message("MetFrag started: ", ntasks," tasks.")
     for (n in 1:ntasks) {

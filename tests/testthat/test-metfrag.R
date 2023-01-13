@@ -24,14 +24,16 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
             res = write_metfrag_config(param = m$conf$metfrag$param,
                                        path = m$run$metfrag$path,
                                        subpaths = m$run$metfrag$subpaths,
+                                       db_path = m$run$metfrag$db_path,
                                        stag = paste0("a_",adduct,"_a"),
                                        adduct = adduct,
                                        ion_mz = 777.7789,
                                        spec = spec)
             fconf = file.path(m$run$metfrag$path,res["f_conf"])
             fspec = file.path(m$run$metfrag$path,res["f_spec"])
-            
-            cfconf[adduct] = readChar(fconf,nchars=file.size(fconf))
+            x = readChar(fconf,nchars=file.size(fconf))
+            y = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",x)
+            cfconf[adduct] = y 
 
 
             
@@ -63,19 +65,25 @@ ok_return_val("metfrag_on_state",{
     m = make_dummy_mf_project()
     res = metfrag_on_state(m)
     withr::with_dir(m$run$metfrag$path,{
-        fc_i = readChar(res[1,V1],nchars=file.size(res[1,V1]))
+        fc_i = readChar(res$targets[1,files],nchars=file.size(res$targets[1,files]))
+        fc_i = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fc_i)
         expect_snapshot(fc_i)
     
-        fs_i = readChar(res[3,V1],nchars=file.size(res[3,V1]))
+        fs_i = readChar(res$targets[3,files],nchars=file.size(res$targets[3,files]))
+        fs_i = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fs_i)
         expect_snapshot(fs_i)
     
-        fc_l = readChar(res[.N-2,V1],nchars=file.size(res[.N-2,V1]))
+        fc_l = readChar(res$targets[.N-2,files],nchars=file.size(res$targets[.N-2,files]))
+        fc_l = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fc_l)
         expect_snapshot(fc_l)
 
-        fs_l = readChar(res[.N,V1],nchars=file.size(res[.N,V1]))
+        fs_l = readChar(res$targets[.N,files],nchars=file.size(res$targets[.N,files]))
+        fs_l = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fs_l)
         expect_snapshot(fs_l)
     })
 })
+
+
 
 
 test_that("MetFrag example works.",{
