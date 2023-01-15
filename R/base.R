@@ -105,3 +105,12 @@ write_keyval_file <- function(namedl,fname) {
     }
     close(con)
 }
+
+gen_1d_keytab <- function(dt) {
+    dkey = data.table::key(dt)
+    s = dt[,.(key1d=""),by=dkey]
+    nms = sapply(dkey, as.name,simplify=F,USE.NAMES=F)
+    ex=bquote(paste(paste0(.(dkey),c(..(nms))),collapse="_"),splice=T)
+    eval(bquote(s[,`:=`(key1d=.(ex)),by=key(s)]))
+   
+}

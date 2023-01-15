@@ -56,6 +56,7 @@ Collate:
     'shiny-state.R'
     'shiny-ui-base.R'
 Depends:
+    R (>= 4.0.0),
     RMassBank,
     RChemMass,
     mzR,

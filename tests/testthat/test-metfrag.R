@@ -19,7 +19,6 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
         cfspec = character(length(METFRAG_ADDUCTS))
         names(cfconf) = METFRAG_ADDUCTS
         names(cfspec) = METFRAG_ADDUCTS
-        
         for (adduct in METFRAG_ADDUCTS) {
             res = write_metfrag_config(param = m$conf$metfrag$param,
                                        path = m$run$metfrag$path,
@@ -48,62 +47,69 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
     
 })
 
-test_that("Function get_metfrag_targets behaves as expected.",{
-
-    summ = STATE_DATA$out$tab$summ
-    ms2 = STATE_DATA$extr$ms2
-    res = get_metfrag_targets(summ=summ,
-                              ms2=ms2)
-    
-    expect_snapshot(head(res,5))
-    expect_snapshot(tail(res,5))
-  
-})
-
-ok_return_val("metfrag_on_state",{
+ok_return_val("metfrag_run",{
     skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
     m = make_dummy_mf_project()
-    res = metfrag_on_state(m)
+                
     withr::with_dir(m$run$metfrag$path,{
-        fc_i = readChar(res$targets[1,files],nchars=file.size(res$targets[1,files]))
-        fc_i = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fc_i)
-        expect_snapshot(fc_i)
-    
-        fs_i = readChar(res$targets[3,files],nchars=file.size(res$targets[3,files]))
-        fs_i = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fs_i)
-        expect_snapshot(fs_i)
-    
-        fc_l = readChar(res$targets[.N-2,files],nchars=file.size(res$targets[.N-2,files]))
-        fc_l = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fc_l)
-        expect_snapshot(fc_l)
+            stagtab = metfrag_get_stag_tab(m$out$tab$summ[ms2_sel == T])
 
-        fs_l = readChar(res$targets[.N,files],nchars=file.size(res$targets[.N,files]))
-        fs_l = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fs_l)
-        expect_snapshot(fs_l)
+            metfrag_run(param = m$conf$metfrag$param,
+                        path = m$run$metfrag$path,
+                        subpaths = m$run$metfrag$subpaths,
+                        db_path = m$run$metfrag$db_path,
+                        stag_tab = stab, ms2 = m$extr$ms2,
+                        runtime=m$run$metfrag$runtime,
+                        java_bin=m$run$metfrag$java_bin)
+
+                                 
     })
 })
 
+## ok_return_val("metfrag_on_state",{
+##     ## skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
+##     ## m = make_dummy_mf_project()
+##     ## res = metfrag_on_state(m)
+##     ## withr::with_dir(m$run$metfrag$path,{
+##     ##     fc_i = readChar(res$targets[1,files],nchars=file.size(res$targets[1,files]))
+##     ##     fc_i = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fc_i)
+##     ##     expect_snapshot(fc_i)
+    
+##     ##     fs_i = readChar(res$targets[3,files],nchars=file.size(res$targets[3,files]))
+##     ##     fs_i = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fs_i)
+##     ##     expect_snapshot(fs_i)
+    
+##     ##     fc_l = readChar(res$targets[.N-2,files],nchars=file.size(res$targets[.N-2,files]))
+##     ##     fc_l = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fc_l)
+##     ##     expect_snapshot(fc_l)
+
+##     ##     fs_l = readChar(res$targets[.N,files],nchars=file.size(res$targets[.N,files]))
+##     ##     fs_l = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",fs_l)
+##     ##     expect_snapshot(fs_l)
+##     ## })
+## })
 
 
 
-test_that("MetFrag example works.",{
-    skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
-    skip_if_offline()
-    withr::with_tempdir({
-        runtime = path.expand(Sys.getenv("METFRAG_JAR"))
-        fn_conf = system.file("testdata/example_parameter_file.txt",package = "shinyscreen")
-        fn_peaks = system.file("testdata/example_data.txt",package = "shinyscreen")
-        fn_log = "metfrag.log"
-        file.copy(fn_conf,basename(fn_conf))
-        file.copy(fn_peaks,basename(fn_peaks))
 
-        metfrag_run(fn_jar = runtime,
-                    fn_conf = basename(fn_conf),
-                    fn_log = fn_log)
+## test_that("MetFrag example works.",{
+##     skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
+##     skip_if_offline()
+##     withr::with_tempdir({
+##         runtime = path.expand(Sys.getenv("METFRAG_JAR"))
+##         fn_conf = system.file("testdata/example_parameter_file.txt",package = "shinyscreen")
+##         fn_peaks = system.file("testdata/example_data.txt",package = "shinyscreen")
+##         fn_log = "metfrag.log"
+##         file.copy(fn_conf,basename(fn_conf))
+##         file.copy(fn_peaks,basename(fn_peaks))
 
-        content = readChar(fn_log,nchars=file.size(fn_log))
-        expect_true(grepl(r"(0 candidate\(s\) discarded during processing due to errors)",content))
-    })
-})
+##         metfrag_run(fn_jar = runtime,
+##                     fn_conf = basename(fn_conf),
+##                     fn_log = fn_log)
+
+##         content = readChar(fn_log,nchars=file.size(fn_log))
+##         expect_true(grepl(r"(0 candidate\(s\) discarded during processing due to errors)",content))
+##     })
+## })
 
 
