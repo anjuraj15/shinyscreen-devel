@@ -1,6 +1,6 @@
 Package: shinyscreen
 Title: Pre-screening of Mass Spectrometry Data 
-Version: 1.2.9003
+Version: 1.2.9004
 Author: Todor Kondić
 Maintainer: Todor Kondić <todor.kondic@uni.lu>
 Authors@R: 
@@ -9,34 +9,34 @@ Authors@R:
              role = c("aut", "cre"),
              email = "todor.kondic@uni.lu",
              comment = c(ORCID = "https://orcid.org/0000-0001-6662-4375")),
-      person(given = "Adelene",
-             family = "Lai",
-	     email = "adelene.lai@uni.lu",
-	     role = c("ctb")),
-      person(given = "Emma",
-             family = "Schymanski",
-	     email = "emma.schymanski@uni.lu",
-	     role = c("ctb")),
-      person(given = "Hiba Mohammed",
-             family = "Taha",
+      person(given = "Anjana",
+             family = "Elapavalore",
              role = c("ctb"),
-             email = "hiba.mohammed-taha@uni.lu"),
+             email = "anjana.elapavalore@uni.lu"),	
       person(given = "Jessy",
              family = "Krier",
              role = c("ctb"),
              email = "jessy.krier@uni.lu"),
+      person(given = "Adelene",
+             family = "Lai",
+	     email = "adelene.lai@uni.lu",
+	     role = c("ctb")),
       person(given = "Mira",
              family = "Narayanan",
              role = c("ctb"),
              email = "mira.narayanan@uni.lu"),
-      person(given = "Anjana",
-             family = "Elapavalore",
+      person(given = "Hiba Mohammed",
+             family = "Taha",
              role = c("ctb"),
-             email = "anjana.elapavalore@uni.lu"),
+             email = "hiba.mohammed-taha@uni.lu"),
       person(given = "Marc",
              family = "Warmoes",
 	     role = c("ctb"),
-	     email = "marc.warmoes@uni.lu"))
+	     email = "marc.warmoes@uni.lu"),
+      person(given = "Emma",
+             family = "Schymanski",
+	     email = "emma.schymanski@uni.lu",
+	     role = c("ctb")))
 Description: Pre-screening of Mass Spectrometry Data.
 License: Apache License (>= 2.0)
 Encoding: UTF-8
@@ -50,6 +50,7 @@ Collate:
     'mix.R'
     'envopts.R'
     'state.R'
+    'metfrag.R'
     'plotting.R'
     'extraction.R'
     'api.R'
@@ -62,24 +63,25 @@ Depends:
     mzR,
     MSnbase
 Imports:
-    tools,
-    scales,
-    future,
-    yaml,
-    data.table,
     assertthat,
-    withr,
-    rmarkdown,
-    htmltools,
-    ggplot2,
     cowplot,
-    RColorBrewer,
-    grid,
     curl,
-    shiny,
+    data.table,
+    DT,
+    future,
+    ggplot2,
+    grid,
+    htmltools,
     processx,
     promises,
-    DT
+    RColorBrewer,
+    readxl,
+    rmarkdown,
+    scales,
+    shiny,
+    tools,
+    withr,
+    yaml
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
