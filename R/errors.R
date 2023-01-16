@@ -37,3 +37,10 @@ check_extension <- function(extfileval,what) {
     if (extfileval[[1]]==extfileval[[2]]) stop(errorCondition(paste0("We could not find the extension for ",what, ". The returned value was: ", extfileval[[2]]),
                                                               class = paste0(what,'-no-ext-found')))
 }
+
+
+check_key_absent <- function(key,l,what) {
+    nms = names(l)
+    if (! (key %in% nms)) stop(errorCondition(paste0("Key",key, " has not been found for ", what),
+                                                              class = paste0(what,'-absent')))
+}

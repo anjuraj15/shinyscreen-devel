@@ -41,6 +41,12 @@ metfrag_get_ms2_spec <- function(ms2,stag_entry) {
     x
 }
 
+get_mf_res_ext <- function(fn) {
+    ext = sub(pattern = r"(^.*\.([[:alnum:]]+)$)",r"(\1)", fn)
+    check_extension(c(ext=ext,file=fn),what="mf-res-file")
+    ext
+}
+
 metfrag_run <- function(param,path,subpaths,db_path,stag_tab,ms2,runtime,java_bin,nproc = 1L) {
     keys = intersect(colnames(stag_tab),colnames(ms2))
     message("Generating MetFrag configs.")
@@ -69,8 +75,7 @@ metfrag_run <- function(param,path,subpaths,db_path,stag_tab,ms2,runtime,java_bi
     pth = file.path(path,subpaths[["results"]])
     a_res_f = list.files(path = pth,
                          pattern = param$SampleName)[[1]]
-    ext = sub(pattern = r"(^.*\.([[:alnum:]]+)$)",r"(\1)", a_res_f)
-    check_extension(c(ext=ext,file=a_res_f),what="mf-res-file")
+    ext = get_mf_res_ext(a_res_f)
     file_tab[,f_res:=paste0(param$SampleName,"_",stag,".",(ext))]
 
     
@@ -92,10 +97,6 @@ get_metfrag_targets <- function(stag_tab,ms2) {
     x
     
 }
-
-## get_metfrag_run_data(stag_tab,ms2,n=1) {
-## }
-
 
 metfrag_on_state <- function(mconf,mrun,summ) {
     
@@ -212,5 +213,51 @@ metfrag_run_many <- function(fn_jar,file_tab, mem = NA_character_, java_bin = "j
 }
 
 
-summarise_metfrag_results <- function(m) {
+summarise_metfrag_results <- function(param,path,subpaths,file_tab) {
+
+    ## which(max(as.numeric(mf_res$Score))==as.numeric(mf_res$Score))
+    index_maxScore = 1L
+    
+    ## First detect which reader we need.
+    ext = get_mf_res_ext(file_tab[1,f_res])
+    readf = METFRAG_RESULT_READF[[ext]]
+    keyz = as.character(union(key(file_tab),"stag"))
+    .read_results <- function() {
+        file_tab[,{
+            fn = file.path(..path,subpaths$results,f_res)
+            dt = data.table::rbindlist(lapply(fn,function (ff) as.data.table(readf(ff))))
+            dt
+        },
+        by = keyz]
+    }
+
+    .adapt_col_types <- function(x) {
+        x[,c("Score",
+             "NoExplPeaks",
+             "NumberPeaksUsed",
+             "FragmenterScore",
+             "OfflineIndividualMoNAScore"):=lapply(.SD, as.numeric),.SDcol=c("Score",
+                                                                             "NoExplPeaks",
+                                                                             "NumberPeaksUsed",
+                                                                             "FragmenterScore",
+                                                                             "OfflineIndividualMoNAScore")]
+    }
+
+    .calc_basic_scores <- function(x) {
+        x[,.(num_poss_IDs=length(Score),
+             max_Score=max(Score),
+             n_Score_GE4=length(which(Score>=4)),
+             n_Score_GE3=length(which(Score>=3)),
+             n_Score_GE2=length(which(Score>=2))),
+          keyby="stag"]
+
+    }
+
+    thetab = .read_results()
+    thetab = .adapt_col_types(thetab)
+    monatab = thetab[,.(max_MoNAIndiv=max(OfflineIndividualMoNAScore))]
+    basictab = .calc_basic_scores(thetab)
+
+        
 }
+
