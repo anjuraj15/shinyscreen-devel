@@ -181,38 +181,6 @@ metfrag_run_one <- function(fn_jar, fn_conf, fn_log, mem = NA_character_, java_b
     p
 }
 
-
-metfrag_run_many_w_futures <- function(fn_jar,fn_conf,fn_log, mem = NA_character_, java_bin = "java") {
-    ntasks = length(fn_conf)
-    procs = list()
-    compl_prev = 0
-    message("MetFrag started: ", ntasks," tasks.")
-    for (n in 1:ntasks) {
-        procs = c(future::future({
-            
-            st =  metfrag_run(fn_jar = fn_jar,
-                              fn_conf = fn_conf[n],
-                              fn_log = fn_log[n],
-                              mem = mem,
-                              java_bin = java_bin)
-            st
-            
-            
-        },seed = T), procs)
-
-        reslv = which(sapply(procs,future::resolved))
-        compl = length(reslv)
-        
-        if (compl > compl_prev) {
-            message("Completed MetFrag tasks: ", compl, "/",ntasks)
-            compl_prev <- compl
-        }
-
-        
-    }
-}
-
-
 metfrag_run_many <- function(fn_jar,file_tab, mem = NA_character_, java_bin = "java",nproc=1L) {
     ntasks = NROW(file_tab)
 
