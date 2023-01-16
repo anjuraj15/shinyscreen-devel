@@ -54,13 +54,22 @@ ok_return_val("metfrag_run",{
     withr::with_dir(m$run$metfrag$path,{
             stagtab = metfrag_get_stag_tab(m$out$tab$summ[ms2_sel == T])
 
-            metfrag_run(param = m$conf$metfrag$param,
-                        path = m$run$metfrag$path,
-                        subpaths = m$run$metfrag$subpaths,
-                        db_path = m$run$metfrag$db_path,
-                        stag_tab = stab, ms2 = m$extr$ms2,
-                        runtime=m$run$metfrag$runtime,
-                        java_bin=m$run$metfrag$java_bin)
+            ftab = metfrag_run(param = m$conf$metfrag$param,
+                               path = m$run$metfrag$path,
+                               subpaths = m$run$metfrag$subpaths,
+                               db_path = m$run$metfrag$db_path,
+                               stag_tab = stagtab, ms2 = m$extr$ms2,
+                               runtime=m$run$metfrag$runtime,
+                               java_bin=m$run$metfrag$java_bin,
+                               nproc = 2)
+
+            expect_snapshot(ftab)
+
+            for (f in ftab[,f_res]) {
+                expect_true(file.exists(file.path(m$run$metfrag$path,
+                                                  m$run$metfrag$subpaths['results'],
+                                                  f)))
+            }
 
                                  
     })

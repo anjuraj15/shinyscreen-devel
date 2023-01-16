@@ -18,3 +18,27 @@
       [13] "MetFragDatabaseType = \nFragmentPeakMatchAbsoluteMassDeviation = 0.001\nFragmentPeakMatchRelativeMassDeviation = 5\nDatabaseSearchRelativeMassDeviation = 5\nMetFragScoreTypes = FragmenterScore,OfflineIndividualMoNAScore\nMetFragScoreWeights = 1,1\nMetFragCandidateWriter = CSV\nSampleName = sample_a_[M+]+_a\nMaximumTreeDepth = 2\nMetFragPreProcessingCandidateFilter = UnconnectedCompoundFilter,IsotopeFilter\nMetFragPostProcessingCandidateFilter = InChIKeyFilter\nIonizedPrecursorMass = 777.7789\nIsPositiveIonMode = True\nPrecursorIonMode = 0\nResultsPath = results\nPeakListPath = spec/sample_a_[M+]+_a.csv\n\n"               
       [14] "MetFragDatabaseType = \nFragmentPeakMatchAbsoluteMassDeviation = 0.001\nFragmentPeakMatchRelativeMassDeviation = 5\nDatabaseSearchRelativeMassDeviation = 5\nMetFragScoreTypes = FragmenterScore,OfflineIndividualMoNAScore\nMetFragScoreWeights = 1,1\nMetFragCandidateWriter = CSV\nSampleName = sample_a_[M-]-_a\nMaximumTreeDepth = 2\nMetFragPreProcessingCandidateFilter = UnconnectedCompoundFilter,IsotopeFilter\nMetFragPostProcessingCandidateFilter = InChIKeyFilter\nIonizedPrecursorMass = 777.7789\nIsPositiveIonMode = False\nPrecursorIonMode = 0\nResultsPath = results\nPeakListPath = spec/sample_a_[M-]-_a.csv\n\n"              
 
+# function metfrag_run returns correct result.
+
+    Code
+      ftab
+    Output
+          ID adduct tag   an CE
+      1: 100 [M+H]+  AA 5413 10
+      2: 100 [M+H]+  KO 5434 10
+                                                                f_conf
+      1: config/testsample_setNTs_ID100_adduct[M+H]+_tagAA_an5413.conf
+      2: config/testsample_setNTs_ID100_adduct[M+H]+_tagKO_an5434.conf
+                                                             f_log
+      1: log/testsample_setNTs_ID100_adduct[M+H]+_tagAA_an5413.log
+      2: log/testsample_setNTs_ID100_adduct[M+H]+_tagKO_an5434.log
+                                                             f_spec
+      1: spec/testsample_setNTs_ID100_adduct[M+H]+_tagAA_an5413.csv
+      2: spec/testsample_setNTs_ID100_adduct[M+H]+_tagKO_an5434.csv
+                                           stag
+      1: setNTs_ID100_adduct[M+H]+_tagAA_an5413
+      2: setNTs_ID100_adduct[M+H]+_tagKO_an5434
+                                                         f_res
+      1: testsample_setNTs_ID100_adduct[M+H]+_tagAA_an5413.csv
+      2: testsample_setNTs_ID100_adduct[M+H]+_tagKO_an5434.csv
+

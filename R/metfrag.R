@@ -41,7 +41,7 @@ metfrag_get_ms2_spec <- function(ms2,stag_entry) {
     x
 }
 
-metfrag_run <- function(param,path,subpaths,db_path,stag_tab,ms2,runtime,java_bin) {
+metfrag_run <- function(param,path,subpaths,db_path,stag_tab,ms2,runtime,java_bin,nproc = 1L) {
     keys = intersect(colnames(stag_tab),colnames(ms2))
     message("Generating MetFrag configs.")
     file_tab = ms2[stag_tab,{
@@ -60,8 +60,21 @@ metfrag_run <- function(param,path,subpaths,db_path,stag_tab,ms2,runtime,java_bi
     withr::with_dir(path,{
         metfrag_run_many(fn_jar = runtime,
                          file_tab = file_tab,
-                         java_bin = java_bin)
+                         java_bin = java_bin,
+                         nproc = nproc)
     })
+
+    ## We don't know (so well) in advance what are the endings of the
+    ## results files. Lets find this out.
+    pth = file.path(path,subpaths[["results"]])
+    a_res_f = list.files(path = pth,
+                         pattern = param$SampleName)[[1]]
+    ext = sub(pattern = r"(^.*\.([[:alnum:]]+)$)",r"(\1)", a_res_f)
+    check_extension(c(ext=ext,file=a_res_f),what="mf-res-file")
+    file_tab[,f_res:=paste0(param$SampleName,"_",stag,".",(ext))]
+
+    
+    
 }
 
     
@@ -203,7 +216,8 @@ metfrag_run_many_w_futures <- function(fn_jar,fn_conf,fn_log, mem = NA_character
 metfrag_run_many <- function(fn_jar,file_tab, mem = NA_character_, java_bin = "java",nproc=1L) {
     ntasks = NROW(file_tab)
 
-    k = ntasks %/% nproc
+    todo = min(nproc,ntasks)
+    k = ntasks %/% todo
     ndone = 0L
     lc = 1L
     while (ndone < ntasks) {
@@ -212,7 +226,6 @@ metfrag_run_many <- function(fn_jar,file_tab, mem = NA_character_, java_bin = "j
         for (i in (ndone + 1):ncurr_last) {
             fn_conf = file_tab[i,f_conf]
             fn_log = file_tab[i,f_log]
-            message("fn_conf:", fn_conf)
             procs[[i-ndone]] = metfrag_run_one(fn_jar,
                                                fn_conf= fn_conf,
                                                fn_log = fn_log,

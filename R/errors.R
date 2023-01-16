@@ -31,3 +31,9 @@ check_file_absent <- function(file,what) {
 check_not_one <- function(value,what) {
     if (length(value)!=1L) stop(errorCondition(paste0("Size of", what, " is not one."), class=paste0(what,'-not-one')))
 }
+
+check_extension <- function(extfileval,what) {
+    check_notastring(extfileval[[1]],what = what)
+    if (extfileval[[1]]==extfileval[[2]]) stop(errorCondition(paste0("We could not find the extension for ",what, ". The returned value was: ", extfileval[[2]]),
+                                                              class = paste0(what,'-no-ext-found')))
+}
