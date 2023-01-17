@@ -74,6 +74,9 @@ ok_return_val("metfrag_run",{
             x = summarise_metfrag_results(param = m$conf$metfrag$param,
                                           path = m$run$metfrag$path,
                                           subpaths = m$run$metfrag$subpaths,
+                                          cand_parameters = m$conf$metfrag$cand_parameters,
+                                          scores = m$conf$metfrag$scores,
+                                          collect_candidates= m$conf$metfrag$collect_candidates,
                                           file_tab = ftab)
 
                                  

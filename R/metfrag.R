@@ -213,7 +213,7 @@ metfrag_run_many <- function(fn_jar,file_tab, mem = NA_character_, java_bin = "j
 }
 
 
-summarise_metfrag_results <- function(param,path,subpaths,file_tab) {
+summarise_metfrag_results <- function(param,path,subpaths,cand_parameters,scores,collect_candidates,file_tab) {
 
     ## which(max(as.numeric(mf_res$Score))==as.numeric(mf_res$Score))
     index_maxScore = 1L
@@ -232,15 +232,7 @@ summarise_metfrag_results <- function(param,path,subpaths,file_tab) {
     }
 
     .adapt_col_types <- function(x) {
-        x[,c("Score",
-             "NoExplPeaks",
-             "NumberPeaksUsed",
-             "FragmenterScore",
-             "OfflineIndividualMoNAScore"):=lapply(.SD, as.numeric),.SDcol=c("Score",
-                                                                             "NoExplPeaks",
-                                                                             "NumberPeaksUsed",
-                                                                             "FragmenterScore",
-                                                                             "OfflineIndividualMoNAScore")]
+        x[,(names(scores)):=lapply(.SD, as.numeric),.SDcol=names(scores)]
     }
 
     .calc_basic_scores <- function(x) {
@@ -249,15 +241,51 @@ summarise_metfrag_results <- function(param,path,subpaths,file_tab) {
              n_Score_GE4=length(which(Score>=4)),
              n_Score_GE3=length(which(Score>=3)),
              n_Score_GE2=length(which(Score>=2))),
-          keyby="stag"]
+          by=keyz]
 
     }
 
-    thetab = .read_results()
-    thetab = .adapt_col_types(thetab)
-    monatab = thetab[,.(max_MoNAIndiv=max(OfflineIndividualMoNAScore))]
-    basictab = .calc_basic_scores(thetab)
+    .get_candidate_param <- function(x) {
+        res = x[,.SD[..index_maxScore],
+                .SDcol=cand_parameters,
+                keyby=keyz]
+        ## data.table::setnames(res,old = names(res), new = paste0("top_",names(res)))
+        res
+    }
 
+
+    .make_max_cols <- function(x) {
+        res = x[,lapply(.SD,function(s) max(s,na.rm=T)),.SDcol=names(scores),keyby=keyz]
+        data.table::setnames(res,old = names(res),new = paste0("max_",names(res)))
+        res
+    }
+
+
+    .collect_candidates <- function(x) {
+        x[,lapply(.SD, function(col) paste(col,collapse=";")),
+               .SDcol=collect_candidates,
+               keyby=keyz]
+    }
+
+    
+    thetab = .read_results()
+    .adapt_col_types(thetab)
+    
+    btab = .calc_basic_scores(thetab)    
+
+    cctab = .collect_candidates(thetab)
+    candtab = .get_candidate_param(thetab)
+    mxtab = .make_max_cols(thetab)
+
+    res = file_tab
+    res = res[btab]
+    res = res[cctab]
+    res = res[candtab]
+    res = res[mxtab]
+
+    res
+
+    
         
 }
 

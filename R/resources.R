@@ -351,6 +351,7 @@ METFRAG_DEFAULT_SCORES = list(FragmenterScore=1.0,OfflineIndividualMoNAScore=1.0
                                         # not
                                         # work
                                         # well.
+
 ## METFRAG_DEFAULT_WEIGHTS = "1,1"
 METFRAG_DEFAULT_MAX_TREE_DEPTH = 2
 METFRAG_SAMPLE_NAME = "sample"
