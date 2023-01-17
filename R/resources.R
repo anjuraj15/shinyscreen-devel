@@ -343,8 +343,7 @@ METFRAG_PREPFLT_CHOICES = c("UnconnectedCompoundFilter","IsotopeFilter")
 METFRAG_PREPFLT_DEFAULT = c("UnconnectedCompoundFilter","IsotopeFilter")
 METFRAG_POSTPFLT_CHOICES = c("InChIKeyFilter")
 METFRAG_POSTPFLT_DEFAULT = c("InChIKeyFilter")
-METFRAG_DEFAULT_SCORES = c(FragmenterScore="FragmenterScore",
-                           OfflineIndividualMoNAScore="OfflineIndividualMoNAScore")
+METFRAG_DEFAULT_SCORES = list(FragmenterScore=1.0,OfflineIndividualMoNAScore=1.0)
                                         # AutomatedPeakFingerprintAnnotationScore,
                                         # AutomatedLossFingerprintAnnotationScore
                                         # supposedly
@@ -352,7 +351,7 @@ METFRAG_DEFAULT_SCORES = c(FragmenterScore="FragmenterScore",
                                         # not
                                         # work
                                         # well.
-METFRAG_DEFAULT_WEIGHTS = "1,1"
+## METFRAG_DEFAULT_WEIGHTS = "1,1"
 METFRAG_DEFAULT_MAX_TREE_DEPTH = 2
 METFRAG_SAMPLE_NAME = "sample"
 METFRAG_DEFAULT_ABSMASSDEV = 1.E-3

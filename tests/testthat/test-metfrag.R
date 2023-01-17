@@ -20,7 +20,7 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
         names(cfconf) = METFRAG_ADDUCTS
         names(cfspec) = METFRAG_ADDUCTS
         for (adduct in METFRAG_ADDUCTS) {
-            res = write_metfrag_config(param = m$conf$metfrag$param,
+            res = write_metfrag_config(param = m$run$metfrag$param,
                                        path = m$run$metfrag$path,
                                        subpaths = m$run$metfrag$subpaths,
                                        db_path = m$run$metfrag$db_path,
@@ -54,7 +54,7 @@ ok_return_val("metfrag_run",{
     withr::with_dir(m$run$metfrag$path,{
             stagtab = metfrag_get_stag_tab(m$out$tab$summ[ms2_sel == T])
 
-            ftab = metfrag_run(param = m$conf$metfrag$param,
+            ftab = metfrag_run(param = m$run$metfrag$param,
                                path = m$run$metfrag$path,
                                subpaths = m$run$metfrag$subpaths,
                                db_path = m$run$metfrag$db_path,

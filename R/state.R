@@ -93,7 +93,8 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                                      spec="",
                                      log=""),
                        runtime="",
-                       db_path="")
+                       db_path="",
+                       param=NULL)
 
         ## If jar defined.
         metfrag$runtime = envopts$metfrag$jar
@@ -119,6 +120,15 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                                 log = "log")
                 for (x in subpaths) dir.create(file.path(mfdir,x),showWarnings=F)
                 metfrag$subpaths = subpaths
+
+                ## Create score and weight entries.
+                param = conf$metfrag$param
+                param$MetFragScoreTypes = paste0(names(conf$metfrag$scores),collapse = ",")
+                param$MetFragScoreWeights = paste0(conf$metfrag$scores,collapse = ",")
+
+                ## Fully expanded params end up in run object.
+                metfrag$param = param
+                
 
 
             }
@@ -332,8 +342,6 @@ metfrag_conf <- function(m) {
                  FragmentPeakMatchAbsoluteMassDeviation=METFRAG_DEFAULT_ABSMASSDEV,
                  FragmentPeakMatchRelativeMassDeviation=METFRAG_DEFAULT_RELMASSDEV,
                  DatabaseSearchRelativeMassDeviation=METFRAG_DB_SEARCH_RELDEV,
-                 MetFragScoreTypes=METFRAG_DEFAULT_SCORES,
-                 MetFragScoreWeights=METFRAG_DEFAULT_WEIGHTS,
                  MetFragCandidateWriter=METFRAG_DEFAULT_WRITER,
                  SampleName=METFRAG_SAMPLE_NAME,
                  MaximumTreeDepth=METFRAG_DEFAULT_MAX_TREE_DEPTH,
@@ -341,6 +349,9 @@ metfrag_conf <- function(m) {
                  MetFragPostProcessingCandidateFilter=paste(METFRAG_POSTPFLT_CHOICES,collapse=","))
     
     metfrag$param = param
+
+    metfrag$scores = METFRAG_DEFAULT_SCORES
+    
     m$conf$metfrag = metfrag
     m
 }

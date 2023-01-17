@@ -24,6 +24,8 @@ make_dummy_mf_project <- function()  {
         x$conf$metfrag$param$SampleName = "testsample"
         x$conf$metfrag$param$MetFragDatabaseType = "LocalCSV"
         x$conf$metfrag$db_file = basename(getOption("fn_db"))
+        x$conf$metfrag$scores = list(FragmenterScore=1.0,
+                                     OfflineIndividualMoNAScore=1.0)
 
         yaml::write_yaml(x=x$conf,file=file.path(p_dir,"conf-state.yaml"))
         m = new_project(project = p_dir,
