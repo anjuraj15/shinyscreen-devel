@@ -1,13 +1,14 @@
 test_that("Do adducts affect MetFrag config generation correctly?",{
-
+    skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
     withr::with_tempdir({
+        opts = list(fn_jar=Sys.getenv("METFRAG_JAR"),
+                    fn_db_dir=Sys.getenv("METFRAG_DB_DIR"),
+                    fn_db = Sys.getenv("METFRAG_DB"))
+                    
         o = new_conf()
-        dir.create("db_dir")
-        saveRDS("","db_dir/dbfile.csv")
-        saveRDS("","mf.jar")
-        o$conf$metfrag$db_file = "dbfile.csv"
-        eo = envopts(metfrag_db_dir="db_dir",
-                     metfrag_jar="mf.jar")
+        eo = envopts(metfrag_db_dir=opts$fn_db_dir,
+                     metfrag_jar=opts$fn_jar)
+        o$conf$metfrag$db_file = basename(opts$fn_db)
         yaml::write_yaml(o$conf,file='conf-state.yaml')
         pproj = getwd()
         m = new_project(pproj,envopts = eo)
@@ -75,9 +76,13 @@ ok_return_val("metfrag_run",{
                                           path = m$run$metfrag$path,
                                           subpaths = m$run$metfrag$subpaths,
                                           cand_parameters = m$conf$metfrag$cand_parameters,
-                                          scores = m$conf$metfrag$scores,
+                                          db_scores = m$conf$metfrag$database_scores,
+                                          int_scores = m$conf$metfrag$intrinsic_scores,
                                           collect_candidates= m$conf$metfrag$collect_candidates,
                                           file_tab = ftab)
+            
+            expect_snapshot(x)
+
 
                                  
     })

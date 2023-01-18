@@ -213,7 +213,7 @@ metfrag_run_many <- function(fn_jar,file_tab, mem = NA_character_, java_bin = "j
 }
 
 
-summarise_metfrag_results <- function(param,path,subpaths,cand_parameters,scores,collect_candidates,file_tab) {
+summarise_metfrag_results <- function(param,path,subpaths,cand_parameters,db_scores,int_scores,collect_candidates,file_tab) {
 
     ## which(max(as.numeric(mf_res$Score))==as.numeric(mf_res$Score))
     index_maxScore = 1L
@@ -228,11 +228,13 @@ summarise_metfrag_results <- function(param,path,subpaths,cand_parameters,scores
             dt = data.table::rbindlist(lapply(fn,function (ff) as.data.table(readf(ff))))
             dt
         },
-        by = keyz]
+        keyby = keyz]
+
+
     }
 
     .adapt_col_types <- function(x) {
-        x[,(names(scores)):=lapply(.SD, as.numeric),.SDcol=names(scores)]
+        x[,(names(db_scores)):=lapply(.SD, as.numeric),.SDcol=names(db_scores)]
     }
 
     .calc_basic_scores <- function(x) {
@@ -255,33 +257,38 @@ summarise_metfrag_results <- function(param,path,subpaths,cand_parameters,scores
 
 
     .make_max_cols <- function(x) {
-        res = x[,lapply(.SD,function(s) max(s,na.rm=T)),.SDcol=names(scores),keyby=keyz]
-        data.table::setnames(res,old = names(res),new = paste0("max_",names(res)))
+        res = x[,{
+            cols = lapply(.SD,function(s) max(s,na.rm=T))
+            names(cols) = lapply(names(.SD),function(nn) paste0("Max_",nn))
+            cols}, .SDcol=c(names(int_scores),names(db_scores)),keyby=keyz]
         res
     }
 
 
     .collect_candidates <- function(x) {
-        x[,lapply(.SD, function(col) paste(col,collapse=";")),
-               .SDcol=collect_candidates,
-               keyby=keyz]
+        res = x[,{cols = lapply(.SD, function(col) paste(col,collapse=";"))
+                  names(cols) = lapply(names(.SD),function(nn) paste0("All_",nn))
+                  cols},
+                .SDcol=collect_candidates,
+                keyby=keyz]
+        res
     }
 
-    
+
     thetab = .read_results()
     .adapt_col_types(thetab)
-    
-    btab = .calc_basic_scores(thetab)    
-
+    btab = .calc_basic_scores(thetab)
     cctab = .collect_candidates(thetab)
     candtab = .get_candidate_param(thetab)
     mxtab = .make_max_cols(thetab)
 
-    res = file_tab
+
+    res = file_tab[,`:=`(f_conf=NULL,f_log=NULL,f_res=NULL,f_spec=NULL)]
+    data.table::setkeyv(res,c(key(res),"stag"))
     res = res[btab]
-    res = res[cctab]
     res = res[candtab]
     res = res[mxtab]
+    res = res[cctab]
 
     res
 

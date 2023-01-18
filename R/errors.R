@@ -39,8 +39,11 @@ check_extension <- function(extfileval,what) {
 }
 
 
-check_key_absent <- function(key,l,what) {
+check_key_absent <- function(keys,l,what) {
     nms = names(l)
-    if (! (key %in% nms)) stop(errorCondition(paste0("Key",key, " has not been found for ", what),
-                                                              class = paste0(what,'-absent')))
+    keys_in = keys %in% l
+    keys_absent = keys[!keys_in]
+    hv = if (length(keys_absent)>1L) "have" else "has"
+    if (length(keys_absent)>0L) stop(errorCondition(paste0("Keys [",paste0(keys_absent,collapse=', '), "] ",hv," not been found for ", what),
+                                                    class = paste0(what,'-absent')))
 }

@@ -121,13 +121,6 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                 for (x in subpaths) dir.create(file.path(mfdir,x),showWarnings=F)
                 metfrag$subpaths = subpaths
 
-                ## Create score and weight entries.
-                param = conf$metfrag$param
-                param$MetFragScoreTypes = paste0(names(conf$metfrag$scores),collapse = ",")
-                param$MetFragScoreWeights = paste0(conf$metfrag$scores,collapse = ",")
-
-                ## Fully expanded params end up in run object.
-                metfrag$param = param
                 
 
 
@@ -142,7 +135,27 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                 check_file_absent(fpath,what="metfrag-db-file")
                 metfrag$cando_local = T
                 metfrag$db_path = fpath
+
+                # Check if names exist in the database (if local).
+                dbnms = colnames(fread(fpath,nrows=1L))
+                check_key_absent(c(names(conf$metfrag$database_scores),
+                                   conf$metfrag$cand_parameters,
+                                   conf$metfrag$collect_candidates),
+                                 dbnms,what="local-metfrag-database")
+
+
+
             }
+
+            ## Create score and weight entries.
+            param = conf$metfrag$param
+
+            scores = c(conf$metfrag$intrinsic_scores,conf$metfrag$database_scores)
+            param$MetFragScoreTypes = paste0(names(scores),collapse = ",")
+            param$MetFragScoreWeights = paste0(scores,collapse = ",")
+            ## Fully expanded params end up in run object.
+            metfrag$param = param
+
             
         }
 
@@ -350,7 +363,8 @@ metfrag_conf <- function(m) {
     
     metfrag$param = param
 
-    metfrag$scores = METFRAG_DEFAULT_SCORES
+    metfrag$intrinsic_scores = METFRAG_DEFAULT_SCORES
+    metfrag$database_scores = list()
     
     m$conf$metfrag = metfrag
     m
