@@ -1,0 +1,245 @@
+<details><summary>Extract spectra from data files.</summary>
+
+Spectral extraction is controled by the parameters under the
+_Extraction_ tab, while the quality check parameters are located under
+the _Prescreening_ tab.
+
+After Shinyscreen is configured, the compound and setid lists loaded,
+it is possible to proceed with extracting the data. The extraction
+process can start after pressing `Extract`. Depending on the size of
+the commpound list and the properties of the data files this may take
+a while.
+
+Once the data is extracted, quality checking can be carried out using
+the `Prescreen` button.
+
+The parameters affecting current extraction are displayed in the
+*Overview* section. 
+
+</details>
+
+### Extraction
+
+#### Spectra extraction based settings
+
+<details><summary>MS1 coarse error</summary>
+
+Extract all entries matching the target mass within this error in the
+precursor table.
+</details>
+```{r, echo=F}
+vu <- get_val_unit(def_state$conf$tolerance[["ms1 coarse"]])
+shinyscreen::mz_input(input_mz = "ms1_coarse",
+                       input_unit = "ms1_coarse_unit",
+                       def_mz = vu[['val']],
+                       def_unit = vu[['unit']])
+```
+
+<details><summary>MS1 fine error</summary>
+
+The precursor table masses can be of lower accuracy. Once there is a
+match within the coarse error, it can be further checked versus the
+fine error bounds directly in the mass spectrum.
+
+</details>
+```{r, echo=F}
+vu <- get_val_unit(def_state$conf$tolerance[["ms1 fine"]])
+shinyscreen::mz_input(input_mz = "ms1_fine",
+                      input_unit = "ms1_fine_unit",
+                      def_mz = vu[['val']],
+                      def_unit = vu[['unit']])
+```
+
+<details><summary>MS1 EIC window</summary>
+
+The mz interval over which the intensities are aggregated to generate
+a chromatogram.
+
+</details>
+```{r, echo=F}
+vu <- get_val_unit(def_state$conf$tolerance[["eic"]])
+shinyscreen::mz_input(input_mz = "ms1_eic",
+                      input_unit = "ms1_eic_unit",
+                      def_mz = vu[['val']],
+                      def_unit = vu[['unit']])
+```
+
+<details><summary>Retention time window</summary>
+
+If the expected retention time has been specified for the compound,
+then search for the MS1 signature inside the window defined by this
+range.
+
+</details>
+```{r, echo=F}
+vu <- get_val_unit(def_state$conf$tolerance[["rt"]])
+shinyscreen::rt_input(input_rt = "ms1_rt_win",
+                      input_unit = "ms1_rt_win_unit",
+                      def_rt = vu[['val']],
+                      def_unit = vu[['unit']])
+```
+
+<details><summary>Fill missing precursors</summary>
+
+* **fill** : Try to guess precursors of MS2 entries. This is done by
+picking MS1 which chronologically preceeds a given MS2 entry.
+* **omit** : Ignore MS2 with missing precursors.
+* **do_nothing** : Default. Use MS1--MS2 metadata recorded in the file
+to associate MS1 and MS2 entries. Usually works.  
+</details>
+```{r, echo=F}
+radioButtons("missingprec",
+             label = "Missing precursors",
+             choices = c("do_nothing","fill","omit"),
+             selected = "do_nothing")
+
+```
+
+### Prescreening
+
+<details><summary>MS1 intensity threshold</summary>
+
+Ignore MS1 signal below the threshold.
+
+</details>
+```{r, echo=F}
+
+numericInput(inputId = "ms1_int_thresh",
+             label = NULL,
+             value = def_state$conf$prescreen$ms1_int_thresh)
+```
+
+<details><summary>MS2 intensity threshold</summary>
+
+Ignore MS2 signal below the threshold.
+
+</details>
+```{r, echo=F}
+
+numericInput(inputId = "ms2_int_thresh",
+             label = NULL,
+             value = def_state$conf$prescreen$ms2_int_thresh)
+```
+
+
+MS1 signal-to-noise ratio.
+
+```{r, echo=F}
+
+numericInput(inputId = "s2n",
+             label = NULL,
+             value = def_state$conf$prescreen$s2n)
+```
+
+
+<details><summary>MS1/MS2 retention delay.</summary>
+
+Look for associated MS2 spectrum within this window around the MS1
+peak.
+
+</details>
+```{r, echo=F}
+vu <- get_val_unit(def_state$conf$prescreen[["ret_time_shift_tol"]])
+shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
+                      input_unit = "ret_time_shift_tol_unit",
+                      def_rt = vu[['val']],
+                      def_unit = vu[['unit']])
+```
+
+### MetFrag (`r htmlOutput("cando_metfrag", inline=T)`)
+
+<!-- If `java` and `MetFragCL` are available, Shinyscreen can run -->
+<!-- `MetFragCL`. The configuration is a subset of what a MetFrag config -->
+<!-- file looks like. -->
+
+
+<div class="flex-cols"> <!-- metfrag-conf-box-1 -->
+<div> <!-- metfrag-conf-tolerance -->
+
+#### Tolerance and Tree Depth Controls
+
+```{r, echo=F}
+numericInput("mf_database_search_relative_mass_deviation",
+                              label="Database search relative mass deviation",
+                              value=5)
+numericInput("mf_fragment_peak_match_absolute_mass_deviation",
+             label="Fragment peak match absolute mass deviation",
+             value=METFRAG_DEFAULT_ABSMASSDEV)
+numericInput("mf_fragment_peak_match_relative_mass_deviation",
+             label="Fragment peak match relative mass deviation",
+             value=METFRAG_DEFAULT_RELMASSDEV)
+numericInput("mf_maximum_tree_depth", label="MaximumTreeDepth",
+             value=METFRAG_DEFAULT_MAX_TREE_DEPTH)
+```
+</div> <!-- metfrag-conf-tolerance -->
+
+<div> <!-- metfrag-conf-processing -->
+
+#### Processing
+
+```{r, echo=F}
+selectInput("mf_pre_processing_candidate_filter",
+                                 label="Preprocessing candidate filter",
+                                 choices=shinyscreen:::METFRAG_PREPFLT_CHOICES,
+                                 selected=shinyscreen:::METFRAG_PREPFLT_DEFAULT,
+                                 multiple=T)
+selectInput("mf_post_processing_candidate_filter",
+            label="Postprocessing candidate filter",
+            choices=shinyscreen:::METFRAG_POSTPFLT_CHOICES,
+            selected=shinyscreen:::METFRAG_POSTPFLT_DEFAULT,
+            multiple=T)
+selectInput("mf_metfrag_candidate_writer",
+            label="MetFrag Candidate Writer",
+            choices=shinyscreen:::METFRAG_WRITER_CHOICES,
+            selected=shinyscreen:::METFRAG_DEFAULT_WRITER)
+```
+</div> <!-- metfrag-conf-processing -->
+
+</div> <!-- metfrag-conf-box-1 -->
+
+<div class="flex-cols"> <!-- metfrag-conf-box-2 -->
+<div> <!-- metfrag-conf-databases -->
+
+#### Databases
+
+```{r, echo=F}
+selectInput("mf_database_type", label="Database type",
+            choices=METFRAG_DATABASE_TYPE,
+            selected=METFRAG_DEFAULT_DATABASE_TYPE)
+selectInput("mf_local_database",
+            label="Local Database",
+            choices=character(0))
+selectInput("mf_local_db_col_ident",
+            label="Select Identifiers",
+            choices=character(0))
+```
+
+</div> <!-- metfrag-conf-databases -->
+
+<div> <!-- metfrag-conf-mf-scores -->
+
+#### MetFrag Scores
+
+```{r, echo = F}
+selectInput("mf_scores_intrinsic",
+            label="Select Scoring Types",
+            choices = METFRAG_INTRINSIC_SCORES,
+            selected = names(METFRAG_DEFAULT_SCORES))
+DT::DTOutput("mf_local_ident")
+```
+
+</div> <!-- metfrag-conf-mf-scores -->
+<div>  <!-- merfrag-conf-local-db-scores -->
+
+#### Local Database Scoring Terms
+
+```{r, echo = F}
+selectInput("mf_local_db_col_scores",
+	label="Select local scoring terms",
+	choices=character(0))
+DT::DTOutput("mf_local_db_scores")
+```
+
+</div> <!-- merfrag-conf-local-db-scores -->
+</div> <!-- metfrag-conf-box-2 -->
+<!-- SNIP: ... -->
