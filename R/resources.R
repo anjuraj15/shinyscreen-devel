@@ -1,4 +1,4 @@
-## Copyright (C) 2020,2021 by University of Luxembourg
+## Copyright (C) 2020,2021,2022,2023 by University of Luxembourg
 
 ## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ CONF <- list(data=NA_character_,
                             sets=NA_character_))
 
 ## Constants
+FN_ENVOPTS="envopts.rds"
 FN_SUMM_BASE<-"summ.base.csv"
 FN_SUMM_PP<-"summ.pp.csv"
 FN_PP_OUT_PREF<-"PP.filetable"
@@ -117,7 +118,7 @@ MS1_SN_FAC <- 3.0
 
 ## Shiny objects
 
-NUM_INP_WIDTH=40
+NUM_INP_WIDTH=20
 NUM_INP_HEIGHT="5%"
 
 
@@ -344,13 +345,10 @@ METFRAG_PREPFLT_DEFAULT = c("UnconnectedCompoundFilter","IsotopeFilter")
 METFRAG_POSTPFLT_CHOICES = c("InChIKeyFilter")
 METFRAG_POSTPFLT_DEFAULT = c("InChIKeyFilter")
 METFRAG_DEFAULT_SCORES = list(FragmenterScore=1.0,OfflineIndividualMoNAScore=1.0)
-                                        # AutomatedPeakFingerprintAnnotationScore,
-                                        # AutomatedLossFingerprintAnnotationScore
-                                        # supposedly
-                                        # do
-                                        # not
-                                        # work
-                                        # well.
+METFRAG_INTRINSIC_SCORES = list("FragmenterScore",
+                                "OfflineIndividualMoNAScore",
+                                "AutomatedPeakFingerprintAnnotationScore",
+                                "AutomatedLossFingerprintAnnotationScore")
 
 ## METFRAG_DEFAULT_WEIGHTS = "1,1"
 METFRAG_DEFAULT_MAX_TREE_DEPTH = 2

@@ -4,7 +4,7 @@
 \alias{envopts}
 \title{Create a \code{envopts} Object}
 \usage{
-envopts(metfrag_db_dir = "", metfrag_jar = "")
+envopts(metfrag_db_dir = "", metfrag_jar = "", java_bin = Sys.which("java"))
 }
 \arguments{
 \item{metfrag_db_dir}{\code{character(1)}, a path to the directory which contains MetFrag databases}

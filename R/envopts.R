@@ -59,3 +59,24 @@ is_metfrag_available <- function(e) {
 is_metfrag_local_available <- function(e) {
     is_metfrag_available(e) && nchar(e$metfrag$db_dir)>0L
 }
+
+
+get_envopts_fn <- function() {
+    file.path(tools::R_user_dir(package="shinyscreen",
+                                which="config"),
+              FN_ENVOPTS)
+}
+
+load_envopts <- function() {
+    cfgfile = get_envopts_fn()
+    check_conf_absent(cfgfile)
+    readRDS(cfgfile)
+    
+}
+
+save_envopts <- function(o) {
+    cfgfile = get_envopts_fn()
+    dr = dirname(cfgfile)
+    dir.create(path = dr, showWarnings = F, recursive=T)
+    saveRDS(o,cfgfile)
+}

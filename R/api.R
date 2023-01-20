@@ -1,4 +1,4 @@
-## Copyright (C) 2020,2021 by University of Luxembourg
+## Copyright (C) 2020,2021,2023 by University of Luxembourg
 
 ## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
@@ -14,6 +14,11 @@
 
 ##' @export
 run <- function(project="",m=NULL,phases=NULL,help=F) {
+
+    ## Get system-wide config.
+    eo = load_envopts()
+                        
+    
     all_phases=list(setup=setup_phase,
                     comptab=mk_comp_tab,
                     extract=extr_data,
@@ -37,7 +42,7 @@ run <- function(project="",m=NULL,phases=NULL,help=F) {
                                                       all_phases[phases]
                                                   }
     
-    m <- if (nchar(project)!=0) new_project(project) else if (!is.null(m)) m else stop("(run): Either the YAML config file (project),\n or the starting state (m) must be provided\n as the argument to the run function.")
+    m <- if (nchar(project)!=0) new_project(project,envopts=eo) else if (!is.null(m)) m else stop("(run): Either the YAML config file (project),\n or the starting state (m) must be provided\n as the argument to the run function.")
     ## m$conf$project <- norm_path(m$conf$project) #FIXME: Test in all workflows!
     m <- withr::with_dir(new=m$run$paths$project,code = Reduce(function (prev,f) f(prev),
                                                             x = the_phases,
@@ -675,17 +680,14 @@ create_plots <- function(m) {
 
 prepare_app <- function(dir_before,
                         projects,
-                        top_data_dir,
-                        metfrag_db_dir,
-                        metfrag_runtime) {
+                        top_data_dir) {
 
     ## Information that needs to be availabe to the shiny server.
     init <- list()
     init$dir_before <- dir_before
     init$top_data_dir <- norm_path(top_data_dir)
     init$projects <- norm_path(projects)
-    init$envopts = envopts(metfrag_db_dir=metfrag_db_dir,
-                           metfrag_jar=metfrag_runtime)
+    init$envopts = load_envopts()
 
     check_dir_absent(init$top_data_dir,what="top-data-dir")
     check_dir_absent(init$projects,what="projects")
@@ -699,6 +701,7 @@ prepare_app <- function(dir_before,
     dir.create(file.path(dir_start,'www'), showWarnings=F)
     saveRDS(object = init,file=file.path(dir_start,"init.rds"))
     file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),file.path(dir_start,"app_run.Rmd"))
+    file.copy(system.file(file.path("rmd","app_config_and_status.Rmd"),package = "shinyscreen"),file.path(dir_start,"app_config_and_status.Rmd"))
     file.copy(system.file(file.path("www","custom.css"),package = "shinyscreen"),file.path(dir_start,"www","custom.css"))
     dir_start
 }
@@ -709,20 +712,18 @@ prepare_app <- function(dir_before,
 #'     containing project directories.
 #' @param top_data_dir `character(1)`, a location on the server side
 #'     containing data directories.
-#' @param metfrag_db_dir `character(1)`, a location on the server side
-#'     containing MetFrag databases.
-#' @param metfrag_runtime `character(1)`, a location on the server side
-#'     of the MetFrag jar file.
 #' @param shiny_args `list`, optional list of arguments conveyed to
 #'     `rmarkdown::run` `shiny_args` argument.
 #' @param render_args `list`, optional list of arguments conveyed to
 #'     `rmarkdown::run` `render_args` argument.
+#' @param metfrag_db_dir `character(1)`, a location on the server side
+#'     containing MetFrag databases.
+#' @param metfrag_runtime `character(1)`, a location on the server side
+#'     of the MetFrag jar file.
 #' @return Nada.
 #' @author Todor Kondić
 app <- function(projects=getwd(),
                 top_data_dir=getwd(),
-                metfrag_db_dir="",
-                metfrag_runtime="",
                 shiny_args=list(launch.browser=F),
                 render_args=NULL) {
     dir_before = getwd()
@@ -731,9 +732,7 @@ app <- function(projects=getwd(),
     message("projects: ", projects)
     dir_start = prepare_app(dir_before=dir_before,
                             projects=projects,
-                            top_data_dir=top_data_dir,
-                            metfrag_db_dir=metfrag_db_dir,
-                            metfrag_runtime=metfrag_runtime)
+                            top_data_dir=top_data_dir)
 
     on.exit(expr=setwd(dir_before))
     setwd(dir_start)
@@ -848,4 +847,19 @@ report <- function(m) {
     rmarkdown::render(fn_rep,output_dir = m$run$paths$project)
     message("(report) ...done.")
     m
+}
+
+
+#' @title Initialise Shinyscreen Configuration
+#' @details This function is used to inform `shinyscreen` about the
+#'     working environment. It is only necessary to call it once. The
+#'     parameters will be memorised.
+#' @inheritParams envopts
+#' @return Nothing.
+#' @author Todor Kondić
+init <- function(metfrag_db_dir="",metfrag_jar="",java_bin=Sys.which("java")) {
+    e = envopts(metfrag_db_dir=metfrag_db_dir,
+                metfrag_jar=metfrag_jar,
+                java_bin=java_bin)
+    save_envopts(o=e)
 }

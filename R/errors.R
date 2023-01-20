@@ -47,3 +47,9 @@ check_key_absent <- function(keys,l,what) {
     if (length(keys_absent)>0L) stop(errorCondition(paste0("Keys [",paste0(keys_absent,collapse=', '), "] ",hv," not been found for ", what),
                                                     class = paste0(what,'-absent')))
 }
+
+
+check_conf_absent <- function(cfgfile) {
+    check_notastring(cfgfile,"envopts")
+    if (!file.exists(cfgfile)) stop(errorCondition("The system configuration file does not exist. Please initialise shinyscreen by calling `shinyscreen::init' function.", class="envopts-file-absent"))
+}

@@ -23,6 +23,12 @@ obsrv_e = shiny::observeEvent
 isol = shiny::isolate
 
 
+
+embed_rmd <- function(fn) {
+}
+
+
+
 celledit_values <- function(col,values,labels=NULL,addna=T) {
     if (is.null(labels)) labels = values
     if (length(values)==0 || nchar(values)==0) return(character(0))
@@ -141,12 +147,13 @@ mz_input <- function(input_mz,input_unit,width=NUM_INP_WIDTH,height=NUM_INP_HEIG
 }
 
 ##' @export
-rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,width_u=1-NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_rt=0,def_unit="min",pref="+/-") {
+rt_input <- function(input_rt,input_unit,width=NUM_INP_WIDTH,width_u=NUM_INP_WIDTH,height=NUM_INP_HEIGHT,def_rt=0,def_unit="min",pref="+/-") {
     width=paste0(as.character(width), "%")
     width_u=paste0(as.character(width_u), "%")
 
     style="display: inline-block; vertical-align:top; width: "
     style=paste0(style,width,"; ")
+    style="display: inline-block; vertical-align:top;"
     stylel = "display: inline-block; vertical-align:top;"
     styleu = paste0("display: inline-block; vertical-align:top; color: black; width: ",width_u,";")
     shiny::div(shiny::div(style=stylel,
@@ -1204,12 +1211,12 @@ mk_shinyscreen_server <- function(projects,init) {
                 if (dtype == "LocalSDF") patt = "(sdf)|(SDF)$"
                 if (dtype == "LocalPSV") patt = "(psv)|(PSV)$"
                 updateSelectInput(session=session,
-                                  inputId="mf_local_database_path",
+                                  inputId="mf_local_database",
                                   choices=list.files(path=init$envopts$metfrag$db_dir,
                                                      pattern=patt))
             } else {
                    updateSelectInput(session=session,
-                                     inputId="mf_local_database_path",
+                                     inputId="mf_local_database",
                                      choices=character(0))
             }
         }, label = "mf-database-type")
@@ -1663,8 +1670,6 @@ mk_shinyscreen_server <- function(projects,init) {
                 notfound
             }
         })
-        
-            
             
     }
 

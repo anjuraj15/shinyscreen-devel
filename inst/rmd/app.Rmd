@@ -218,9 +218,9 @@ CSV file used with Shinyscreen.
 Select one, or more compound lists by clicking `Select` button.
 </details>
 
-<div style= "display: flex; vertical-align:top; padding-right: 1.0em">
+<div style= "display: flex; vertical-align:top; padding-right: 1.0em"> <!-- comp-list-box -->
 
-<div>
+<div> <!-- comp-list-sel -->
 ```{r, echo=FALSE}
 selectInput('comp_list',
             label = "Select compound lists",
@@ -230,9 +230,9 @@ actionButton(inputId = "comp_list_b",
              label= "Select")
 
 ```
-</div>
+</div> <!-- comp-list-sel -->
 
-<div>
+<div> <!-- comp-list-disp -->
 
 **Selected compound lists**
 
@@ -240,9 +240,10 @@ actionButton(inputId = "comp_list_b",
 htmlOutput('comp_list_report')
 ```
 
-</div>
+</div> <!-- comp-list-disp -->
 
-</div>
+</div> <!-- comp-list-box -->
+
 #### Select set lists
 
 <details><summary>About set lists (_setid_ tables)</summary>
@@ -259,9 +260,9 @@ columns,
 Select one set list by clicking `Select` button.
 </details>
 
-<div style= "display: flex; vertical-align:top; padding-right: 1em">
+<div style= "display: flex; vertical-align:top; padding-right: 1em"> <!-- set-list-box -->
 
-<div>
+<div> <!-- set-list-sel -->
 
 ```{r, echo=FALSE}
 selectInput('set_list',
@@ -273,9 +274,9 @@ actionButton(inputId = "set_list_b",
 
 ```
 
-</div>
+</div> <!-- set-list-sel -->
 
-<div>
+<div> <!-- set-list-rep -->
 
 **Selected `setid' list**
 
@@ -283,9 +284,9 @@ actionButton(inputId = "set_list_b",
 htmlOutput('sets_report')
 ```
 
-</div>
+</div> <!-- set-list-rep -->
 
-<div>
+</div> <!-- set-list-box -->
 
 ### Data files
 <details><summary>Load data files</summary>
@@ -324,9 +325,6 @@ DT::DTOutput("datafiles",width="25%")
 actionButton("rem_dfiles_b",label="Remove selected entries",width="10%")
 ```
 
-
-
-
 <details>
 
 <summary>Assign sets to tags.</summary>
@@ -341,489 +339,24 @@ DT::DTOutput("datatab",width="25%")
 ```
 
 ## Configure, Extract, Prescreen {.tabset}
-
-<details><summary>Extract spectra from data files.</summary>
-
-Spectral extraction is controled by the parameters under the
-_Extraction_ tab, while the quality check parameters are located under
-the _Prescreening_ tab.
-
-After Shinyscreen is configured, the compound and setid lists loaded,
-it is possible to proceed with extracting the data. The extraction
-process can start after pressing `Extract`. Depending on the size of
-the commpound list and the properties of the data files this may take
-a while.
-
-Once the data is extracted, quality checking can be carried out using
-the `Prescreen` button.
-
-The parameters affecting current extraction are displayed in the
-*Overview* section. 
-
-</details>
-
-
-<div style= "display: flex; vertical-align:top;">
-<div style= "padding-right: 0.5em">
-### Extraction
-
-#### Spectra extraction based settings
-
-<details><summary>MS1 coarse error</summary>
-
-Extract all entries matching the target mass within this error in the
-precursor table.
-</details>
-```{r, echo=F}
-vu <- get_val_unit(def_state$conf$tolerance[["ms1 coarse"]])
-shinyscreen::mz_input(input_mz = "ms1_coarse",
-                       input_unit = "ms1_coarse_unit",
-                       def_mz = vu[['val']],
-                       def_unit = vu[['unit']])
-```
-
-<details><summary>MS1 fine error</summary>
-
-The precursor table masses can be of lower accuracy. Once there is a
-match within the coarse error, it can be further checked versus the
-fine error bounds directly in the mass spectrum.
-
-</details>
-```{r, echo=F}
-vu <- get_val_unit(def_state$conf$tolerance[["ms1 fine"]])
-shinyscreen::mz_input(input_mz = "ms1_fine",
-                      input_unit = "ms1_fine_unit",
-                      def_mz = vu[['val']],
-                      def_unit = vu[['unit']])
-```
-
-<details><summary>MS1 EIC window</summary>
-
-The mz interval over which the intensities are aggregated to generate
-a chromatogram.
-
-</details>
-```{r, echo=F}
-vu <- get_val_unit(def_state$conf$tolerance[["eic"]])
-shinyscreen::mz_input(input_mz = "ms1_eic",
-                      input_unit = "ms1_eic_unit",
-                      def_mz = vu[['val']],
-                      def_unit = vu[['unit']])
-```
-
-<details><summary>Retention time window</summary>
-
-If the expected retention time has been specified for the compound,
-then search for the MS1 signature inside the window defined by this
-range.
-
-</details>
-```{r, echo=F}
-vu <- get_val_unit(def_state$conf$tolerance[["rt"]])
-shinyscreen::rt_input(input_rt = "ms1_rt_win",
-                      input_unit = "ms1_rt_win_unit",
-                      def_rt = vu[['val']],
-                      def_unit = vu[['unit']])
-```
-
-<details><summary>Fill missing precursors</summary>
-
-* **fill** : Try to guess precursors of MS2 entries. This is done by
-picking MS1 which chronologically preceeds a given MS2 entry.
-* **omit** : Ignore MS2 with missing precursors.
-* **do_nothing** : Default. Use MS1--MS2 metadata recorded in the file
-to associate MS1 and MS2 entries. Usually works.  
-</details>
-```{r, echo=F}
-radioButtons("missingprec",
-             label = "Missing precursors",
-             choices = c("do_nothing","fill","omit"),
-             selected = "do_nothing")
-
-```
-
-### Prescreening
-
-<details><summary>MS1 intensity threshold</summary>
-
-Ignore MS1 signal below the threshold.
-
-</details>
-```{r, echo=F}
-
-numericInput(inputId = "ms1_int_thresh",
-             label = NULL,
-             value = def_state$conf$prescreen$ms1_int_thresh)
-```
-
-<details><summary>MS2 intensity threshold</summary>
-
-Ignore MS2 signal below the threshold.
-
-</details>
-```{r, echo=F}
-
-numericInput(inputId = "ms2_int_thresh",
-             label = NULL,
-             value = def_state$conf$prescreen$ms2_int_thresh)
-```
-
-
-MS1 signal-to-noise ratio.
-
-```{r, echo=F}
-
-numericInput(inputId = "s2n",
-             label = NULL,
-             value = def_state$conf$prescreen$s2n)
-```
-
-
-<details><summary>MS1/MS2 retention delay.</summary>
-
-Look for associated MS2 spectrum within this window around the MS1
-peak.
-
-</details>
-```{r, echo=F}
-vu <- get_val_unit(def_state$conf$prescreen[["ret_time_shift_tol"]])
-shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
-                      input_unit = "ret_time_shift_tol_unit",
-                      def_rt = vu[['val']],
-                      def_unit = vu[['unit']])
-```
-
-### MetFrag (`r htmlOutput("cando_metfrag", inline=T)`)
-
-If `java` and `MetFragCL` are available, Shinyscreen can run
-`MetFragCL`. The configuration is a subset of what a MetFrag config
-file looks like.
-
-```{r, echo=F}
-uiOutput('metfrag_panel')
-```
-### Report
-
-<details><summary>Create a report</summary>
-
-Shinyscreen can produce a report containing graps of EICs and spectra
-for some or all compounds. The controls below define what enters the
-report. Please keep in mind that producing a PDF output with thousands
-of compounds will take huge amount of time, so if you are prescreening
-a lot of compounds, consider restricting limiting the output to, for
-example, those entries that have passed the quality checks.
-
-</details>
-
-
-<div style= "display: flex; vertical-align:top; padding-right: 0.5em">
-
+<div class = "flex-cols"> <!-- confstatus-panes -->
 <div>
-
-```{r, echo=F}
-shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state$conf$report$author)
-shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title)
-```
-
-</div>
-
-
-<div>
-
-<details><summary>Filter summary table</summary>
-
-Filter entries in the report according to the QA criteria.
-
-* **qa_pass** : entries that passed all checks
-
-* **qa_ms1_exists** : MS1 intensity is above the MS1 threshold
-
-* **qa_ms2_exists** : those entries for which some MS2 spectra have been found
-
-* **qa_ms1_above_noise** : MS1 is intense enough and above the noise level
-
-* **qa_ms2_good_int** : MS2 intensity is above the MS2 threshold
-
-* **qa_ms2_near** : MS2 spectrum is close enough to the MS1 peak
-
-Values:
-
-* **ignore** : ignore QA criterion
-* **take the good ones** : entry passed QA
-* **take the bad ones** : entry failed QA
-
-</details>
-
-```{r, echo=F}
-
-DT::DTOutput("summ_subset")
-
-```
-</div>
-
-</div>
-
-</div>
-
-<div style="padding-left: 3em">
-
-#### Control
-<div style="display: flex;flex-flow: row wrap;">
-```{r, echo=FALSE}
-actionButton(inputId = "extract_b",
-             label = "Extract")
-```
-
-```{r, echo=FALSE}
-actionButton(inputId = "presc_b",
-             label = "Prescreen")
-```
-</div>
-
-#### Overview
-
-- Has the data been extracted? `r htmlOutput("is_extracted_stat", inline=T)`
-- Has the data been auto-quality checked? `r htmlOutput("is_qa_stat", inline=T)`
-
-##### Extraction
-
-- MS1 coarse: `r htmlOutput("ms1_coarse_stat", inline=T)`
-- MS1 fine: `r htmlOutput("ms1_fine_stat", inline=T)`
-- MS1 eic: `r htmlOutput("ms1_eic_stat", inline=T)`
-- Retention time window: `r htmlOutput("rt_stat", inline=T)`
-
-##### Prescreening
-
-- Intensity Threshold (MS1): `r htmlOutput("ms1_int_thresh_stat", inline=T)`
-- Intensity Threshold (MS2): `r htmlOutput("ms2_int_thresh_stat", inline=T)`
-- Retention time shift: `r htmlOutput("ret_time_shift_tol_stat", inline=T)`
-- Signal-to-noise ratio: `r htmlOutput("s2n_stat", inline=T)`
-
-</div>
-
-</div>
-
-## View compound Lists and Sets
-
-### Compound List
-
-```{r, echo=F}
-DT::dataTableOutput("comp_table")
-```
-
-### Setid Table
-```{r, echo=F}
-DT::dataTableOutput("setid_table")
-```
-
-## Results Explorer
-
-
-<div style="display: flex; flex-flow: column nowrap;">
-<div style="display: flex; flex-flow: column; padding-right:1.0em">
-
-### Compound Index
-
-```{r, echo=F}
-selectInput("cindex_group",label="Group",
-            choices=c(NA_character_,
-                      "adduct","tag"),
-            multiple=T,
-            selected=c("adduct","tag"))
-```
-            
-<div style="display: flex; flex-flow: row nowrap">
-```{r, echo=F}
-selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%",selected="quality")
-selectInput("sort2",label="then by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%",selected="mz")
-selectInput("sort3",label="then", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
-selectInput("sort4",label="and finally by", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
-```
-</div> <!-- Arrange -->
-
-<div>
-```{r, echo=F}
-DT::DTOutput("cindex")
-```
-
-</div> <!-- cindex -->
-
-</div> <!-- Compound Explorer Panel -->
-
-### Viewer
-
-<div class="plot-layout"> <!-- Plot Section -->
-<div> 
-```{r, echo=F}
-plotOutput("plot_eic_ms1",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_rt_click",
-           brush = "plot_brush")
+```{r, child='app_config_and_status.Rmd'}
 ```
 </div>
 <div>
-```{r, echo=F}
-plotOutput("plot_struct")
-```
+Unimplemented
 </div>
-<div>
-```{r, echo=F}
-plotOutput("plot_eic_ms2",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_rt_click",
-           brush = "plot_brush")
-```
-</div>
-<div> 
+</div> <!-- confstatus-panes -->
 
-#### Tweak Plot Parameters
-
-```{r, echo=F}
-textOutput("plot_hover_out")
-```
-
-#### Retention Time Range
-
-<div style="display:flex; flex-direction: row;"> <!-- RT div -->
-```{r, echo=F}
-numericInput(inputId = "plot_rt_min",
-             label="Start",
-             value=NA_real_,
-             width="30%")
-```
-```{r, echo=F}
-numericInput(inputId = "plot_rt_max",
-             label="End",
-             value=NA_real_,
-             width="30%")
+<!-- SNIP -->
 
 
-```
-</div> <!-- RT div -->
-
-#### Intensity Range (MS1)
-
-<div style="display:flex; flex-direction: row;"> <!-- Intensity div -->
-```{r, echo=F}
-numericInput(inputId = "plot_i_min",
-             label="Start",
-             value=NA_real_,
-             width="30%")
-```
-```{r, echo=F}
-numericInput(inputId = "plot_i_max",
-             label="End",
-             value=NA_real_,
-             width="30%")
 
 
-```
-</div> <!-- Intensity div -->
-
-#### Report
-
-<div style="display: flex-flow: row nowrap"> <!-- Control Bar -->
-```{r, echo=F}
-textInput("single_plot_fname",
-          label="Filename of the single entry plot",
-          value="default.pdf")
-actionButton("plot_save_single",
-             label="Save single entry plot")
-textInput("report_name",
-          label="Report Name",
-          value="report")
-actionButton("make_report_b",
-             label="Create report")
-textInput("summ_name",
-          label="Summary table name",
-          value="summary.csv")
-actionButton("summ_tab_b", "Save summary table")
-
-textInput("ms2_spectra_tab_name",
-          label="Table of MS2 spectra",
-          value="ms2_spectra_table.csv")
-actionButton("ms2_spectra_tab_b", "Save MS2 spectra table")
-```
-
-</div> <!-- Control Bar -->
-
-</div>
-<div>
-```{r, echo=F}
-plotOutput("plot_spec_ms2",
-           hover = hoverOpts(id="plot_hover",
-                             delayType = "throttle",
-                             delay=100),
-           dblclick = "plot_mz_click",
-           brush = brushOpts(id="plot_mz_brush"))
-```
-</div>
-<div></div>
-</div> <!-- Plots -->
 
 
-### Measurement Properties
 
-<div class="measure-prop-sec">
-
-<div class="sel-spec"> <!-- sel-spec -->
-
-#### Select Spectrum
-
-```{r, echo=F}
-selectInput("sel_parent_trace",label="Select parent", choices=character(),size=10L,selectize=F)
-```
-
-```{r, echo=F}
-selectInput("sel_spec",label="Select spectrum", choices=character(),size=10L,selectize=F)
-```
-
-```{r, echo=F}
-actionButton("cmt_changes_b",label="Commit changes")
-```
-
-</div> <!-- sel-spec -->
-
-<div class="measure-props"> <!-- measure-props -->
-
-#### Properties
-
-```{r,echo=F}
-numericInput(inputId="chg_ms1_rt",
-             label="Retention time (MS1)",
-             value=NA_real_)
-numericInput(inputId="chg_ms1_int",
-             label="Intensity (MS1)",
-             value=NA_real_)
-```
-
-```{r,echo=F}
-checkboxGroupInput(inputId="qabox",
-                   label="Quality Control",
-                   choices=QABOX_VALS)
-```
-```{r,echo=F}
-checkboxInput(inputId="chg_ms2sel",
-              label="MS2 Selected",
-              value=F)
-```
-</div> <!-- measure-props -->
-
-<div class="spec-tab"> <!-- spec tab -->
-
-#### Mass Spectrum
-
-```{r, echo=F}
-verbatimTextOutput("print_spec_tab")
-```
-
-</div> <!-- spec tab -->
-
-</div> <!-- measure-prop-sec -->
 
 <!-- ENGINE -->
 
@@ -835,3 +368,4 @@ shinyscreen_server <- shinyscreen:::mk_shinyscreen_server(projects=projects,
 ```{r, echo = F, context = 'server'}
 shinyscreen_server(input=input,output=output,session=session)
 ```
+
