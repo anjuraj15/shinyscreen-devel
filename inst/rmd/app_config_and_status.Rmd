@@ -242,4 +242,53 @@ DT::DTOutput("mf_local_db_scores")
 
 </div> <!-- merfrag-conf-local-db-scores -->
 </div> <!-- metfrag-conf-box-2 -->
+
+### Report
+
+Parameters to control the report output not yet available.
+
+<!-- <details><summary>Create a report</summary> -->
+
+<!-- Shinyscreen can produce a report containing graps of EICs and spectra -->
+<!-- for some or all compounds. The controls below define what enters the -->
+<!-- report. Please keep in mind that producing a PDF output with thousands -->
+<!-- of compounds will take huge amount of time, so if you are prescreening -->
+<!-- a lot of compounds, consider restricting limiting the output to, for -->
+<!-- example, those entries that have passed the quality checks. -->
+
+<!-- </details> -->
+
+<!-- ```{r, echo=F} -->
+<!-- shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state$conf$report$author) -->
+<!-- shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title) -->
+<!-- ``` -->
+<!-- <details><summary>Filter summary table</summary> -->
+
+<!-- Filter entries in the report according to the QA criteria. -->
+
+<!-- * **qa_pass** : entries that passed all checks -->
+
+<!-- * **qa_ms1_exists** : MS1 intensity is above the MS1 threshold -->
+
+<!-- * **qa_ms2_exists** : those entries for which some MS2 spectra have been found -->
+
+<!-- * **qa_ms1_above_noise** : MS1 is intense enough and above the noise level -->
+
+<!-- * **qa_ms2_good_int** : MS2 intensity is above the MS2 threshold -->
+
+<!-- * **qa_ms2_near** : MS2 spectrum is close enough to the MS1 peak -->
+
+<!-- Values: -->
+
+<!-- * **ignore** : ignore QA criterion -->
+<!-- * **take the good ones** : entry passed QA -->
+<!-- * **take the bad ones** : entry failed QA -->
+
+<!-- </details> -->
+
+<!-- ```{r, echo=F} -->
+
+<!-- DT::DTOutput("summ_subset") -->
+
+<!-- ``` -->
 <!-- SNIP: ... -->
