@@ -46,6 +46,7 @@ Roxygen: list(markdown = TRUE)
 Collate:
     'base.R'
     'resources.R'
+    'inputs_metfrag.R'
     'errors.R'
     'mix.R'
     'envopts.R'
