@@ -159,17 +159,9 @@ shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
 #### Tolerance and Tree Depth Controls
 
 ```{r, echo=F}
-numericInput("mf_database_search_relative_mass_deviation",
-                              label="Database search relative mass deviation",
-                              value=5)
-numericInput("mf_fragment_peak_match_absolute_mass_deviation",
-             label="Fragment peak match absolute mass deviation",
-             value=METFRAG_DEFAULT_ABSMASSDEV)
-numericInput("mf_fragment_peak_match_relative_mass_deviation",
-             label="Fragment peak match relative mass deviation",
-             value=METFRAG_DEFAULT_RELMASSDEV)
-numericInput("mf_maximum_tree_depth", label="MaximumTreeDepth",
-             value=METFRAG_DEFAULT_MAX_TREE_DEPTH)
+inject_inputs(INPUTS_METFRAG,c("mf_fragment_peak_match_absolute_mass_deviation",
+                               "mf_fragment_peak_match_relative_mass_deviation",
+                               "mf_maximum_tree_depth"))
 ```
 </div> <!-- metfrag-conf-tolerance -->
 
@@ -178,20 +170,9 @@ numericInput("mf_maximum_tree_depth", label="MaximumTreeDepth",
 #### Processing
 
 ```{r, echo=F}
-selectInput("mf_pre_processing_candidate_filter",
-                                 label="Preprocessing candidate filter",
-                                 choices=shinyscreen:::METFRAG_PREPFLT_CHOICES,
-                                 selected=shinyscreen:::METFRAG_PREPFLT_DEFAULT,
-                                 multiple=T)
-selectInput("mf_post_processing_candidate_filter",
-            label="Postprocessing candidate filter",
-            choices=shinyscreen:::METFRAG_POSTPFLT_CHOICES,
-            selected=shinyscreen:::METFRAG_POSTPFLT_DEFAULT,
-            multiple=T)
-selectInput("mf_metfrag_candidate_writer",
-            label="MetFrag Candidate Writer",
-            choices=shinyscreen:::METFRAG_WRITER_CHOICES,
-            selected=shinyscreen:::METFRAG_DEFAULT_WRITER)
+inject_inputs(INPUTS_METFRAG,c("mf_pre_processing_candidate_filter",
+                               "mf_post_processing_candidate_filter",
+                               "mf_metfrag_candidate_writer"))
 ```
 </div> <!-- metfrag-conf-processing -->
 
@@ -203,16 +184,10 @@ selectInput("mf_metfrag_candidate_writer",
 #### Databases
 
 ```{r, echo=F}
-selectInput("mf_database_type", label="Database type",
-            choices=METFRAG_DATABASE_TYPE,
-            selected=METFRAG_DEFAULT_DATABASE_TYPE)
-selectInput("mf_local_database",
-            label="Local Database",
-            choices=character(0))
-selectInput("mf_local_db_col_ident",
-            label="Select Identifiers",
-            multiple = T,
-            choices=character(0))
+inject_inputs(INPUTS_METFRAG,c("mf_database_type",
+                               "mf_local_database",
+                               "mf_local_db_col_ident",
+                               "mf_local_db_col_coll"))
 ```
 
 </div> <!-- metfrag-conf-databases -->
@@ -222,11 +197,7 @@ selectInput("mf_local_db_col_ident",
 #### MetFrag Scores
 
 ```{r, echo = F}
-selectInput("mf_scores_intrinsic",
-            label="Select Scoring Types",
-            choices = METFRAG_INTRINSIC_SCORES,
-            multiple = T,
-            selected = names(METFRAG_DEFAULT_SCORES))
+inject_inputs(INPUTS_METFRAG,"mf_scores_intrinsic")
 DT::DTOutput("mf_local_ident")
 ```
 
@@ -236,10 +207,7 @@ DT::DTOutput("mf_local_ident")
 #### Local Database Scoring Terms
 
 ```{r, echo = F}
-selectInput("mf_local_db_col_scores",
-	label="Select local scoring terms",
-    multiple = T,
-	choices=character(0))
+inject_inputs(INPUTS_METFRAG,"mf_local_db_col_scores")
 DT::DTOutput("mf_local_db_scores")
 ```
 

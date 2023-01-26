@@ -6,6 +6,10 @@ mk_shiny_control <- function(name,fun,args) {
     res
 }
 
+inject_inputs<- function(collection,which) {
+    do.call(shiny::tagList,lapply(which,function(nm) collection[[nm]]$content))
+}
+
 INPUTS_METFRAG_NUMERIC = list(mk_shiny_control(name="mf_database_search_relative_mass_deviation",
                                                fun="numericInput",
                                                args=list(label="Database search relative mass deviation",
