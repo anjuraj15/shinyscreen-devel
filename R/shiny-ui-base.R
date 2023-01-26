@@ -1213,13 +1213,36 @@ mk_shinyscreen_server <- function(projects,init) {
                 updateSelectInput(session=session,
                                   inputId="mf_local_database",
                                   choices=list.files(path=init$envopts$metfrag$db_dir,
-                                                     pattern=patt))
+                                                     pattern=patt),
+                                  selected=character(0))
             } else {
                    updateSelectInput(session=session,
                                      inputId="mf_local_database",
                                      choices=character(0))
             }
         }, label = "mf-database-type")
+
+        observeEvent(input$mf_local_database,{
+
+            fn = input$mf_local_database
+
+            if (length(fn) && nchar(fn)>0L) {
+                e = init$envopts
+                dbdir = e$metfrag$db_dir
+                fn = file.path(dbdir,fn)
+                dtnms = data.table::fread(file=fn,nrows=1L)
+                nms = names(dtnms)
+                updateSelectInput(session=session,
+                                  inputId="mf_local_db_col_ident",
+                                  choices = c(character(0),nms),
+                                  selected = character(0))
+                updateSelectInput(session=session,
+                                  inputId="mf_local_db_col_scores",
+                                  choices = c(character(0),nms),
+                                  selected = character(0))
+            }
+            
+        }, label = "mf-local-database")
         
         ## OBSERVERS: VIEWER
 

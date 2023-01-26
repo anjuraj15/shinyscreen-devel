@@ -211,6 +211,7 @@ selectInput("mf_local_database",
             choices=character(0))
 selectInput("mf_local_db_col_ident",
             label="Select Identifiers",
+            multiple = T,
             choices=character(0))
 ```
 
@@ -224,6 +225,7 @@ selectInput("mf_local_db_col_ident",
 selectInput("mf_scores_intrinsic",
             label="Select Scoring Types",
             choices = METFRAG_INTRINSIC_SCORES,
+            multiple = T,
             selected = names(METFRAG_DEFAULT_SCORES))
 DT::DTOutput("mf_local_ident")
 ```
@@ -236,6 +238,7 @@ DT::DTOutput("mf_local_ident")
 ```{r, echo = F}
 selectInput("mf_local_db_col_scores",
 	label="Select local scoring terms",
+    multiple = T,
 	choices=character(0))
 DT::DTOutput("mf_local_db_scores")
 ```

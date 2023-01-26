@@ -697,12 +697,17 @@ prepare_app <- function(dir_before,
     dir_start <- tempfile("shinyscreen")
     dir.create(dir_start, recursive = T)
 
+    ## Get list of app document contents.
+    dir_rmd = system.file("rmd",package = "shinyscreen")
+    fnms_rmd = list.files(dir_rmd,pattern = r"(^app.*\.Rmd$)",full.names=T)
+    
     ## Copy startup files to that location.
     dir.create(file.path(dir_start,'www'), showWarnings=F)
     saveRDS(object = init,file=file.path(dir_start,"init.rds"))
-    file.copy(system.file(file.path("rmd","app.Rmd"),package = "shinyscreen"),file.path(dir_start,"app_run.Rmd"))
-    file.copy(system.file(file.path("rmd","app_config_and_status.Rmd"),package = "shinyscreen"),file.path(dir_start,"app_config_and_status.Rmd"))
+
     file.copy(system.file(file.path("www","custom.css"),package = "shinyscreen"),file.path(dir_start,"www","custom.css"))
+    for (fn in fnms_rmd) file.copy(fn,file.path(dir_start,basename(fn)))
+    
     dir_start
 }
 
@@ -736,7 +741,7 @@ app <- function(projects=getwd(),
 
     on.exit(expr=setwd(dir_before))
     setwd(dir_start)
-    rmarkdown::run(file = "app_run.Rmd", shiny_args = shiny_args, render_args = render_args)
+    rmarkdown::run(file = "app.Rmd", shiny_args = shiny_args, render_args = render_args)
 }
 
 

@@ -1,0 +1,18 @@
+<div class='flex-ctrl-row'>
+```{r, echo=F}
+textInput("report_name",
+          label="Report Name",
+          value="report")
+actionButton("make_report_b",
+             label="Create report")
+textInput("summ_name",
+          label="Summary table name",
+          value="summary.csv")
+actionButton("summ_tab_b", "Save summary table")
+
+textInput("ms2_spectra_tab_name",
+          label="Table of MS2 spectra",
+          value="ms2_spectra_table.csv")
+actionButton("ms2_spectra_tab_b", "Save MS2 spectra table")
+```
+</div>

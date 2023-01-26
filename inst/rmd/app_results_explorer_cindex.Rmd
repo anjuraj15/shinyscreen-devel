@@ -1,0 +1,22 @@
+### Compound Index
+
+```{r, echo=F}
+selectInput("cindex_group",label="Group",
+            choices=c(NA_character_,
+                      "adduct","tag"),
+            multiple=T,
+            selected=c("adduct","tag"))
+```
+            
+<div class="flex-cols"> <!-- select-grouping-labels -->
+```{r, echo=F}
+selectInput("sort1",label="Sort by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%",selected="quality")
+selectInput("sort2",label="then by ", choices=shinyscreen:::ARRANGE_CHOICES,width="15%",selected="mz")
+selectInput("sort3",label="then", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
+selectInput("sort4",label="and finally by", choices=shinyscreen:::ARRANGE_CHOICES,width="15%")
+```
+</div> <!-- select-grouping-labels --
+
+```{r, echo=F}
+DT::DTOutput("cindex")
+```

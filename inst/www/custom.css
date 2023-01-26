@@ -62,8 +62,24 @@
 
 /* test comment */
 
+/* Splitting items on the screen in columns. */
 .flex-cols {
   display: flex;
   flex-direction: row nowrap;
   column-gap: 1rem;
+}
+
+
+/* A row of controls. */
+.flex-ctrl-row {
+  display: flex;
+  flex-direction: row wrap;
+  column-gap: 0.5rem;
+}
+
+
+/* Splitting items in horizontal layers. */
+.flex-layers {
+  display: flex;
+  flex-direction: column;
 }
