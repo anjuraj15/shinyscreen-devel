@@ -715,7 +715,7 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$paths$project
             isolate({
                 req(pre_setup_val_block(rvs$gui))
-                q = app_state2state(input,rvs$gui)
+                q = app_state2state(input,rvs$gui,envopts=init$envopts)
                 
             })
             run(m=q,phases=c("setup","comptab"))
@@ -985,10 +985,11 @@ mk_shinyscreen_server <- function(projects,init) {
                 message("Loading project: ",wd)
                 pack = readRDS(file=fn_packed_state)
                 rvs$gui = unpack_app_state(session=session,
-                                            input=input,
-                                            top_data_dir=init$top_data_dir,
-                                            project_path=fullwd,
-                                            packed_state=pack)
+                                           envopt=init$envopts,
+                                           input=input,
+                                           top_data_dir=init$top_data_dir,
+                                           project_path=fullwd,
+                                           packed_state=pack)
                 ## Load computational state.
                 rvs$m = readRDS(file=fn_state)
                 
@@ -1124,7 +1125,7 @@ mk_shinyscreen_server <- function(projects,init) {
         ## OBSERVERS: CONFIGURATION AND EXTRACTION
         
         observeEvent(input$extract_b,{
-            rvs$m = app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
+            rvs$m = app_state2state(input,rvs$gui,envopts = init$envopts, m=rvs$m) # Update params from GUI.
             m = rvs$m
             shinymsg("Extraction has started. This may take a while.")
             rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
@@ -1167,7 +1168,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$presc_b,{
             if (NROW(rvs$m$extr$ms1)>0L) {
-                rvs$m = app_state2state(input,rvs$gui,m=rvs$m) # Update params from GUI.
+                rvs$m = app_state2state(input,rvs$gui,envopts = init$envopts, m=rvs$m) # Update params from GUI.
                 rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh"]]
                 rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
                 rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
@@ -1232,14 +1233,27 @@ mk_shinyscreen_server <- function(projects,init) {
                 fn = file.path(dbdir,fn)
                 dtnms = data.table::fread(file=fn,nrows=1L)
                 nms = names(dtnms)
+                s1 = intersect(input$mf_local_db_col_ident,
+                               nms)
+
+                s2 = intersect(input$mf_local_db_col_scores,
+                               nms)
+
+                s3 = intersect(input$mf_local_db_col_coll,
+                               nms)
+                
                 updateSelectInput(session=session,
                                   inputId="mf_local_db_col_ident",
                                   choices = c(character(0),nms),
-                                  selected = character(0))
+                                  selected = s1)
                 updateSelectInput(session=session,
                                   inputId="mf_local_db_col_scores",
                                   choices = c(character(0),nms),
-                                  selected = character(0))
+                                  selected = s2)
+                updateSelectInput(session=session,
+                                  inputId="mf_local_db_col_coll",
+                                  choices = c(character(0),nms),
+                                  selected = s3)
             }
             
         }, label = "mf-local-database")
