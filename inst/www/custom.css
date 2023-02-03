@@ -72,9 +72,11 @@
 
 /* A row of controls. */
 .flex-ctrl-row {
-  display: flex;
-  flex-direction: row wrap;
-  column-gap: 0.5rem;
+    display: flex;
+    flex-direction: row wrap;
+    column-gap: 0.5rem;
+    align-items: end;
+    
 }
 
 
@@ -83,3 +85,4 @@
   display: flex;
   flex-direction: column;
 }
+

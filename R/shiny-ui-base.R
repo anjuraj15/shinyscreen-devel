@@ -725,15 +725,18 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## REACTIVE FUNCTIONS: COMPOUND INDEX
         rf_get_cindex <- reactive({
-            input$cmt_changes_b
+
+            ## TODO: FIXME: Uncomment after rearranging everything.
+            ## input$cmt_changes_b
             rvs$status$is_qa_stat
             s1 = input$sort1
             s2 = input$sort2
             s3 = input$sort3
             s4 = input$sort4
-            cindex_from_input(clabs=input$cindex_group,
-                              sort_catg=c(s1,s2,s3,s4),
-                              summ=req(rvs$m$out$tab$summ))
+            x = cindex_from_input(clabs=input$cindex_group,
+                                  sort_catg=c(s1,s2,s3,s4),
+                                  summ=req(rvs$m$out$tab$summ))
+            x
 
         })
         
@@ -1456,9 +1459,9 @@ mk_shinyscreen_server <- function(projects,init) {
             ptab = req(rf_get_cindex_parents())
             ltab = req(rf_get_ltab())
             rvs$m$out$tab$summ = update_on_commit_chg(summ,
-                                                       input=input,
-                                                       ptab=ptab,
-                                                       ltab=ltab)
+                                                      input=input,
+                                                      ptab=ptab,
+                                                      ltab=ltab)
             
         })
 

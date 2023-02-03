@@ -44,10 +44,12 @@ GUI_TEXT_INPUTS <- c("rep_aut",
 
 GUI_RADIO_INPUTS <- c("missingprec")
 
+
+
 GUI_ALL_INPUTS <- c(GUI_SELECT_INPUTS,
-                      GUI_NUMERIC_INPUTS,
-                      GUI_TEXT_INPUTS,
-                      GUI_RADIO_INPUTS)
+                    GUI_NUMERIC_INPUTS,
+                    GUI_TEXT_INPUTS,
+                    GUI_RADIO_INPUTS)
 
 
 add_new_def_tag <- function(old_tags,how_many) {
@@ -129,7 +131,7 @@ pack_app_state <- function(input, gui) {
     pack <- list()
     shiny::isolate({
         pack_inputs <- list()
-        pack_input_names <- which_gui_inputs()
+        pack_input_names <- which_gui_inputs(inputs)
         pack_inputs <- shiny::reactiveValuesToList(input)[pack_input_names]
         pack$input <- pack_inputs
         pack$datatab <- r2datatab(gui$datatab)
@@ -141,8 +143,13 @@ pack_app_state <- function(input, gui) {
     pack
 }
 
-which_gui_inputs <- function() {
-    GUI_ALL_INPUTS
+which_metfrag_inputs <- function() {
+    names(INPUTS_METFRAG)
+}
+
+which_gui_inputs <- function(inputs) {
+    
+    c(GUI_ALL_INPUTS,which_metfrag_inputs())
 }
 
 
@@ -162,7 +169,49 @@ which_gui_radio_inputs <- function() {
     GUI_RADIO_INPUTS
 }
 
-unpack_app_state <- function(session,input,top_data_dir,project_path,packed_state) {
+unpack_app_state_metfrag <- function(session,envopts,input,packed_state) {
+    shiny::isolate({
+        for (inp in INPUTS_METFRAG_NUMERIC) {
+            shiny::updateNumericInput(session=session,
+                                      inputId = inp$name,
+                                      value = packed_state$input[[inp$name]])
+            
+        }
+
+        for (inp in INPUTS_METFRAG_SELECT_STANDARD) {
+            shiny::updateSelectInput(session = session,
+                                     inputId = inp$name,
+                                     selected = packed_state$input[[inp$name]])
+            
+        }
+
+        ## Check if the local db is, in fact, in the system db directory.
+        locdb = packed_state$input[["mf_local_database"]]
+        if (!length(locdb)==0L && !nchar(locdb)==0) {
+            fn_absdb = file.path(envopts$metfrag$db_dir,locdb)
+            if (file.exists(fn_absdb)) {
+                dtnms = data.table::fread(file=fn_absdb,nrows=1L)
+                nms = names(dtnms)
+
+                for (inp in names(INPUTS_METFRAG_SELECT_LOCAL_DBCH)) {
+                    shiny::updateSelectInput(session = session,
+                                             inputId = inp,
+                                             choices = c(character(0),nms),
+                                             selected = packed_state$input[[inp]])
+                }
+
+                for (inp in names(INPUTS_METFRAG_SELECT_LOCAL_OTHER)) {
+                    shiny::updateSelectInput(session = session,
+                                             inputId = inp,
+                                             selected = packed_state$input[[inp]])
+                }
+                
+            }
+        }
+            
+    })
+}
+unpack_app_state <- function(session,envopts,input,top_data_dir,project_path,packed_state) {
     shiny::isolate({
         for (inp in which_gui_select_inputs()) {
             shiny::updateSelectInput(session = session,
@@ -187,6 +236,12 @@ unpack_app_state <- function(session,input,top_data_dir,project_path,packed_stat
                                       inputId = inp,
                                       selected = packed_state$input[[inp]])
         }
+
+
+        unpack_app_state_metfrag(session=session,
+                                 envopts=envopts,
+                                 input=input,
+                                 packed_state=packed_state)
         
         gui <- create_gui(project_path=project_path)
         gui$compounds$lists <- packed_state$compounds$lists
@@ -251,25 +306,65 @@ input2conf_report <- function(input,conf) {
     conf
 
 }
+
+input2conf_metfrag <- function(input,conf) {
+
+    mfpar = metfrag_param(MetFragDatabaseType=input$mf_database_type,
+                          FragmentPeakMatchAbsoluteMassDeviation = input$mf_fragment_peak_match_absolute_mass_deviation,
+                          FragmentPeakMatchRelativeMassDeviation = input$mf_fragment_peak_match_relative_mass_deviation,
+                          DatabaseSearchRelativeMassDeviation = input$mf_database_search_relative_mass_deviation,
+                          MetFragCandidateWriter = input$mf_metfrag_candidate_writer,
+                          SampleName = input$proj_list,
+                          MaximumTreeDepth = input$mf_maximum_tree_depth,
+                          MetFragPreProcessingCandidateFilter = input$mf_pre_processing_candidate_filter,
+                          MetFragPostProcessingCandidateFilter = input$mf_post_processing_candidate_filter)
+
+    ## TODO: FIXME: We need to move away from unit weights from some
+    ## point. This needs some extra widgets (Sigh!). 
+    insc = sapply(input$mf_scores_intrinsic,function(x) 1.0)
+    names(insc) = input$mf_scores_intrinsic
+
+    ldbsc = sapply(input$mf_local_db_col_scores,function(x) 1.0)
+    names(ldbsc) = input$mf_local_db_col_scores
+
+    conf$metfrag = metfrag4conf(db_file = input$mf_local_database,
+                                param = mfpar,
+                                intrinsic_scores = insc,
+                                database_scores = ldbsc,
+                                cand_parameters = input$mf_local_db_col_ident,
+                                collect_candidates = input$mf_local_db_col_coll)
+    conf
+    
+}
+
 input2conf <- function(input,gui,conf=list()) {
-    conf <- input2conf_setup(input,gui=gui,conf)
-    conf <- input2conf_prescreen(input,conf)
-    conf <- input2conf_figures(input,conf)
-    conf <- input2conf_report(input,conf)
+    conf = input2conf_setup(input,gui=gui,conf)
+    conf = input2conf_prescreen(input,conf)
+    conf = input2conf_figures(input,conf)
+    conf = input2conf_report(input,conf)
+    conf = input2conf_metfrag(input,conf)
     conf
 }
 
-app_state2state <- function(input,gui,m=NULL) {
-    if (is.null(m)) m <- new_project(gui$paths$project)
+app_state2state <- function(input,gui,envopts,m=NULL) {
+    message("s1")
+    if (is.null(m)) m <- new_project(project = gui$paths$project,
+                                     envopts = envopts)
+    message("s2")
     ## m$run$paths <- shiny::reactiveValuesToList(gui$paths)
-    m$conf <- input2conf_setup(input,gui=gui)
-    m$conf <- input2conf_prescreen(input=input,conf=m$conf)
-    m$conf <- input2conf_figures(input,conf=m$conf)
-    m$conf <- input2conf_report(input,conf=m$conf)
+    m$conf = input2conf_setup(input,gui=gui)
+    m$conf = input2conf_prescreen(input=input,conf=m$conf)
+    m$conf = input2conf_figures(input,conf=m$conf)
+    m$conf = input2conf_report(input,conf=m$conf)
+    m$conf = input2conf_metfrag(input,conf=m$conf) 
     m$conf$paths$data <- gui$paths$data
+    message("s3")
     m$run <- new_runtime_state(project=gui$paths$project,
+                               envopts = envopts,
                                conf=m$conf)
+    message("s4")
     m$input$tab$mzml <- gui2datatab(gui)
+    message("s5")
     m
 }
 

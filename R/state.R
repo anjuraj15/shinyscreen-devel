@@ -348,25 +348,61 @@ fig_conf <- function(m) {
     m
 }
 
+metfrag_param <- function(MetFragDatabaseType,
+                          FragmentPeakMatchAbsoluteMassDeviation,
+                          FragmentPeakMatchRelativeMassDeviation,
+                          DatabaseSearchRelativeMassDeviation,
+                          MetFragCandidateWriter,
+                          SampleName,
+                          MaximumTreeDepth,
+                          MetFragPreProcessingCandidateFilter,
+                          MetFragPostProcessingCandidateFilter) {
+    
+    list(MetFragDatabaseType=MetFragDatabaseType,
+         FragmentPeakMatchAbsoluteMassDeviation=FragmentPeakMatchAbsoluteMassDeviation,
+         FragmentPeakMatchRelativeMassDeviation=FragmentPeakMatchRelativeMassDeviation,
+         DatabaseSearchRelativeMassDeviation=DatabaseSearchRelativeMassDeviation,
+         MetFragCandidateWriter=MetFragCandidateWriter,
+         SampleName=SampleName,
+         MaximumTreeDepth=MaximumTreeDepth,
+         MetFragPreProcessingCandidateFilter=MetFragPreProcessingCandidateFilter,
+         MetFragPostProcessingCandidateFilter=MetFragPostProcessingCandidateFilter)
+}
+
+metfrag4conf <- function(db_file,
+                         param,
+                         intrinsic_scores,
+                         database_scores,
+                         cand_parameters,
+                         collect_candidates) {
+    list(db_file=db_file,
+         param = param,
+         intrinsic_scores = intrinsic_scores,
+         database_scores = database_scores,
+         cand_parameters = cand_parameters,
+         collect_candidates = collect_candidates)
+}
+                           
+
 metfrag_conf <- function(m) {
     ## MetFrag configuration defaults.
-    metfrag = list(db_file = "")
-    param = list(MetFragDatabaseType="",
-                 FragmentPeakMatchAbsoluteMassDeviation=METFRAG_DEFAULT_ABSMASSDEV,
-                 FragmentPeakMatchRelativeMassDeviation=METFRAG_DEFAULT_RELMASSDEV,
-                 DatabaseSearchRelativeMassDeviation=METFRAG_DB_SEARCH_RELDEV,
-                 MetFragCandidateWriter=METFRAG_DEFAULT_WRITER,
-                 SampleName=METFRAG_SAMPLE_NAME,
-                 MaximumTreeDepth=METFRAG_DEFAULT_MAX_TREE_DEPTH,
-                 MetFragPreProcessingCandidateFilter=paste(METFRAG_PREPFLT_CHOICES,collapse=","),
-                 MetFragPostProcessingCandidateFilter=paste(METFRAG_POSTPFLT_CHOICES,collapse=","))
+    param = metfrag_param(MetFragDatabaseType="",
+                          FragmentPeakMatchAbsoluteMassDeviation=METFRAG_DEFAULT_ABSMASSDEV,
+                          FragmentPeakMatchRelativeMassDeviation=METFRAG_DEFAULT_RELMASSDEV,
+                          DatabaseSearchRelativeMassDeviation=METFRAG_DB_SEARCH_RELDEV,
+                          MetFragCandidateWriter=METFRAG_DEFAULT_WRITER,
+                          SampleName=METFRAG_SAMPLE_NAME,
+                          MaximumTreeDepth=METFRAG_DEFAULT_MAX_TREE_DEPTH,
+                          MetFragPreProcessingCandidateFilter=paste(METFRAG_PREPFLT_CHOICES,collapse=","),
+                          MetFragPostProcessingCandidateFilter=paste(METFRAG_POSTPFLT_CHOICES,collapse=","))
     
-    metfrag$param = param
-
-    metfrag$intrinsic_scores = METFRAG_DEFAULT_SCORES
-    metfrag$database_scores = list()
     
-    m$conf$metfrag = metfrag
+    m$conf$metfrag = metfrag4conf(db_file = "",
+                                  param = param,
+                                  intrinsic_scores = METFRAG_DEFAULT_SCORES,
+                                  database_scores = list(),
+                                  cand_parameters = character(0),
+                                  collect_candidates = character(0))
     m
 }
 

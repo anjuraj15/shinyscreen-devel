@@ -394,16 +394,66 @@ actionButton(inputId = "presc_b",
 
 ## Results Explorer
 
-<div class='flex-layers'> <!-- cindex -->
-<div>					  <!-- cindex-cindex -->
+<details>
+<summary>Learn more about compound index</summary>
+
+Compound index is used to select entries from the input compound/mass
+lists. What exactly is going to be shown depends on what was chosen
+using the *Group* control. The *Group* control allows user to choose
+which features of data should be used to group entries together. For
+example, if there are multiple input data files, then grouping by
+*tag* will result in a single compound index entry for all the ions of
+the same adduct type, the same ID across the different data files. If
+a user additionally selects *adduct*, then a single entry represents
+masses belonging to the same compound ID, even if they are of
+differing adduct types.
+
+**IMPORTANTLY**, the metadata such as *mz*, or retention time are
+**averages** over the group of of results belonging to the same
+compound index entry. If the exact mass of a singe entry is needed,
+consult the summary table. Alternatively, remove grouping and you 
+shall get non-averaged values.
+
+The second group of controls influence the precedence of parent
+features when determining the order of items in the compound index.
+
+There two derived quantities, *qlt_ms1* and *qlt_ms2*. The only
+purpose they serve is to help sorting the data. The highest score in
+any of the two categories is ten. If an index entry scores ten, this
+means that at least one in the collection of results represented by
+the index has passed all the quality checks.
+
+When an entry of the index is selected, the plots of its EICs and MS2
+spectra (if any) are shown in the plotting section. Each result in the
+index entry collection is represented by a single line. 
+
+For example, let there be six data files, the three of them scanned
+for [M+H]+ and the other three for [M-H]- ions. If the index is
+grouped by only by *tag*, there exists a compound with the ID 42, then
+the compound index is going to contain two entries for compound 42,
+one labelled by [M+H]+ in the adduct column and another labelled with
+[M-H]-. If one of those entries is selected, a single EIC, or mz plot
+is going to contain three lines, each representing a single *tag*. If,
+additionally, the results are grouped by *adduct*, the index is going
+to contain only a single entry for the ID 42. The plot, in this case,
+contains six lines (for each existing combination of tag and adduct).
+
+</details>
+<div class='flex-layers'> 
 ```{r, child='app_results_explorer_cindex.Rmd'}
 ```
-</div>					  <!-- cindex-cindex -->
-<div>					  <!-- cindex-controls -->
+<details>
+<summary>Operations over compound index.</summary>
+
+- **Report** is currently a collection of all plots of items in the compound index.
+- **Summary table** comprises of all the metadata related to parent ions and the selected MS2 spectra (if present).
+- **Table of MS2 spectra** contains information on all the MS2 spectra and their parents.
+- **MetFrag summary table** contains a summary of the MetFrag results for all compound index entries.
+
+</details>
 ```{r, child='app_results_explorer_cindex_controls.Rmd'}
 ```
-</div>					  <!-- cindex-controls -->
-</div>					  <!-- cindex -->
+</div>
 
 
 <!-- ENGINE -->
