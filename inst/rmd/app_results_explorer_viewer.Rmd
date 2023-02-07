@@ -1,0 +1,22 @@
+### Viewer
+
+```{r, echo=F}
+plotOutput("plot_eic_ms1",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
+           dblclick = "plot_rt_click",
+           brush = "plot_brush")
+plotOutput("plot_eic_ms2",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
+           dblclick = "plot_rt_click",
+           brush = "plot_brush")
+plotOutput("plot_spec_ms2",
+           hover = hoverOpts(id="plot_hover",
+                             delayType = "throttle",
+                             delay=100),
+           dblclick = "plot_mz_click",
+           brush = brushOpts(id="plot_mz_brush"))
+```

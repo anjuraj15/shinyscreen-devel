@@ -1,0 +1,62 @@
+### Structure 
+
+```{r, echo=F}
+plotOutput("plot_struct")
+```
+
+
+### Plot Controls
+
+```{r, echo=F}
+textOutput("plot_hover_out")
+```
+
+#### Retention Time Range
+
+<div class="flex-ctrl-row"> 
+<!-- RT div -->
+```{r, echo=F}
+numericInput(inputId = "plot_rt_min",
+             label="Start",
+             value=NA_real_,
+             width="30%")
+```
+```{r, echo=F}
+numericInput(inputId = "plot_rt_max",
+             label="End",
+             value=NA_real_,
+             width="30%")
+
+```
+</div> <!-- RT div -->
+
+#### Intensity Range (MS1)
+
+<div class="flex-ctrl-row"> 
+<!-- Intensity div -->
+```{r, echo=F}
+numericInput(inputId = "plot_i_min",
+             label="Start",
+             value=NA_real_,
+             width="30%")
+```
+```{r, echo=F}
+numericInput(inputId = "plot_i_max",
+             label="End",
+             value=NA_real_,
+             width="30%")
+
+
+```
+</div> <!-- Intensity div -->
+
+```{r, echo = F}
+textInput("single_plot_fname",
+          label="Filename of the single entry plot",
+          value="default.pdf")
+actionButton("plot_save_single",
+             label="Save single entry plot")
+```
+
+
+

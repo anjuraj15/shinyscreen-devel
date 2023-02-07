@@ -1,0 +1,59 @@
+### Measurement Properties
+
+<div class="measure-prop-sec">
+
+<div class="sel-spec"> <!-- sel-spec -->
+
+#### Select Spectrum
+
+```{r, echo=F}
+selectInput("sel_parent_trace",label="Select parent", choices=character(),size=10L,selectize=F)
+```
+
+```{r, echo=F}
+selectInput("sel_spec",label="Select spectrum", choices=character(),size=10L,selectize=F)
+```
+
+```{r, echo=F}
+actionButton("cmt_changes_b",label="Commit changes")
+```
+
+</div> <!-- sel-spec -->
+
+<div class="measure-props"> <!-- measure-props -->
+
+#### Properties
+
+```{r,echo=F}
+numericInput(inputId="chg_ms1_rt",
+             label="Retention time (MS1)",
+             value=NA_real_)
+numericInput(inputId="chg_ms1_int",
+             label="Intensity (MS1)",
+             value=NA_real_)
+```
+
+```{r,echo=F}
+checkboxGroupInput(inputId="qabox",
+                   label="Quality Control",
+                   choices=QABOX_VALS)
+```
+```{r,echo=F}
+checkboxInput(inputId="chg_ms2sel",
+              label="MS2 Selected",
+              value=F)
+```
+</div> <!-- measure-props -->
+
+<div class="spec-tab"> <!-- spec tab -->
+
+#### Mass Spectrum
+
+```{r, echo=F}
+verbatimTextOutput("print_spec_tab")
+```
+
+</div> <!-- spec tab -->
+
+</div> <!-- measure-prop-sec -->
+

@@ -79,6 +79,13 @@
     
 }
 
+.flex-panes {
+    display: flex;
+    column-gap: 0.5rem;
+    flex-direction: row nowrap;
+    align-content: space-between;
+}
+
 
 /* Splitting items in horizontal layers. */
 .flex-layers {

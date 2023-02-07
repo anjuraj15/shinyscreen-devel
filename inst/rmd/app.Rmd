@@ -454,6 +454,20 @@ contains six lines (for each existing combination of tag and adduct).
 ```{r, child='app_results_explorer_cindex_controls.Rmd'}
 ```
 </div>
+<div class="flex-panes">
+<!-- index-viewer-panes -->
+<div style="flex-basis: 80%;">
+```{r, child='app_results_explorer_viewer.Rmd'}
+```
+</div>
+<div>
+```{r, child='app_results_explorer_viewer_ctrls.Rmd'}
+```
+</div>
+</div> <!-- index-viewer-panes -->
+
+```{r, child='app_measure_props.Rmd'}
+```
 
 
 <!-- ENGINE -->
