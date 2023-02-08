@@ -30,9 +30,14 @@
 #'     pipeline.
 #' @param metfrag_db_dir `character(1)`, a path to the directory which contains MetFrag databases
 #' @param metfrag_jar  `character(1)`, a path to MetFrag JAR file
+#' @param metfrag_max_proc `integer(1)`, maximum number of CPU cores
+#'     available for MetFrag.
 #' @return An `envopts` object.
 #' @author Todor Kondić
-envopts <- function(metfrag_db_dir="",metfrag_jar="",java_bin=Sys.which("java")) {
+envopts <- function(metfrag_db_dir="",
+                    metfrag_jar="",
+                    java_bin=Sys.which("java"),
+                    metfrag_max_proc = parallel::detectCores()) {
     res = list(metfrag=list())
     class(res) = c("envopts","list") #Just to officially make it an
                                      #object.
@@ -41,8 +46,12 @@ envopts <- function(metfrag_db_dir="",metfrag_jar="",java_bin=Sys.which("java"))
     res$metfrag$db_dir = norm_path(metfrag_db_dir)
 
     check_file_absent(metfrag_jar,what="mf-jar")
-    res$metfrag$jar = norm_path(metfrag_jar)
 
+    check_not_integer(value=metfrag_max_proc,
+                      what="metfrag_max_proc")
+    
+    res$metfrag$jar = norm_path(metfrag_jar)
+    res$metfrag$max_proc = metfrag_max_proc
     if (nchar(res$metfrag$jar)>0L) {
         check_file_absent(java_bin,"java-bin")
         res$metfrag$java_bin = java_bin

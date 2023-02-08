@@ -4,12 +4,20 @@
 \alias{init}
 \title{Initialise Shinyscreen Configuration}
 \usage{
-init(metfrag_db_dir = "", metfrag_jar = "", java_bin = Sys.which("java"))
+init(
+  metfrag_db_dir = "",
+  metfrag_jar = "",
+  java_bin = Sys.which("java"),
+  metfrag_max_proc = parallel::detectCores()
+)
 }
 \arguments{
 \item{metfrag_db_dir}{\code{character(1)}, a path to the directory which contains MetFrag databases}
 
 \item{metfrag_jar}{\code{character(1)}, a path to MetFrag JAR file}
+
+\item{metfrag_max_proc}{\code{integer(1)}, maximum number of CPU cores
+available for MetFrag.}
 }
 \value{
 Nothing.

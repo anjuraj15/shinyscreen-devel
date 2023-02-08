@@ -862,9 +862,13 @@ report <- function(m) {
 #' @inheritParams envopts
 #' @return Nothing.
 #' @author Todor Kondić
-init <- function(metfrag_db_dir="",metfrag_jar="",java_bin=Sys.which("java")) {
+init <- function(metfrag_db_dir="",
+                 metfrag_jar="",
+                 java_bin=Sys.which("java"),
+                 metfrag_max_proc=parallel::detectCores()) {
     e = envopts(metfrag_db_dir=metfrag_db_dir,
                 metfrag_jar=metfrag_jar,
-                java_bin=java_bin)
+                java_bin=java_bin,
+                metfrag_max_proc=metfrag_max_proc)
     save_envopts(o=e)
 }
