@@ -1,0 +1,16 @@
+### MetFrag Summary Viewer
+
+<details>
+<summary>About the MetFrag summary viewer</summary>
+
+If MetFrag is available (this can be enabled usint the
+`shinyscreen::init` function), then, clicking on the button will
+generate a MetFrag summary for the selected compound index entry.
+
+</details>
+
+```{r, echo=F}
+actionButton(inputId = "gen_mf_single_entry_summ_b",
+             label= "Process compound")
+DT::DTOutput("entry_mf_summ")
+```

@@ -161,6 +161,7 @@ shinyscreen::rt_input(input_rt = "ret_time_shift_tol",
 ```{r, echo=F}
 inject_inputs(INPUTS_METFRAG,c("mf_fragment_peak_match_absolute_mass_deviation",
                                "mf_fragment_peak_match_relative_mass_deviation",
+                               "mf_database_search_relative_mass_deviation",
                                "mf_maximum_tree_depth"))
 ```
 </div> <!-- metfrag-conf-tolerance -->
@@ -175,6 +176,23 @@ inject_inputs(INPUTS_METFRAG,c("mf_pre_processing_candidate_filter",
                                "mf_metfrag_candidate_writer"))
 ```
 </div> <!-- metfrag-conf-processing -->
+
+<div> 
+
+<!-- metfrag-conf-execution -->
+#### Execution
+
+```{r, echo=F}
+## This is treated differently than other MF inputs, because the value
+## is not known prior to starting a R session. There should be a
+## mechanism for this. TODO FIXME.
+
+numericInput(inputId="mf_proc",
+             label="Number of MetFrag processes",
+             value=init$envopts$metfrag$max_proc)
+```
+
+</div> <!-- metfrag-conf-execution -->
 
 </div> <!-- metfrag-conf-box-1 -->
 
@@ -233,33 +251,5 @@ Parameters to control the report output not yet available.
 <!-- shiny::textInput(inputId = "rep_aut", label = "Report author", value = def_state$conf$report$author) -->
 <!-- shiny::textInput(inputId = "rep_tit", label = "Report title", value = def_state$conf$report$title) -->
 <!-- ``` -->
-<!-- <details><summary>Filter summary table</summary> -->
 
-<!-- Filter entries in the report according to the QA criteria. -->
 
-<!-- * **qa_pass** : entries that passed all checks -->
-
-<!-- * **qa_ms1_exists** : MS1 intensity is above the MS1 threshold -->
-
-<!-- * **qa_ms2_exists** : those entries for which some MS2 spectra have been found -->
-
-<!-- * **qa_ms1_above_noise** : MS1 is intense enough and above the noise level -->
-
-<!-- * **qa_ms2_good_int** : MS2 intensity is above the MS2 threshold -->
-
-<!-- * **qa_ms2_near** : MS2 spectrum is close enough to the MS1 peak -->
-
-<!-- Values: -->
-
-<!-- * **ignore** : ignore QA criterion -->
-<!-- * **take the good ones** : entry passed QA -->
-<!-- * **take the bad ones** : entry failed QA -->
-
-<!-- </details> -->
-
-<!-- ```{r, echo=F} -->
-
-<!-- DT::DTOutput("summ_subset") -->
-
-<!-- ``` -->
-<!-- SNIP: ... -->

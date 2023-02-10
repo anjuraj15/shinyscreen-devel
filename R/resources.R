@@ -359,3 +359,5 @@ METFRAG_DB_SEARCH_RELDEV = 5
 
 METFRAG_RESULT_READF = list(csv = function(file,...) data.table::fread(file=file,...),
                             xml = function(file,...) readxl::read_excel(path=file,...))
+
+METFRAG_DEFAULT_PROC = 1L

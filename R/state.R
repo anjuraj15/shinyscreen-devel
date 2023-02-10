@@ -374,13 +374,15 @@ metfrag4conf <- function(db_file,
                          intrinsic_scores,
                          database_scores,
                          cand_parameters,
-                         collect_candidates) {
+                         collect_candidates,
+                         nproc) {
     list(db_file=db_file,
          param = param,
          intrinsic_scores = intrinsic_scores,
          database_scores = database_scores,
          cand_parameters = cand_parameters,
-         collect_candidates = collect_candidates)
+         collect_candidates = collect_candidates,
+         nproc = nproc)
 }
                            
 
@@ -402,7 +404,8 @@ metfrag_conf <- function(m) {
                                   intrinsic_scores = METFRAG_DEFAULT_SCORES,
                                   database_scores = list(),
                                   cand_parameters = character(0),
-                                  collect_candidates = character(0))
+                                  collect_candidates = character(0),
+                                  nproc = 1L)
     m
 }
 

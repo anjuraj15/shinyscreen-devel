@@ -316,8 +316,8 @@ input2conf_metfrag <- function(input,conf) {
                           MetFragCandidateWriter = input$mf_metfrag_candidate_writer,
                           SampleName = input$proj_list,
                           MaximumTreeDepth = input$mf_maximum_tree_depth,
-                          MetFragPreProcessingCandidateFilter = input$mf_pre_processing_candidate_filter,
-                          MetFragPostProcessingCandidateFilter = input$mf_post_processing_candidate_filter)
+                          MetFragPreProcessingCandidateFilter = paste(input$mf_pre_processing_candidate_filter,collapse=","),
+                          MetFragPostProcessingCandidateFilter = paste(input$mf_post_processing_candidate_filter,collapse=","))
 
     ## TODO: FIXME: We need to move away from unit weights from some
     ## point. This needs some extra widgets (Sigh!). 
@@ -332,7 +332,8 @@ input2conf_metfrag <- function(input,conf) {
                                 intrinsic_scores = insc,
                                 database_scores = ldbsc,
                                 cand_parameters = input$mf_local_db_col_ident,
-                                collect_candidates = input$mf_local_db_col_coll)
+                                collect_candidates = input$mf_local_db_col_coll,
+                                nproc = input$mf_proc)
     conf
     
 }
@@ -347,10 +348,8 @@ input2conf <- function(input,gui,conf=list()) {
 }
 
 app_state2state <- function(input,gui,envopts,m=NULL) {
-    message("s1")
     if (is.null(m)) m <- new_project(project = gui$paths$project,
                                      envopts = envopts)
-    message("s2")
     ## m$run$paths <- shiny::reactiveValuesToList(gui$paths)
     m$conf = input2conf_setup(input,gui=gui)
     m$conf = input2conf_prescreen(input=input,conf=m$conf)
@@ -358,13 +357,15 @@ app_state2state <- function(input,gui,envopts,m=NULL) {
     m$conf = input2conf_report(input,conf=m$conf)
     m$conf = input2conf_metfrag(input,conf=m$conf) 
     m$conf$paths$data <- gui$paths$data
-    message("s3")
+
+    saveRDS(m$conf,"~/scratch/m.conf.prerun.rds")
     m$run <- new_runtime_state(project=gui$paths$project,
                                envopts = envopts,
                                conf=m$conf)
-    message("s4")
+    saveRDS(m$run,"~/scratch/m.run.rds")
+
     m$input$tab$mzml <- gui2datatab(gui)
-    message("s5")
+
     m
 }
 

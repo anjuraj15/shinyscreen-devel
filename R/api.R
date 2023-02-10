@@ -872,3 +872,35 @@ init <- function(metfrag_db_dir="",
                 metfrag_max_proc=metfrag_max_proc)
     save_envopts(o=e)
 }
+
+#' @title Run MetFrag
+#' @details
+#' @param m `state`, a state object.
+#' @return m
+#' @author Todor Kondić
+metfrag <- function(m) {
+    stagtab = metfrag_get_stag_tab(m$out$tab$summ[ms2_sel==T])
+    ftab = metfrag_run(param = m$run$metfrag$param,
+                       path = m$run$metfrag$path,
+                       subpaths = m$run$metfrag$subpaths,
+                       db_path = m$run$metfrag$db_path,
+                       stag_tab = stagtab, ms2 = m$extr$ms2,
+                       runtime=m$run$metfrag$runtime,
+                       java_bin=m$run$metfrag$java_bin,
+                       nproc = m$conf$metfrag$nproc)
+
+    tab = summarise_metfrag_results(param = m$conf$metfrag$param,
+                                    path = m$run$metfrag$path,
+                                    subpaths = m$run$metfrag$subpaths,
+                                    cand_parameters = m$conf$metfrag$cand_parameters,
+                                    db_scores = m$conf$metfrag$database_scores,
+                                    int_scores = m$conf$metfrag$intrinsic_scores,
+                                    collect_candidates= m$conf$metfrag$collect_candidates,
+                                    file_tab = ftab)
+
+    fn = file.path(m$run$metfrag$path,"metfrag_summary.csv")
+
+    data.table::fwrite(x=tab,file=fn,quote=T)
+
+    m
+}

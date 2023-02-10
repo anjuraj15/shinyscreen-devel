@@ -25,7 +25,11 @@ INPUTS_METFRAG_NUMERIC = list(mk_shiny_input(name="mf_database_search_relative_m
                               mk_shiny_input(name="mf_maximum_tree_depth",
                                                fun="numericInput",
                                                args=list(label="MaximumTreeDepth",
-                                                         value=METFRAG_DEFAULT_MAX_TREE_DEPTH)))
+                                                         value=METFRAG_DEFAULT_MAX_TREE_DEPTH)),
+                              mk_shiny_input(name="mf_proc",
+                                             fun="numericInput",
+                                             args=list(label="Number of MetFrag Processes",
+                                                       value=METFRAG_DEFAULT_PROC)))
 
 INPUTS_METFRAG_SELECT_STANDARD = list(mk_shiny_input(name="mf_pre_processing_candidate_filter",
                                                      fun="selectInput",

@@ -500,6 +500,8 @@ mk_shinyscreen_server <- function(projects,init) {
     ## Modifiable version.
     the_ord_summ = data.table::copy(def_ord_summ)
 
+    
+
     gen_compsel_tab <- function(summ,criteria=character(0)) {
         ## Given summary table, create a table with only adduct/tag/ID
         ## entries and associated MS1 quantities.
@@ -679,7 +681,6 @@ mk_shinyscreen_server <- function(projects,init) {
         
         ## Those that we don't care about when saving state; Usually
         ## can be inferred by the program.
-
         rv_extr_flag = reactiveVal(F)
         rv_presc_flag = reactiveVal(F)
         rtimer1000 = reactiveTimer(1000)
@@ -959,6 +960,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
         ## Update projects and data directories every second.
         observeEvent(rtimer1000(),{
+
             projects = rv_projects()
             curr_projects = list.dirs(path=init$projects, full.names = F, recursive = F)
             if (length(union(curr_projects,projects)) != length(intersect(curr_projects,projects))) {
@@ -1260,6 +1262,15 @@ mk_shinyscreen_server <- function(projects,init) {
             }
             
         }, label = "mf-local-database")
+
+        observeEvent(input$metfrag_all_b,{
+            shinymsg("MetFrag started. Please wait.")
+            rvs$m = metfrag(rvs$m)
+            shinymsg("MetFrag finished. Summary file is ready.")
+            fr=file.path(rvs$m$run$metfrag$path,"metfrag_summary.csv")
+            to=file.path(rvs$m$run$metfrag$path,input$mf_summ_tab_name)
+            if (to != fr) file.rename(from=fr,to=to)
+        })
         
         ## OBSERVERS: VIEWER
 

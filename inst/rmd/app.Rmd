@@ -469,6 +469,8 @@ contains six lines (for each existing combination of tag and adduct).
 ```{r, child='app_measure_props.Rmd'}
 ```
 
+```{r, child='app_results_explorer_metfrag.Rmd'}
+```
 
 <!-- ENGINE -->
 
