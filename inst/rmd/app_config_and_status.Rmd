@@ -182,6 +182,15 @@ inject_inputs(INPUTS_METFRAG,c("mf_pre_processing_candidate_filter",
 <!-- metfrag-conf-execution -->
 #### Execution
 
+<details><summary>More about execution controls</summary>
+
+The `Number of MetFrag Processses` field will show the maximum amount
+of logical threads available on the platform which executes
+MetFrag. Consider that, if you use all of them, this might cause an
+overload of the system's resources.
+
+</details>
+
 ```{r, echo=F}
 ## This is treated differently than other MF inputs, because the value
 ## is not known prior to starting a R session. There should be a
@@ -201,6 +210,50 @@ numericInput(inputId="mf_proc",
 
 #### Databases
 
+<details><summary>More about databases</summary>
+
+MetFrag offers a possibility to query different chemical
+databases. Some, such as `PubChem` are remote and some, such as
+`PubChemLite` are files that can be downloaded and used locally. At
+the moment, Shinyscreen has only been well tested with `LocalCSV`
+databases --- those which come in a CSV format. The Shinyscreen
+development team is keen to hear experiences of experimentation with
+other sources and. Let us know what works, or does not work and
+whether having other sources available is important for your
+endeavours.
+
+As for the `LocalCSV` types of databases, on an abstract level they
+can be viewed as collections of metadata about various
+compounds. There will be *identifier* fields which are unique to a
+compound. As an example, those could be `Identifier`, or
+`CompoundName` columns in a PubChemLite database. Additionally, there
+will be lots of other fields, some of which can be used as *scoring
+terms*. For example, annotation, patent and PubMed count columns in a
+PubChemLite database can be used by MetFrag to aid sensible ranking of
+candidates.
+
+Local databases should all reside in a directory that was specified
+during Shinyscreen initialisation (look up the documentation of the
+`Shinyscreen::init` function).
+
+User selects the local databases from 
+`r inputs_html_out(INPUTS_METFRAG,"mf_local_database")` 
+control. Once a database is selected, it is required 
+to declare which columns are the identifiers 
+and this is done using 
+`r inputs_html_out(INPUTS_METFRAG,"mf_local_db_col_ident")`.
+
+The summary of MetFrag results which is created by Shinyscreen
+contains top candidates. But, in addition to those, it will show a
+collection of other candidates, those that did not rank that high. The
+identifier filed which will be used for those can be chosen from
+`r inputs_html_out(INPUTS_METFRAG,"mf_local_db_col_coll")`.
+In case of PubChemLite, it is probably best to select `Identifier` column here.
+
+
+
+</details>
+
 ```{r, echo=F}
 inject_inputs(INPUTS_METFRAG,c("mf_database_type",
                                "mf_local_database",
@@ -214,6 +267,11 @@ inject_inputs(INPUTS_METFRAG,c("mf_database_type",
 
 #### MetFrag Scores
 
+<details><summary>About MetFrag scoring terms</summary>
+Here, it is possible to select MetFrag scoring types available for any
+kind of database.
+</details>
+
 ```{r, echo = F}
 inject_inputs(INPUTS_METFRAG,"mf_scores_intrinsic")
 DT::DTOutput("mf_local_ident")
@@ -223,6 +281,11 @@ DT::DTOutput("mf_local_ident")
 <div>  <!-- merfrag-conf-local-db-scores -->
 
 #### Local Database Scoring Terms
+
+<details><summary>About local DB scoring terms</summary>
+Select local database columns that make sense as scoring terms.
+</details>
+
 
 ```{r, echo = F}
 inject_inputs(INPUTS_METFRAG,"mf_local_db_col_scores")

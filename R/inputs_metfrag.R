@@ -2,12 +2,22 @@ mk_shiny_input <- function(name,fun,args) {
     content = do.call(what=fun,args=c(list(inputId=name),args))
     res = list(name=name,
                fun=fun,
+               args=args,
                content=content)
     res
 }
 
 inject_inputs<- function(collection,which) {
     do.call(shiny::tagList,lapply(which,function(nm) collection[[nm]]$content))
+}
+
+inputs_label <- function(collection,which) {
+    collection[[which]]$args$label
+}
+
+inputs_html_out <- function(collection, which, inline=T,...) {
+    txt = inputs_label(collection, which)
+    paste0('<code>',txt,'</code>')
 }
 
 INPUTS_METFRAG_NUMERIC = list(mk_shiny_input(name="mf_database_search_relative_mass_deviation",
