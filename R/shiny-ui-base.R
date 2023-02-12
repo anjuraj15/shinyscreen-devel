@@ -1270,6 +1270,7 @@ mk_shinyscreen_server <- function(projects,init) {
             to=file.path(rvs$m$run$metfrag$path,input$mf_summ_tab_name)
             if (to != fr) file.rename(from=fr,to=to)
         })
+
         
         ## OBSERVERS: VIEWER
 
@@ -1601,6 +1602,50 @@ mk_shinyscreen_server <- function(projects,init) {
         output$metfrag_panel = renderUI({
             ctrls = make_metfrag_panel(envopts=init$envopts)
             do.call(tagList,ctrls)
+        })
+
+        output$entry_mf_summ = DT::renderDT(
+        {
+            req(input$gen_mf_single_entry_summ_b)
+            shinymsg("MetFrag proccessing of a single entry started. Please wait.")
+            kv = rf_get_cindex_kval()
+            ## Some cols that might be needed to be specified
+            ## explicitely. FIXME TODO: Make this more robust.
+            cols = c("adduct","tag","ID","CE","an","mz","qa_pass")
+
+
+            saveRDS(rvs$m$out$tab$summ,"~/scratch/summ.rds")
+            nsumm = get_rows_from_summ(rvs$m$out$tab$summ,kv,cols)
+            nsumm = nsumm[qa_pass==T] #Those that make sense.
+            data.table::setkeyv(nsumm,SUMM_KEY)
+            
+            if (NROW(nsumm)>0) {
+                stagtab = metfrag_get_stag_tab(nsumm)
+                saveRDS(stagtab,"~/scratch/stagtab.rds")
+                saveRDS(nsumm,"~/scratch/nsumm.rds")
+                ftab = metfrag_run(param = rvs$m$run$metfrag$param,
+                                   path = rvs$m$run$metfrag$path,
+                                   subpaths = rvs$m$run$metfrag$subpaths,
+                                   db_path = rvs$m$run$metfrag$db_path,
+                                   stag_tab = stagtab, ms2 = rvs$m$extr$ms2,
+                                   runtime=rvs$m$run$metfrag$runtime,
+                                   java_bin=rvs$m$run$metfrag$java_bin,
+                                   nproc = rvs$m$conf$metfrag$nproc)
+                
+                tab = summarise_metfrag_results(param = rvs$m$conf$metfrag$param,
+                                                path = rvs$m$run$metfrag$path,
+                                                subpaths = rvs$m$run$metfrag$subpaths,
+                                                cand_parameters = rvs$m$conf$metfrag$cand_parameters,
+                                                db_scores = rvs$m$conf$metfrag$database_scores,
+                                                int_scores = rvs$m$conf$metfrag$intrinsic_scores,
+                                                collect_candidates= rvs$m$conf$metfrag$collect_candidates,
+                                                file_tab = ftab)
+            }
+            shinymsg("MetFrag finished.")
+
+            
+            tab[,stag:=NULL]
+            scroll_style_dt(tab,fillContainer=T)
         })
 
         ## RENDER: STATUS

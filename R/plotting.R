@@ -309,7 +309,7 @@ get_data_4_eic_ms2 <- function(summ,kvals,labs) {
 
 
 get_rows_from_summ <- function(summ,kvals,...) {
-    summ_rows_cols <- c(names(kvals),...)
+    summ_rows_cols <- union(names(kvals),c(...))
     get_data_from_key(summ,key=kvals)[,unique(.SD),.SDcol=summ_rows_cols]
 }
 
