@@ -358,11 +358,11 @@ app_state2state <- function(input,gui,envopts,m=NULL) {
     m$conf = input2conf_metfrag(input,conf=m$conf) 
     m$conf$paths$data <- gui$paths$data
 
-    saveRDS(m$conf,"~/scratch/m.conf.prerun.rds")
+
     m$run <- new_runtime_state(project=gui$paths$project,
                                envopts = envopts,
                                conf=m$conf)
-    saveRDS(m$run,"~/scratch/m.run.rds")
+
 
     m$input$tab$mzml <- gui2datatab(gui)
 

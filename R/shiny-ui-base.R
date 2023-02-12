@@ -1139,6 +1139,7 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$status$rt_stat = m$conf$tolerance[["rt"]]
             rvs$status$is_extracted_stat = "In progress."
             rv_extr_flag(T)
+            rv_presc_flag(F)
     
         })
 
@@ -1150,21 +1151,15 @@ mk_shinyscreen_server <- function(projects,init) {
             isolate({
                 if (rv_extr_flag()) {
                     rv_extr_flag(F)
-                    m =rvs$m
-                    
-                    promises::future_promise(run(m=m,phases=c("setup","comptab","extract"))) %...>% {
-                        rvs$m = .
-                        rvs$status$is_extracted_stat = "Yes."
-                        fn_c_state = file.path(rvs$m$run$paths$project,
-                                                paste0("extract.",shinyscreen:::FN_CONF))
-                        yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
-                        message("(extract) Done extracting.")
-                        message("(extract) Config written to ", fn_c_state)
-                        shinymsg("Extraction has been completed.")
-
-                    }
-
-
+                    rvs$m = run(m=rvs$m,phases=c("setup","comptab","extract"))
+                    rvs$status$is_extracted_stat = "Yes."
+                    rvs$status$is_qa_stat = "No."
+                    fn_c_state = file.path(rvs$m$run$paths$project,
+                                           paste0("extract.",shinyscreen:::FN_CONF))
+                    yaml::write_yaml(x=rvs$m$conf,file=fn_c_state)
+                    message("(extract) Done extracting.")
+                    message("(extract) Config written to ", fn_c_state)
+                    shinymsg("Extraction has been completed.")
                 }
             })
         })
@@ -1196,14 +1191,9 @@ mk_shinyscreen_server <- function(projects,init) {
                 if (rv_presc_flag()) {
                     shinymsg("Prescreening started. Please wait.")
                     rv_presc_flag(F)
-                    m =rvs$m
-                    promises::future_promise(run(m=m,phases="prescreen")) %...>% {
-                        rvs$m = .
-                        rvs$status$is_qa_stat = "Yes."
-                        shinymsg("Prescreening has been completed.")
-
-
-                    }
+                    m = run(m=rvs$m,phases="prescreen")
+                    rvs$status$is_qa_stat = "Yes."
+                    shinymsg("Prescreening has been completed.")
                 }
             })
         })
