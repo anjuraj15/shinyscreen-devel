@@ -263,28 +263,33 @@ unpack_app_state <- function(session,envopts,input,top_data_dir,project_path,pac
 input2conf_setup <- function(input,gui,conf=list()) {
     if (length(conf)==0L) {
         conf$compounds <- list()
-        conf$figures <- list()
-        conf$prescreen <- list()
-        conf$tolerance <- list()
-        conf$extract <- list()
         conf$summary_table <- list()
-        conf$report <- list()
         conf$debug <- F
     }
 
     conf$compounds$lists <- gui$compounds$lists
     conf$compounds$sets <- gui$compounds$sets
     
+
+    conf$paths$data = gui$paths$data
+    conf
+}
+
+input2conf_extract <- function(input,conf) {
+    conf$tolerance = list()
+    conf$extract = list()
     conf$tolerance[["ms1 fine"]] <- paste(input$ms1_fine,input$ms1_fine_unit)
     conf$tolerance[["ms1 coarse"]] <- paste(input$ms1_coarse,input$ms1_coarse_unit)
     conf$tolerance[["eic"]] <- paste(input$ms1_eic,input$ms1_eic_unit)
     conf$tolerance[["rt"]] <- paste(input$ms1_rt_win,input$ms1_rt_win_unit)
     conf$extract$missing_precursor_info <- input$missingprec
     conf
+
 }
 
 
 input2conf_prescreen <- function(input,conf) {
+    conf$prescreen = list()
     conf$prescreen[["ms1_int_thresh"]] <- input$ms1_int_thresh
     conf$prescreen[["ms2_int_thresh"]] <- input$ms2_int_thresh
     conf$prescreen[["s2n"]] <- input$s2n
@@ -293,6 +298,7 @@ input2conf_prescreen <- function(input,conf) {
 }
 
 input2conf_figures <- function(input,conf) {
+    conf$figures = list()
     conf$figures$rt_min <- paste(input$plot_rt_min,input$plot_rt_min_unit)
     conf$figures$rt_max <- paste(input$plot_rt_max,input$plot_rt_max_unit)
     conf$figures$ext <- input$plot_ext
@@ -301,6 +307,7 @@ input2conf_figures <- function(input,conf) {
 }
 
 input2conf_report <- function(input,conf) {
+    conf$report = list()
     conf$report$author <- input$rep_aut
     conf$report$title <- input$rep_tit
     conf
@@ -338,41 +345,59 @@ input2conf_metfrag <- function(input,conf) {
     
 }
 
-input2conf <- function(input,gui,conf=list()) {
-    conf = input2conf_setup(input,gui=gui,conf)
-    conf = input2conf_prescreen(input,conf)
-    conf = input2conf_figures(input,conf)
-    conf = input2conf_report(input,conf)
-    conf = input2conf_metfrag(input,conf)
-    conf
-}
-
-app_state2state <- function(input,gui,envopts,m=NULL) {
-    if (is.null(m)) m <- new_project(project = gui$paths$project,
-                                     envopts = envopts)
-    ## m$run$paths <- shiny::reactiveValuesToList(gui$paths)
-    m$conf = input2conf_setup(input,gui=gui)
-    m$conf = input2conf_prescreen(input=input,conf=m$conf)
-    m$conf = input2conf_figures(input,conf=m$conf)
-    m$conf = input2conf_report(input,conf=m$conf)
-    m$conf = input2conf_metfrag(input,conf=m$conf) 
-    m$conf$paths$data <- gui$paths$data
-
-
+app_update_conf <- function(input,gui,envopts,fconf,m) {
+    for (fstrp in fconf) {
+        fstr = paste0("input2conf_",fstrp)
+        m$conf = do.call(fstr,list(input,conf=m$conf))
+    }
     m$run <- new_runtime_state(project=gui$paths$project,
                                envopts = envopts,
                                conf=m$conf)
+    m
+}
+
+app_state2state <- function(input,gui,envopts,m=NULL) {
+    if (is.null(m)) m = new_project(project = gui$paths$project,
+                                    envopts = envopts)
+    m$conf = input2conf_setup(input=input,
+                              gui=gui)
+
+
+    m = app_update_conf(input=input,
+                        gui=gui,
+                        envopts=envopts,
+                        fconf = c("extract",
+                                  "prescreen",
+                                  "figures",
+                                  "report",
+                                  "metfrag"),
+                        m=m)
+                        
+    ## m$conf = input2conf_setup(input,gui=gui)
+    ## m$conf = input2conf_prescreen(input=input,conf=m$conf)
+    ## m$conf = input2conf_figures(input,conf=m$conf)
+    ## m$conf = input2conf_report(input,conf=m$conf)
+    ## m$conf = input2conf_metfrag(input,conf=m$conf) 
+    
+
+
+    ## m$run <- new_runtime_state(project=gui$paths$project,
+    ##                            envopts = envopts,
+    ##                            conf=m$conf)
 
 
     m$input$tab$mzml <- gui2datatab(gui)
-
+    
     m
 }
+
+
 
 
 gen_comp_state <- function(input,gui) {
     m <- app_state2state(input,gui)
     run(m=m,phases=c("setup","mk_comp_tab"))
+    
 }
 
     

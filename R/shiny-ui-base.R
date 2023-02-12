@@ -1131,6 +1131,8 @@ mk_shinyscreen_server <- function(projects,init) {
         
         observeEvent(input$extract_b,{
             rvs$m = app_state2state(input,rvs$gui,envopts = init$envopts, m=rvs$m) # Update params from GUI.
+            ## Clear out prescreen data if any.
+            rvs$m$out$tab$summ=EMPTY_SUMM
             m = rvs$m
             shinymsg("Extraction has started. This may take a while.")
             rvs$status$ms1_coarse_stat = m$conf$tolerance[["ms1 coarse"]]
@@ -1138,9 +1140,8 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$status$ms1_eic_stat = m$conf$tolerance[["eic"]]
             rvs$status$rt_stat = m$conf$tolerance[["rt"]]
             rvs$status$is_extracted_stat = "In progress."
+            rvs$status$is_qa_stat = "No."
             rv_extr_flag(T)
-            rv_presc_flag(F)
-    
         })
 
         observe({
@@ -1168,7 +1169,14 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$presc_b,{
             if (NROW(rvs$m$extr$ms1)>0L) {
-                rvs$m = app_state2state(input,rvs$gui,envopts = init$envopts, m=rvs$m) # Update params from GUI.
+                ## Update just prescreening conf.
+                rvs$m = app_update_conf(input=input,
+                                        gui=rvs$gui,
+                                        envopts=init$envopts,
+                                        fconf="prescreen",
+                                        m=rvs$m)
+
+                ## rvs$m = app_state2state(input,rvs$gui,envopts = init$envopts, m=rvs$m) # Update params from GUI.
                 rvs$status$ms1_int_thresh_stat = rvs$m$conf$prescreen[["ms1_int_thresh"]]
                 rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
                 rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
@@ -1191,7 +1199,8 @@ mk_shinyscreen_server <- function(projects,init) {
                 if (rv_presc_flag()) {
                     shinymsg("Prescreening started. Please wait.")
                     rv_presc_flag(F)
-                    m = run(m=rvs$m,phases="prescreen")
+                    ## If user changed prescreening params.
+                    rvs$m = run(m=rvs$m,phases="prescreen")
                     rvs$status$is_qa_stat = "Yes."
                     shinymsg("Prescreening has been completed.")
                 }
@@ -1634,7 +1643,7 @@ mk_shinyscreen_server <- function(projects,init) {
             req(rvs$status$s2n_stat)
         })
 
-        output$ret_time_shift_tol = renderText({
+        output$ret_time_shift_tol_stat = renderText({
             req(rvs$status$ret_time_shift_tol_stat)
         })
 
