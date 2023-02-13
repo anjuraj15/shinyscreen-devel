@@ -129,9 +129,27 @@
    You have [[https://guix.gnu.org/][Guix]] installed. Great. Just subscribe to ECI's Guix
    [[https://git-r3lab.uni.lu/eci/eci-pkg-menu][channel]] and install from there.
 
+
+
+
+* Before Running Shinyscreen
+
+It is necessary to initialise the package. This can be done only once
+per installation.
+
+#+BEGIN_SRC R
+  shinyscreen::init(metfrag_db="/path/to/a/directory/containing/metfrag/databases", #The folder which contains local MetFrag libraries, such as PubChemLite.
+                    metfrag_jar="/path/to/metfrag/jar/file", # The path of the MetFrag command line JAR file.
+                    java_bin="/path/to/java/executable", # This argument can usually be skipped.
+                    metfrag_max_proc=2) # The maximum amout of CPUs allocated to MetFrag.
+#+END_SRC
+
+If you do not intend to use MetFrag with Shinyscreen, just call
+`shinyscreen::init()` with no arguments.
+
 * Running Shinyscreen
-  Provided Shinyscreen is successfully installed the snippets below will
-  run it.
+  Provided Shinyscreen is successfully installed and initialised, the
+  snippets below will run it.
 #+BEGIN_SRC R
   
 
@@ -151,12 +169,12 @@
 
 
   replan <- function() {
-    ## Leave the first `tweak' as it is, then change the second one to
-    ## the number of cores of your cpu you are willing to dedicate to
-    ## shinyscreen.
+      
+    ## Change the number of workers to how many CPUs you have
+    ## available in your (shared-memory) system.
       
     future::plan("sequential")
-    future::plan(list(tweak("multisession",workers=2L),tweak("multisession",workers=6L)))
+    future::plan("multisession",workers=6L)
   }
 
   rerun <- function(work_dir=".") {
@@ -179,20 +197,16 @@
   replan();rerun()
 
 #+END_SRC
-  
+
+After starting Shinyscreen as above, the app will be available at
+127.0.0.1:4321 .
+
+
 * Usage
-  Shinyscreen (version > 1.0.0) is a self-documented application. The
-  best way to learn about using Shinyscreen is by running it. Please
-  let us know if we can improve on that documentation.
+  Shinyscreen is a self-documented application. The best way to learn
+  about using Shinyscreen is by running it. Please let us know if we
+  can improve on that documentation.
 
 * Thanks
   Many thanks to the students of the *Masters in Integrated Systems Biology*
-  course (March 2020)
-
-  - *Tessy Prohaska*
-  - *Jeff Didier*
-  - *Claudia Cipriani*
-  - *Parviel Chirsir*
-
-  for boldly wading through the Windows installation procedure, a task
-  that led to more clarity in the docs.
+  course (2020--2022) for installing, debugging, testing.
