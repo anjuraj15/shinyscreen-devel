@@ -106,6 +106,12 @@ write_keyval_file <- function(namedl,fname) {
     close(con)
 }
 
+gen_1d_name <- function(kval) {
+    nms = names(kval)
+    chunks = sapply(nms,function(x) paste0(x,kval[[x]]))
+    paste0(chunks,collapse="_")
+}
+
 gen_1d_keytab <- function(dt) {
     dkey = data.table::key(dt)
     s = dt[,.(key1d=""),by=dkey]

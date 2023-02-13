@@ -28,11 +28,16 @@
 ## 4. Summarise Results.
 
 
+metfrag_gen_entry_fname <- function(kv) {
+    paste0("mf_summ_entry_",gen_1d_name(kv),".csv")
+}
+
 metfrag_get_stag_tab <- function(summ) {
     ## Argument summ can be a subset of actual `summ' table.
     x = gen_1d_keytab(summ)
     data.table::setnames(x,old="key1d",new="stag")
-    x[summ,`:=`(CE=i.CE,ion_mz=mz)]
+    res = x[summ,`:=`(CE=i.CE,ion_mz=mz)]
+    res
 }
 
 metfrag_get_ms2_spec <- function(ms2,stag_entry) {
@@ -82,7 +87,24 @@ metfrag_run <- function(param,path,subpaths,db_path,stag_tab,ms2,runtime,java_bi
     
 }
 
+mf_narrow_summ <- function(summ,kv,ms2_rt_i=NA_integer_,ms2_rt_f=NA_integer_) {
+    skey = data.table::key(summ)
+    cols = c("adduct","tag","ID","CE","an","mz","qa_pass","ms2_rt")
+    nsumm = get_rows_from_summ(summ,kv,cols)
+    nsumm = nsumm[qa_pass==T] # Those that make sense.
+    nsumm_key = union(SUMM_KEY,"ms2_rt")
+    data.table::setkeyv(nsumm,nsumm_key)
     
+    if (!is.na(ms2_rt_i)) {
+        nsumm = nsumm[ms2_rt>(ms2_rt_i)]
+    }
+
+    if (!is.na(ms2_rt_f)) {
+        nsumm = nsumm[ms2_rt<(ms2_rt_f)]
+    }
+
+    nsumm
+}
 
 get_metfrag_targets <- function(stag_tab,ms2) {
     ## Take the columns we need from summ.
@@ -97,42 +119,6 @@ get_metfrag_targets <- function(stag_tab,ms2) {
     x
     
 }
-
-metfrag_on_state <- function(mconf,mrun,summ) {
-    
-    
-}
-
-## metfrag_on_state <- function(m,fmany=metfrag_run_many) {
-##     tgts = get_metfrag_targets(m$out$tab$summ,m$extr$ms2)
-
-##     if (NROW(tgts)==0L) stop("No good spectra for MetFrag.")
-    
-##     files = tgts[,write_metfrag_config(param=m$conf$metfrag$param,
-##                                        path = m$run$metfrag$path,
-##                                        subpaths = m$run$metfrag$subpaths,
-##                                        db_path = m$run$metfrag$db_path,
-##                                        stag = paste0(.BY,collapse="_"),
-##                                        adduct = adduct,
-##                                        ion_mz = ion_mz[1],
-##                                        spec = .SD[,c("mz","intensity")]),
-##                  by=key(tgts)]
-
-##     data.table::setnames(files,old="V1",new="files")
-
-##     withr::with_dir(m$run$metfrag$path,{
-##         x = files[,data.table(fn_conf= .SD[1,files],
-##                      fn_log= .SD[2,files])
-##                  ,by=key(files)]
-##         fmany(fn_jar = m$run$metfrag$runtime,
-##               fn_conf = x$fn_conf,
-##               fn_log = x$fn_log,
-##               java_bin = m$run$metfrag$java_bin)
-        
-##         list(targets=files)
-##     })
-## }
-
 
 write_metfrag_config <- function(param,path,subpaths,db_path,stag,adduct,ion_mz,spec) {
     check_not_one(ion_mz,"ion_mz")

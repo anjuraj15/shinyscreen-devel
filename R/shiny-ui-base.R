@@ -687,6 +687,8 @@ mk_shinyscreen_server <- function(projects,init) {
         rtimer_presc = reactiveTimer(500)
         rv_summ_subset = reactiveVal(data.frame()) # Used to generate sel_spec list (among other things?).
 
+        ## Holds single entry metfrag summary.
+        rv_mf1tab = reactiveVal(NULL)
         
         ## REACTIVE FUNCTIONS
         rf_compound_set <- reactive({
@@ -1271,6 +1273,17 @@ mk_shinyscreen_server <- function(projects,init) {
             if (to != fr) file.rename(from=fr,to=to)
         })
 
+        observeEvent(input$save_mf_single_entry_summ_b,{
+            kv = req(rf_get_cindex_kval())
+            fn = file.path(rvs$m$run$metfrag$path,"results",metfrag_gen_entry_fname(kv))
+            if (!is.null(rv_mf1tab())) {
+                data.table::fwrite(x=rv_mf1tab(),
+                                   file=fn,
+                                   quote=T)
+                shinymsg(paste0("File ",fn," written to metfrag results directory."))
+            }
+        })
+
         
         ## OBSERVERS: VIEWER
 
@@ -1604,6 +1617,11 @@ mk_shinyscreen_server <- function(projects,init) {
             do.call(tagList,ctrls)
         })
 
+        output$entry_mf_summ_fname = renderText({
+            kv = req(rf_get_cindex_kval())
+            metfrag_gen_entry_fname(kv)
+        })
+
         output$entry_mf_summ = DT::renderDT(
         {
             req(input$gen_mf_single_entry_summ_b)
@@ -1611,18 +1629,13 @@ mk_shinyscreen_server <- function(projects,init) {
             kv = rf_get_cindex_kval()
             ## Some cols that might be needed to be specified
             ## explicitely. FIXME TODO: Make this more robust.
-            cols = c("adduct","tag","ID","CE","an","mz","qa_pass")
+            nsumm = mf_narrow_summ(rvs$m$out$tab$summ,kv,
+                                   ms2_rt_i=input$mf_entry_rt_min,
+                                   ms2_rt_f=input$mf_entry_rt_max)
 
-
-            saveRDS(rvs$m$out$tab$summ,"~/scratch/summ.rds")
-            nsumm = get_rows_from_summ(rvs$m$out$tab$summ,kv,cols)
-            nsumm = nsumm[qa_pass==T] #Those that make sense.
-            data.table::setkeyv(nsumm,SUMM_KEY)
             
             if (NROW(nsumm)>0) {
                 stagtab = metfrag_get_stag_tab(nsumm)
-                saveRDS(stagtab,"~/scratch/stagtab.rds")
-                saveRDS(nsumm,"~/scratch/nsumm.rds")
                 ftab = metfrag_run(param = rvs$m$run$metfrag$param,
                                    path = rvs$m$run$metfrag$path,
                                    subpaths = rvs$m$run$metfrag$subpaths,
@@ -1640,11 +1653,23 @@ mk_shinyscreen_server <- function(projects,init) {
                                                 int_scores = rvs$m$conf$metfrag$intrinsic_scores,
                                                 collect_candidates= rvs$m$conf$metfrag$collect_candidates,
                                                 file_tab = ftab)
-            }
-            shinymsg("MetFrag finished.")
+                
+                tab[stagtab,ms2_rt:=i.ms2_rt,on="stag"]
+                tab[,stag:=NULL]
+                nms = names(tab)
+                tkey = data.table::key(tab)
+                rest = setdiff(nms,union(tkey,c("ms2_rt")))
+                frst = union(tkey,c("ms2_rt"))
+                nnms = c(frst,rest)
+                data.table::setcolorder(tab,nnms)
+                tab
 
+            } else {
+                tab = NULL
+            }
+            isolate({rv_mf1tab(tab)})
+            shinymsg("MetFrag finished.")
             
-            tab[,stag:=NULL]
             scroll_style_dt(tab,fillContainer=T)
         })
 

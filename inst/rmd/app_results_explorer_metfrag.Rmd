@@ -7,10 +7,43 @@ If MetFrag is available (this can be enabled usint the
 `shinyscreen::init` function), then, clicking on the button will
 generate a MetFrag summary for the selected compound index entry.
 
+It is possible to limit the spectra for MetFrag analysis by defining
+the retention time interval using the controls under `MS2 Retention
+Time Interval` section.
+
 </details>
+
+
+#### MS2 Retention Time Interval
+
+<div class="flex-ctrl-row"> 
+<!-- RT div -->
+```{r, echo=F}
+numericInput(inputId = "mf_entry_rt_min",
+             label="Start",
+             value=NA_real_,
+             width="10%")
+```
+```{r, echo=F}
+numericInput(inputId = "mf_entry_rt_max",
+             label="End",
+             value=NA_real_,
+             width="10%")
+
+```
+</div> <!-- RT div -->
+
 
 ```{r, echo=F}
 actionButton(inputId = "gen_mf_single_entry_summ_b",
              label= "Process compound")
+```
+MS2 Retention Time Interval
+
+
+```{r, echo=F}
+actionButton(inputId = "save_mf_single_entry_summ_b",
+             label= "Save table")
+htmlOutput("entry_mf_summ_fname")
 DT::DTOutput("entry_mf_summ")
 ```
