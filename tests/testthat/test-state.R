@@ -33,9 +33,11 @@ test_that("Test full project creation.",{
         dir.create(db_dir)
         mf_jar = "bingo.jar"
         saveRDS(" ",mf_jar)
-        mf_db = file.path(db_dir,"bingo.csv")
-        saveRDS(" ",mf_db)
-        conf$metfrag$db_file = basename(mf_db)
+        db = data.frame(a=1,b=2)
+        mf_or_db = system.file("testdata","example_db.csv",package="shinyscreen")
+        file.copy(from = mf_or_db,
+                  to = db_dir)
+        conf$metfrag$db_file = basename(mf_or_db)
         yaml::write_yaml(conf,file.path(ppath,FN_CONF))
         eo = envopts(metfrag_db_dir=db_dir,
                      metfrag_jar=mf_jar)

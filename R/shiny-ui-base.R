@@ -1612,11 +1612,6 @@ mk_shinyscreen_server <- function(projects,init) {
                 "available" else "unavailable"
         })
 
-        output$metfrag_panel = renderUI({
-            ctrls = make_metfrag_panel(envopts=init$envopts)
-            do.call(tagList,ctrls)
-        })
-
         output$entry_mf_summ_fname = renderText({
             kv = req(rf_get_cindex_kval())
             metfrag_gen_entry_fname(kv)
