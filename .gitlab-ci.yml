@@ -13,9 +13,8 @@ test:
 build:
   stage: build
   only:
-    - master
-    - devel
+    - tags
   script:
-    - echo "Hello $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG"
+    - echo "Hello $CI_REGISTRY_IMAGE:`echo $CI_COMMIT_TAG|sed 's/^v\(.*\)/\1/'`"
 
     
