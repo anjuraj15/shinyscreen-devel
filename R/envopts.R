@@ -23,26 +23,42 @@
 
 
 #' @title Create a `envopts` Object
-#' @details A `envopts` object is Shinyscreen way to store settings
+#' @details An `envopts` object is Shinyscreen way to store settings
 #'     related to a specific computing environment. Information such
 #'     as the run time path to a MetFrag JAR will vary from one to
 #'     another setup and we need to convey this to the `shinyscreen`
 #'     pipeline.
-#' @param metfrag_db_dir `character(1)`, a path to the directory which contains MetFrag databases
-#' @param metfrag_jar  `character(1)`, a path to MetFrag JAR file
+#' @param projects `character(1)`, a directory which contains all
+#'     shinyscreen projects directories. A single project directory
+#'     contains input and output files.
+#' @param top_data_dir `character(1)`, a directory which contains all
+#'     `data` directories. A single `data` directory contains `mzML`
+#'     spectrometry data files.
+#' @param metfrag_db_dir `character(1)`, a path to the directory which
+#'     contains MetFrag databases.
+#' @param metfrag_jar `character(1)`, a path to MetFrag JAR file.
+#' @param java_bin `character(1)`, a path to jave runtime
+#'     (optional). We try to detect this.
 #' @param metfrag_max_proc `integer(1)`, maximum number of CPU cores
 #'     available for MetFrag.
 #' @return An `envopts` object.
 #' @author Todor Kondić
-envopts <- function(metfrag_db_dir="",
+envopts <- function(projects="",
+                    top_data_dir="",
+                    metfrag_db_dir="",
                     metfrag_jar="",
                     java_bin=Sys.which("java"),
                     metfrag_max_proc = parallel::detectCores()) {
     res = list(metfrag=list())
+    
     class(res) = c("envopts","list") #Just to officially make it an
                                      #object.
 
-    check_dir_absent(metfrag_db_dir,what="mf-db-dir")
+    check_dir_absent_nz(projects,what="projects-dir")
+    res$projects = projects
+    check_dir_absent_nz(top_data_dir,what="top-data-dir")
+    res$top_data_dir=top_data_dir
+    check_dir_absent_nz(metfrag_db_dir,what="mf-db-dir")
     res$metfrag$db_dir = norm_path(metfrag_db_dir)
 
     check_file_absent(metfrag_jar,what="mf-jar")

@@ -174,11 +174,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
     run$metfrag = .metfrag(project_path)
 
     
-    run$paths$data = if (is.null(conf$paths$data)) {
-        project_path
-    } else {
-        norm_path(conf$paths$data)
-    }
+    run$paths$data = norm_path(file.path(envopts$top_data_dir,conf$paths$data))
     
     check_dir_absent(run$paths$data,"data-dir")
 
@@ -248,18 +244,18 @@ import_project <- function(project,envopts=envopts) {
 ##' @export
 new_rv_state <- function() react_v(m=list2rev(new_state()))
 
-write_conf <- function(m,fn) {
-    m$conf$paths$data <- get_fn_ftab(m)
-    if (NROW(m$input$tab$mzml)>0) tab2file(tab=m$input$tab$mzml,file=file.path(m$run$paths$project,FN_DATA_TAB))
-    yaml::write_yaml(x=m$conf,file=fn)
+## write_conf <- function(m,fn) {
+##     m$conf$paths$data <- get_fn_ftab(m)
+##     if (NROW(m$input$tab$mzml)>0) tab2file(tab=m$input$tab$mzml,file=file.path(m$run$paths$project,FN_DATA_TAB))
+##     yaml::write_yaml(x=m$conf,file=fn)
     
     
     
-}
-write_state <- function(m,fn_conf) {
-    write_conf(m,fn_conf)
-    tab2file(tab=m$input$tab$mzml,file=file.path(m$run$paths$project,FN_DATA_TAB))
-}
+## }
+## write_state <- function(m,fn_conf) {
+##     write_conf(m,fn_conf)
+##     tab2file(tab=m$input$tab$mzml,file=file.path(m$run$paths$project,FN_DATA_TAB))
+## }
 
 label_cmpd_lists <- function (lists) {
     if (length(lists)>0) {

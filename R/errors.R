@@ -23,9 +23,23 @@ check_dir_absent <- function(dir,what) {
     if (nchar(dir)>0L && !dir.exists(dir)) stop(errorCondition(paste0("The ", what, " directory --- ", dir, "--- does not exist, or cannot be found."), class=paste0(what,'-absent')))
 }
 
+check_dir_absent_nz <- function(dir,what) {
+    check_notastring(dir,what)
+    if (nchar(dir)>0L) {
+        check_dir_absent(dir,what)
+    }
+}
+
 check_file_absent <- function(file,what) {
     check_notastring(file,what)
     if (nchar(file)>0L && !file.exists(file)) stop(errorCondition(paste0("The ", what, " file --- ", file, "--- does not exist, or cannot be found."), class=paste0(what,'-absent')))
+}
+
+check_file_absent_nz <- function(file,what) {
+    check_notastring(file,what)
+    if (nchar(file)>0L) {
+        check_file_absent(file,what)
+    }
 }
 
 check_not_one <- function(value,what) {
