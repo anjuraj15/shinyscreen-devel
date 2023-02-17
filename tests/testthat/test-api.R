@@ -11,11 +11,13 @@ test_that("Preparation for app start",{withr::with_tempdir({
     saveRDS("",file=mrt)
     expect_error(prepare_app(dir_before=dbef,
                              projects="absent",
-                             top_data_dir=ddata),
+                             top_data_dir=ddata,
+                             metfrag_db_dir=""),
                  class="projects-absent")
     expect_error(prepare_app(dir_before=dbef,
                              projects=dproj,
-                             top_data_dir="absent"),
+                             top_data_dir="absent",
+                             metfrag_db_dir=""),
                  class="top-data-dir-absent")
 
 })})
