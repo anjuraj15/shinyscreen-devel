@@ -14,13 +14,18 @@
 
 errc_conf_file_absent <- errorCondition("There is no config file in the project directory.",class="conf-file-absent")
 
-check_notastring <- function(value,what) {
-    if (!is.character(value)) stop(errorCondition(paste0("The value (",str(value),") of, ",what," is not a character vector."),class=paste0(what,'-notastring')))
+check_notastring <- function(value, what, strict=F) {
+    cond = !is.character(value)
+    if (strict) cond = cond || is.na(value)
+    
+    if (cond) stop(errorCondition(paste0("The value (",value,") of, ",what," is not a character vector (or, it is, maybe, a missing value)."),class=paste0(what,'-notastring')))
 }
 
-check_dir_absent <- function(dir,what) {
-    check_notastring(dir,what)
-    if (nchar(dir)>0L && !dir.exists(dir)) stop(errorCondition(paste0("The ", what, " directory --- ", dir, "--- does not exist, or cannot be found."), class=paste0(what,'-absent')))
+check_dir_absent <- function(dir,what,strict=F) {
+    check_notastring(dir,what,strict=strict)
+    cond = !dir.exists(dir)
+    if (!strict) cond = cond && nchar(dir)>0L
+    if (cond) stop(errorCondition(paste0("The ", what, " directory --- ", dir, "--- does not exist, or cannot be found."), class=paste0(what,'-absent')))
 }
 
 check_dir_absent_nz <- function(dir,what) {

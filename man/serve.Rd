@@ -4,14 +4,10 @@
 \alias{serve}
 \title{serve}
 \usage{
-serve(top_data_dir, usersdir, user, host = "0.0.0.0", port = 7777)
+serve(envopts, user, host = "0.0.0.0", port = 7777)
 }
 \arguments{
-\item{top_data_dir}{\code{character(1)}, a location on the server side
-containing data directories.}
-
-\item{usersdir}{\code{character(1)}, a location on the server side
-containing individual user directories.}
+\item{envopts}{\code{envopts}, an \code{envopts} object.}
 
 \item{user}{\code{character(1)}, subdir of usersdir.}
 
@@ -20,6 +16,12 @@ served.}
 
 \item{port}{\code{integer(1)}, optional, port at which the page is
 served.}
+
+\item{top_data_dir}{\code{character(1)}, a location on the server side
+containing data directories.}
+
+\item{metfrag_db_dir}{\code{character(1)}, a location on the server side
+containing MetFrag DBs.}
 }
 \value{
 Nada.

@@ -54,21 +54,6 @@ runtime_from_conf <- function(run,conf) {
     run
 }
 
-reinit_run_data <- function(projects,top_data_dir,project,run=NULL) {
-    if (!is.null(run)) {
-        olddata <- run$paths$data
-        oldproject <- basename(run$paths$project)
-        if (project != oldproject) {
-            message("Project has been renamed to: ",project)
-            message("Old project name was: ", oldproject)
-        }
-        if (isTruthy(olddata)) run$paths$data <- file.path(top_user_dir,basename(olddata))
-    }
-    run$project <- project
-    run$paths$project <- file.path(projects,project)
-    run
-}
-
 #' @title Create Runtime Configuration
 #' @details This is a part of the configuration that can only be
 #'     diagnosed at runtime.
@@ -163,9 +148,9 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
     }
 
     ## Check if all OK with project name.
-    check_notastring(project,"project")
-    project_path = norm_path(project)
-    check_dir_absent(project_path,"project")
+    check_notastring(project,"project",strict=T)
+    project_path = file.path(envopts$projects,basename(project))
+    check_dir_absent(project_path,"project_path", strict=T)
     project = basename(project)
     run = list()
     run$project = project
@@ -176,7 +161,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
     
     run$paths$data = norm_path(file.path(envopts$top_data_dir,conf$paths$data))
     
-    check_dir_absent(run$paths$data,"data-dir")
+    check_dir_absent(run$paths$data,"data-dir", strict=T)
 
     if (!is.null(conf)) runtime_from_conf(run=run,conf=conf) else run
 

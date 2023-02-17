@@ -11,20 +11,19 @@
 ## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ## See the License for the specific language governing permissions and
 ## limitations under the License.
-
-##' @export
-##' @param project `character(1)`, a directory containing input data.
-##' @param top_data_dir `character(1)`, a directory contining data
-##'     subdirs.
-##' @param metfrag_db_dir `character(1)`, a directory containing
-##'     MetFrag DBs.
-##' @param m `state`, a Shinyscreen state.
-##' @param phases `character(n)`, a character vector of Shinyscreen
-##'     phases.
-##' @param help `logical(1)`, print help?
-run <- function(project="",
-                top_data_dir="",
-                metfrag_db_dir="",
+#' @title Run Shinyscreen Pipeline
+#'
+#' @details TODO.
+#' 
+#' @param envopts `envopts`, an `envopts` object.
+#' @param project `character(1)`, a directory containing input data.
+#' @param m `state`, a Shinyscreen state.
+#' @param phases `character(n)`, a character vector of Shinyscreen
+#'     phases.
+#' @param help `logical(1)`, print help?
+#' @export
+run <- function(envopts,
+                project="",
                 m=NULL,
                 phases=NULL,
                 help=F) {
@@ -53,19 +52,26 @@ run <- function(project="",
                                                       }
                                                       all_phases[phases]
 
+
                                                   }
 
-    eo = prepare_paths(project=project,
-                       projects="",
-                       top_data_dir=top_data_dir,
-                       metfrag_db_dir=metfrag_db_dir)
-    
-    
-    m <- if (nchar(project)!=0) new_project(project,envopts=eo) else if (!is.null(m)) m else stop("(run): Either the YAML config file (project),\n or the starting state (m) must be provided\n as the argument to the run function.")
-    ## m$conf$project <- norm_path(m$conf$project) #FIXME: Test in all workflows!
-    m <- withr::with_dir(new=m$run$paths$project,code = Reduce(function (prev,f) f(prev),
-                                                            x = the_phases,
-                                                            init = m))
+
+    m = if (is.null(m)) {
+            ## A project from scratch.
+            new_project(project,envopts=envopts) 
+        } else {
+            ## Regenerate the runtime environment.
+
+            project = if (nchar(project)==0L) m$run$project else project
+            m$run = new_runtime_state(project=project,
+                                      envopts = envopts,
+                                      conf=m$conf)
+            m
+        }
+
+    m = withr::with_dir(new=m$run$paths$project,code = Reduce(function (prev,f) f(prev),
+                                                              x = the_phases,
+                                                              init = m))
     return(invisible(m))
 }
 
@@ -697,78 +703,12 @@ create_plots <- function(m) {
     m
 }
 
-
-prepare_paths <- function(project,
-                          projects,
-                          top_data_dir,
-                          metfrag_db_dir) {
-
-    ## Get system-wide config.
-    eo = load_envopts()
-
-    ## Figure out how to run.
-
-
-    if (nchar(top_data_dir)>0) {
-        ## Specified `top_data_dir` overrides everything.
-        eo$top_data_dir = norm_path(top_data_dir)
-    } else {
-        ## If no user supplied `top_data_dir`, check if envopts
-        ## top_data_dir is empty.
-        if (nchar(eo$top_data_dir)==0L) {
-            ## If yes, the last attempt is to designate
-            ## `project` dir as `top_data_dir` directory. 
-            if (dir.exists(project)) eo$top_data_dir=norm_path(project)
-        }
-
-    }
-
-
-    ## In case  `project` is a not a zero-length string.
-    if (nchar(project)!=0) {
-        ## The variable `projects` is alwas a super-directory of
-        ## `project`.
-        withr::with_dir(project,{
-            eo$projects=norm_path("..")
-        })
-    } else {
-        if (nchar(projects)!=0) {
-            eo$projects=projects
-        }
-    }
-    
-
-    ## Override the default `db_dir` if `metfrag_db_dir` supplied.
-    if (nchar(metfrag_db_dir)>0) {
-        eo$metfrag$db_dir = norm_path(metfrag_db_dir)
-    } else {
-        ## If no default `db_dir`, try with `project`.
-        if (nchar(eo$metfrag$db_dir)==0L) {
-            eo$metfrag$db_dir = norm_path(project)
-        }
-    }
-    eo
-}
-
 prepare_app <- function(dir_before,
-                        projects,
-                        top_data_dir,
-                        metfrag_db_dir) {
-
+                        envopts) {
     ## Information that needs to be availabe to the shiny server.
     init <- list()
     init$dir_before <- dir_before
-    init$envopts = prepare_paths(project="",
-                                 projects=projects,
-                                 top_data_dir=top_data_dir,
-                                 metfrag_db_dir=metfrag_db_dir)
-    init$top_data_dir <- init$envopts$top_data_dir
-    init$projects <- init$envopts$projects
-    
-
-    check_dir_absent(init$top_data_dir,what="top-data-dir")
-    check_dir_absent(init$projects,what="projects")
-
+    init$envopts = envopts
 
     ## Create independent starting `home' for the server.
     dir_start <- tempfile("shinyscreen")
@@ -788,14 +728,10 @@ prepare_app <- function(dir_before,
     dir_start
 }
 
+
 #' @export
 #' @title app
-#' @param projects `character(1)`, a location on the server side
-#'     containing project directories.
-#' @param top_data_dir `character(1)`, a location on the server side
-#'     containing data directories.
-#' @param metfrag_db_dir `character(1)`, a location on the server side
-#'     containing MetFrag databases.
+#' @param envopts `envopts`. Shinyscreen environment options. 
 #' @param shiny_args `list`, optional list of arguments conveyed to
 #'     `rmarkdown::run` `shiny_args` argument.
 #' @param render_args `list`, optional list of arguments conveyed to
@@ -804,19 +740,15 @@ prepare_app <- function(dir_before,
 #'     of the MetFrag jar file.
 #' @return Nada.
 #' @author Todor Kondić
-app <- function(projects="",
-                top_data_dir="",
-                metfrag_db_dir="",
+app <- function(envopts,
                 shiny_args=list(launch.browser=F),
                 render_args=NULL) {
     dir_before = getwd()
     message("dir_before: ", dir_before)
-    message("top_data_dir: ", top_data_dir)
-    message("projects: ", projects)
+    message("top_data_dir: ", envopts$top_data_dir)
+    message("projects: ", evnopts$projects)
     dir_start = prepare_app(dir_before=dir_before,
-                            projects=projects,
-                            top_data_dir=top_data_dir,
-                            metfrag_db_dir=metfrag_db_dir)
+                            envopts=envopts)
 
     on.exit(expr=setwd(dir_before))
     setwd(dir_start)
@@ -826,22 +758,21 @@ app <- function(projects="",
 
 #' @export
 #' @title serve
-#' @param top_data_dir `character(1)`, a location on the server side
-#'     containing data directories.
-#' @param metfrag_db_dir `character(1)`, a location on the server side
-#'     containing MetFrag DBs.
-#' @param usersdir `character(1)`, a location on the server side
-#'     containing individual user directories.
+#' @param envopts `envopts`, an `envopts` object.
 #' @param user `character(1)`, subdir of usersdir.
 #' @param host `character(1)`, optional, address where the page is
 #'     served.
 #' @param port `integer(1)`, optional, port at which the page is
 #'     served.
+#' @param top_data_dir `character(1)`, a location on the server side
+#'     containing data directories.
+#' @param metfrag_db_dir `character(1)`, a location on the server side
+#'     containing MetFrag DBs.
 #' @return Nada.
 #' @author Todor Kondić
-serve <- function(top_data_dir,metfrag_db_dir,usersdir,user,host='0.0.0.0',port=7777) {
+serve <- function(envopts,user,host='0.0.0.0',port=7777) {
     shiny_args <- c(list(launch.browser=F),list(host=host,port=port))
-    projects <- file.path(usersdir,user)
+    projects <- file.path(envopts$users_dir,user)
     if (!dir.exists(projects)) {
         dir.create(projects)
         message('Created projects: ',projects)
@@ -849,9 +780,7 @@ serve <- function(top_data_dir,metfrag_db_dir,usersdir,user,host='0.0.0.0',port=
         message('Using existing projects: ', projects)
     }
     app(shiny_args=shiny_args,
-        top_data_dir=top_data_dir,
-        projects=projects,
-        metfrag_db_dir=metfrag_db_dir)
+        envopts=envopts)
 }
 
 
@@ -941,24 +870,65 @@ report <- function(m) {
 
 #' @title Initialise Shinyscreen Configuration
 #' @details This function is used to inform `shinyscreen` about the
-#'     working environment. It is only necessary to call it once. The
-#'     parameters will be memorised.
+#'     working environment. If argument `save` is T, the configuration
+#'     will be memorised. Subsequent calls to `init` without arguments
+#'     will just load the configuration. If `merge` argument is T, the
+#'     resulting configuration object is going to be a merge between
+#'     the new parameters and the memorised ones. Those arguments not
+#'     mentioned in the argument list will be remembered from the save
+#'     config.
 #' @inheritParams envopts
-#' @return Nothing.
+#' @param merge `logical(1)`, optional. If T, merge with saved
+#'     configuration.
+#' @param save `logical(1)`, optional. If T, save configuration,
+#'     otherwise just return the Shinyscreen environment options.
+#' @return An `envopts` object.
 #' @author Todor Kondić
-init <- function(projects="",
-                 top_data_dir="",
-                 metfrag_db_dir="",
-                 metfrag_jar="",
-                 java_bin=Sys.which("java"),
-                 metfrag_max_proc=parallel::detectCores()) {
-    e = envopts(projects = projects,
-                top_data_dir = top_data_dir,
-                metfrag_db_dir = metfrag_db_dir,
-                metfrag_jar = metfrag_jar,
-                java_bin = java_bin,
-                metfrag_max_proc = metfrag_max_proc)
-    save_envopts(o=e)
+#' @export
+init <- function(projects=NULL,
+                 top_data_dir=NULL,
+                 metfrag_db_dir=NULL,
+                 metfrag_jar=NULL,
+                 java_bin=NULL,
+                 metfrag_max_proc=NULL,
+                 merge=T,
+                 save=F) {
+
+    
+    env = environment()
+    eargs = list()
+    ## Merge into the untouched (NULLs), only.
+    if (merge) {
+        ## Merge with old values
+        eold = load_envopts()
+        cargs = formalArgs(envopts)
+        if (length(eold)>0L) {
+            for (a in cargs) {
+                if (is.null(env[[a]])) eargs[[a]] = eold[[a]] else eargs[[a]]=env[[a]]
+            }
+        }
+    }
+
+    ## Default values = "" .
+    chrargs = c("projects","top_data_dir","metfrag_db_dir")
+
+    for (ca in chrargs) {
+        if (is.null(eargs[[ca]])) eargs[[ca]]=""
+    }
+
+    if (is.null(java_bin)) {
+        eargs[["java_bin"]]= Sys.which("java")
+    }
+
+    if (is.null(metfrag_max_proc)) {
+        eargs$metfrag_max_proc = parallel::detectCores()
+    }
+    
+    e = do.call(envopts,eargs)
+    
+    
+    if (save) save_envopts(o=e)
+    e
 }
 
 #' @title Run MetFrag

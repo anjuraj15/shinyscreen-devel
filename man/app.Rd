@@ -4,28 +4,16 @@
 \alias{app}
 \title{app}
 \usage{
-app(
-  projects = getwd(),
-  top_data_dir = getwd(),
-  shiny_args = list(launch.browser = F),
-  render_args = NULL
-)
+app(envopts, shiny_args = list(launch.browser = F), render_args = NULL)
 }
 \arguments{
-\item{projects}{\code{character(1)}, a location on the server side
-containing project directories.}
-
-\item{top_data_dir}{\code{character(1)}, a location on the server side
-containing data directories.}
+\item{envopts}{\code{envopts}. Shinyscreen environment options.}
 
 \item{shiny_args}{\code{list}, optional list of arguments conveyed to
 \code{rmarkdown::run} \code{shiny_args} argument.}
 
 \item{render_args}{\code{list}, optional list of arguments conveyed to
 \code{rmarkdown::run} \code{render_args} argument.}
-
-\item{metfrag_db_dir}{\code{character(1)}, a location on the server side
-containing MetFrag databases.}
 
 \item{metfrag_runtime}{\code{character(1)}, a location on the server side
 of the MetFrag jar file.}

@@ -708,24 +708,6 @@ mk_shinyscreen_server <- function(projects,init) {
             
         })
 
-        rf_setup_state <- reactive({
-            rvs$gui$project
-            rvs$gui$datatab$file
-            rvs$gui$datatab$tag
-            rvs$gui$datatab$adduct
-            rvs$gui$datatab$set
-            rvs$gui$paths$data
-            rvs$gui$paths$project
-            isolate({
-                req(pre_setup_val_block(rvs$gui))
-                q = app_state2state(input,rvs$gui,envopts=init$envopts)
-                
-            })
-            run(m=q,phases=c("setup","comptab"))
-        })
-
-        
-
         ## REACTIVE FUNCTIONS: COMPOUND INDEX
         rf_get_cindex <- reactive({
 
@@ -945,7 +927,7 @@ mk_shinyscreen_server <- function(projects,init) {
             updateSelectInput(session = session,
                               inputId = "top_data_dir_list",
                               selected = basename(top_data_dir),
-                              choices = list.dirs(path = init$top_data_dir,
+                              choices = list.dirs(path = init$envopts$top_data_dir,
                                                   full.names = F,
                                                   recursive = F))
         })
@@ -964,7 +946,7 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(rtimer1000(),{
 
             projects = rv_projects()
-            curr_projects = list.dirs(path=init$projects, full.names = F, recursive = F)
+            curr_projects = list.dirs(path=init$envopts$projects, full.names = F, recursive = F)
             if (length(union(curr_projects,projects)) != length(intersect(curr_projects,projects))) {
                 updateSelectInput(session=session,
                                   inputId="proj_list",
@@ -983,7 +965,7 @@ mk_shinyscreen_server <- function(projects,init) {
             ## loaded. Everything else works off rvs$m and rvs$gui.
             wd = input$proj_list
             req(!is.null(wd) && !is.na(wd) && nchar(wd)>0)
-            fullwd = file.path(init$projects,wd)
+            fullwd = file.path(init$envopts$projects,wd)
             check_dir_absent(fullwd,what="project")
             ## Load saved state if existing, create if it does not.
             fn_packed_state = file.path(fullwd,FN_GUI_STATE)
@@ -994,7 +976,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 rvs$gui = unpack_app_state(session=session,
                                            envopt=init$envopts,
                                            input=input,
-                                           top_data_dir=init$top_data_dir,
+                                           top_data_dir=init$envopts$top_data_dir,
                                            project_path=fullwd,
                                            packed_state=pack)
                 ## Load computational state.
@@ -1050,7 +1032,7 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$sel_data_dir_b,{
             data_dir = input$top_data_dir_list
             req(isTruthy(data_dir))
-            rvs$gui$paths$data = file.path(init$top_data_dir, data_dir)
+            rvs$gui$paths$data = file.path(init$envopts$top_data_dir, data_dir)
             
             message("Selected data dir:",rvs$gui$paths$data)
 
@@ -1154,7 +1136,10 @@ mk_shinyscreen_server <- function(projects,init) {
             isolate({
                 if (rv_extr_flag()) {
                     rv_extr_flag(F)
-                    rvs$m = run(m=rvs$m,phases=c("setup","comptab","extract"))
+                    rvs$m = run(m=rvs$m,
+                                top_data_dir=init$envopts$top_data_dir,
+                                metfrag_db_dir=init$envopts$metfrag$db_dir,
+                                phases=c("setup","comptab","extract"))
                     rvs$status$is_extracted_stat = "Yes."
                     rvs$status$is_qa_stat = "No."
                     fn_c_state = file.path(rvs$m$run$paths$project,
@@ -1202,7 +1187,10 @@ mk_shinyscreen_server <- function(projects,init) {
                     shinymsg("Prescreening started. Please wait.")
                     rv_presc_flag(F)
                     ## If user changed prescreening params.
-                    rvs$m = run(m=rvs$m,phases="prescreen")
+                    rvs$m = run(m=rvs$m,
+                                top_data_dir=init$envopts$top_data_dir,
+                                metfrag_db_dir=init$envopts$metfrag$db_dir,
+                                phases="prescreen")
                     rvs$status$is_qa_stat = "Yes."
                     shinymsg("Prescreening has been completed.")
                 }

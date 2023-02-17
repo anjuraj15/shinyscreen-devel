@@ -5,30 +5,57 @@
 \title{Initialise Shinyscreen Configuration}
 \usage{
 init(
+  projects = "",
+  top_data_dir = "",
   metfrag_db_dir = "",
   metfrag_jar = "",
   java_bin = Sys.which("java"),
-  metfrag_max_proc = parallel::detectCores()
+  metfrag_max_proc = parallel::detectCores(),
+  merge = T,
+  save = F
 )
 }
 \arguments{
-\item{metfrag_db_dir}{\code{character(1)}, a path to the directory which contains MetFrag databases}
+\item{projects}{\code{character(1)}, a directory which contains all
+shinyscreen projects directories. A single project directory
+contains input and output files.}
 
-\item{metfrag_jar}{\code{character(1)}, a path to MetFrag JAR file}
+\item{top_data_dir}{\code{character(1)}, a directory which contains all
+\code{data} directories. A single \code{data} directory contains \code{mzML}
+spectrometry data files.}
+
+\item{metfrag_db_dir}{\code{character(1)}, a path to the directory which
+contains MetFrag databases.}
+
+\item{metfrag_jar}{\code{character(1)}, a path to MetFrag JAR file.}
+
+\item{java_bin}{\code{character(1)}, a path to jave runtime
+(optional). We try to detect this.}
 
 \item{metfrag_max_proc}{\code{integer(1)}, maximum number of CPU cores
 available for MetFrag.}
+
+\item{merge}{\code{logical(1)}, optional. If T, merge with saved
+configuration.}
+
+\item{save}{\code{logical(1)}, optional. If T, save configuration,
+otherwise just return the Shinyscreen environment options.}
 }
 \value{
-Nothing.
+An \code{envopts} object.
 }
 \description{
 Initialise Shinyscreen Configuration
 }
 \details{
 This function is used to inform \code{shinyscreen} about the
-working environment. It is only necessary to call it once. The
-parameters will be memorised.
+working environment. If argument \code{save} is T, the configuration
+will be memorised. Subsequent calls to \code{init} without arguments
+will just load the configuration. If \code{merge} argument is T, the
+resulting configuration object is going to be a merge between
+the new parameters and the memorised ones. Those arguments not
+mentioned in the argument list will be remembered from the save
+config.
 }
 \author{
 Todor Kondić

@@ -5,16 +5,34 @@
 \title{Create a \code{envopts} Object}
 \usage{
 envopts(
+  projects = "",
+  top_data_dir = "",
   metfrag_db_dir = "",
   metfrag_jar = "",
+  users_dir = "",
   java_bin = Sys.which("java"),
   metfrag_max_proc = parallel::detectCores()
 )
 }
 \arguments{
-\item{metfrag_db_dir}{\code{character(1)}, a path to the directory which contains MetFrag databases}
+\item{projects}{\code{character(1)}, a directory which contains all
+shinyscreen projects directories. A single project directory
+contains input and output files.}
 
-\item{metfrag_jar}{\code{character(1)}, a path to MetFrag JAR file}
+\item{top_data_dir}{\code{character(1)}, a directory which contains all
+\code{data} directories. A single \code{data} directory contains \code{mzML}
+spectrometry data files.}
+
+\item{metfrag_db_dir}{\code{character(1)}, a path to the directory which
+contains MetFrag databases.}
+
+\item{metfrag_jar}{\code{character(1)}, a path to MetFrag JAR file.}
+
+\item{users_dir}{\code{character(1)}, a location on the server side
+containing individual user directories.}
+
+\item{java_bin}{\code{character(1)}, a path to jave runtime
+(optional). We try to detect this.}
 
 \item{metfrag_max_proc}{\code{integer(1)}, maximum number of CPU cores
 available for MetFrag.}
@@ -26,7 +44,7 @@ An \code{envopts} object.
 Create a \code{envopts} Object
 }
 \details{
-A \code{envopts} object is Shinyscreen way to store settings
+An \code{envopts} object is Shinyscreen way to store settings
 related to a specific computing environment. Information such
 as the run time path to a MetFrag JAR will vary from one to
 another setup and we need to convey this to the \code{shinyscreen}

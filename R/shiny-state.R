@@ -251,8 +251,8 @@ unpack_app_state <- function(session,envopts,input,top_data_dir,project_path,pac
         gui$datatab$tag <- packed_state$datatab$tag
         gui$datatab$set <- packed_state$datatab$set
         x <- packed_state$paths$data
-        gui$paths$data <- if (length(x)>0 & nchar(x)>0) file.path(top_data_dir,basename(x))
-        if (!dir.exists(gui$paths$data)) {warning("Data directory ", gui$paths$data, " does not exist. You must select one.")}
+        gui$paths$data = if (length(x)>0 && nchar(x)>0) basename(x) else ""
+        if (!dir.exists(file.path(top_data_dir,gui$paths$data))) {warning("Data directory ", gui$paths$data, " does not exist. You must select one.")}
         gui
     })
 
@@ -271,7 +271,7 @@ input2conf_setup <- function(input,gui,conf=list()) {
     conf$compounds$sets <- gui$compounds$sets
     
 
-    conf$paths$data = gui$paths$data
+    conf$paths$data = basename(gui$paths$data)
     conf
 }
 
@@ -362,7 +362,6 @@ app_state2state <- function(input,gui,envopts,m=NULL) {
     m$conf = input2conf_setup(input=input,
                               gui=gui)
 
-
     m = app_update_conf(input=input,
                         gui=gui,
                         envopts=envopts,
@@ -373,33 +372,10 @@ app_state2state <- function(input,gui,envopts,m=NULL) {
                                   "metfrag"),
                         m=m)
                         
-    ## m$conf = input2conf_setup(input,gui=gui)
-    ## m$conf = input2conf_prescreen(input=input,conf=m$conf)
-    ## m$conf = input2conf_figures(input,conf=m$conf)
-    ## m$conf = input2conf_report(input,conf=m$conf)
-    ## m$conf = input2conf_metfrag(input,conf=m$conf) 
-    
-
-
-    ## m$run <- new_runtime_state(project=gui$paths$project,
-    ##                            envopts = envopts,
-    ##                            conf=m$conf)
-
-
-    m$input$tab$mzml <- gui2datatab(gui)
+    m$input$tab$mzml = gui2datatab(gui)
     
     m
 }
-
-
-
-
-gen_comp_state <- function(input,gui) {
-    m <- app_state2state(input,gui)
-    run(m=m,phases=c("setup","mk_comp_tab"))
-    
-}
-
     
 get_sets <- function(gui) {
     fn_sets <- file.path(gui$paths$project,gui$compounds$sets)
