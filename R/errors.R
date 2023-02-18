@@ -58,8 +58,7 @@ check_extension <- function(extfileval,what) {
 }
 
 check_not_integer <- function(value,what) {
-    if (!is.integer(value)) stop(errorCondition(paste0("The value of `", what,"' must be an integer.")),
-                                 class = paste0(what,'-not-an-int'))
+    if (!is.integer(value)) stop(errorCondition(paste0("The value (",value,") of `", what,"' must be an integer."), class = paste0(what,'-not-an-int')))
 }
 
 check_key_absent <- function(keys,l,what) {

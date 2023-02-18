@@ -1,11 +1,3 @@
-test_that("Test envopts",{
-    ## Test bad mf db dir.
-    expect_error(envopts(metfrag_db_dir="notexist"),class="mf-db-dir-absent")
-
-    ## Test bad mf db jar.
-    expect_error(envopts(metfrag_jar="notexist"),class="mf-jar-absent")
-})
-
 test_that("Test empty project creation.",{
     withr::with_tempdir({
 

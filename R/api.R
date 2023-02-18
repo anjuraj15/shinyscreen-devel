@@ -746,7 +746,7 @@ app <- function(envopts,
     dir_before = getwd()
     message("dir_before: ", dir_before)
     message("top_data_dir: ", envopts$top_data_dir)
-    message("projects: ", evnopts$projects)
+    message("projects: ", envopts$projects)
     dir_start = prepare_app(dir_before=dir_before,
                             envopts=envopts)
 
@@ -882,52 +882,78 @@ report <- function(m) {
 #'     configuration.
 #' @param save `logical(1)`, optional. If T, save configuration,
 #'     otherwise just return the Shinyscreen environment options.
+#' @param conf_dir `character(1)`, optional. Place where the
+#'     configuration resides. Changing this usually only makes sense
+#'     for testing.
 #' @return An `envopts` object.
 #' @author Todor Kondić
 #' @export
 init <- function(projects=NULL,
                  top_data_dir=NULL,
+                 users_dir=NULL,
                  metfrag_db_dir=NULL,
                  metfrag_jar=NULL,
                  java_bin=NULL,
                  metfrag_max_proc=NULL,
                  merge=T,
-                 save=F) {
+                 save=F,
+                 conf_dir=tools::R_user_dir(package="shinyscreen",
+                                            which="config")) {
 
-    
+    ## The function will usually return a merge between the saved
+    ## configuration and arguments provided by the user. This is why
+    ## we need to know which arguments have been actually changed by
+    ## the user. In order to do this, all `envopts'-like arguments to
+    ## `init' have been created with an illegal default value, NULL.
+
+    ## Therefore, any argument with an user-supplied _valid_ value
+    ## will be non-NULL. We can browse through the function
+    ## environment, pick out these non-NULLs and then override the
+    ## saved config with them.
+
+    ## So, get the function environment.
     env = environment()
-    eargs = list()
-    ## Merge into the untouched (NULLs), only.
+
+    ## Get the list of all possible arguments from the simpletst
+    ## `envopts' constructor.
+    eargs = formalArgs(empty_envopts)
+
+    ## Check which are NULLs and retain only those which are
+    ## not. 
+    evals = lapply(eargs,function(ca) env[[ca]])
+    ennull = sapply(evals,is.null,USE.NAMES=F)
+    eargs = eargs[!ennull]
+    evals = evals[!ennull]
+    names(evals) = eargs
+    ## Now call the empty envopts constructor only with non-NULL
+    ## arguments.
+    enew = do.call(empty_envopts,evals)
+    ## If merging should occur.
     if (merge) {
-        ## Merge with old values
-        eold = load_envopts()
-        cargs = formalArgs(envopts)
+
+        ## Get saved values.
+        eold = load_envopts(dir=conf_dir)
         if (length(eold)>0L) {
-            for (a in cargs) {
-                if (is.null(env[[a]])) eargs[[a]] = eold[[a]] else eargs[[a]]=env[[a]]
+
+            ## First, merge on non-metfrag keys. Overwrite only NULLs.
+            simplekeys = setdiff(names(enew),"metfrag")
+            for (a in simplekeys) {
+                if (is.null(enew[[a]])) enew[[a]] = eold[[a]]
+            }
+
+            ## Now, metfrag. Do the same.
+            mfkeys = names(enew$metfrag)
+            for (a in mfkeys) {
+                if (is.null(enew$metfrag[[a]])) enew$metfrag[[a]] = eold$metfrag[[a]]
             }
         }
+        
     }
 
-    ## Default values = "" .
-    chrargs = c("projects","top_data_dir","metfrag_db_dir")
-
-    for (ca in chrargs) {
-        if (is.null(eargs[[ca]])) eargs[[ca]]=""
-    }
-
-    if (is.null(java_bin)) {
-        eargs[["java_bin"]]= Sys.which("java")
-    }
-
-    if (is.null(metfrag_max_proc)) {
-        eargs$metfrag_max_proc = parallel::detectCores()
-    }
+    ## Replace the remaining NULL values with actual defaults.
+    e = seal_envopts(enew)
     
-    e = do.call(envopts,eargs)
-    
-    
-    if (save) save_envopts(o=e)
+    if (save) save_envopts(o=e,dir=conf_dir)
     e
 }
 

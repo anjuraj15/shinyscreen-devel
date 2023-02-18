@@ -1137,8 +1137,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 if (rv_extr_flag()) {
                     rv_extr_flag(F)
                     rvs$m = run(m=rvs$m,
-                                top_data_dir=init$envopts$top_data_dir,
-                                metfrag_db_dir=init$envopts$metfrag$db_dir,
+                                envopts=init$envopts,
                                 phases=c("setup","comptab","extract"))
                     rvs$status$is_extracted_stat = "Yes."
                     rvs$status$is_qa_stat = "No."
@@ -1188,8 +1187,7 @@ mk_shinyscreen_server <- function(projects,init) {
                     rv_presc_flag(F)
                     ## If user changed prescreening params.
                     rvs$m = run(m=rvs$m,
-                                top_data_dir=init$envopts$top_data_dir,
-                                metfrag_db_dir=init$envopts$metfrag$db_dir,
+                                envopts=init$envopts,
                                 phases="prescreen")
                     rvs$status$is_qa_stat = "Yes."
                     shinymsg("Prescreening has been completed.")

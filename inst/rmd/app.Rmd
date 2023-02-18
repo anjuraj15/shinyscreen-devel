@@ -58,8 +58,8 @@ rv_rtrange <- reactiveValues(min=def_state$conf$rt_min,
 rv_mzrange <- reactiveValues(min=NA,
                              max=NA)
 
-projects <- list.dirs(path=init$projects, full.names = F, recursive = F)
-inputdirs <- list.dirs(path=init$top_data_dir, full.names = F, recursive = F)
+projects <- list.dirs(path=init$envopts$projects, full.names = F, recursive = F)
+inputdirs <- list.dirs(path=init$envopts$top_data_dir, full.names = F, recursive = F)
 
 ```
 <style type="text/css">
