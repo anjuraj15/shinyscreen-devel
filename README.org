@@ -125,88 +125,177 @@
    changing on shorter time-scales. The solution is to keep your R
    installation fresh.
 
-** Good Scenario
-   You have [[https://guix.gnu.org/][Guix]] installed. Great. Just subscribe to ECI's Guix
-   [[https://git-r3lab.uni.lu/eci/eci-pkg-menu][channel]] and install from there.
+*** Steps for Debian-likes (Taken From the Dockerfile)
 
+Install the dependencies like this,
 
+#+BEGIN_SRC shell
+apt-get update
+apt-get install -y --no-install-recommends apt-utils r-base r-recommended g++ gfortran
+apt-get install -y --no-install-recommends curl libxml2-dev libssl-dev libssh2-1-dev zlib1g-dev
+apt-get install -y --no-install-recommends xdg-utils automake autoconf gcc make pkg-config
+apt-get install -y --no-install-recommends net-tools git-all default-jre-headless zlib1g zlib1g-dev 
+apt-get install -y --no-install-recommends libnetcdf* openbabel libhdf5-1* libhdf5-hl-1*
+apt-get install -y --no-install-recommends r-cran-rcolorbrewer r-cran-data.table r-cran-biocmanager r-cran-tidyverse r-cran-cowplot
+apt-get install -y --no-install-recommends r-cran-curl r-cran-promises r-cran-yaml
+apt-get install -y --no-install-recommends r-cran-dt r-cran-future
+apt-get install -y --no-install-recommends r-cran-rjava r-cran-rsvg r-cran-png
+apt-get install -y --no-install-recommends r-cran-rmarkdown r-cran-shiny r-cran-htmltools
+apt-get install -y --no-install-recommends r-cran-rcdklibs r-cran-rcdk r-cran-fingerprint
+apt-get install -y --no-install-recommends r-bioc-affy r-bioc-affyio
+apt-get install -y --no-install-recommends r-cran-devtools
+apt-get install -y --no-install-recommends libpng16-16 libpng-tools libpng-dev libpng++-dev
 
+R -e 'install.packages("enviPat", dependencies=TRUE)'
+R -e 'BiocManager::install(c("Rhdf5lib","mzR","MSnbase","RMassBank"),update=F)'
+R -e 'devtools::install_git("https://github.com/CDK-R/rinchi", dependencies=F)'
+R -e 'devtools::install_git("https://github.com/schymane/RChemMass", dependencies=F)'
 
-* Before Running Shinyscreen
+# If you want MetFrag.
+curl -LJO https://github.com/ipb-halle/MetFragRelaunched/releases/download/v.2.5.0/MetFragCommandLine-2.5.0.jar
+mv MetFragCommandLine-2.5.0.jar /usr/local/bin/MetFragCommandLine.jar
+chmod 0555 /usr/local/bin/MetFragCommandLine.jar
 
-It is necessary to initialise the package. This can be done only once
-per installation.
+# If you want PubChemLite and MetFrag.
+curl -LJO https://zenodo.org/record/7576412/files/PubChemLite_exposomics_20230127.csv?download=1
+mkdir /usr/local/metfrag_db
+chmod 0555 /usr/local/metfrag_db
+mv PubChemLite_exposomics_20230127.csv /usr/local/metfrag_db/PubChemLite_exposomics.csv 
 
-#+BEGIN_SRC R
-  shinyscreen::init(metfrag_db="/path/to/a/directory/containing/metfrag/databases", #The folder which contains local MetFrag libraries, such as PubChemLite.
-                    metfrag_jar="/path/to/metfrag/jar/file", # The path of the MetFrag command line JAR file.
-                    java_bin="/path/to/java/executable", # This argument can usually be skipped.
-                    metfrag_max_proc=2) # The maximum amout of CPUs allocated to MetFrag.
 #+END_SRC
 
-If you do not intend to use MetFrag with Shinyscreen, just call
-`shinyscreen::init()` with no arguments.
+# ** Good Scenario
+#    You have [[https://guix.gnu.org/][Guix]] installed. Great. Just subscribe to ECI's Guix
+#    [[https://git-r3lab.uni.lu/eci/eci-pkg-menu][channel]] and install from there.
+
+
+
 
 * Running Shinyscreen
-  Provided Shinyscreen is successfully installed and initialised, the
-  snippets below will run it.
+
+** Terminology
+
+- Project directory :: This is directory containing Shinyscreen inputs
+  (except the ~mzML~ files), intermediate and output files. The inputs
+  are /compound/ and /set/ lists (information on the list inputs is
+  available from Shinyscreen GUI application itself).
+- Data directory :: A data directory contains ~mzML~ files.
+- Projects directory :: A directory containing the Shinyscreen
+  ~project~ directories.
+- Top data directory :: This directory contains the ~data directories~.
+- Metfrag databases directory :: It contains MetFrag csv databases.
+- Metfrag JAR path :: This is the location of the MetFrag Command Line
+  java runtime.
+- Java JRE path :: The location of Java executable.
+- Number of Shinyscreen threads :: Maximum threads that Shinyscreen
+  can use to parallelise extraction effort. Note that there is (for
+  now), no gain in assigning more threads than the number of mzML
+  files. The absolute maximum of threads is equal to a number of
+  (logical) CPU cores.
+- Number of MetFrag processes :: Number of MetFrag processes. Maximum
+  number is the number of (logical) CPU cores available.
+
+
+** Initialisation
+
+Everything except the number of Shinyscreen threads and the individual
+project and data directory can be set up using Shinyscreen's
+initialisation function ~init~. The number of threads is something
+defined using package ~future~, before running Shinyscreen, like this:
+
 #+BEGIN_SRC R
-  
-
-  ##   This is a custom installation function from a local source
-  ##   path. Not necessary if you have other means to install
-  ##   shinyscreen.
-
-  ##   reloadss <- function() {
-  ##     projdir="./pkgs"
-  ##     srcdir="path/to/source"
-  ##     unlink(projdir,recursive=T,force=T) if
-  ##     (!dir.exists(projdir)) dir.create(projdir)
-  ##     .libPaths(projdir)
-  ##     if ("package:shinyscreen" %in% search()) detach("package:shinyscreen",unload=T)
-  ##     devtools::install(pkg=srcdir,upgrade = "never")
-  ##   }
-
-
-  replan <- function() {
-      
-    ## Change the number of workers to how many CPUs you have
-    ## available in your (shared-memory) system.
-      
-    future::plan("sequential")
-    future::plan("multisession",workers=6L)
-  }
-
-  rerun <- function(work_dir=".") {
-      ## Adapt `projects' and `top_data_dir' arguments to your
-      ## paths. The argument `projects' is a top-level directory
-      ## containing shinyscreen projects and `top_data_dir' is the
-      ## top-level directory containing data directories (those that
-      ## have `mzML' files).
-
-    withr::with_dir(work_dir,app(projects="projects",top_data_dir="data",shiny_args=list(launch.browser=F,port=4321)))
- }
- 
+  future::plan("sequential") #Resets the current plan.
+  future::plan("multisession",workers=4L) #Sets the new plan.
 #+END_SRC
 
-  Commands to start shinyscreen from a R session.
+
+In general, Shinyscreen ~init~ function is called like this,
 
 #+BEGIN_SRC R
-  library(future)
   library(shinyscreen)
-  replan();rerun()
-
+  opts = init(projects="/path/to/projects/dir",
+              top_data_dir="/path/to/top-data-directory",
+              metfrag_jar="/path/to/metfrag-jar-file",
+              metfrag_db_dir="/path/to/metfrag-databases-directory",
+              java_bin="/path/to/java/executable",
+              metfrag_max_proc=4L)
 #+END_SRC
 
-After starting Shinyscreen as above, the app will be available at
-127.0.0.1:4321 .
+Then, we run shinyscreen like this,
+
+#+BEGIN_SRC R
+  app(envopts=opts)
+#+END_SRC
+
+Note the port on the localhost (127.0.0.1) Shinyscreen has started and
+open it in some web browser.
+
+You can start Shinyscreen web application "automatically" if you run,
+
+#+BEGIN_SRC R
+app(envopts=opts, shiny_args=list(launch.browser=T))  
+#+END_SRC
+
+Note that the /environment options/ --- the return value of ~init~ ---
+can be stored if you pass ~save=T~ argument in a call to init like this,
+
+#+BEGIN_SRC R
+  library(shinyscreen)
+  opts = init(projects="/path/to/projects/dir",
+              top_data_dir="/path/to/top-data-directory",
+              metfrag_jar="/path/to/metfrag-jar-file",
+              metfrag_db_dir="/path/to/metfrag-databases-directory",
+              java_bin="/path/to/java/executable",
+              metfrag_max_proc=4L,
+              save=T)
+#+END_SRC
+
+After storing configuration, the next time you want to run app, it is enough to,
+#+BEGIN_SRC R
+  library(shinyscreen)
+  opts = init() #This loads stored values.
+  app(envopts=opts)
+#+END_SRC
+
+If, after storing, you want to change some of the configuration
+entries, this is also possible,
+
+#+BEGIN_SRC R
+  library(shinyscreen)
+  opts = init(metfrag_db_dir="/some/other/metfrag-databases-directory") #Loads
+                                                                        #other
+                                                                        #saved
+                                                                        #values
+                                                                        #and
+                                                                        #replaces
+                                                                        #metfrag_db_dir
+                                                                        #with
+                                                                        #the
+                                                                        #new
+                                                                        #value.
+  app(envopts=opts)
+#+END_SRC
+
+In order to store the updated value, you need to pass ~save=T~ again.
+
+If you do not pass ~java_bin~ and ~metfrag_max_proc~ arguments to
+~init~, the application will try to deduce the location of java JRE
+runtime and the maximum number of possible processes for MetFrag
+automatically.
+
+Additionally, if you are not interested in MetFrag functionality, do
+not pass ~metfrag_db_dir~ to ~init~. 
 
 
-* Usage
-  Shinyscreen is a self-documented application. The best way to learn
-  about using Shinyscreen is by running it. Please let us know if we
-  can improve on that documentation.
+
+
+** Usage
+
+Shinyscreen is a self-documented application. The best way to learn
+about using Shinyscreen is by running it. Please let us know if we
+can improve on that documentation.
 
 * Thanks
-  Many thanks to the students of the *Masters in Integrated Systems Biology*
-  course (2020--2022) for installing, debugging, testing.
+
+Many thanks to the students of the *Masters in Integrated Systems Biology*
+course (2020--2023) for installing, debugging, testing.
