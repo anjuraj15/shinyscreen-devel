@@ -39,7 +39,7 @@ pipeline should be ready to start.
 \seealso{
 \code{\link[=new_state]{new_state()}}
 
-\code{\link[=envopts]{envopts()}},
+\code{\link[=empty_envopts]{empty_envopts()}},
 \code{\link[=new_empty_project]{new_empty_project()}}
 }
 \author{

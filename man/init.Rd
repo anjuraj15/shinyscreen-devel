@@ -5,14 +5,16 @@
 \title{Initialise Shinyscreen Configuration}
 \usage{
 init(
-  projects = "",
-  top_data_dir = "",
-  metfrag_db_dir = "",
-  metfrag_jar = "",
-  java_bin = Sys.which("java"),
-  metfrag_max_proc = parallel::detectCores(),
+  projects = NULL,
+  top_data_dir = NULL,
+  users_dir = NULL,
+  metfrag_db_dir = NULL,
+  metfrag_jar = NULL,
+  java_bin = NULL,
+  metfrag_max_proc = NULL,
   merge = T,
-  save = F
+  save = F,
+  conf_dir = tools::R_user_dir(package = "shinyscreen", which = "config")
 )
 }
 \arguments{
@@ -24,22 +26,30 @@ contains input and output files.}
 \code{data} directories. A single \code{data} directory contains \code{mzML}
 spectrometry data files.}
 
+\item{users_dir}{\code{character(1)}, a location on the server side
+containing individual user directories.}
+
 \item{metfrag_db_dir}{\code{character(1)}, a path to the directory which
 contains MetFrag databases.}
 
 \item{metfrag_jar}{\code{character(1)}, a path to MetFrag JAR file.}
 
-\item{java_bin}{\code{character(1)}, a path to jave runtime
-(optional). We try to detect this.}
+\item{java_bin}{\code{character(1)}, a path to java runtime. If no path
+has been supplied, we will try to detect it.}
 
 \item{metfrag_max_proc}{\code{integer(1)}, maximum number of CPU cores
-available for MetFrag.}
+available for MetFrag. If no number has been supplied, we will
+try to detect the number of logical CPUs and go with that.}
 
 \item{merge}{\code{logical(1)}, optional. If T, merge with saved
 configuration.}
 
 \item{save}{\code{logical(1)}, optional. If T, save configuration,
 otherwise just return the Shinyscreen environment options.}
+
+\item{conf_dir}{\code{character(1)}, optional. Place where the
+configuration resides. Changing this usually only makes sense
+for testing.}
 }
 \value{
 An \code{envopts} object.
