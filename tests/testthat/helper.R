@@ -29,9 +29,54 @@ gen_test_dirs <- function() {
 
 gen_test_project <- function() {
     dirs = gen_test_dirs()
-    project = file.path(dirs$projects,"test_project")
-    dir.create(project)
+    project = "test_project"
+    data_dir = "test_data"
+    ppath=file.path(dirs$projects,project)
+    pdata=file.path(dirs$top_data_dir,data_dir)
+    dir.create(ppath)
+    dir.create(pdata)
+    list(dirs=dirs,
+         project=project,
+         data_dir=data_dir,
+         ppath=ppath)
+}
+
+config_test_project <- function(test_project,mf=F,fn_mf_db="",o=new_conf()) {
+
+    ## Shell we do MetFrag?
+    if (mf) {
+         o$conf$metfrag$param$SampleName = "testsample"
+         
+         if (nchar(fn_mf_db)>0L) {
+             o$conf$metfrag$db_file = fn_mf_db
+
+             o$conf$metfrag$param$MetFragDatabaseType = "LocalCSV"
+             o$conf$metfrag$intrinsic_scores = list(FragmenterScore=1.0,
+                                                    OfflineIndividualMoNAScore=1.0)
+             o$conf$metfrag$database_scores = list(PubMed_Count=1.0,
+                                                   Patent_Count=1.0,
+                                                   AnnoTypeCount=1.0)
+             
+             o$conf$metfrag$cand_parameters = c("Identifier","CompoundName")
+             o$conf$metfrag$collect_candidates = c("Identifier")
+         }
+   
+    }
+    o$conf$paths$data = test_project$data_dir
+    yaml::write_yaml(o$conf,file=file.path(test_project$ppath,'conf-state.yaml'))
+    o
+}
     
+envopts_from_dirs <- function(dirs) {
+    init(projects=dirs$projects,
+         top_data_dir=dirs$top_data_dir,
+         users_dir=dirs$users_dir,
+         metfrag_db_dir=dirs$metfrag_db_dir,
+         metfrag_jar = file.path(dirs$mfjardir,"metfrag.jar"),
+         java_bin = file.path(dirs$mfjardir,"java"),
+         metfrag_max_proc=2L,
+         merge=F,
+         save=F)
 }
 
 trim_tmp_paths_envopts <- function(x) {
@@ -46,4 +91,13 @@ trim_tmp_paths_envopts <- function(x) {
     }
     y$metfrag$max_proc = x$metfrag$max_proc
     y
+}
+
+trim_tmp_paths_run <- function(run){
+    run$paths = sapply(run$paths,basename)
+    run$metfrag$path = basename(run$metfrag$path)
+    run$metfrag$db_dir = basename(run$metfrag$db_dir)
+    run$metfrag$runtime = basename(run$metfrag$runtime)
+    run$metfrag$java_bin = basename(run$metfrag$java_bin)
+    run
 }

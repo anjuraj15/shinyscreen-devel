@@ -4,14 +4,23 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
         opts = list(fn_jar=Sys.getenv("METFRAG_JAR"),
                     fn_db_dir=Sys.getenv("METFRAG_DB_DIR"),
                     fn_db = Sys.getenv("METFRAG_DB"))
-                    
-        o = new_conf()
-        eo = envopts(metfrag_db_dir=opts$fn_db_dir,
-                     metfrag_jar=opts$fn_jar)
-        o$conf$metfrag$db_file = basename(opts$fn_db)
-        yaml::write_yaml(o$conf,file='conf-state.yaml')
-        pproj = getwd()
-        m = new_project(pproj,envopts = eo)
+
+        ## Create test project directory structure.
+        tst = gen_test_project()
+        troot = tst$dirs$root
+
+        ## Create suitable envopts.
+        etmp = envopts_from_dirs(tst$dirs)
+        save_envopts(etmp,dir=troot)
+        eo = init(metfrag_db_dir=opts$fn_db_dir,
+                  metfrag_jar=opts$fn_jar,merge=T,
+                  conf_dir=troot)
+
+        ## Write test config.
+        o = config_test_project(tst,mf=T,fn_mf_db=basename(opts$fn_db))
+        pproj = tst$ppath
+        
+        m = new_project(tst$project,envopts = eo)
 
         spec = data.table(mz=c(100.123,200.456,300.789),
                           intensity = c(1000.,2000.,3000.))
@@ -24,7 +33,7 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
             res = write_metfrag_config(param = m$run$metfrag$param,
                                        path = m$run$metfrag$path,
                                        subpaths = m$run$metfrag$subpaths,
-                                       db_path = m$run$metfrag$db_path,
+                                       db_dir = m$run$metfrag$db_dir,
                                        stag = paste0("a_",adduct,"_a"),
                                        adduct = adduct,
                                        ion_mz = 777.7789,
@@ -32,7 +41,7 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
             fconf = file.path(m$run$metfrag$path,res["f_conf"])
             fspec = file.path(m$run$metfrag$path,res["f_spec"])
             x = readChar(fconf,nchars=file.size(fconf))
-            y = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_path),"",x)
+            y = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_dir),"",x)
             cfconf[adduct] = y 
 
 
@@ -58,7 +67,7 @@ ok_return_val("metfrag_run",{
             ftab = metfrag_run(param = m$run$metfrag$param,
                                path = m$run$metfrag$path,
                                subpaths = m$run$metfrag$subpaths,
-                               db_path = m$run$metfrag$db_path,
+                               db_dir = m$run$metfrag$db_dir,
                                stag_tab = stagtab, ms2 = m$extr$ms2,
                                runtime=m$run$metfrag$runtime,
                                java_bin=m$run$metfrag$java_bin,
