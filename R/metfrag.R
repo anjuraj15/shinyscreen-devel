@@ -52,14 +52,14 @@ get_mf_res_ext <- function(fn) {
     ext
 }
 
-metfrag_run <- function(param,path,subpaths,db_path,stag_tab,ms2,runtime,java_bin,nproc = 1L) {
+metfrag_run <- function(param,path,subpaths,db_dir,stag_tab,ms2,runtime,java_bin,nproc = 1L) {
     keys = intersect(colnames(stag_tab),colnames(ms2))
     message("Generating MetFrag configs.")
     file_tab = ms2[stag_tab,{
         r = write_metfrag_config(param = ..param,
                                  path = ..path,
                                  subpaths = ..subpaths,
-                                 db_path = ..db_path,
+                                 db_dir = ..db_dir,
                                  stag = stag,
                                  adduct = adduct,
                                  ion_mz = ion_mz,
@@ -120,7 +120,7 @@ get_metfrag_targets <- function(stag_tab,ms2) {
     
 }
 
-write_metfrag_config <- function(param,path,subpaths,db_path,stag,adduct,ion_mz,spec) {
+write_metfrag_config <- function(param,path,subpaths,db_dir,stag,adduct,ion_mz,spec) {
     check_not_one(ion_mz,"ion_mz")
     check_not_one(adduct,"adduct")
     dir_res = subpaths$results
@@ -140,7 +140,7 @@ write_metfrag_config <- function(param,path,subpaths,db_path,stag,adduct,ion_mz,
                              ResultsPath="results",
                              PeakListPath=f_spec))
 
-        if (nchar(db_path)>0L) param = c(param,list(LocalDatabasePath = db_path))
+        if (nchar(db_dir)>0L) param = c(param,list(LocalDatabasePath = db_dir))
         data.table::fwrite(spec,file=f_spec,col.names=F,sep=" ")
         write_keyval_file(namedl=param,fname=f_conf)
     })

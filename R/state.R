@@ -35,7 +35,7 @@ new_state <- function() {
 
 
 
-runtime_from_conf <- function(run,conf) {
+runtime_from_conf <- function(run,envopts,conf) {
     lst_cmpl <- conf$compounds$lists
     lst_fn_cmpl <- lapply(names(lst_cmpl),function (nm) {
         bfn_cmpl <- lst_cmpl[[nm]]
@@ -50,6 +50,8 @@ runtime_from_conf <- function(run,conf) {
     if (!file.exists(fn_sets)) stop("File ", basename(fn_sets), " does not exist in ", run$paths$project," .")
     run$paths$compounds$sets <- fn_sets
 
+    run$paths$data = norm_path(file.path(envopts$top_data_dir,conf$paths$data))
+    check_dir_absent(run$paths$data,"data-dir", strict=T)
     run$paths$datatab <- file.path(run$paths$project,FN_DATA_TAB)
     run
 }
@@ -78,7 +80,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                                      spec="",
                                      log=""),
                        runtime="",
-                       db_path="",
+                       db_dir="",
                        param=NULL)
 
         ## If jar defined.
@@ -119,7 +121,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                 fpath = file.path(root,bname)
                 check_file_absent(fpath,what="metfrag-db-file")
                 metfrag$cando_local = T
-                metfrag$db_path = fpath
+                metfrag$db_dir = fpath
 
                 # Check if names exist in the database (if local).
                 dbnms = colnames(fread(fpath,nrows=1L))
@@ -159,11 +161,11 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
     run$metfrag = .metfrag(project_path)
 
     
-    run$paths$data = norm_path(file.path(envopts$top_data_dir,conf$paths$data))
+    run$paths$data = ""
     
-    check_dir_absent(run$paths$data,"data-dir", strict=T)
+    
 
-    if (!is.null(conf)) runtime_from_conf(run=run,conf=conf) else run
+    if (!is.null(conf)) runtime_from_conf(run=run,envopts=envopts,conf=conf) else run
 
 }
 

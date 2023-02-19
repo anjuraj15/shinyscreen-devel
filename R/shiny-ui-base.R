@@ -1620,7 +1620,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 ftab = metfrag_run(param = rvs$m$run$metfrag$param,
                                    path = rvs$m$run$metfrag$path,
                                    subpaths = rvs$m$run$metfrag$subpaths,
-                                   db_path = rvs$m$run$metfrag$db_path,
+                                   db_dir = rvs$m$run$metfrag$db_dir,
                                    stag_tab = stagtab, ms2 = rvs$m$extr$ms2,
                                    runtime=rvs$m$run$metfrag$runtime,
                                    java_bin=rvs$m$run$metfrag$java_bin,

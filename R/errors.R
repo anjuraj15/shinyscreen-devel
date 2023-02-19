@@ -16,9 +16,24 @@ errc_conf_file_absent <- errorCondition("There is no config file in the project 
 
 check_notastring <- function(value, what, strict=F) {
     cond = !is.character(value)
-    if (strict) cond = cond || is.na(value)
+    msg = paste0("The value (",value,") of, ",what," is not a character vector (or, it is, maybe, a missing value).")
+    if (strict) {
+        if (is.null(value)) {
+            cond=T
+            msg = paste0("The value of ",what," is NULL.")
+        } else if (length(value)==0L) {
+            cond=T
+            msg = paste0("The variable ",what," is a zero-length object.")
+        } else if (is.na(value)) {
+            cond=T
+            msg = paste0("The value of ",what," is NA.")
+        } else if (nchar(value)==0L) {
+            cond=T
+            msg = paste0("The size of character variable ",what," is zero.")
+        }
+    }
     
-    if (cond) stop(errorCondition(paste0("The value (",value,") of, ",what," is not a character vector (or, it is, maybe, a missing value)."),class=paste0(what,'-notastring')))
+    if (cond) stop(errorCondition(msg,class=paste0(what,'-notastring')))
 }
 
 check_dir_absent <- function(dir,what,strict=F) {

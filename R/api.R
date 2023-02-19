@@ -967,7 +967,7 @@ metfrag <- function(m) {
     ftab = metfrag_run(param = m$run$metfrag$param,
                        path = m$run$metfrag$path,
                        subpaths = m$run$metfrag$subpaths,
-                       db_path = m$run$metfrag$db_path,
+                       db_dir = m$run$metfrag$db_dir,
                        stag_tab = stagtab, ms2 = m$extr$ms2,
                        runtime=m$run$metfrag$runtime,
                        java_bin=m$run$metfrag$java_bin,
