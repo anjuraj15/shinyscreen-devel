@@ -1,5 +1,7 @@
 FROM ubuntu:jammy-20230126
-
+MAINTAINER kontrapunkt@uclmail.net
+ENV SS_MF_DB_DIR="/usr/local/metfrag_db"
+ENV SS_MF_DB="PubChemLite_exposomics.csv"
 
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends apt-utils r-base r-recommended g++ gfortran
@@ -27,11 +29,18 @@ RUN R -e 'devtools::install_git("https://github.com/schymane/RChemMass", depende
 #R -e 'devtools::install_git("https://github.com/CDK-R/rcdklibs", dependencies=F)'
 #R -e 'devtools::install_git("https://github.com/CDK-R/cdkr", subdir="rcdk", dependencies=F)'
 
-# Add MetFrag
+# Add MetFrag.
 RUN curl -LJO https://github.com/ipb-halle/MetFragRelaunched/releases/download/v.2.5.0/MetFragCommandLine-2.5.0.jar
+RUN mv MetFragCommandLine-2.5.0.jar /usr/local/bin/MetFragCommandLine.jar
+RUN chmod 0555 /usr/local/bin/MetFragCommandLine.jar
 
-RUN cp MetFragCommandLine-2.5.0.jar /usr/local/bin
-RUN chmod 0777 /usr/local/bin/MetFragCommandLine-2.5.0.jar
+# Add PCL.
+RUN curl -LJO https://zenodo.org/record/7576412/files/PubChemLite_exposomics_20230127.csv?download=1
+RUN mkdir /usr/local/metfrag_db
+RUN chmod 0555 /usr/local/metfrag_db
+RUN mv PubChemLite_exposomics_20230127.csv /usr/local/metfrag_db/PubChemLite_exposomics.csv 
+
+
 
 
 

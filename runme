@@ -1,0 +1,19 @@
+#!/bin/Rscript
+
+
+nthreads = Sys.getenv("SS_CPU")
+mf_db_dir = Sys.getenv("SS_MF_DB_DIR")
+user = Sys.getenv("SS_USER")
+library(future)
+plan("sequential")
+plan("multisession",workers=nthreads)
+library(shinyscreen)
+carg = commandArgs(trailingOnly=T)
+eo = init(metfrag_db_dir=mf_db_dir)
+if (carg[[1]]=="app") {
+    app(envopts=eo,shiny_args=list(launch.browser=F,port=5432))
+} else if (carg[[1]]=="serve") {
+    serve(envopts=eo,user=user,port=5432)
+} else {
+    stop("Argument should be either `app', or `serve'")
+}
