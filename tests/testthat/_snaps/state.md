@@ -177,7 +177,7 @@
       $run$metfrag$runtime
       [1] "metfrag.jar"
       
-      $run$metfrag$db_dir
+      $run$metfrag$db_file
       [1] ""
       
       $run$metfrag$param

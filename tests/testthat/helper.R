@@ -96,7 +96,7 @@ trim_tmp_paths_envopts <- function(x) {
 trim_tmp_paths_run <- function(run){
     run$paths = sapply(run$paths,basename)
     run$metfrag$path = basename(run$metfrag$path)
-    run$metfrag$db_dir = basename(run$metfrag$db_dir)
+    run$metfrag$db_file = basename(run$metfrag$db_file)
     run$metfrag$runtime = basename(run$metfrag$runtime)
     run$metfrag$java_bin = basename(run$metfrag$java_bin)
     run

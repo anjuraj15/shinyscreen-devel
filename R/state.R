@@ -80,7 +80,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                                      spec="",
                                      log=""),
                        runtime="",
-                       db_dir="",
+                       db_file="",
                        param=NULL)
 
         ## If jar defined.
@@ -121,7 +121,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
                 fpath = file.path(root,bname)
                 check_file_absent(fpath,what="metfrag-db-file")
                 metfrag$cando_local = T
-                metfrag$db_dir = fpath
+                metfrag$db_file = fpath
 
                 # Check if names exist in the database (if local).
                 dbnms = colnames(fread(fpath,nrows=1L))
@@ -197,7 +197,7 @@ new_empty_project <- function(project,envopts) {
 ##' @details After the call to `new_project`, the `shinyscreen`
 ##'     pipeline should be ready to start.
 ##' @rdname new_project
-##' @seealso [shinyscreen::envopts()],
+##' @seealso [shinyscreen::empty_envopts()],
 ##'     [shinyscreen::new_empty_project()]
 ##' @author Todor Kondić
 new_project <- function(project,envopts,datatab=NULL,conf=NULL) {

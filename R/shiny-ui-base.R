@@ -1252,6 +1252,11 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$metfrag_all_b,{
             shinymsg("MetFrag started. Please wait.")
+            rvs$m = app_update_conf(input=input,
+                                    gui=rvs$gui,
+                                    envopts=init$envopts,
+                                    fconf = c("metfrag"),
+                                    m=rvs$m)
             rvs$m = metfrag(rvs$m)
             shinymsg("MetFrag finished. Summary file is ready.")
             fr=file.path(rvs$m$run$metfrag$path,"metfrag_summary.csv")
@@ -1607,6 +1612,12 @@ mk_shinyscreen_server <- function(projects,init) {
         {
             req(input$gen_mf_single_entry_summ_b)
             shinymsg("MetFrag proccessing of a single entry started. Please wait.")
+            rvs$m = app_update_conf(input=input,
+                                    gui=rvs$gui,
+                                    envopts=init$envopts,
+                                    fconf = c("metfrag"),
+                                    m=rvs$m)
+
             kv = rf_get_cindex_kval()
             ## Some cols that might be needed to be specified
             ## explicitely. FIXME TODO: Make this more robust.
@@ -1614,18 +1625,17 @@ mk_shinyscreen_server <- function(projects,init) {
                                    ms2_rt_i=input$mf_entry_rt_min,
                                    ms2_rt_f=input$mf_entry_rt_max)
 
-            
+
             if (NROW(nsumm)>0) {
                 stagtab = metfrag_get_stag_tab(nsumm)
                 ftab = metfrag_run(param = rvs$m$run$metfrag$param,
                                    path = rvs$m$run$metfrag$path,
                                    subpaths = rvs$m$run$metfrag$subpaths,
-                                   db_dir = rvs$m$run$metfrag$db_dir,
+                                   db_file = rvs$m$run$metfrag$db_file,
                                    stag_tab = stagtab, ms2 = rvs$m$extr$ms2,
                                    runtime=rvs$m$run$metfrag$runtime,
                                    java_bin=rvs$m$run$metfrag$java_bin,
                                    nproc = rvs$m$conf$metfrag$nproc)
-                
                 tab = summarise_metfrag_results(param = rvs$m$conf$metfrag$param,
                                                 path = rvs$m$run$metfrag$path,
                                                 subpaths = rvs$m$run$metfrag$subpaths,

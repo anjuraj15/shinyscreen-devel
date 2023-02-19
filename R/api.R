@@ -877,7 +877,7 @@ report <- function(m) {
 #'     the new parameters and the memorised ones. Those arguments not
 #'     mentioned in the argument list will be remembered from the save
 #'     config.
-#' @inheritParams envopts
+#' @inheritParams empty_envopts
 #' @param merge `logical(1)`, optional. If T, merge with saved
 #'     configuration.
 #' @param save `logical(1)`, optional. If T, save configuration,
@@ -967,7 +967,7 @@ metfrag <- function(m) {
     ftab = metfrag_run(param = m$run$metfrag$param,
                        path = m$run$metfrag$path,
                        subpaths = m$run$metfrag$subpaths,
-                       db_dir = m$run$metfrag$db_dir,
+                       db_file = m$run$metfrag$db_file,
                        stag_tab = stagtab, ms2 = m$extr$ms2,
                        runtime=m$run$metfrag$runtime,
                        java_bin=m$run$metfrag$java_bin,

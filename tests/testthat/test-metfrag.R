@@ -33,7 +33,7 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
             res = write_metfrag_config(param = m$run$metfrag$param,
                                        path = m$run$metfrag$path,
                                        subpaths = m$run$metfrag$subpaths,
-                                       db_dir = m$run$metfrag$db_dir,
+                                       db_file = m$run$metfrag$db_file,
                                        stag = paste0("a_",adduct,"_a"),
                                        adduct = adduct,
                                        ion_mz = 777.7789,
@@ -41,7 +41,7 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
             fconf = file.path(m$run$metfrag$path,res["f_conf"])
             fspec = file.path(m$run$metfrag$path,res["f_spec"])
             x = readChar(fconf,nchars=file.size(fconf))
-            y = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_dir),"",x)
+            y = gsub(paste0("LocalDatabasePath = ",m$run$metfrag$db_file),"",x)
             cfconf[adduct] = y 
 
 
@@ -67,7 +67,7 @@ ok_return_val("metfrag_run",{
             ftab = metfrag_run(param = m$run$metfrag$param,
                                path = m$run$metfrag$path,
                                subpaths = m$run$metfrag$subpaths,
-                               db_dir = m$run$metfrag$db_dir,
+                               db_file = m$run$metfrag$db_file,
                                stag_tab = stagtab, ms2 = m$extr$ms2,
                                runtime=m$run$metfrag$runtime,
                                java_bin=m$run$metfrag$java_bin,
