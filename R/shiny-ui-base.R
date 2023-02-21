@@ -1611,57 +1611,58 @@ mk_shinyscreen_server <- function(projects,init) {
         output$entry_mf_summ = DT::renderDT(
         {
             req(input$gen_mf_single_entry_summ_b)
-            shinymsg("MetFrag proccessing of a single entry started. Please wait.")
-            rvs$m = app_update_conf(input=input,
-                                    gui=rvs$gui,
-                                    envopts=init$envopts,
-                                    fconf = c("metfrag"),
-                                    m=rvs$m)
-
-            kv = rf_get_cindex_kval()
-            ## Some cols that might be needed to be specified
-            ## explicitely. FIXME TODO: Make this more robust.
-            nsumm = mf_narrow_summ(rvs$m$out$tab$summ,kv,
-                                   ms2_rt_i=input$mf_entry_rt_min,
-                                   ms2_rt_f=input$mf_entry_rt_max)
-
-
-            if (NROW(nsumm)>0) {
-                stagtab = metfrag_get_stag_tab(nsumm)
-                ftab = metfrag_run(param = rvs$m$run$metfrag$param,
-                                   path = rvs$m$run$metfrag$path,
-                                   subpaths = rvs$m$run$metfrag$subpaths,
-                                   db_file = rvs$m$run$metfrag$db_file,
-                                   stag_tab = stagtab, ms2 = rvs$m$extr$ms2,
-                                   runtime=rvs$m$run$metfrag$runtime,
-                                   java_bin=rvs$m$run$metfrag$java_bin,
-                                   nproc = rvs$m$conf$metfrag$nproc)
-                tab = summarise_metfrag_results(param = rvs$m$conf$metfrag$param,
-                                                path = rvs$m$run$metfrag$path,
-                                                subpaths = rvs$m$run$metfrag$subpaths,
-                                                cand_parameters = rvs$m$conf$metfrag$cand_parameters,
-                                                db_scores = rvs$m$conf$metfrag$database_scores,
-                                                int_scores = rvs$m$conf$metfrag$intrinsic_scores,
-                                                collect_candidates= rvs$m$conf$metfrag$collect_candidates,
-                                                file_tab = ftab)
+            shiny::isolate({
+                shinymsg("MetFrag proccessing of a single entry started. Please wait.")
+                rvs$m = app_update_conf(input=input,
+                                        gui=rvs$gui,
+                                        envopts=init$envopts,
+                                        fconf = c("metfrag"),
+                                        m=rvs$m)
                 
-                tab[stagtab,ms2_rt:=i.ms2_rt,on="stag"]
-                tab[,stag:=NULL]
-                nms = names(tab)
-                tkey = data.table::key(tab)
-                rest = setdiff(nms,union(tkey,c("ms2_rt")))
-                frst = union(tkey,c("ms2_rt"))
-                nnms = c(frst,rest)
-                data.table::setcolorder(tab,nnms)
-                tab
-
-            } else {
-                tab = NULL
-            }
-            isolate({rv_mf1tab(tab)})
-            shinymsg("MetFrag finished.")
-            
-            scroll_style_dt(tab,fillContainer=T)
+                kv = rf_get_cindex_kval()
+                ## Some cols that might be needed to be specified
+                ## explicitely. FIXME TODO: Make this more robust.
+                nsumm = mf_narrow_summ(rvs$m$out$tab$summ,kv,
+                                       ms2_rt_i=input$mf_entry_rt_min,
+                                       ms2_rt_f=input$mf_entry_rt_max)
+                
+                
+                if (NROW(nsumm)>0) {
+                    stagtab = metfrag_get_stag_tab(nsumm)
+                    ftab = metfrag_run(param = rvs$m$run$metfrag$param,
+                                       path = rvs$m$run$metfrag$path,
+                                       subpaths = rvs$m$run$metfrag$subpaths,
+                                       db_file = rvs$m$run$metfrag$db_file,
+                                       stag_tab = stagtab, ms2 = rvs$m$extr$ms2,
+                                       runtime=rvs$m$run$metfrag$runtime,
+                                       java_bin=rvs$m$run$metfrag$java_bin,
+                                       nproc = rvs$m$conf$metfrag$nproc)
+                    tab = summarise_metfrag_results(param = rvs$m$conf$metfrag$param,
+                                                    path = rvs$m$run$metfrag$path,
+                                                    subpaths = rvs$m$run$metfrag$subpaths,
+                                                    cand_parameters = rvs$m$conf$metfrag$cand_parameters,
+                                                    db_scores = rvs$m$conf$metfrag$database_scores,
+                                                    int_scores = rvs$m$conf$metfrag$intrinsic_scores,
+                                                    collect_candidates= rvs$m$conf$metfrag$collect_candidates,
+                                                    file_tab = ftab)
+                    
+                    tab[stagtab,ms2_rt:=i.ms2_rt,on="stag"]
+                    tab[,stag:=NULL]
+                    nms = names(tab)
+                    tkey = data.table::key(tab)
+                    rest = setdiff(nms,union(tkey,c("ms2_rt")))
+                    frst = union(tkey,c("ms2_rt"))
+                    nnms = c(frst,rest)
+                    data.table::setcolorder(tab,nnms)
+                    tab
+                    
+                } else {
+                    tab = NULL
+                }
+                rv_mf1tab(tab)
+                shinymsg("MetFrag finished.")
+                scroll_style_dt(tab,fillContainer=T)
+            })
         })
 
         ## RENDER: STATUS
