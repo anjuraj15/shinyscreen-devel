@@ -67,4 +67,4 @@ release-image:
     - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
     - docker push $CONTAINER_RELEASE_IMAGE
   rules:
-    - if: $CI_COMMIT_BRANCH == "master" && $CI_COMMIT_TAG
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]+.[0-9]+.[0-9]+/
