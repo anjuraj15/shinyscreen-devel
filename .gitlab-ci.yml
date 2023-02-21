@@ -1,3 +1,25 @@
+# Copyright (C) 2023 by University of Luxembourg
+
+# Summary
+#
+# This is a file which describes CI/CD pipeline for Shinyscreen. The
+# main goal is to test Shinyscreen and create appropriately versioned
+# Docker images on whichever container registry is used.
+#
+# There are three stages: _build_, _test_ and _release_. Jobs
+# associated with build and test stages should run an all
+# commits. Release jobs run exclusively on master branch and only for
+# tagged commits.
+#
+# Job tags _docker_ and _$RUNNER_TAG_ serve to inform GitLab which
+# gitlab-runners (programs which perform jobs) are suitable to pick up
+# the pipeline.
+#
+# The pipeline itself is following the paradigm of docker-in-docker
+# build. In short, it helps having reproducible builds and
+# tests. There is more documentation available online.
+
+
 image: docker:23.0.1
 services:
   - docker:23.0.1-dind
