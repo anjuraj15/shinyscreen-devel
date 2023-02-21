@@ -420,3 +420,18 @@ pack_ms2_w_summ <- function(summ,ms2) {
 
 
 
+pack_project <- function(m,fn_arch) {
+    ppath = m$run$paths$project
+    project = m$run$project
+    tmpdir = tempfile()
+    write.csv(data.frame(),file=file.path(ppath,"file1.csv"))
+    write.csv(data.frame(),file=file.path(ppath,"file2.csv"))
+    dir.create(file.path(ppath,"subdir"))
+    write.csv(data.frame(),file=file.path(ppath,"subdir","filesubdir.csv"))
+    dir.create(tmpdir,recursive=T)
+    file.copy(from=ppath,to=tmpdir,recursive=T)
+    withr::with_dir(tmpdir,{
+        tar(tarfile=fn_arch,compression="gzip")
+    })
+    fn_arch
+}

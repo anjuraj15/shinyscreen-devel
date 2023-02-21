@@ -19,3 +19,17 @@ test_that("pack_ms2_w_summ",{
 })
 
 
+test_that("pack_project",{
+    z = tempfile(pattern="project_",fileext=".tar.gz")
+    proj = gen_test_project()
+    eo = envopts_from_dirs(proj$dirs)
+    res = new_empty_project(project=proj$project,envopts=eo)
+    pack_project(m=res,fn_arch=z)
+    tmpdir = tempfile()
+    dir.create(tmpdir)
+    fls = withr::with_dir(tmpdir,{
+        untar(z)
+        list.files(recursive=T)
+    })
+    expect_snapshot(fls)
+})

@@ -1782,6 +1782,16 @@ mk_shinyscreen_server <- function(projects,init) {
                 notfound
             }
         })
+
+        output$dwn_proj_b = downloadHandler(
+            filename = function() {
+                tempfile(pattern="project_",fileext=".tar.gz")
+            },
+            content = function(file) {
+                shinymsg("Preparing project for download.")
+                pack_project(m=rvs$m,fn_arch=file)
+                shinymsg("Done preparing project for download.")
+            })
             
     }
 
