@@ -8,8 +8,8 @@
 #
 # There are three stages: _build_, _test_ and _release_. Jobs
 # associated with build and test stages should run an all
-# commits. Release jobs run exclusively on master branch and only for
-# tagged commits.
+# commits. Release jobs run exclusively on tagged commits of vX.Y.Z 
+# format.
 #
 # Job tags _docker_ and _$RUNNER_TAG_ serve to inform GitLab which
 # gitlab-runners (programs which perform jobs) are suitable to pick up
