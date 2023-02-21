@@ -33,6 +33,8 @@ variables:
   DOCKER_TLS_CERTDIR: "/certs"
   CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+  CONTAINER_TEST_ISB401_IMAGE: $CI_REGISTRY_IMAGE:isb401_$CI_COMMIT_REF_SLUG
+  CONTAINER_RELEASE_ISB401_IMAGE: $CI_REGISTRY_IMAGE:isb401_$CI_COMMIT_TAG
 
 build:
   tags:
@@ -47,6 +49,15 @@ build:
     - docker build --pull -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
 
+build-isb401:
+  tags:
+    - docker
+    - $RUNNER_TAG
+  stage: build
+  script:
+    - cp docker/isb401/Dockerfile .
+    - docker build --pull -t $CONTAINER_TEST_ISB401_IMAGE .
+    - docker push $CONTAINER_TEST_ISB401_IMAGE
 
 test:
   tags:
@@ -56,6 +67,15 @@ test:
   script:
     - docker pull $CONTAINER_TEST_IMAGE
     - docker run $CONTAINER_TEST_IMAGE test
+
+test-isb401:
+  tags:
+    - docker
+    - $RUNNER_TAG
+  stage: test
+  script:
+    - docker pull $CONTAINER_TEST_ISB401_IMAGE
+    - docker run $CONTAINER_TEST_ISB401_IMAGE test
 
 release-image:
   tags:
@@ -68,3 +88,16 @@ release-image:
     - docker push $CONTAINER_RELEASE_IMAGE
   rules:
     - if: $CI_COMMIT_TAG =~ /^v[0-9]+.[0-9]+.[0-9]+/
+
+release-isb401:
+  tags:
+    - docker
+    - $RUNNER_TAG
+  stage: release
+  script:
+    - docker pull $CONTAINER_TEST_ISB401_IMAGE
+    - docker tag $CONTAINER_TEST_ISB401_IMAGE $CONTAINER_RELEASE_ISB401_IMAGE
+    - docker push $CONTAINER_RELEASE_ISB401_IMAGE
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v[0-9]+.[0-9]+.[0-9]+/
+
