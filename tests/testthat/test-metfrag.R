@@ -1,9 +1,9 @@
 test_that("Do adducts affect MetFrag config generation correctly?",{
-    skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
+    skip_if_not(file.exists(Sys.getenv("SS_MF_JAR")),"Environment variable SS_MF_JAR does not contain a path to MetFrag jar package.")
     withr::with_tempdir({
-        opts = list(fn_jar=Sys.getenv("METFRAG_JAR"),
-                    fn_db_dir=Sys.getenv("METFRAG_DB_DIR"),
-                    fn_db = Sys.getenv("METFRAG_DB"))
+        opts = list(fn_jar=Sys.getenv("SS_MF_JAR"),
+                    fn_db_dir=Sys.getenv("SS_MF_DB_DIR"),
+                    fn_db = Sys.getenv("SS_MF_DB"))
 
         ## Create test project directory structure.
         tst = gen_test_project()
@@ -58,7 +58,7 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
 })
 
 ok_return_val("metfrag_run",{
-    skip_if_not(file.exists(Sys.getenv("METFRAG_JAR")),"Environment variable METFRAG_JAR does not contain a path to MetFrag jar package.")
+    skip_if_not(file.exists(Sys.getenv("SS_MF_JAR")),"Environment variable SS_MF_JAR does not contain a path to MetFrag jar package.")
     m = make_dummy_mf_project()
                 
     withr::with_dir(m$run$metfrag$path,{

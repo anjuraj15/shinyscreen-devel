@@ -14,6 +14,10 @@ if (carg[[1]]=="app") {
     app(envopts=eo,shiny_args=list(launch.browser=F,port=5432))
 } else if (carg[[1]]=="serve") {
     serve(envopts=eo,user=user,port=5432)
+} else if (carg[[1]]=="test") {
+    setwd("/home/ssuser/shinyscreen")
+    devtools::load_all()
+    devtools::test()
 } else {
-    stop("Argument should be either `app', or `serve'")
+    stop("Argument should be either `app', `test', or `serve'")
 }

@@ -9,11 +9,11 @@ make_dummy_mf_project <- function()  {
     troot = tst$dirs$root
     etmp = envopts_from_dirs(tst$dirs)
     save_envopts(etmp,dir=troot)
-    fn_db =basename(Sys.getenv("METFRAG_DB"))
+    fn_db =basename(Sys.getenv("SS_MF_DB"))
  
     
-    eo = init(metfrag_db_dir=Sys.getenv("METFRAG_DB_DIR"),
-              metfrag_jar=Sys.getenv("METFRAG_JAR"),
+    eo = init(metfrag_db_dir=Sys.getenv("SS_MF_DB_DIR"),
+              metfrag_jar=Sys.getenv("SS_MF_JAR"),
               java_bin=Sys.which("java"),
               merge=T,
               conf_dir=troot)
