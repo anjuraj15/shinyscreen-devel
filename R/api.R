@@ -477,8 +477,7 @@ extr_data_future <- function(m) {
 
     fn_ex <- get_fn_extr(m)
     timetag <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    saveRDS(object = m, file = file.path(m$run$paths$project,
-                                         paste0(timetag,"_",FN_EXTR_STATE)))
+    saveRDS(object = m, file = file.path(m$run$paths$project,FN_EXTR_STATE))
     m
     
 }
