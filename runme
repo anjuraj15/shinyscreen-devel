@@ -10,7 +10,7 @@ if (nthreads > 1L) plan("multisession",workers=nthreads)
 library(shinyscreen)
 carg = commandArgs(trailingOnly=T)
 eo = init(metfrag_db_dir=mf_db_dir)
-if (length(carg)>1L) {
+if (length(carg)>0L) {
     if (carg[[1]]=="app") {
         app(envopts=eo,shiny_args=list(launch.browser=F,port=5432))
     } else if (carg[[1]]=="serve") {
