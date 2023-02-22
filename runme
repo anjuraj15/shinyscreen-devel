@@ -15,8 +15,8 @@ if (length(carg)>0L) {
         app(envopts=eo,shiny_args=list(launch.browser=F,port=5432))
     } else if (carg[[1]]=="serve") {
         app(envopts=eo,shiny_args=list(launch.browser=F,
-                                       port=5432,
-                                       host=0.0.0.0))
+                                       port=5432L,
+                                       host="0.0.0.0"))
     } else if (carg[[1]]=="test") {
         setwd("/home/ssuser/shinyscreen")
         devtools::load_all()
