@@ -29,4 +29,4 @@ RUN curl -LJO https://gitlab.lcsb.uni.lu/eci/isb401/-/archive/master/isb401-mast
 RUN tar -xf isb401-master.tar.gz
 RUN cp isb401-master/shinyscreen_files/*.csv /home/ssuser/projects/isb401
 RUN R -e 'library(shinyscreen);setwd("~");init(top_data_dir="~/top_data_dir",projects="~/projects",users_dir="~/users",metfrag_db_dir=Sys.getenv("SS_MF_DB_DIR"),metfrag_jar="/usr/local/bin/MetFragCommandLine.jar",save=T,merge=F)'
-ENTRYPOINT ["/home/ssuser/runme","app"]
+ENTRYPOINT ["/home/ssuser/runme"]
