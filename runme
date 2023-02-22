@@ -1,12 +1,12 @@
 #!/bin/Rscript
 
 
-nthreads = Sys.getenv("SS_CPU")
+nthreads = as.integer(Sys.getenv("SS_CPU"))
 mf_db_dir = Sys.getenv("SS_MF_DB_DIR")
 user = Sys.getenv("SS_USER")
 library(future)
 plan("sequential")
-plan("multisession",workers=nthreads)
+if (nthreads > 1L) plan("multisession",workers=nthreads)
 library(shinyscreen)
 carg = commandArgs(trailingOnly=T)
 eo = init(metfrag_db_dir=mf_db_dir)
