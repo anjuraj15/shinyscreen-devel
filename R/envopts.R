@@ -44,6 +44,8 @@
 #' @param metfrag_max_proc `integer(1)`, maximum number of CPU cores
 #'     available for MetFrag. If no number has been supplied, we will
 #'     try to detect the number of logical CPUs and go with that.
+#' @param no_structure_plots `logical(1)`, if T, structures will not
+#'     be plotted, even when it is possibile.
 #' @return An `envopts` object.
 #' @author Todor Kondić
 empty_envopts <- function(projects=NULL,
@@ -52,7 +54,8 @@ empty_envopts <- function(projects=NULL,
                           metfrag_db_dir=NULL,
                           metfrag_jar=NULL,
                           java_bin=NULL,
-                          metfrag_max_proc=NULL) {
+                          metfrag_max_proc=NULL,
+                          no_structure_plots=NULL) {
     
     ## Creates an empty `envopts' object. Works in conjunction with
     ## shinyscreen::init().
@@ -62,7 +65,8 @@ empty_envopts <- function(projects=NULL,
                metfrag=list(db_dir=metfrag_db_dir,
                             jar=metfrag_jar,
                             java_bin=java_bin,
-                            max_proc=metfrag_max_proc))
+                            max_proc=metfrag_max_proc),
+               no_structure_plots=no_structure_plots)
     class(res) = c("envopts","list") #Just to officially make it an
                                         #object.
     res
@@ -109,6 +113,9 @@ seal_envopts <- function(o) {
     if (nchar(o$metfrag$jar)>0L) {
         check_file_absent(o$metfrag$java_bin,"java-bin")
     }
+
+    check_not_logical(value=o$no_structure_plots,
+                      what="no-structure-plots")
 
     o
 }

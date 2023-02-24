@@ -121,7 +121,7 @@ make_struct_plot <- function(smiles, kekulise=TRUE, width=300, height=300,
         qplot(1:5, 2*(1:5), geom="blank") +
             annotation_custom(grob, xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf) +
             theme_empty
-    } else NULL
+    } else empty_plot("Structure plot unavailable.")
     
 }
 

@@ -76,6 +76,10 @@ check_not_integer <- function(value,what) {
     if (!is.integer(value)) stop(errorCondition(paste0("The value (",value,") of `", what,"' must be an integer."), class = paste0(what,'-not-an-int')))
 }
 
+check_not_logical <- function(value,what) {
+    if (!is.logical(value)) stop(errorCondition(paste0("The value (",value,") of `", what,"' must be logical."), class = paste0(what,'-not-a-logical')))
+}
+
 check_key_absent <- function(keys,l,what) {
     nms = names(l)
     keys_in = keys %in% l
