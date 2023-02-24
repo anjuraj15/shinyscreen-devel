@@ -1,8 +1,8 @@
-FROM gitlab.lcsb.uni.lu:4567/eci/shinyscreen:base
+FROM gitlab.lcsb.uni.lu:4567/eci/shinyscreen:ssuser
 MAINTAINER todor.kondic@uni.lu
 EXPOSE 5432
+ENV SS_MF_DB="PubChemLite_exposomics.csv"
 ENV SS_CPU 2
-ENV SS_MF_JAR /usr/local/bin/MetFragCommandLine.jar
 ADD . shinyscreen/
 RUN R CMD build shinyscreen
 RUN R CMD INSTALL shinyscreen

@@ -25,79 +25,124 @@ services:
   - docker:23.0.1-dind
 
 stages:
+  - dep_images
   - build
   - test
   - release
 
 variables:
   DOCKER_TLS_CERTDIR: "/certs"
+  DEP_ROOT: $CI_REGISTRY_IMAGE/dep
+  BASE_IMAGE: $CI_REGISTRY_IMAGE/dep/base:latest
+  SSUSER_IMAGE: $CI_REGISTRY_IMAGE/dep/ssuser:latest
   CONTAINER_TEST_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
   CONTAINER_RELEASE_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
   CONTAINER_TEST_ISB401_IMAGE: $CI_REGISTRY_IMAGE:isb401_$CI_COMMIT_REF_SLUG
   CONTAINER_RELEASE_ISB401_IMAGE: $CI_REGISTRY_IMAGE:isb401_$CI_COMMIT_TAG
 
-build:
-  tags:
-    - docker
-    - $RUNNER_TAG
-  stage: build
-  before_script:
-    # This did not work, so mounting authentication JSON on the side
-    # of the runner.
-    # - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
-  script:
-    - docker build --pull -t $CONTAINER_TEST_IMAGE .
-    - docker push $CONTAINER_TEST_IMAGE
 
-build-isb401:
+base-image:
   tags:
     - docker
     - $RUNNER_TAG
-  stage: build
-  script:
-    - cp docker/isb401/Dockerfile .
-    - docker build --pull -t $CONTAINER_TEST_ISB401_IMAGE .
-    - docker push $CONTAINER_TEST_ISB401_IMAGE
-
-test:
-  tags:
-    - docker
-    - $RUNNER_TAG
-  stage: test
-  script:
-    - docker pull $CONTAINER_TEST_IMAGE
-    - docker run $CONTAINER_TEST_IMAGE test
-
-test-isb401:
-  tags:
-    - docker
-    - $RUNNER_TAG
-  stage: test
-  script:
-    - docker pull $CONTAINER_TEST_ISB401_IMAGE
-    - docker run $CONTAINER_TEST_ISB401_IMAGE test
-
-release-image:
-  tags:
-    - docker
-    - $RUNNER_TAG
-  stage: release
-  script:
-    - docker pull $CONTAINER_TEST_IMAGE
-    - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
-    - docker push $CONTAINER_RELEASE_IMAGE
+  stage: dep_images
   rules:
-    - if: $CI_COMMIT_TAG =~ /^v[0-9]+.[0-9]+.[0-9]+/
+    # - changes:
+    #     - docker/base/Dockerfile
+  script:
+    - cd docker/base
+    - docker build --pull -t $BASE_IMAGE .
+    - docker push $BASE_IMAGE
 
-release-isb401:
+ssuser-image:
   tags:
     - docker
     - $RUNNER_TAG
-  stage: release
-  script:
-    - docker pull $CONTAINER_TEST_ISB401_IMAGE
-    - docker tag $CONTAINER_TEST_ISB401_IMAGE $CONTAINER_RELEASE_ISB401_IMAGE
-    - docker push $CONTAINER_RELEASE_ISB401_IMAGE
+  stage: dep_images
+  needs:
+    - job: base-image
+      optional: true
   rules:
-    - if: $CI_COMMIT_TAG =~ /^v[0-9]+.[0-9]+.[0-9]+/
+    # - changes:
+    #     - docker/ssuser/Dockerfile
+  script:
+    - cd docker/ssuser
+    - docker build --pull -t $SSUSER_IMAGE .
+    - docker push $SSUSER_IMAGE
+
+
+
+# build:
+#   tags:
+#     - docker
+#     - $RUNNER_TAG
+#   stage: build
+#   before_script:
+#     # This did not work, so mounting authentication JSON on the side
+#     # of the runner.
+#     # - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+#   script:
+#     - docker build --pull -t $CONTAINER_TEST_IMAGE .
+#     - docker push $CONTAINER_TEST_IMAGE
+#   only:
+#     - devel
+#     - master
+
+# build-isb401:
+#   tags:
+#     - docker
+#     - $RUNNER_TAG
+#   stage: build
+#   script:
+#     - cp docker/isb401/Dockerfile .
+#     - docker build --pull -t $CONTAINER_TEST_ISB401_IMAGE .
+#     - docker push $CONTAINER_TEST_ISB401_IMAGE
+#   only:
+#     - devel
+#     - master
+
+# test:
+#   tags:
+#     - docker
+#     - $RUNNER_TAG
+#   stage: test
+#   script:
+#     - docker pull $CONTAINER_TEST_IMAGE
+#     - docker run $CONTAINER_TEST_IMAGE test
+
+# test-isb401:
+#   tags:
+#     - docker
+#     - $RUNNER_TAG
+#   stage: test
+#   script:
+#     - docker pull $CONTAINER_TEST_ISB401_IMAGE
+#     - docker run $CONTAINER_TEST_ISB401_IMAGE test
+#   only:
+#     - devel
+#     - master
+
+# release-image:
+#   tags:
+#     - docker
+#     - $RUNNER_TAG
+#   stage: release
+#   script:
+#     - docker pull $CONTAINER_TEST_IMAGE
+#     - docker tag $CONTAINER_TEST_IMAGE $CONTAINER_RELEASE_IMAGE
+#     - docker push $CONTAINER_RELEASE_IMAGE
+#   rules:
+#     - if: $CI_COMMIT_TAG =~ /^v[0-9]+.[0-9]+.[0-9]+/
+
+# release-isb401:
+#   tags:
+#     - docker
+#     - $RUNNER_TAG
+#   stage: release
+#   script:
+#     - docker pull $CONTAINER_TEST_ISB401_IMAGE
+#     - docker tag $CONTAINER_TEST_ISB401_IMAGE $CONTAINER_RELEASE_ISB401_IMAGE
+#     - docker push $CONTAINER_RELEASE_ISB401_IMAGE
+#   rules:
+#     - if: $CI_COMMIT_TAG =~ /^v[0-9]+.[0-9]+.[0-9]+/
 
