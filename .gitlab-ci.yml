@@ -47,8 +47,8 @@ base-image:
     - $RUNNER_TAG
   stage: dep_images
   rules:
-    # - changes:
-    #     - docker/base/Dockerfile
+    - changes:
+        - docker/base/Dockerfile
   script:
     - cd docker/base
     - docker build --pull -t $BASE_IMAGE .
@@ -63,8 +63,8 @@ ssuser-image:
     - job: base-image
       optional: true
   rules:
-    # - changes:
-    #     - docker/ssuser/Dockerfile
+    - changes:
+        - docker/ssuser/Dockerfile
   script:
     - cd docker/ssuser
     - docker build --pull -t $SSUSER_IMAGE .
