@@ -875,12 +875,14 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         rf_plot_struct <- reactive({
-            cind = rf_get_cindex()
-            key = rf_get_cindex_key()
-            req(NROW(cind)>0L)
-            row = req(input$cindex_row_last_clicked)
-            id = cind[row][,..key][["ID"]][[1]]
-            smi = rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
+            smi = if (!init$envopts$no_structure_plots) {
+                      cind = rf_get_cindex()
+                      key = rf_get_cindex_key()
+                      req(NROW(cind)>0L)
+                      row = req(input$cindex_row_last_clicked)
+                      id = cind[row][,..key][["ID"]][[1]]
+                      rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
+                  } else NA_character_
             make_struct_plot(smi)
         })
 
