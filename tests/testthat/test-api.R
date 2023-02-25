@@ -9,9 +9,10 @@ test_that("Test basic initialisation.",{
              metfrag_jar = file.path(dirs$mfjardir,"metfrag.jar"),
              java_bin = file.path(dirs$mfjardir,"java"),
              metfrag_max_proc=3L,
+             no_structure_plots=F,
              merge=F,
              save=F)
-    
+
     ## Function `gen_test_dirs' creates shinyscreen root structure in
     ## a temp dir. We need to strip the random part for comparison.
     y = trim_tmp_paths_envopts(x)

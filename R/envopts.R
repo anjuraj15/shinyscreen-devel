@@ -89,7 +89,7 @@ seal_envopts <- function(o) {
     if (is.null(o$metfrag$java_bin)) o$metfrag$java_bin=Sys.which("java")
     if (is.null(o$metfrag$jar)) o$metfrag$jar = ""
     if (is.null(o$metfrag$max_proc)) o$metfrag$max_proc = parallel::detectCores()
-    
+    if (is.null(o$no_structure_plots)) o$no_structure_plots = F 
     check_dir_absent(o$projects,what="projects-dir")
     o$projects = norm_path(o$projects)
 

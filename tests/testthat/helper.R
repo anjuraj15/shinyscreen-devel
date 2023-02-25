@@ -81,7 +81,7 @@ envopts_from_dirs <- function(dirs) {
 
 trim_tmp_paths_envopts <- function(x) {
     y=list()
-    for (n in setdiff(names(x),"metfrag")) {
+    for (n in setdiff(names(x),c("metfrag","no_structure_plots"))) {
         y[[n]] = basename(x[[n]])
     }
     
@@ -90,6 +90,7 @@ trim_tmp_paths_envopts <- function(x) {
         y$metfrag[[n]]=basename(x$metfrag[[n]])
     }
     y$metfrag$max_proc = x$metfrag$max_proc
+    y$no_structure_plots = y$no_structure_plots
     y
 }
 
