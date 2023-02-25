@@ -12,10 +12,10 @@ carg = commandArgs(trailingOnly=T)
 eo = init(metfrag_db_dir=mf_db_dir)
 if (length(carg)>0L) {
     if (carg[[1]]=="app") {
-        app(envopts=eo,shiny_args=list(launch.browser=F,port=5432))
+        app(envopts=eo,shiny_args=list(launch.browser=F,port=3838))
     } else if (carg[[1]]=="serve") {
         app(envopts=eo,shiny_args=list(launch.browser=F,
-                                       port=5432L,
+                                       port=3838L,
                                        host="0.0.0.0"))
     } else if (carg[[1]]=="test") {
         setwd("/home/ssuser/shinyscreen")
@@ -25,5 +25,7 @@ if (length(carg)>0L) {
         stop("Argument should be either `app', `test', or `serve'")
     }
 } else {
-    app(envopts=eo,shiny_args=list(launch.browser=F,port=5432))
+    app(envopts=eo,shiny_args=list(launch.browser=F,
+                                       port=3838L,
+                                       host="0.0.0.0"))
 }
