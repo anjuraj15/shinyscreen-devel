@@ -12,6 +12,6 @@ RUN cp -R shinyscreen /home/ssuser
 RUN chmod u+x /home/ssuser/runme
 RUN chown ssuser /home/ssuser/runme
 RUN chown -R ssuser /home/ssuser/shinyscreen
-RUN R -e 'library(shinyscreen);setwd("~");init(top_data_dir="~/top_data_dir",projects="~/projects",users_dir="~/users",metfrag_db_dir=Sys.getenv("SS_MF_DB_DIR"),metfrag_jar="/usr/local/bin/MetFragCommandLine.jar",no_structure_plot=T,save=T,merge=F)'
+RUN R -e 'library(shinyscreen);setwd("~");init(top_data_dir="~/top_data_dir",projects="~/projects",users_dir="~/users",metfrag_db_dir=Sys.getenv("SS_MF_DB_DIR"),metfrag_jar="/usr/local/bin/MetFragCommandLine.jar",no_structure_plots=T,save=T,merge=F)'
 ENTRYPOINT ["/home/ssuser/runme"]
 CMD ["app"]
