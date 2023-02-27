@@ -1,0 +1,272 @@
+<details>
+<summary>Projects, input directories and compound lists</summary>
+
+When you start the program with `app` function, you define two
+superdirectories: `projects` and `top_data_dir`. Directory `projects` contains
+all the existing projects and any new projects defined during the
+current session will be saved here. Data inside a project directory
+consists of intermediate files, saved states and workflow outputs.
+
+To create a new project, type in the name and press the `Create`
+button. To load a project, select the project and press `Load`.
+
+There is also a possibility to save the current project state. Just
+use the `Save project` button. This action will record all your
+settings and selected inputs.
+
+Each `Shinyscreen` project needs input data: mass spectrometry files
+(in mzML format), compound and set lists. These should all be present
+before starting `Shinyscreen` in one of the directories under
+`projects`.
+
+
+
+</details>
+
+### Project management
+
+#### Load or initialise a project
+
+<details>
+<summary>Load, or initialise a project</summary>
+
+All projects are shown in the `Avaliable projects`
+list. Load the project by pressing `Select project` button. 
+
+If the project is new, it has to contain the compound list(s) and the
+set list.
+
+</details>
+
+```{r, echo=F}
+selectInput('proj_list',
+            label = "Select project",
+            choices = projects)
+actionButton(inputId = "load_proj_b",
+             label= "Load/Initialise")
+textOutput("curr_proj")
+
+```
+
+
+#### Save project
+```{r, echo=F}
+actionButton(inputId = "save_proj_b",
+             label= "Save project")
+```
+
+#### Download project
+
+<details> 
+<summary>Download results</summary>
+
+Button `Download project` only makes sense to be used if Shinyscreen is
+served over network. If this is the case, clicking this button will
+download plots and csvs generated in the project directory.
+</details>
+
+```{r, echo=F}
+downloadButtonRmd <- function (outputId, label = "Download", class = NULL, ...)  {
+     tags$a(id = outputId, class = paste("btn btn-default shiny-download-link", 
+        class), href = "", target = "_blank", download = NA, 
+        icon("download"), label, ...)
+ }
+
+downloadButtonRmd("dwn_proj_b",
+                  "Download project directory")
+```
+
+
+#### Select data directory
+<details>
+<summary>More on data directories</summary>
+
+Data directory is a subdirectory of the `top_data_dir` directory which is
+one of the arguments to `app` function used to start Shinyscreen
+GUI. It contains the `mzML` data files.
+
+Select one of the data directories from the list by clicking the
+`Select` button.
+
+</details>
+
+```{r, echo=F}
+selectInput('top_data_dir_list',
+            label = "Input directories",
+            choices = inputdirs)
+actionButton(inputId = "sel_data_dir_b",
+             label= "Select")
+textOutput("curr_data_dir")
+```
+
+### Compound list inputs
+
+#### Select compound lists
+
+<details><summary>About compound lists</summary>
+A compound list is composed of entries describing compounds. This
+description is used to search for its spectrum in the data file. The
+list is a table in the ***CSV*** format and contains these columns,
+
+* ***ID*** : required column, must be filled; this is a user-defined
+  ID, uniquely associated with a compound
+  
+* ***Name*** : this column can be left blank; if not, it should contain the
+  names of the compounds
+  
+* ***SMILES*** : a _SMILES_ string, describing the structure of the
+  compound; this entry can be left empty only if one of either
+  ***Formula***, or ***mz*** entries are not
+  
+* ***Formula*** : a chemical formula of a compound; this field can be
+  empty only if one of either ***SMILES***, or ***mz*** entries are
+  not
+  
+* ***mz*** : mass of the ionised compound; this field can be left
+  empty only if one of either ***SMILES***, or ***Formula*** is not
+  
+* ***CAS*** : the CAS number of the compound; it can be left empty
+
+* ***RT*** : retention time of the MS1 peak in minutes, if known; can
+  be left empty.
+  
+Only ***ID*** and one of ***SMILES***, ***Formula*** or ***mz*** must
+be filled. When structure, or a formula of a compound is known, it is
+also possible to look for various adducts in the sample. Of course,
+scanning for completely unknown compounds is also supported by the
+***mz*** column. In this case, ***mz*** is the mass of the ion.
+
+It is strongly recommended to quote SMILES, names and formulas in the
+CSV file used with Shinyscreen.
+
+Select one, or more compound lists by clicking `Select` button.
+</details>
+
+<div style= "display: flex; vertical-align:top; padding-right: 1.0em"> <!-- comp-list-box -->
+
+<div> <!-- comp-list-sel -->
+```{r, echo=FALSE}
+selectInput('comp_list',
+            label = "Select compound lists",
+            multiple = T,
+            choices = "")
+actionButton(inputId = "comp_list_b",
+             label= "Select")
+
+```
+</div> <!-- comp-list-sel -->
+
+<div> <!-- comp-list-disp -->
+
+**Selected compound lists**
+
+```{r, echo=FALSE}
+htmlOutput('comp_list_report')
+```
+
+</div> <!-- comp-list-disp -->
+
+</div> <!-- comp-list-box -->
+
+#### Select set lists
+
+<details><summary>About set lists (_setid_ tables)</summary>
+The compound lists can contain more entries than is necessary. Using
+the _setid_ lists, it is possible to create _compound sets_ which
+contain only those compounds that will actually be searched for in the
+data files. A _setid table_ is a _CSV_ containing at least two
+columns,
+
+* ***ID*** : the ID entry from the compound list
+
+* ***set*** : an user-defined set name.
+
+Select one set list by clicking `Select` button.
+</details>
+
+<div style= "display: flex; vertical-align:top; padding-right: 1em"> <!-- set-list-box -->
+
+<div> <!-- set-list-sel -->
+
+```{r, echo=FALSE}
+selectInput('set_list',
+            label = "Select set lists",
+            multiple = T,
+            choices = "")
+actionButton(inputId = "set_list_b",
+             label= "Select")
+
+```
+
+</div> <!-- set-list-sel -->
+
+<div> <!-- set-list-rep -->
+
+**Selected `setid' list**
+
+```{r, echo=FALSE}
+htmlOutput('sets_report')
+```
+
+</div> <!-- set-list-rep -->
+
+</div> <!-- set-list-box -->
+
+### Data files
+<details><summary>Load data files</summary>
+Shinyscreen currently supports only the **mzML** file format. After
+loading the files, set file tags in the file table (column
+**tag**). Additionally, specify a set of compounds that is supposed
+to be extracted from the file using the **set** column. Finally,
+specify the **adduct** in the adduct column. In case of compounds
+with unknown structure and formula, the adduct is ignored for obvious
+reasons.
+
+Select datafiles of interest from the list and confirm the selection
+by clicking `Select`.
+
+</details>
+```{r, echo=FALSE}
+
+selectInput('dfile_list',
+            label = "Select datafiles",
+            multiple = T,
+            choices = "")
+actionButton(inputId = "datafiles_b",
+             label= "Load data files.", width="10%")
+
+```
+
+<div class="flex-ctrl-row" style="align-items:start; column-gap: 1.5rem;">
+<!-- datafiles-main-div -->
+<div>
+<!-- datafiles/tags -->
+<details><summary>Assign tags to data files.</summary> 
+
+Each tag designates an unique file. Use the table below to assign
+tags.
+
+</details>
+
+```{r, echo=FALSE}
+DT::DTOutput("datafiles")## DT::DTOutput("datafiles",width="25%")
+actionButton("rem_dfiles_b",label="Remove selected entries")
+```
+</div> <!-- datafiles/tags -->
+<div>
+<!-- datafiles/adducts/tags -->
+<details>
+
+<summary>Assign sets to tags.</summary>
+
+For each tag, assign a set and an adduct (if the structure information
+exists, otherwise _adduct_ column is ignored).
+
+</details>
+```{r, echo=F}
+DT::DTOutput("datatab") ## DT::DTOutput("datatab",width="25%")
+```
+</div><!-- datafiles/adducts/tags -->
+
+<!-- datafiles-main-div -->
+</div>
