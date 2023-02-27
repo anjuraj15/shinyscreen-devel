@@ -1070,21 +1070,24 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$datafiles_b,{
             new_file = input$dfile_list
             if (isTruthy(new_file)) {
-                curr_file = rvs$gui$datatab$file
-                curr_tag = rvs$gui$datatab$tag
-                curr_adduct = rvs$gui$datatab$adduct
-                curr_set = rvs$gui$datatab$set
+                rvs$gui$filetag = filetag_add_file(rvs$gui$filetag,
+                                                   new_file)
+                                                         
+                 ## curr_file = rvs$gui$datatab$file
+                ## curr_tag = rvs$gui$datatab$tag
+                ## curr_adduct = rvs$gui$datatab$adduct
+                ## curr_set = rvs$gui$datatab$set
 
-                nb = length(curr_file)
-                nd = length(new_file)
-                res_file = c(curr_file,new_file)
-                res_adduct = c(curr_adduct,rep(NA_character_,nd))
-                res_set = c(curr_set,rep(NA_character_,nd))
+                ## res_file = union(curr_file,new_file)
 
-                rvs$gui$datatab$file = res_file
-                rvs$gui$datatab$tag = add_new_def_tag(as.character(rvs$gui$datatab$tag),nd)
-                rvs$gui$datatab$adduct = res_adduct
-                rvs$gui$datatab$set = res_set
+                ## res_adduct = c(curr_adduct,rep(NA_character_,nd))
+                ## res_set = c(curr_set,rep(NA_character_,nd))
+                ## rvs$gui$datatab$file = res_file
+                ## rvs$gui$datatab$tag = add_new_def_tag(as.character(rvs$gui$datatab$tag),nd)
+                ## rvs$gui$datatab$adduct = res_adduct
+                ## rvs$gui$datatab$set = res_set
+
+
             }
 
             updateSelectInput(session=session,
@@ -1097,10 +1100,12 @@ mk_shinyscreen_server <- function(projects,init) {
         observeEvent(input$rem_dfiles_b,{
             if (isTruthy(input$datafiles_rows_selected)) {
                 rmv = input$datafiles_rows_selected
-                rvs$gui$datatab$file = rvs$gui$datatab$file[-rmv]
-                rvs$gui$datatab$set = rvs$gui$datatab$set[-rmv]
-                rvs$gui$datatab$adduct = rvs$gui$datatab$adduct[-rmv]
-                rvs$gui$datatab$tag = rvs$gui$datatab$tag[-rmv]
+                rvs$gui$filetag$file = rvs$gui$filetag$file[-rmv]
+                rvs$gui$filetag$tag = rvs$gui$filetag$tag[-rmv]
+                ## rvs$gui$datatab$file = rvs$gui$datatab$file[-rmv]
+                ## rvs$gui$datatab$set = rvs$gui$datatab$set[-rmv]
+                ## rvs$gui$datatab$adduct = rvs$gui$datatab$adduct[-rmv]
+                ## rvs$gui$datatab$tag = rvs$gui$datatab$tag[-rmv]
             }
         })
         
@@ -1109,8 +1114,7 @@ mk_shinyscreen_server <- function(projects,init) {
             df = DT::editData(df,
                                input$datafiles_cell_edit,
                                rownames = F)
-            rvs$gui$datatab$file = as.character(df$file)
-            rvs$gui$datatab$tag = as.character(df$tag)
+            rvs$gui$filetag$tag = as.character(df$tag)
             
         }, label = "datafiles-edit")
 
@@ -1596,8 +1600,8 @@ mk_shinyscreen_server <- function(projects,init) {
         })
         output$datafiles = DT::renderDT(
         {
-            rvs$gui$datatab$file
-            rvs$gui$datatab$tag
+            rvs$gui$filetag$file
+            rvs$gui$filetag$tag
             res = gen_dfiles_tab(rvs$gui)
             ## simple_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
             scroll_style_dt(res,editable=list(target="cell",disable=list(columns=0)))
