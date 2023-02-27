@@ -1057,14 +1057,15 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$compounds$sets = sels
         })
 
-        observeEvent(rvs$gui$datatab$set,{
-            if (isTruthy(rvs$gui$datatab$set)) {
+        observeEvent(rf_get_sets(),{
+            sets = rf_get_sets()
+            if (isTruthy(rf_get_sets())) {
                 updateSelectInput(session=session,
-                                  inputId="tag_set_list",
-                                  choices=rvs$gui$datatab$set,
-                                  selected=NA_character_)
+                                  inputId="tag_sets_list",
+                                  choices=sets,
+                                  selected=NULL)
             }
-        }, label="tag_set_list")
+        }, label="tag_sets_list")
 
         observeEvent(input$datafiles_b,{
             new_file = input$dfile_list
@@ -1113,15 +1114,41 @@ mk_shinyscreen_server <- function(projects,init) {
             
         }, label = "datafiles-edit")
 
-        observeEvent(input$datatab_cell_edit,{
-            df = gen_dtab(rvs$gui$datatab,sets=rf_get_sets())
-            z = DT::editData(df,
-                              input$datatab_cell_edit,
-                              rownames = F)
+        ## observeEvent(input$datatab_cell_edit,{
+        ##     df = gen_dtab(rvs$gui$datatab,sets=rf_get_sets())
+        ##     z = DT::editData(df,
+        ##                       input$datatab_cell_edit,
+        ##                       rownames = F)
 
-            rvs$gui$datatab$set = z$set
-            rvs$gui$datatab$adduct = z$adduct
-        }, label = "datatab-edit")
+        ##     rvs$gui$datatab$set = z$set
+        ##     rvs$gui$datatab$adduct = z$adduct
+        ## }, label = "datatab-edit")
+
+        observe({
+            selected_adducts = input$tag_adducts_list
+            ## selected_adducts[selected_adducts == "NA"] = NA_character_
+            selected_sets = input$tag_sets_list
+            ## selected_sets[selected_sets == "NA"] = NA_character_
+            selected_rows = input$datafiles_rows_selected
+            if (isTruthy(selected_rows)) {
+                selected_tags = rvs$gui$datafiles$tag[selected_rows]
+                dt_rows = which(rvs$gui$datatab$tag %in% selected_tags)
+                if (isTruthy(selected_sets)) {
+                    rvs$gui$datatab$set[dt_rows] = selected_sets
+                    updateSelectInput(session=session,
+                                      inputId="tag_adducts_list",
+                                      selected=NULL)
+                }
+
+                if (isTruthy(selected_adducts)) {
+                    rvs$gui$datatab$adduct[dt_rows] = selected_adducts
+                    updateSelectInput(session=session,
+                                      inputId="tag_sets_list",
+                                      selected=NULL)
+                }
+            }
+            
+        }, label = "datatab-set-associations")
 
         ## OBSERVERS: CONFIGURATION AND EXTRACTION
         
@@ -1583,8 +1610,9 @@ mk_shinyscreen_server <- function(projects,init) {
             sets = rf_get_sets()
             dtab = gen_dtab(rvs$gui$datatab,
                              sets=sets)
-            tab = scroll_dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
-            ## tab = dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
+            ## tab = scroll_dropdown_dt(dtab, callback = dt_drop_callback('1','2',sets))
+            tab = scroll_style_dt(dtab)
+
             tab
             
         })
