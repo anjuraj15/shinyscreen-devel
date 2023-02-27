@@ -1589,15 +1589,6 @@ mk_shinyscreen_server <- function(projects,init) {
                            sets) else "No <em>setid</em> table selected.")
         })
 
-        output$tag_to_assoc = renderText({
-            row = input$datafiles_rows_selected
-            if (isTruthy(row)) {
-                tags = rvs$gui$datatab$tag[row]
-                txt = paste(tags,collapse=",")
-                paste0("<code>",txt,"</code>")
-            } else ""
-
-        })
         output$datafiles = DT::renderDT(
         {
             rvs$gui$filetag$file
