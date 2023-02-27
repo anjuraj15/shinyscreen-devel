@@ -94,3 +94,13 @@ check_conf_absent <- function(cfgfile) {
     check_notastring(cfgfile,"envopts")
     if (!file.exists(cfgfile)) stop(errorCondition("The system configuration file does not exist. Please initialise shinyscreen by calling `shinyscreen::init' function.", class="envopts-file-absent"))
 }
+
+check_len_zero <- function(value,what) {
+    if (length(value)==0L) stop(errorCondition(paste0("The length of variable ",what," is zero."),class=paste0(what,"-len-zero")))
+}
+
+check_same_len <- function(value1,what1,value2,what2) {
+    if (length(value1)!=length(value2)) {
+        stop(errorCondition(paste0("The lengths of variables ", what1, " and ", what2," are not the same."), class=paste0(what1,"-",what2,"-lens-not-equal")))
+    }
+}

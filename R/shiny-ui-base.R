@@ -1118,41 +1118,39 @@ mk_shinyscreen_server <- function(projects,init) {
             
         }, label = "datafiles-edit")
 
-        ## observeEvent(input$datatab_cell_edit,{
-        ##     df = gen_dtab(rvs$gui$datatab,sets=rf_get_sets())
-        ##     z = DT::editData(df,
-        ##                       input$datatab_cell_edit,
-        ##                       rownames = F)
-
-        ##     rvs$gui$datatab$set = z$set
-        ##     rvs$gui$datatab$adduct = z$adduct
-        ## }, label = "datatab-edit")
+        observe({
+            tags = rvs$gui$filetag$tag
+            files = rvs$gui$filetag$file
+            rvs$gui$datatab = datatab_update_tags(rvs$gui$datatab,
+                                                  tags=tags,
+                                                  files=files)
+        }, label = "datafiles-update-tags")
 
         observe({
-            selected_adducts = input$tag_adducts_list
-            ## selected_adducts[selected_adducts == "NA"] = NA_character_
-            selected_sets = input$tag_sets_list
-            ## selected_sets[selected_sets == "NA"] = NA_character_
-            selected_rows = input$datafiles_rows_selected
-            if (isTruthy(selected_rows)) {
-                selected_tags = rvs$gui$datafiles$tag[selected_rows]
-                dt_rows = which(rvs$gui$datatab$tag %in% selected_tags)
-                if (isTruthy(selected_sets)) {
-                    rvs$gui$datatab$set[dt_rows] = selected_sets
-                    updateSelectInput(session=session,
-                                      inputId="tag_adducts_list",
-                                      selected=NULL)
-                }
+            ## selected_adducts = input$tag_adducts_list
+            ## ## selected_adducts[selected_adducts == "NA"] = NA_character_
+            ## selected_sets = input$tag_sets_list
+            ## ## selected_sets[selected_sets == "NA"] = NA_character_
+            ## selected_rows = input$datafiles_rows_selected
+            ## if (isTruthy(selected_rows)) {
+            ##     selected_tags = rvs$gui$datafiles$tag[selected_rows]
+            ##     dt_rows = which(rvs$gui$datatab$tag %in% selected_tags)
+            ##     if (isTruthy(selected_sets)) {
+            ##         rvs$gui$datatab$set[dt_rows] = selected_sets
+            ##         updateSelectInput(session=session,
+            ##                           inputId="tag_adducts_list",
+            ##                           selected=NULL)
+            ##     }
 
-                if (isTruthy(selected_adducts)) {
-                    rvs$gui$datatab$adduct[dt_rows] = selected_adducts
-                    updateSelectInput(session=session,
-                                      inputId="tag_sets_list",
-                                      selected=NULL)
-                }
-            }
+            ##     if (isTruthy(selected_adducts)) {
+            ##         rvs$gui$datatab$adduct[dt_rows] = selected_adducts
+            ##         updateSelectInput(session=session,
+            ##                           inputId="tag_sets_list",
+            ##                           selected=NULL)
+            ##     }
+            ## }
             
-        }, label = "datatab-set-associations")
+        }, label = "datatab-construct")
 
         ## OBSERVERS: CONFIGURATION AND EXTRACTION
         
