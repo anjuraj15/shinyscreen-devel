@@ -1102,11 +1102,21 @@ mk_shinyscreen_server <- function(projects,init) {
                 rmv = input$datafiles_rows_selected
                 rvs$gui$filetag$file = rvs$gui$filetag$file[-rmv]
                 rvs$gui$filetag$tag = rvs$gui$filetag$tag[-rmv]
-                ## rvs$gui$datatab$file = rvs$gui$datatab$file[-rmv]
-                ## rvs$gui$datatab$set = rvs$gui$datatab$set[-rmv]
-                ## rvs$gui$datatab$adduct = rvs$gui$datatab$adduct[-rmv]
-                ## rvs$gui$datatab$tag = rvs$gui$datatab$tag[-rmv]
+
+                keep = rvs$gui$datatab$tag %in% rvs$gui$filetag$tag
+                rvs$gui$datatab$file = rvs$gui$datatab$file[keep]
+                rvs$gui$datatab$tag = rvs$gui$datatab$tag[keep]
+                rvs$gui$datatab$set = rvs$gui$datatab$set[keep]
+                rvs$gui$datatab$adduct = rvs$gui$datatab$adduct[keep]
+                
             }
+        })
+
+        observeEvent(input$rem_dtab_b,{
+            rvs$gui$datatab$file=character(0)
+            rvs$gui$datatab$tag=character(0)
+            rvs$gui$datatab$adduct=character(0)
+            rvs$gui$datatab$set=character(0)
         })
         
         observeEvent(input$datafiles_cell_edit,{
@@ -1126,29 +1136,26 @@ mk_shinyscreen_server <- function(projects,init) {
                                                   files=files)
         }, label = "datafiles-update-tags")
 
-        observe({
-            ## selected_adducts = input$tag_adducts_list
-            ## ## selected_adducts[selected_adducts == "NA"] = NA_character_
-            ## selected_sets = input$tag_sets_list
-            ## ## selected_sets[selected_sets == "NA"] = NA_character_
-            ## selected_rows = input$datafiles_rows_selected
-            ## if (isTruthy(selected_rows)) {
-            ##     selected_tags = rvs$gui$datafiles$tag[selected_rows]
-            ##     dt_rows = which(rvs$gui$datatab$tag %in% selected_tags)
-            ##     if (isTruthy(selected_sets)) {
-            ##         rvs$gui$datatab$set[dt_rows] = selected_sets
-            ##         updateSelectInput(session=session,
-            ##                           inputId="tag_adducts_list",
-            ##                           selected=NULL)
-            ##     }
-
-            ##     if (isTruthy(selected_adducts)) {
-            ##         rvs$gui$datatab$adduct[dt_rows] = selected_adducts
-            ##         updateSelectInput(session=session,
-            ##                           inputId="tag_sets_list",
-            ##                           selected=NULL)
-            ##     }
-            ## }
+        observeEvent(input$fill_datatab_b,{
+            selected_adducts = input$tag_adducts_list
+            selected_sets = input$tag_sets_list
+            selected_rows = input$datafiles_rows_selected
+            if (isTruthy(selected_rows)) {
+                selected_files = rvs$gui$filetag$file[selected_rows]
+                selected_tags = rvs$gui$filetag$tag[selected_rows]
+                if (!isTruthy(selected_sets)) selected_sets = rf_get_sets()
+                if (isTruthy(selected_adducts)) {
+                    rvs$gui$datatab = datatab_add_files(rvs$gui$datatab,
+                                                        sets = selected_sets,
+                                                        tags = selected_tags,
+                                                        adducts = selected_adducts,
+                                                        files = selected_files)
+                } else {
+                    shinymsg("You need to select some adducts.",type="warning")
+                }
+            } else {
+                shinymsg("You need to select some files.",type="warning")
+            }
             
         }, label = "datatab-construct")
 

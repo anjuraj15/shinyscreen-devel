@@ -214,16 +214,10 @@ htmlOutput('sets_report')
 
 ### Data files
 <details><summary>Load data files</summary>
-Shinyscreen currently supports only the **mzML** file format. After
-loading the files, set file tags in the file table (column
-**tag**). Additionally, specify a set of compounds that is supposed
-to be extracted from the file using the **set** column. Finally,
-specify the **adduct** in the adduct column. In case of compounds
-with unknown structure and formula, the adduct is ignored for obvious
-reasons.
 
-Select datafiles of interest from the list and confirm the selection
-by clicking `Select`.
+Shinyscreen currently supports only the **mzML** file format. After
+loading the files, select the files, then associate them with
+appropriate sets and adducts .
 
 </details>
 ```{r, echo=FALSE}
@@ -269,28 +263,29 @@ selectInput(inputId="tag_sets_list",
             ## multiple=T, #TODO
             choices=NULL,
             selected=NULL)
-```
-```{r, echo=F}
 selectInput(inputId="tag_adducts_list",
             label="Select adducts",
             choices=shinyscreen:::DISP_ADDUCTS,
             multiple=T,
             selected=NULL)
+actionButton(inputId="fill_datatab_b",
+             label="Fill table")
 ```
+
 <!-- tag/adduct/set associations -->
 </div>
 <div>
 <!-- datafiles/adducts/tags -->
 <details>
 
-<summary>Assign sets to tags.</summary>
+<summary>This is the data files table.</summary>
 
-For each tag, assign a set and an adduct (if the structure information
-exists, otherwise _adduct_ column is ignored).
+Establishes relationships between tags, sets and adducts.
 
 </details>
 ```{r, echo=F}
-DT::DTOutput("datatab") ## DT::DTOutput("datatab",width="25%")
+DT::DTOutput("datatab")
+actionButton("rem_dtab_b",label="Reset table")
 ```
 </div><!-- datafiles/adducts/tags -->
 

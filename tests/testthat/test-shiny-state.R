@@ -50,3 +50,26 @@ test_that("datatab_update_tags works properly",{
     
     
 })
+
+
+test_that("datatab_add_files does what's intended",{
+    tab1=list(tag=character(0),
+              adduct=character(0),
+              set=character(0),
+              file=character(0))
+    out1 = datatab_add_files(tab=tab1,
+                             sets="set",
+                             tags=c("t1","t2"),
+                             adducts=c("a1","a2","a3"),
+                             files=c("t1.x","t2.x"))
+    expect_snapshot(out1)
+
+    tab2=out1
+    out2 = datatab_add_files(tab=tab2,
+                             sets=c('set2','set3'),
+                             tags=c('t3'),
+                             adducts=c('a1','a5'),
+                             files=c('t3.x'))
+    expect_snapshot(out2)
+
+})

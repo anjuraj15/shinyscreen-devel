@@ -106,3 +106,39 @@
       [1] "fx.f" "fy.f"
       
 
+# datatab_add_files does what's intended
+
+    Code
+      out1
+    Output
+      $tag
+      [1] "t1" "t1" "t1" "t2" "t2" "t2"
+      
+      $adduct
+      [1] "a1" "a2" "a3" "a1" "a2" "a3"
+      
+      $set
+      [1] "set" "set" "set" "set" "set" "set"
+      
+      $file
+      [1] "t1.x" "t1.x" "t1.x" "t2.x" "t2.x" "t2.x"
+      
+
+---
+
+    Code
+      out2
+    Output
+      $tag
+       [1] "t1" "t1" "t1" "t2" "t2" "t2" "t3" "t3" "t3" "t3"
+      
+      $adduct
+       [1] "a1" "a2" "a3" "a1" "a2" "a3" "a1" "a1" "a5" "a5"
+      
+      $set
+       [1] "set"  "set"  "set"  "set"  "set"  "set"  "set2" "set3" "set2" "set3"
+      
+      $file
+       [1] "t1.x" "t1.x" "t1.x" "t2.x" "t2.x" "t2.x" "t3.x" "t3.x" "t3.x" "t3.x"
+      
+

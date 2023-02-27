@@ -91,7 +91,7 @@ datatab_update_tags <- function(tab,tags,files) {
 
 
     ## Adapt existing tags.
-    res = merge(nft,oldt,by=c("file","tag"),all.x=T)
+    res = merge(nft,oldt,by=c("file","tag"),all.y=T)
     tab$tag = res$tag
     tab$file= res$file
     tab$set = res$set
@@ -100,46 +100,30 @@ datatab_update_tags <- function(tab,tags,files) {
 }
 
 datatab_add_files <- function(tab,sets,adducts,tags,files) {
+    check_len_zero(sets,"sets")
+    check_len_zero(adducts,"adducts")
+    check_len_zero(files,"files")
+    check_same_len(files,"files",tags,"tags")
 
-    check_same_len(files,tags)
-
-    nft = data.table(tag=tags,
-                     file=files,key="file")
+    nrows = prod(length(sets),length(adducts),length(tags))
+    
+    nft = as.data.table(expand.grid(tag=tags,
+                                    set=sets,
+                                    adduct=adducts),key="tag")
+    ftt=data.table(tag=tags,file=files,key="tag")
+    nft[ftt,file:=i.file]
     oldt = data.table(tag=tab$tag,
                       adduct=tab$adduct,
                       set=tab$set,
-                      file=tab$file,key=c("file"))
+                      file=tab$file,key=c("tag","file"))
 
+    res = merge(nft,oldt,by=c("tag","adduct","set","file"),all=T)
 
-    ## Adapt existing tags.
-    oldt[nft,tag:=i.tag]
-
-    
-    if (length(files)>0 ||(length(sets)>0L || length(adducts)>0L)) {
-        ## We are adding new set/adduct entries.
-        check_len_zero(sets,"sets")
-        check_len_zero(adducts,"adducts")
-        check_len_zero(files,"files")
-        rows = prod(length(files),length(sets),length(adducts))
-        newt = data.table(tag=rep(tags,rows/length(tags)),
-                          adduct=rep(adducts,rows/length(adducts)),
-                          set=rep(sets,rows/length(sets)),
-                          file=rep(files,rows/length(files)))
-
-        if (length(files)>0L) {
-            ## Modifying files.
-
-            ## Add new set and adduct entries to the old table.
-            fullt = newt[oldt,on=c("set","adduct")]
-
-            ## Now, add/remove files as needed.
-            ## nft2 = newt[,..nft,by=c
-            ## res = fullt[nft,on=c("tag","adduct","set","file")]
-            
-        
-        }
-                                    
-    }
+    tab$tag=res$tag
+    tab$adduct=res$adduct
+    tab$set=res$set
+    tab$file=res$file
+    tab
 }
 
 #' @export
