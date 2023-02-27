@@ -70,6 +70,8 @@ create_stub_gui <- function() {
     shiny::isolate({
         gui$compounds = shiny::reactiveValues(lists=character(),
                                                sets=character())
+        gui$filetagtab = shiny::reactiveValues(file=character(),
+                                               tag=character())
         gui$datatab = shiny::reactiveValues(file=character(),
                                              tag=character(),
                                              adduct=character(),
@@ -110,6 +112,17 @@ r2datatab <- function(rdatatab) {
     data.table(tag=tag,adduct=adduct,set=set,file=file)
 }
 
+
+r2filetagtab <- function(rfiletagtab) {
+    shiny::isolate({
+        file <- rfiletagtab$file
+        tag <- rfiletagtab$tag
+        })
+    if (length(file)==0L) file <- character(0)
+    if (length(tag)==0L) tag <- rep(NA_character_,length(file))
+    data.table(tag=tag,file=file)
+}
+
 gen_dtab <- function(tablist,sets) {
     data.table(tag=factor(tablist$tag,levels=unique(tablist$tag)),
                adduct=factor(tablist$adduct,levels=DISP_ADDUCTS),
@@ -135,6 +148,7 @@ pack_app_state <- function(input, gui) {
         pack_inputs <- shiny::reactiveValuesToList(input)[pack_input_names]
         pack$input <- pack_inputs
         pack$datatab <- r2datatab(gui$datatab)
+        pack$filetagtab <- r2filetagtab(gui$filetagtab)
         pack$compounds <- r2compounds(gui$compounds)
         pack$paths <- list()
         pack$paths$data <- gui$paths$data
@@ -250,6 +264,12 @@ unpack_app_state <- function(session,envopts,input,top_data_dir,project_path,pac
         gui$datatab$adduct <- packed_state$datatab$adduct
         gui$datatab$tag <- packed_state$datatab$tag
         gui$datatab$set <- packed_state$datatab$set
+
+        gui$filetagtab$file <- packed_state$filetagtab$file
+        gui$filetagtab$adduct <- packed_state$filetagtab$adduct
+        gui$filetagtab$tag <- packed_state$filetagtab$tag
+        gui$filetagtab$set <- packed_state$filetagtab$set
+
         x <- packed_state$paths$data
         gui$paths$data = if (length(x)>0 && nchar(x)>0) basename(x) else ""
         if (!dir.exists(file.path(top_data_dir,gui$paths$data))) {warning("Data directory ", gui$paths$data, " does not exist. You must select one.")}
