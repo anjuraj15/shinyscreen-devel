@@ -678,6 +678,7 @@ mk_shinyscreen_server <- function(projects,init) {
         ## REACTIVE VALUES
 
         ## RUNTIME REACTIVE VALUES
+
         
         ## Those that we don't care about when saving state; Usually
         ## can be inferred by the program.
@@ -1056,6 +1057,15 @@ mk_shinyscreen_server <- function(projects,init) {
             rvs$gui$compounds$sets = sels
         })
 
+        observeEvent(rvs$gui$datatab$set,{
+            if (isTruthy(rvs$gui$datatab$set)) {
+                updateSelectInput(session=session,
+                                  inputId="tag_set_list",
+                                  choices=rvs$gui$datatab$set,
+                                  selected=NA_character_)
+            }
+        }, label="tag_set_list")
+
         observeEvent(input$datafiles_b,{
             new_file = input$dfile_list
             if (isTruthy(new_file)) {
@@ -1082,7 +1092,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
             
         })
-
+    
         observeEvent(input$rem_dfiles_b,{
             if (isTruthy(input$datafiles_rows_selected)) {
                 rmv = input$datafiles_rows_selected
@@ -1548,6 +1558,15 @@ mk_shinyscreen_server <- function(projects,init) {
                            sets) else "No <em>setid</em> table selected.")
         })
 
+        output$tag_to_assoc = renderText({
+            row = input$datafiles_rows_selected
+            if (isTruthy(row)) {
+                tags = rvs$gui$datatab$tag[row]
+                txt = paste(tags,collapse=",")
+                paste0("<code>",txt,"</code>")
+            } else ""
+
+        })
         output$datafiles = DT::renderDT(
         {
             rvs$gui$datatab$file
