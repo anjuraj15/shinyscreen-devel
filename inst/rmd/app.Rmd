@@ -34,8 +34,7 @@ def_summ_subset <- shinyscreen:::dtable("QA Column"=shinyscreen:::QA_FLAGS,
 validate <- shiny::validate
 ### def_state$input$tab$tags <- def_datatab
 rv_state <- list2rev(def_state)
-compl_sets <- eventReactive(rv_state$input$tab$setid,
-                            rv_state$input$tab$setid[,unique(set)])
+
 ### Reactive values to support some of the UI elements.
 ### rv_ui <- reactiveValues(datatab=def_tags)
 

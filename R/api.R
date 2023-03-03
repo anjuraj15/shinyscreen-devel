@@ -273,47 +273,6 @@ mk_comp_tab <- function(m) {
     m
 }
 
-
-verify_compounds <- function(conf) {
-    ## * Existence of input files
-
-    fns_cmpds <- conf$compounds$lists
-    fn_cmpd_sets <- conf$compounds$sets
-
-    ## ** Compound lists and sets
-
-    assert(isThingFile(fn_cmpd_sets),
-           msg=paste("Cannot find the compound sets file:",fn_cmpd_sets))
-
-    for (fn in fns_cmpds) {
-        assert(isThingFile(fn), msg=paste("Cannot find compound list:",fn))
-    }
-
-    ## * Data files
-    df_sets <- file2tab(fn_cmpd_sets)
-    all_sets<-unique(df_sets$set)
-
-    return(list(conf=conf,all_sets=all_sets))
-}
-
-verify_data_df <- function(data_path,mzml,all_sets) {
-    no_file <- which(mzml[,!file.exists(file.path(data_path,file))])
-    no_adducts <- which(mzml[,!(adduct %in% names(ADDUCTMAP))])
-    no_sets <- which(mzml[,!(set %in% all_sets)])
-    assert(length(no_file)==0,msg = paste("Non-existent data files at rows:",paste(no_file,collapse = ',')))
-    assert(length(no_adducts)==0,msg = paste("Unrecognised adducts at rows:",paste(no_adducts,collapse = ',')))
-    assert(length(no_sets)==0,msg = paste("Unknown sets at rows:",paste(no_sets,collapse = ',')))
-}
-
-verify_data <- function(conf,run,all_sets) {
-    ## * Existence of input files
-    fn_data <- run$paths$datatab
-    assert(isThingFile(fn_data),msg=paste("Data table does not exist:",fn_data))
-    mzml <- file2tab(fn_data)
-    verify_data_df(run$paths$data,mzml=mzml,all_sets)
-    return(conf)
-}
-
 #' @export
 concurrency <- function(m) {
     ## Reads the concurrency entry in the config. It is optional, if

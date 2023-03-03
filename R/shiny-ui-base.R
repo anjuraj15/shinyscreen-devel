@@ -22,13 +22,6 @@ obsrv = shiny::observe
 obsrv_e = shiny::observeEvent
 isol = shiny::isolate
 
-
-
-embed_rmd <- function(fn) {
-}
-
-
-
 celledit_values <- function(col,values,labels=NULL,addna=T) {
     if (is.null(labels)) labels = values
     if (length(values)==0 || nchar(values)==0) return(character(0))
@@ -918,11 +911,6 @@ mk_shinyscreen_server <- function(projects,init) {
                                                    pattern = CMPD_LIST_PATT))
 
             updateSelectInput(session = session,
-                              inputId = "set_list",
-                              choices = list.files(path=top_data_dir,
-                                                   pattern = SET_LIST_PATT))
-
-            updateSelectInput(session = session,
                               inputId = "dfile_list",
                               choices = list.files(path=top_data_dir,
                                                    pattern = DFILES_LIST_PATT))
@@ -1048,13 +1036,6 @@ mk_shinyscreen_server <- function(projects,init) {
             req(isTruthy(sels))
             rvs$gui$compounds$lists = sels
             message("(config) Selected compound lists: ", paste(sels,collapse = ","))
-        })
-
-        observeEvent(input$set_list_b, {
-            sels = input$set_list
-            req(isTruthy(sels))
-            message("(config) Selected set lists: ", paste(sels,collapse = ","))
-            rvs$gui$compounds$sets = sels
         })
 
         observeEvent(rf_get_sets(),{
