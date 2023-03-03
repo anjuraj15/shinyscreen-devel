@@ -4,11 +4,11 @@ Spectral extraction is controled by the parameters under the
 _Extraction_ tab, while the quality check parameters are located under
 the _Prescreening_ tab.
 
-After Shinyscreen is configured, the compound and setid lists loaded,
-it is possible to proceed with extracting the data. The extraction
-process can start after pressing `Extract`. Depending on the size of
-the commpound list and the properties of the data files this may take
-a while.
+After Shinyscreen is configured and the compound lists loaded, it is
+possible to proceed with extracting the data. The extraction process
+can start after pressing `Extract`. Depending on the size of the
+commpound list and the properties of the data files this may take a
+while.
 
 Once the data is extracted, quality checking can be carried out using
 the `Prescreen` button.
