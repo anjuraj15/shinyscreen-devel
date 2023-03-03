@@ -168,50 +168,6 @@ htmlOutput('comp_list_report')
 
 </div> <!-- comp-list-box -->
 
-#### Select set lists
-
-<details><summary>About set lists (_setid_ tables)</summary>
-The compound lists can contain more entries than is necessary. Using
-the _setid_ lists, it is possible to create _compound sets_ which
-contain only those compounds that will actually be searched for in the
-data files. A _setid table_ is a _CSV_ containing at least two
-columns,
-
-* ***ID*** : the ID entry from the compound list
-
-* ***set*** : an user-defined set name.
-
-Select one set list by clicking `Select` button.
-</details>
-
-<div style= "display: flex; vertical-align:top; padding-right: 1em"> <!-- set-list-box -->
-
-<div> <!-- set-list-sel -->
-
-```{r, echo=FALSE}
-selectInput('set_list',
-            label = "Select set lists",
-            multiple = T,
-            choices = "")
-actionButton(inputId = "set_list_b",
-             label= "Select")
-
-```
-
-</div> <!-- set-list-sel -->
-
-<div> <!-- set-list-rep -->
-
-**Selected `setid' list**
-
-```{r, echo=FALSE}
-htmlOutput('sets_report')
-```
-
-</div> <!-- set-list-rep -->
-
-</div> <!-- set-list-box -->
-
 ### Data files
 <details><summary>Load data files</summary>
 

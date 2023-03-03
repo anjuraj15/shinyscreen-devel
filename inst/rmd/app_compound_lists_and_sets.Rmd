@@ -1,12 +1,7 @@
-## View compound Lists and Sets
+## View compound Lists
 
 ### Compound List
 
 ```{r, echo=F}
 DT::dataTableOutput("comp_table")
-```
-
-### Setid Table
-```{r, echo=F}
-DT::dataTableOutput("setid_table")
 ```
