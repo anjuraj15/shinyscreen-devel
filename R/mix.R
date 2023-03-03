@@ -489,23 +489,6 @@ vald_comp_tab<-function(df,ndf,checkSMILES=F,checkMz=F,checkNames=F) {
     df
 }
 
-read_setid <- function(fn,cmpds) {
-    assert(file.exists(fn),msg=paste("Please provide valid compounds set table:", fn))
-    assert(nrow(cmpds) > 0,msg="Please provide at least one compounds list.")
-    setid <- file2tab(fn,colClasses=c(ID="character"))
-    x<-cmpds[setid,on='ID'][,.SD,.SDcols=c(colnames(setid),'known')]
-
-    sids <- unique(setid$ID)
-    cids <- unique(cmpds$ID)
-    diff <- setdiff(sids,cids)
-    assert(length(diff)==0,msg=paste("The following IDs from set table have not been found in the compound table:","------",print_table(dtable(diff)),"------",sep = "\n"))
-    x
-}
-
-
-
-
-
 verify_cmpd_l <- function(dt,fn) {
     fields <- colnames(EMPTY_CMPD_LIST)
     dtflds <- colnames(dt)

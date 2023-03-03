@@ -151,8 +151,6 @@ load_compound_input <- function(m) {
     cmpds[,("known"):=.(the_ifelse(!is.na(SMILES),"structure",the_ifelse(!is.na(Formula),"formula","mz")))]
     m$input$tab$cmpds <- cmpds
     fn_setid <- file.path(m$run$paths$project,m$conf$compounds$sets)
-    m$input$tab$setid <- read_setid(fn_setid,
-                                    m$input$tab$cmpds)
     m
 }
 
@@ -190,18 +188,16 @@ load_inputs <- function(m) {
 mk_comp_tab <- function(m) {
     message("Stage: comptab")
 
-    setid <- m$input$tab$setid
-    setkey(setid,set)
     mzml<- m$input$tab$mzml
     setkey(mzml,set)
     cmpds<-m$input$tab$cmpds
-    setkey(cmpds,ID)
+    setkey(cmpds,set,ID)
     assert(nrow(cmpds)>0,msg="No compound lists have been provided.")
-    assert(all(mzml[,unique(set)] %in% setid[,unique(set)]),msg="Not all set names in the `datatab' data file table match those in the provided set list.")
+    assert(all(mzml[,unique(set)] %in% cmpds[,unique(set)]),msg="Not all set names in the `datatab' data file table match those in the provided set list.")
     assert(all(mzml[,!is.na(unique(adduct))]),msg="Some data file entries do not have selected adducts.")
     message("Begin generation of the comprehensive table.")
 
-    comp <- cmpds[setid,on="ID"][mzml,.(tag,adduct,ID,RT,set,Name,file,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
+    comp <- cmpds[mzml,.(tag,adduct,ID,RT,set,Name,file,SMILES,Formula,mz,known),on="set",allow.cartesian=T]
     tab2file(tab=comp,file=paste0("setidmerge",".csv"))
     setkey(comp,known,set,ID)
     message("Merged all sets.")
