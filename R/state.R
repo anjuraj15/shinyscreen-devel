@@ -46,10 +46,6 @@ runtime_from_conf <- function(run,envopts,conf) {
     names(lst_fn_cmpl) <- names(lst_cmpl)
     run$paths$compounds$lists <- lst_fn_cmpl
 
-    fn_sets <- file.path(run$paths$project,conf$compounds$sets[[1]]) #It's always only one.
-    if (!file.exists(fn_sets)) stop("File ", basename(fn_sets), " does not exist in ", run$paths$project," .")
-    run$paths$compounds$sets <- fn_sets
-
     run$paths$data = norm_path(file.path(envopts$top_data_dir,conf$paths$data))
     check_dir_absent(run$paths$data,"data-dir", strict=T)
     run$paths$datatab <- file.path(run$paths$project,FN_DATA_TAB)

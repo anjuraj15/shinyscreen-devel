@@ -194,10 +194,9 @@ gen_dtab <- function(tablist,sets) {
 r2compounds <- function(rcompounds) {
     shiny::isolate({
         cmpd_lists <- rcompounds$lists
-        cmpd_set <- rcompounds$sets
         })
 
-    list(lists=cmpd_lists,sets=cmpd_set)
+    list(lists=cmpd_lists)
     }
 
 
@@ -321,7 +320,6 @@ unpack_app_state <- function(session,envopts,input,top_data_dir,project_path,pac
         
         gui <- create_gui(project_path=project_path)
         gui$compounds$lists <- packed_state$compounds$lists
-        gui$compounds$sets <- packed_state$compounds$sets
         gui$datatab$file <- packed_state$datatab$file
         gui$datatab$adduct <- packed_state$datatab$adduct
         gui$datatab$tag <- packed_state$datatab$tag
@@ -348,9 +346,6 @@ input2conf_setup <- function(input,gui,conf=list()) {
     }
 
     conf$compounds$lists <- gui$compounds$lists
-    conf$compounds$sets <- gui$compounds$sets
-    
-
     conf$paths$data = basename(gui$paths$data)
     conf
 }
@@ -458,9 +453,14 @@ app_state2state <- function(input,gui,envopts,m=NULL) {
 }
     
 get_sets <- function(gui) {
-    fn_sets <- file.path(gui$paths$project,gui$compounds$sets)
-    df <- fread(file=fn_sets)
-    df[,unique(set)]
+    ## TODO FIXME
+    ## Think about this
+    fn_lists <- file.path(gui$paths$project,gui$compounds$lists)
+
+    df <- fread(file=fn_lists)
+    if (!
+    res = df[,unique(set)]
+    if (length(res)==0L) res = "ALL"
 }
 
 

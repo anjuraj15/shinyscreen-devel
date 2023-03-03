@@ -453,9 +453,7 @@ mk_shinyscreen_server <- function(projects,init) {
                                                 s2n_stat=NA_character_,
                                                 ret_time_shift_tol_stat=NA_character_))
     
-    compl_sets = eventReactive(rvs$m$input$tab$setid,
-                                rvs$m$input$tab$setid[,unique(set)])
-
+    
 
     ## Reactive values to support some of the UI elements.
 
@@ -686,8 +684,7 @@ mk_shinyscreen_server <- function(projects,init) {
         
         ## REACTIVE FUNCTIONS
         rf_compound_set <- reactive({
-            req(rvs$gui$compounds$sets,
-                rvs$gui$paths$project)
+            req(rvs$gui$paths$project)
 
             get_sets(rvs$gui)
         })
@@ -695,9 +692,7 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
         rf_get_sets <- reactive({
-            req(rvs$gui$paths$project,
-                rvs$gui$compounds$sets)
-
+            req(rvs$gui$paths$project)
             get_sets(rvs$gui)
             
         })
@@ -1568,12 +1563,6 @@ mk_shinyscreen_server <- function(projects,init) {
                  } else "No compound list selected yet.")
         })
 
-        output$sets_report = renderUI({
-            sets = rvs$gui$compounds$sets
-            HTML(if (isTruthy(sets) && sets != "Nothing selected.")
-                     paste("selected <em>setid</em> table:",
-                           sets) else "No <em>setid</em> table selected.")
-        })
 
         output$datafiles = DT::renderDT(
         {
@@ -1612,19 +1601,6 @@ mk_shinyscreen_server <- function(projects,init) {
             ##                              scroller = T))
         })
 
-        output$setid_table = DT::renderDataTable({
-            ## TODO FIXME
-            ## setid = rf_get_sets_tab()
-            ## validate(need(NROW(setid)>0,"No set id list loaded yet."))
-            ## DT::datatable(setid,
-            ##               ## style = 'bootstrap',
-            ##               ## class = 'table-condensed',
-            ##               extensions = 'Scroller',
-            ##               options = list(scrollX = T,
-            ##                              scrollY = 300,
-            ##                              deferRender = T,
-            ##                              scroller = T))
-        })
 
         ## RENDER: METFRAG
 

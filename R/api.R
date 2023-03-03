@@ -150,7 +150,7 @@ load_compound_input <- function(m) {
     
     cmpds[,("known"):=.(the_ifelse(!is.na(SMILES),"structure",the_ifelse(!is.na(Formula),"formula","mz")))]
     m$input$tab$cmpds <- cmpds
-    fn_setid <- file.path(m$run$paths$project,m$conf$compounds$sets)
+    
     m
 }
 

@@ -30,7 +30,6 @@ FN_SUMM_STATE="summ_state.csv"
 FN_SUMM = "summ.csv"
 FN_SUMM_DEF_OUT = FN_SUMM
 FN_CMP_L="compounds.csv"
-FN_LOC_SETID ="setid.csv"
 FN_COMP_TAB="comprehensive.csv"
 FN_SPEC="specdata.rds"
 FN_CONF = "conf-state.yaml"
