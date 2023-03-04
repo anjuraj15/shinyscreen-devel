@@ -120,3 +120,26 @@ gen_1d_keytab <- function(dt) {
     eval(bquote(s[,`:=`(key1d=.(ex)),by=key(s)]))
    
 }
+
+gen_fname_slug <- function(fname) {
+    ## Generates a name with blanks replaced with underscores and
+    ## extensions removed.
+
+    ## Drop path.
+    name = basename(fname)
+
+    ## Remove extension if any.
+    name = gsub(r"(\.[^.]*$)","",name)
+
+    ## Spaces into underscores.
+    name = gsub("[[:blank:]]+","_",name)
+
+    ## Reduce the number of underscores.
+    name = gsub(r"(_+)","_",name)
+    name
+}
+
+uniqy_slugs <- function(slugs) {
+    dt = data.table::data.table(slug=slugs)
+    dt[,slug:=fifelse(rep(.N==1L,.N),slug,paste0(slug,"_",seq(1L,.N))),by="slug"]$slug
+}

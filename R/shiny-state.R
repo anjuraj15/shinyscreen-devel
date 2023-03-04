@@ -455,11 +455,11 @@ app_state2state <- function(input,gui,envopts,m=NULL) {
 get_sets <- function(gui) {
     ## TODO FIXME
     ## Think about this
-    fn_lists <- file.path(gui$paths$project,gui$compounds$lists)
+    ## fn_lists <- file.path(gui$paths$project,gui$compounds$lists)
 
-    df <- fread(file=fn_lists)
-    if (!
-    res = df[,unique(set)]
+    ## df <- fread(file=fn_lists)
+    ## if (!
+    ## res = df[,unique(set)]
     if (length(res)==0L) res = "ALL"
 }
 
