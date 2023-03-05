@@ -124,13 +124,14 @@ NUM_INP_HEIGHT="5%"
 
 ## Possible compound list fields
 EMPTY_CMPD_LIST = dtable(ID=character(),
-                          SMILES=character(),
-                          Name=character(),
-                          Formula=character(),
-                          RT=numeric(),
-                          mz=numeric(),
-                          known=character(),
-                          ORIG=character())
+                         SMILES=character(),
+                         Name=character(),
+                         Formula=character(),
+                         RT=numeric(),
+                         mz=numeric(),
+                         known=character(),
+                         set=character(),
+                         ORIG=character())
 COMP_LIST_COLS = c("ID","Name","SMILES","Formula","RT","mz")
 ## Comprehensive table properties
 COMP_NAME_MAP = list(RT="rt")

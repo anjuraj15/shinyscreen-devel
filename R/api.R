@@ -98,38 +98,11 @@ run_in_dir <- function(m) {
     
 }
 
-
-
-
-
 ##' @export
 load_compound_input <- function(m) {
-    coll <- list()
-    fields <- colnames(EMPTY_CMPD_LIST)
+
     fns <- file.path(m$run$paths$project,m$conf$compounds$lists)
-    message("fns:",paste0(fns,collapse=","))
-    coltypes <- c(ID="character",
-                  SMILES="character",
-                  Formula="character",
-                  Name="character",
-                  RT="numeric",
-                  mz="numeric")
-    for (l in 1:length(fns)) {
-        fn <- fns[[l]]
-
-        ## Figure out column headers.
-        nms <- colnames(file2tab(fn,nrows=0))
-
-        ## Read the table. Knowing column headers prevents unnecessary
-        ## warnings.
-        dt <- file2tab(fn, colClasses=coltypes[nms])
-        verify_cmpd_l(dt=dt,fn=fn)
-                                        # nonexist <- setdiff(fnfields,fields)
-        coll[[l]] <- dt #if (length(nonexist)==0) dt else dt[,(nonexist) := NULL]
-        coll[[l]]$ORIG <- fn
-    }
-    cmpds <- if (length(fns)>0) rbindlist(l=c(list(EMPTY_CMPD_LIST), coll), use.names = T, fill = T) else EMPTY_CMPD_LIST
-
+    cmpds = join_compound_lists(fns)
     ## Process sets.
     cmpds = process_cmpd_sets(cmpds)
     

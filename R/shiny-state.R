@@ -453,14 +453,10 @@ app_state2state <- function(input,gui,envopts,m=NULL) {
 }
     
 get_sets <- function(gui) {
-    ## TODO FIXME
-    ## Think about this
-    ## fn_lists <- file.path(gui$paths$project,gui$compounds$lists)
-
-    ## df <- fread(file=fn_lists)
-    ## if (!
-    ## res = df[,unique(set)]
-    if (length(res)==0L) res = "ALL"
+    fn_lists <- file.path(gui$paths$project,gui$compounds$lists)
+    cmpds = join_compound_lists(fn_lists)
+    cmpds = process_cmpd_sets(cmpds)
+    cmpds[,unique(set)]
 }
 
 

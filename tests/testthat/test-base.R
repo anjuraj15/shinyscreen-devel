@@ -13,20 +13,5 @@ test_that("gen_fname_slug",{
 test_that("uniqy_slugs",{
     inp = c('f1','f2','f2','f2','f3','f4','f4','f5','f3','f6')
     out = uniqy_slugs(inp)
-    message(paste(out,coll=','))
-    expect_true(1==1)
-})
-
-test_that("process_cmpd_sets",{
-
-    ## Test case when no base filename is the same.
-    cmpdl = data.table(ID=1:5,ORIG=c("f1.csv","f1.csv","f2.csv","f3.csv","f3.csv"),set=c(NA_character_,NA_character_,"aks","se31","se32"))
-    x = process_cmpd_sets(cmpdl)
-    expect_snapshot(x)
-
-    ## Test case with similar base filenames.
-    cmpdl = data.table(ID=1:5,ORIG=c("b/f2.csv","a/f1.csv","q/f/g/f2.csv","d/e/f/f3.csv","m/n/q/f3.csv"),set=c(NA_character_,NA_character_,"aks","se31","se32"))
-    x = process_cmpd_sets(cmpdl)
-    expect_snapshot(x)
-
+    expect_snapshot(out)
 })

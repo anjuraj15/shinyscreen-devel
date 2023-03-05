@@ -143,14 +143,3 @@ uniqy_slugs <- function(slugs) {
     dt = data.table::data.table(slug=slugs)
     dt[,slug:=fifelse(rep(.N==1L,.N),slug,paste0(slug,"_",seq(1L,.N))),by="slug"]$slug
 }
-
-process_cmpd_sets <- function(cmpdlist) {
-    ## Process sets.
-    if (! ("set" %in% colnames(cmpdlist))) cmpdlist$set=NA_character_ else cmpdlist[,set:=as.character(set)]
-    ## Extract set names and fill out the empty ones.
-    slugs = cmpdlist[,.(slug=fifelse(is.na(set),gen_fname_slug(ORIG),set)),by=ORIG]
-    slugs[,slug:=uniqy_slugs(slug)]
-
-    cmpdlist[slugs,set:=i.slug,on="ORIG"]
-    cmpdlist
-}

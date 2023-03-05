@@ -135,7 +135,7 @@
       list()
       
       $input$tab$L0
-      Empty data.table (0 rows and 8 cols): ID,SMILES,Name,Formula,RT,mz...
+      Empty data.table (0 rows and 9 cols): ID,SMILES,Name,Formula,RT,mz...
       
       
       
@@ -218,4 +218,51 @@
     Output
       [1] "test_project/file1.csv"             "test_project/file2.csv"            
       [3] "test_project/subdir/filesubdir.csv"
+
+# process_cmpd_sets
+
+    Code
+      x
+    Output
+         ID   ORIG  set
+      1:  1 f1.csv   f1
+      2:  2 f1.csv   f1
+      3:  3 f2.csv  aks
+      4:  4 f3.csv se31
+      5:  5 f3.csv se32
+
+---
+
+    Code
+      x
+    Output
+         ID         ORIG  set
+      1:  1     b/f2.csv f2_1
+      2:  2     a/f1.csv   f1
+      3:  3 q/f/g/f2.csv  aks
+      4:  4 d/e/f/f3.csv se31
+      5:  5 m/n/q/f3.csv se32
+
+---
+
+    Code
+      x
+    Output
+         ID     ORIG  set
+      1:  1 a/fn.csv fn_1
+      2:  2 a/fn.csv fn_1
+      3:  3 a/fn.csv  set
+      4:  4 a/fn.csv set2
+      5:  5 a/fn.csv fn_1
+      6:  6 b/fn.csv fn_2
+      7:  7 b/fn.csv set2
+      8:  8 b/fn.csv set2
+      9:  9 b/fn.csv fn_2
+
+---
+
+    Code
+      x
+    Output
+      Empty data.table (0 rows and 9 cols): ID,SMILES,Name,Formula,RT,mz...
 
