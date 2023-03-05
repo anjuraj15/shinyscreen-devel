@@ -127,10 +127,12 @@ load_compound_input <- function(m) {
                                         # nonexist <- setdiff(fnfields,fields)
         coll[[l]] <- dt #if (length(nonexist)==0) dt else dt[,(nonexist) := NULL]
         coll[[l]]$ORIG <- fn
-        
     }
     cmpds <- if (length(fns)>0) rbindlist(l=c(list(EMPTY_CMPD_LIST), coll), use.names = T, fill = T) else EMPTY_CMPD_LIST
 
+    ## Process sets.
+    cmpds = process_cmpd_sets(cmpds)
+    
     dups <- duplicated(cmpds$ID)
     dups <- dups | duplicated(cmpds$ID,fromLast = T)
     dupIDs <- cmpds$ID[dups]
