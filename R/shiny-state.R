@@ -329,8 +329,10 @@ unpack_app_state <- function(session,envopts,input,top_data_dir,project_path,pac
         gui$filetag$tag <- packed_state$filetag$tag
 
         x <- packed_state$paths$data
-        gui$paths$data = if (length(x)>0 && nchar(x)>0) basename(x) else ""
-        if (!dir.exists(file.path(top_data_dir,gui$paths$data))) {warning("Data directory ", gui$paths$data, " does not exist. You must select one.")}
+        gui$paths$data = if (length(x)>0 && nchar(x)>0) {
+                             file.path(top_data_dir,basename(x))
+                         } else ""
+        if (!dir.exists(gui$paths$data)) {warning("Data directory ", gui$paths$data, " does not exist. You must select one.")}
         gui
     })
 

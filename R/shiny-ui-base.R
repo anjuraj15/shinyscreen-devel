@@ -905,28 +905,34 @@ mk_shinyscreen_server <- function(projects,init) {
                               choices = list.files(path=top_data_dir,
                                                    pattern = CMPD_LIST_PATT))
 
-            updateSelectInput(session = session,
-                              inputId = "dfile_list",
-                              choices = list.files(path=top_data_dir,
-                                                   pattern = DFILES_LIST_PATT))
             
-            updateSelectInput(session = session,
-                              inputId = "top_data_dir_list",
-                              selected = basename(top_data_dir),
-                              choices = list.dirs(path = init$envopts$top_data_dir,
-                                                  full.names = F,
-                                                  recursive = F))
         })
 
         observe({
-            top_data_dir = rvs$gui$paths$data
-            req(isTruthy(top_data_dir) && dir.exists(top_data_dir))
+            data_dir = rvs$gui$paths$data
+            if ((isTruthy(data_dir) && dir.exists(data_dir))) {
+
+                dfchoices = list.files(path=data_dir,
+                                       pattern = DFILES_LIST_PATT)
+
+
+                updateSelectInput(session = session,
+                                  inputId = "dfile_list",
+                                  choices = dfchoices)
+
             
-            updateSelectInput(session = session,
-                              inputId = "dfile_list",
-                              choices = list.files(path=top_data_dir,
-                                                   pattern = DFILES_LIST_PATT))
+            
+                updateSelectInput(session = session,
+                                  inputId = "top_data_dir_list",
+                                  selected = basename(rvs$gui$paths$data),
+                                  choices = list.dirs(path = init$envopts$top_data_dir,
+                                                      full.names = F,
+                                                      recursive = F))
+            }
+
+            
         })
+
 
         ## Update projects and data directories every second.
         observeEvent(rtimer1000(),{
@@ -988,6 +994,8 @@ mk_shinyscreen_server <- function(projects,init) {
                 message("Initialising project: ",wd)
                 rvs$gui = create_gui(project_path=fullwd)
             }
+
+
             message("project: ",rvs$gui$project())
         }, label = "project-b")
 
@@ -1017,10 +1025,11 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$sel_data_dir_b,{
             data_dir = input$top_data_dir_list
-            req(isTruthy(data_dir))
-            rvs$gui$paths$data = file.path(init$envopts$top_data_dir, data_dir)
-            
-            message("Selected data dir:",rvs$gui$paths$data)
+            if (isTruthy(data_dir)) {
+                rvs$gui$paths$data = file.path(init$envopts$top_data_dir, data_dir)
+                message("Selected data dir:",rvs$gui$paths$data)
+            }
+
 
         })
 
@@ -1045,32 +1054,9 @@ mk_shinyscreen_server <- function(projects,init) {
 
         observeEvent(input$datafiles_b,{
             new_file = input$dfile_list
-            if (isTruthy(new_file)) {
-                rvs$gui$filetag = filetag_add_file(rvs$gui$filetag,
-                                                   new_file)
+            if (isTruthy(new_file)) rvs$gui$filetag = filetag_add_file(rvs$gui$filetag,
+                                                                       new_file)
                                                          
-                 ## curr_file = rvs$gui$datatab$file
-                ## curr_tag = rvs$gui$datatab$tag
-                ## curr_adduct = rvs$gui$datatab$adduct
-                ## curr_set = rvs$gui$datatab$set
-
-                ## res_file = union(curr_file,new_file)
-
-                ## res_adduct = c(curr_adduct,rep(NA_character_,nd))
-                ## res_set = c(curr_set,rep(NA_character_,nd))
-                ## rvs$gui$datatab$file = res_file
-                ## rvs$gui$datatab$tag = add_new_def_tag(as.character(rvs$gui$datatab$tag),nd)
-                ## rvs$gui$datatab$adduct = res_adduct
-                ## rvs$gui$datatab$set = res_set
-
-
-            }
-
-            updateSelectInput(session=session,
-                              inputId="dfile_list",
-                              selected=NULL)
-
-            
         })
     
         observeEvent(input$rem_dfiles_b,{
