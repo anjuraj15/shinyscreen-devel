@@ -94,7 +94,7 @@ new_runtime_state <- function(project,envopts,conf=NULL) {
             ## If MetFrag possible, set up the file structure.
             if (metfrag$cando_metfrag) {
                 mfdir = file.path(project_path,"metfrag")
-                dir.create(mfdir)
+                dir.create(mfdir, showWarnings = F)
                 metfrag$path=mfdir
                 subpaths = list(results = "results",
                                 config = "config",
