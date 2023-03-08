@@ -37,13 +37,12 @@ new_state <- function() {
 
 runtime_from_conf <- function(run,envopts,conf) {
     lst_cmpl <- conf$compounds$lists
-    lst_fn_cmpl <- lapply(names(lst_cmpl),function (nm) {
-        bfn_cmpl <- lst_cmpl[[nm]]
+    lst_fn_cmpl <- lapply(lst_cmpl,function (lst) {
+        bfn_cmpl <- lst
         fn <- file.path(run$paths$project,bfn_cmpl)
         if (!file.exists(fn)) stop("File ", fn, " does not exist in ", run$paths$project," .")
         fn
     })
-    names(lst_fn_cmpl) <- names(lst_cmpl)
     run$paths$compounds$lists <- lst_fn_cmpl
 
     run$paths$data = norm_path(file.path(envopts$top_data_dir,conf$paths$data))
@@ -204,7 +203,7 @@ new_project <- function(project,envopts,datatab=NULL,conf=NULL) {
                  check_file_absent(fn_conf,what="conf-file")
                  yaml::yaml.load_file(fn_conf)
              } else conf 
-    m$conf$compounds$lists = label_cmpd_lists(m$conf$compounds$lists)
+    ## m$conf$compounds$lists = label_cmpd_lists(m$conf$compounds$lists)
     m$run = new_runtime_state(project,envopts=envopts,conf=m$conf)
     if (!is.null(datatab)) {
         m$input$tab$mzml = datatab
