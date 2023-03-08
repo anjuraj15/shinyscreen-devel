@@ -18,7 +18,13 @@
 the_ifelse <- data.table::fifelse
 dtable <- data.table::data.table
 
-norm_path <- function(...) normalizePath(...,winslash='/')
+norm_path <- function(...) {
+    test = nchar(...) > 0L
+    res = character(length(test))
+    res[test] = normalizePath(...[test],winslash='/') 
+    res[!test] = ...[!test]
+    res
+}
 
 tab2file<-function(tab,file,...) {
     data.table::fwrite(x=tab,file=file,...)
