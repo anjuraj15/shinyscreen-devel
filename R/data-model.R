@@ -21,15 +21,25 @@ make_db_catalogue <- function(m) {
 make_db_precursors <- function(m) {
     ## Generate masses and label isobars.
 
-    ## Get tolerance.
+    cat = m$db$cat
+    masses = m$out$tab$comp[cat,.(catid=catid,mz=mz,rt=rt),on=key(cat)]
+    setkey(masses,mz)
+
+    ## Retention time.
+    tmp = get_val_unit(m$conf$tolerance[['rt']])
+    rttol = as.numeric(tmp[['val']])
+    rtunit = tmp[['unit']]
+    if (rtunit == "s") {
+        rttol = rttol/60.
+    } else if (rtunit != "min") {
+        stop('make_db_precursors: Unknown retention time unit.')
+    }
+    masses[!is.na(rt),`:=`(rt_min=rt-rttol,rt_max=rt+rttol)]
+    
+    ## Fine error.
     tmp = get_val_unit(m$conf$tolerance[['ms1 fine']])
     ms1tol = as.numeric(tmp[['val']])
     ms1unit = tmp[['unit']]
-    cat = m$db$cat
-    masses = m$out$tab$comp[cat,.(catid=catid,mz=mz),on=key(cat)]
-    setkey(masses,mz)
-    
-    ## Fine error.
     if (ms1unit == "ppm") {
         masses[,`:=`(mz_fine_min=mz-ms1tol*mz*1e-6,mz_fine_max=mz+ms1tol*mz*1e-6)]
     } else if (ms1unit == "Da") {
