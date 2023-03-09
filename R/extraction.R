@@ -611,3 +611,70 @@ gen_ms2_spec_blk <- function(spectra) {
 
 
 ## NEW FUNCTIONS.
+create_fine_table <- function(m) {
+    ## Select fine mz-ranges and split them into those with rt entries
+    ## and those without.
+    precs = m$db$precursors
+    precs[,unique(.SD),.SDcols=c("iso_fine_min",
+                                 "iso_fine_max",
+                                 "rt_min",
+                                 "rt_max",
+                                 "file"),
+          keyby=c("file","isofine")]
+
+}
+
+create_coarse_table <- function(m) {
+    ## Select coarse mz-ranges and split them into those with rt entries
+    ## and those without.
+    precs = m$db$precursors
+    precs[,unique(.SD),.SDcols=c("iso_coarse_min",
+                                 "iso_coarse_max",
+                                 "rt_min",
+                                 "rt_max",
+                                 "file"),
+          keyby=c("file","isocoarse")]
+
+}
+
+read_data_file <- function(file) {
+    MSnbase::readMSData(file=file,msLevel=c(1,2),mode="onDisk")
+}
+
+extr_ms1_cgm <- function(ms,isotab,qrt,res) {
+    ## Extract chromatograms.
+
+    ## Get mz ranges in matrix format.
+    mzrng = as.matrix(isotab[,.(iso_fine_min,iso_fine_max)])
+    x = if (!qrt) {
+            ## Call without rt argument.
+            MSnbase::chromatogram(ms,mz = mzrng)
+        } else {
+            ## Call with rt argument (in seconds).
+            rtrng = as.matrix(isotab[,.(rt_min*60,rt_max*60)])
+            MSnbase::chromatogram(ms,mz = mzrng, rt = rtrng)
+        }
+
+    ## If there were any input masses actually,
+    if (dim(mzrng)[[1L]] > 0L) {
+        ## fill the data table.
+        for (i in 1L:nrow(mzrng)) {
+            rt = rtime(x[i,1])
+            isofine = isotab[(i),isofine]
+            chunk = data.table(isofine=isofine,
+                               rt=rt,
+                               intensity=intensity(x[i,1]),
+                               scan = names(rt),
+                               key = c("isofine","rt"))
+
+            res = res[chunk,.(isofine,
+                              rt,
+                              intensity=i.intensity,
+                              scan=i.scan)]
+            
+        }
+    }
+    res
+}
+
+

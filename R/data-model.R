@@ -97,6 +97,9 @@ make_db_precursors <- function(m) {
                  iso_fine_max=max(mz_fine_max)),
                  by=isofine]
     setindex(masses,isocoarse,isofine)
+    ## Add files.
+    filetab = m$input$tab$mzml[m$db$cat,.(catid=i.catid,file=file),on=c("set","tag"),nomatch=NULL]
+    masses[filetab,file:=i.file,on="catid"]
     m$db$precursors = masses
     m
 }

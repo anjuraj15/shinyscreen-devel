@@ -10,8 +10,9 @@ test_that("Extraction returns what is needed.",{
                 phase=c("setup","comptab","db"))
 
     cat = m$db$cat
+    print(m$db$precursors[,.(mz,file)])
 
     m = run(envopts=eo,m=m,phase="extract")
-    
+    print(m$db$extr$cgm$ms1)
     expect_true(1==1)
 })
