@@ -607,3 +607,7 @@ gen_ms2_spec_blk <- function(spectra) {
                                                           CE = row[["CE"]],
                                                           an = row[["an"]])))
 }
+
+
+
+## NEW FUNCTIONS.

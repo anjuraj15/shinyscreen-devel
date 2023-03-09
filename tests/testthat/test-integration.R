@@ -10,5 +10,8 @@ test_that("Extraction returns what is needed.",{
                 phase=c("setup","comptab","db"))
 
     cat = m$db$cat
+
+    m = run(envopts=eo,m=m,phase="extract")
+    
     expect_true(1==1)
 })
