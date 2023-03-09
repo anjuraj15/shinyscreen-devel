@@ -50,6 +50,7 @@ Collate:
     'errors.R'
     'mix.R'
     'envopts.R'
+    'data-model.R'
     'state.R'
     'metfrag.R'
     'plotting.R'

@@ -361,3 +361,7 @@ METFRAG_RESULT_READF = list(csv = function(file,...) data.table::fread(file=file
                             xml = function(file,...) readxl::read_excel(path=file,...))
 
 METFRAG_DEFAULT_PROC = 1L
+
+
+## DATA MODEL
+DB_CATALOGUE_KEY = c("set","tag","adduct","ID")

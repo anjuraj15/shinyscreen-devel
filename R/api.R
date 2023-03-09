@@ -32,6 +32,7 @@ run <- function(envopts,
     
     all_phases=list(setup=setup_phase,
                     comptab=mk_comp_tab,
+                    db=make_db,
                     extract=extr_data,
                     prescreen=prescreen,
                     sort=sort_spectra,
@@ -915,5 +916,11 @@ metfrag <- function(m) {
 
     data.table::fwrite(x=tab,file=fn,quote=T)
 
+    m
+}
+
+make_db <- function(m) {
+    m = make_db_catalogue(m)
+    m = make_db_precursors(m)
     m
 }
