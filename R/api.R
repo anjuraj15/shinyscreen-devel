@@ -335,19 +335,12 @@ extr_data <-function(m) {
 
     dpath = m$run$paths$data
 
-    cg1 = data.table(isofine=integer(0),
-                     rt=numeric(0),
-                     intensity=numeric(0),
-                     scan=character(0),
-                     key = c("isofine","rt"))
+    ## Big ms1 chromatogram table.
+    cg1 = new_ms1_cgm_table() 
     
     for (fn in fine[,unique(file)]) {
 
-        fncg1 = data.table(isofine=integer(0),
-                           rt=numeric(0),
-                           intensity=numeric(0),
-                           scan=character(0),
-                           key = c("isofine","rt"))
+        
         
         ## Read data.
         ms = read_data_file(file=file.path(dpath,fn))
@@ -356,27 +349,31 @@ extr_data <-function(m) {
         ftab = fine[.(fn),on="file"]
 
         ## Extract input data that is needed.
-        isotab = ftab[,.(iso_fine_min,iso_fine_max,rt_min,rt_max),by="isofine"]
-        isotab1 = isotab[is.na(rt_min),.(isofine,iso_fine_min,iso_fine_max)]
-        isotab2 = isotab[!is.na(rt_min),.(isofine,iso_fine_min,iso_fine_max,rt_min,rt_max)]
+        isotab = ftab[,.(iso_fine_min,iso_fine_max,rt_min,rt_max),by="precid"]
+        isotab1 = isotab[is.na(rt_min),.(precid,iso_fine_min,iso_fine_max)]
+        isotab2 = isotab[!is.na(rt_min),.(precid,iso_fine_min,iso_fine_max,rt_min,rt_max)]
                   
 
         ## Extract MS1 chromatograms.
+        fncg1 = new_ms1_cgm_table()
+
         fncg1 = extr_ms1_cgm(ms=ms,
                              isotab=isotab1,
                              qrt=F,
                              fncg1)
+        
         fncg1 = extr_ms1_cgm(ms=ms,
                              isotab=isotab2,
                              qrt=T,
                              fncg1)
         
-        cg1 = cg1[fncg1,.(isofine,
+        cg1 = cg1[fncg1,.(precid,
                           rt,
                           intensity=i.intensity,
                           scan=i.scan)]
         
     }
+    
     m$db$extr$cgm$ms1 = res
     m
 

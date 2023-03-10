@@ -61,7 +61,7 @@ make_db_precursors <- function(m) {
         stop('make_db_precursors: Unknown mass unit (coarse).')
     }
 
-    masses$isofine = -1L
+    masses$precid = -1L
     start = 1L
     while (start <= NROW(masses)) {
         sel = masses[start:.N]
@@ -70,7 +70,7 @@ make_db_precursors <- function(m) {
         upmz = sel[1L,mz_fine_max]
         x = sel[mz<(upmz)]
         stop = start + NROW(x) - 1L
-        masses[(start):(stop),`:=`(isofine=..id,degfine=(1L+stop-start))]
+        masses[(start):(stop),`:=`(precid=..id,degfine=(1L+stop-start))]
         start = stop + 1L
     }
 
@@ -95,8 +95,8 @@ make_db_precursors <- function(m) {
 
     masses[,`:=`(iso_fine_min=min(mz_fine_min),
                  iso_fine_max=max(mz_fine_max)),
-                 by=isofine]
-    setindex(masses,isocoarse,isofine)
+                 by=precid]
+    setindex(masses,isocoarse,precid)
     ## Add files.
     filetab = m$input$tab$mzml[m$db$cat,.(catid=i.catid,file=file),on=c("set","tag"),nomatch=NULL]
     masses[filetab,file:=i.file,on="catid"]
@@ -107,3 +107,29 @@ make_db_precursors <- function(m) {
 
 
 
+new_ms1_cgm_table <- function() {
+    ## Creates a chromatogram.
+    data.table(precid=integer(0),
+               rt=numeric(0),
+               intensity=numeric(0),
+               scan=character(0),
+               key = c("precid","rt"))
+}
+
+
+
+new_ms2_cgm_cat <- function() {
+    ## A kind of catalogue of ms2.
+    data.table(precid = integer(0),
+               an = integer(0))
+}
+
+new_ms2_cgm_table <- function() {
+    ## Creates a chromatogram.
+    data.table(precid = integer(0),
+               an = intege r(0),
+               rt = numeric(0),
+               intensity = numeric(0),
+               scan = character(0),
+               key = c("precid","an"))
+}
