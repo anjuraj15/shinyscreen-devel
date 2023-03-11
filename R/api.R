@@ -337,7 +337,8 @@ extr_data <-function(m) {
 
     ## Big ms1 chromatogram table.
     cg1 = new_ms1_cgm_table() 
-    
+
+    cg2 = new_ms2_cgm_table()
     for (fn in fine[,unique(file)]) {
 
         
@@ -356,21 +357,23 @@ extr_data <-function(m) {
 
         ## Extract MS1 chromatograms.
         fncg1 = new_ms1_cgm_table()
-
         fncg1 = extr_ms1_cgm(ms=ms,
                              isotab=isotab1,
                              qrt=F,
                              fncg1)
-        
         fncg1 = extr_ms1_cgm(ms=ms,
                              isotab=isotab2,
                              qrt=T,
                              fncg1)
-        
         cg1 = cg1[fncg1,.(precid,
                           rt,
                           intensity=i.intensity,
                           scan=i.scan)]
+
+        ## Extract MS2 chromatograms.
+        fnfd = as.data.table(fData(ms),keep.rownames="scan",key="scan")
+        fncg2 = extr_ms2_cgm(fnfd,fncg1)
+        1+1
         
     }
     

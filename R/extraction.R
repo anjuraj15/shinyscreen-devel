@@ -620,7 +620,7 @@ create_fine_table <- function(m) {
                                  "rt_min",
                                  "rt_max",
                                  "file"),
-          keyby=c("file","isofine")]
+          keyby=c("file","precid")]
 
 }
 
@@ -660,14 +660,14 @@ extr_ms1_cgm <- function(ms,isotab,qrt,res) {
         ## fill the data table.
         for (i in 1L:nrow(mzrng)) {
             rt = rtime(x[i,1])
-            isofine = isotab[(i),isofine]
-            chunk = data.table(isofine=isofine,
+            precid = isotab[(i),precid]
+            chunk = data.table(precid=precid,
                                rt=rt,
                                intensity=intensity(x[i,1]),
                                scan = names(rt),
-                               key = c("isofine","rt"))
+                               key = c("precid","rt"))
 
-            res = res[chunk,.(isofine,
+            res = res[chunk,.(precid,
                               rt,
                               intensity=i.intensity,
                               scan=i.scan)]
@@ -678,3 +678,11 @@ extr_ms1_cgm <- function(ms,isotab,qrt,res) {
 }
 
 
+extr_ms2_cgm <- function(feat_table,one_file_cg1) {
+    ## Get scanIdx.
+
+    browser()
+    precs = feat_table[one_file_cg1,.(scan,scanIdx),on="scan"]
+    
+    
+}

@@ -125,9 +125,17 @@ new_ms2_cgm_cat <- function() {
 }
 
 new_ms2_cgm_table <- function() {
+    ## Varios rt-related MS2 data.
+    data.table(precid = integer(0),
+               ce = numeric(0),
+               an = integer(0),
+               rt = numeric(0))
+}
+
+new_ms2_cgm_table <- function() {
     ## Creates a chromatogram.
     data.table(precid = integer(0),
-               an = intege r(0),
+               an = integer(0),
                rt = numeric(0),
                intensity = numeric(0),
                scan = character(0),
