@@ -611,6 +611,7 @@ gen_ms2_spec_blk <- function(spectra) {
 
 
 ## NEW FUNCTIONS.
+
 create_fine_table <- function(m) {
     ## Select fine mz-ranges and split them into those with rt entries
     ## and those without.
@@ -641,48 +642,56 @@ read_data_file <- function(file) {
     MSnbase::readMSData(file=file,msLevel=c(1,2),mode="onDisk")
 }
 
-extr_ms1_cgm <- function(ms,isotab,qrt,res) {
-    ## Extract chromatograms.
 
-    ## Get mz ranges in matrix format.
-    mzrng = as.matrix(isotab[,.(iso_fine_min,iso_fine_max)])
-    x = if (!qrt) {
-            ## Call without rt argument.
-            MSnbase::chromatogram(ms,mz = mzrng)
-        } else {
-            ## Call with rt argument (in seconds).
-            rtrng = as.matrix(isotab[,.(rt_min*60,rt_max*60)])
-            MSnbase::chromatogram(ms,mz = mzrng, rt = rtrng)
-        }
-
-    ## If there were any input masses actually,
-    if (dim(mzrng)[[1L]] > 0L) {
-        ## fill the data table.
-        for (i in 1L:nrow(mzrng)) {
-            rt = rtime(x[i,1])
-            precid = isotab[(i),precid]
-            chunk = data.table(precid=precid,
-                               rt=rt,
-                               intensity=intensity(x[i,1]),
-                               scan = names(rt),
-                               key = c("precid","rt"))
-
-            res = res[chunk,.(precid,
-                              rt,
-                              intensity=i.intensity,
-                              scan=i.scan)]
-            
-        }
+extr_cgrams_ms1 <- function(ms,tab,fdata) {
+    ## Some helpers.
+    new_restab <- function(intab,cgm) {
+        base = intab[,.(precid=precid,cgmidx=.I)]
+        cgm = base[,{
+            rt = rtime(cgm[cgmidx,1])
+            inte = intensity(cgm[cgmidx,1])
+            .(precid=precid,
+              rt = rt,
+              intensity = inte,
+              scan = names(rt))},
+            by="cgmidx"]
+        setkey(cgm,scan)
+        cgm[fdata$ms1,idx:=i.idx,on="scan"]
+        cgm
     }
-    res
+    
+    trt = tab[!is.na(rt_min)]
+    tnort = tab[is.na(rt_min)]
+
+    resrt = if (nrow(trt)>0L) {
+                ## Call with rt argument (in seconds).
+                mzrng = as.matrix(trt[,.(iso_fine_min,iso_fine_max)])
+                rtrng = as.matrix(trt[,.(rt_min*60,rt_max*60)])
+                new_restab(trt,MSnbase::chromatogram(ms,mz = mzrng, rt = rtrng))
+            } else data.table()
+
+    resnort = if (nrow(tnort)>0L) {
+                  mzrng = as.matrix(tnort[,.(iso_fine_min,iso_fine_max)])
+                  new_restab(tnort,MSnbase::chromatogram(ms,mz = mzrng))
+              } else data.table()
+
+    rbind(resnort,resrt,fill=T)
+
 }
 
+get_fdata <- function(ms) {
+    fdata = as.data.table(fData(ms),keep.rownames="scan")
+    setkey(fdata,scan)
+    res = list()
+    res$ms1 = fdata[msLevel==1L,.(scan,
+                                  idx=spIdx)]
+    res$ms2 = fdata[msLevel==2L,.(scan,
+                                  idx=spIdx,
+                                  an=acquisitionNum,
+                                  ce=collisionEnergy,
+                                  prec_mz=precursorMZ,
+                                  prec_idx=precursorScanNum)]
+    res
 
-extr_ms2_cgm <- function(feat_table,one_file_cg1) {
-    ## Get scanIdx.
 
-    browser()
-    precs = feat_table[one_file_cg1,.(scan,scanIdx),on="scan"]
-    
-    
 }

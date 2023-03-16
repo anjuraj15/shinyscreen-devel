@@ -335,45 +335,83 @@ extr_data <-function(m) {
 
     dpath = m$run$paths$data
 
-    ## Big ms1 chromatogram table.
-    cg1 = new_ms1_cgm_table() 
 
-    cg2 = new_ms2_cgm_table()
-    for (fn in fine[,unique(file)]) {
 
-        
-        
+
+
+
+    ## Open all files.
+    fns = fine[,unique(file)]
+    lms = lapply(fns,function(fn) read_data_file(file.path(dpath,fn)))
+    names(lms) = fns
+
+    ## Load all feature data.
+    lfdata = lapply(lms,get_fdata)
+    names(lfdata) = fns
+
+    ## Extract MS1 chromatograms using "fine" tolerance.
+    cgram_ms1 = fine[,extr_cgrams_ms1(lms[[file]],.SD,lfdata[[file]]),
+                     by="file",
+                     .SDcols=c("iso_fine_min",
+                               "iso_fine_max",
+                               "rt_min",
+                               "rt_max",
+                               "precid")]
+    setkey(cgram_ms1,file,precid)
+
+    ## Extract MS2 chromatograms.
+    cgram_ms2 = data.table(precid=integer(0),
+                           an=integer(0),
+                           ce=numeric(0),
+                           rt=numeric(0),
+                           intensity=numeric(0))
+    for (fn in names(lfdata)) {
+        browser()
+        x = lfdata[[file]]$ms2[cgram_ms1,.(an,ce,precid=i.precid),on="prec_idx==idx"]
+    }
+    1+1
+    
+
+
+
+
+
+
+
+
+    ## cg2 = new_ms2_cgm_table()
+    
+    for (fn in fns) {
         ## Read data.
-        ms = read_data_file(file=file.path(dpath,fn))
+        ms = lms[[fn]]
 
-        ## Get input entries for a particular file.
-        ftab = fine[.(fn),on="file"]
+        ## ## Get input entries for a particular file.
+        ## ftab = fine[.(fn),on="file"]
 
-        ## Extract input data that is needed.
-        isotab = ftab[,.(iso_fine_min,iso_fine_max,rt_min,rt_max),by="precid"]
-        isotab1 = isotab[is.na(rt_min),.(precid,iso_fine_min,iso_fine_max)]
-        isotab2 = isotab[!is.na(rt_min),.(precid,iso_fine_min,iso_fine_max,rt_min,rt_max)]
-                  
+        ## Get feature data.
+        fdata = lfdata[[fn]]
+
+        ## Get tables with mz fine ranges and retention times (if
+        ## any), used to filter the MS1 chromatogram.
+        cginputs = get_inputs_4_cgram(ftab)          
 
         ## Extract MS1 chromatograms.
-        fncg1 = new_ms1_cgm_table()
-        fncg1 = extr_ms1_cgm(ms=ms,
-                             isotab=isotab1,
-                             qrt=F,
-                             fncg1)
-        fncg1 = extr_ms1_cgm(ms=ms,
-                             isotab=isotab2,
-                             qrt=T,
-                             fncg1)
-        cg1 = cg1[fncg1,.(precid,
-                          rt,
-                          intensity=i.intensity,
-                          scan=i.scan)]
+        cg1 = extr_ms1_cgm(ms=ms,
+                           isotab=cginputs$rtno,
+                           qrt=F,
+                           cg1)
+        
+        cg1 = extr_ms1_cgm(ms=ms,
+                           isotab=cginputs$rtyes,
+                           qrt=T,
+                           cg1)
 
+
+        ## ## Annotate fdata with precids.
+        ## fdata$ms1[fncg1,precid:=i.precid,on="scan"]
+        
         ## Extract MS2 chromatograms.
-        fnfd = as.data.table(fData(ms),keep.rownames="scan",key="scan")
-        fncg2 = extr_ms2_cgm(fnfd,fncg1)
-        1+1
+        
         
     }
     
