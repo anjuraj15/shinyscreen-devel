@@ -12,6 +12,7 @@ init(
   metfrag_jar = NULL,
   java_bin = NULL,
   metfrag_max_proc = NULL,
+  no_structure_plots = NULL,
   merge = T,
   save = F,
   conf_dir = tools::R_user_dir(package = "shinyscreen", which = "config")
@@ -40,6 +41,9 @@ has been supplied, we will try to detect it.}
 \item{metfrag_max_proc}{\code{integer(1)}, maximum number of CPU cores
 available for MetFrag. If no number has been supplied, we will
 try to detect the number of logical CPUs and go with that.}
+
+\item{no_structure_plots}{\code{logical(1)}, if T, structures will not
+be plotted, even when it is possibile.}
 
 \item{merge}{\code{logical(1)}, optional. If T, merge with saved
 configuration.}
