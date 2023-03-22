@@ -313,7 +313,6 @@ mk_tol_funcs <- function(m) {
 }
 
 
-##' @export
 extr_data2 <-function(m) {
     message("Stage: extract")
     if (is.null(m$conf$serial) || !m$conf$serial) {
@@ -324,6 +323,7 @@ extr_data2 <-function(m) {
     }
 }
 
+##' @export
 extr_data <-function(m) {
 
     fine = create_fine_table(m)
@@ -334,11 +334,6 @@ extr_data <-function(m) {
     ## fine_rt_rt = as.matrix(fine[,.(rt_min,rt_max)])
 
     dpath = m$run$paths$data
-
-
-
-
-
 
     ## Open all files.
     fns = fine[,unique(file)]
@@ -360,14 +355,37 @@ extr_data <-function(m) {
     setkey(cgram_ms1,file,precid)
 
     ## Extract MS2 chromatograms.
-    cgram_ms2 = data.table(precid=integer(0),
-                           an=integer(0),
-                           ce=numeric(0),
-                           rt=numeric(0),
-                           intensity=numeric(0))
+
+    ## Create the "coarse" table. Parent masses are known with
+    ## "coarse". We will prefilter our ms2 results based on that...x
+    coarse = create_coarse_table(m)
+
+    ## Filter ms2 based on coarse. TODO
+    ## coarse_ms2 = coarse[,filter_coarse(lms[[file]],.SD,lfdata[[file]]),
+    ##                     by="file"]
+
+
+    ## Join ms1 chromatogram data to ms2, connecting by the parent scan. TODO
+    ## cgram_ms2 = coarse_ms2[,filter_parent_scans(lms[[file]],.SD,lfdata[[file]])]
+
+    
+    ## cgram_ms2 = data.table(precid=integer(0),
+    ##                        an=integer(0),
+    ##                        ce=numeric(0),
+    ##                        rt=numeric(0),
+    ##                        intensity=numeric(0))
     for (fn in names(lfdata)) {
         browser()
-        x = lfdata[[file]]$ms2[cgram_ms1,.(an,ce,precid=i.precid),on="prec_idx==idx"]
+        x = lfdata[[fn]]$ms2[cgram_ms1,
+                             .(an,
+                               ce,
+                               precid=i.precid,
+                               rt,
+                               intensity),
+                             on=c(prec_idx="idx"),
+                             nomatch=NULL,
+                             allow.cartesian=T]
+        1+1
     }
     1+1
     

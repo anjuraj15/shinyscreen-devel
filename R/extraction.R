@@ -634,7 +634,7 @@ create_coarse_table <- function(m) {
                                  "rt_min",
                                  "rt_max",
                                  "file"),
-          keyby=c("file","isocoarse")]
+          keyby=c("file","isocoarse","precid")]
 
 }
 
@@ -688,6 +688,8 @@ get_fdata <- function(ms) {
     res$ms2 = fdata[msLevel==2L,.(scan,
                                   idx=spIdx,
                                   an=acquisitionNum,
+                                  rt=retentionTime,
+                                  intensity=basePeakIntensity,
                                   ce=collisionEnergy,
                                   prec_mz=precursorMZ,
                                   prec_idx=precursorScanNum)]
