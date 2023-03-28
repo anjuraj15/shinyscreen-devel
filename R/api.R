@@ -374,24 +374,22 @@ extr_data <-function(m) {
                            idx=integer(0),
                            rt=numeric(0),
                            intensity=numeric(0))
+    
+    spectra = empty_spectra_table()
+                         
     for (fn in names(lfdata)) {
-        ## x = lfdata[[fn]]$ms2[cgram_ms1,
-        ##                      .(an,
-        ##                        ce,
-        ##                        precid=i.precid,
-        ##                        rt,
-        ##                        intensity),
-        ##                      on=c(prec_idx="idx"),
-        ##                      nomatch=NULL,
-        ##                      allow.cartesian=T]
         rtab = relate_ms2_to_precid(coarse=coarse,ms2=lfdata[[fn]]$ms2,cgram_ms1=cgram_ms1)
+        sptab = extract_spectra(lms[[fn]],rtab)
         cgram_ms2 = rbind(cgram_ms2,rtab)
+        spectra = rbind(spectra,sptab)
     }
     setkey(cgram_ms1,precid,rt)
     setkey(cgram_ms2,precid,ce,rt)
+    setkey(spectra,precid,scan)
     m$db$extr$cgm$ms1 = cgram_ms1
     m$db$extr$cgm$ms2 = cgram_ms2
-    browser()
+    m$db$extr$spectra = spectra
+
     m
 
 }

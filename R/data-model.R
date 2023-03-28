@@ -103,3 +103,13 @@ make_db_precursors <- function(m) {
     m$db$precursors = masses
     m
 }
+
+
+empty_spectra_table <- function() {
+    r = data.table(precid=integer(0),
+                   scan=character(0),
+                   mz=numeric(0),
+                   intensity=numeric(0))
+    setkey(r,precid,scan)
+    r
+}

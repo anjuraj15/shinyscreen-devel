@@ -700,8 +700,19 @@ get_fdata <- function(ms) {
 
 
 relate_ms2_to_precid <- function(coarse,ms2,cgram_ms1) {
+    ## Take `coarse' table (the one with coarse mass limits), ms2
+    ## fData and ms1 chromatogram, then relate precids from cgram_ms1
+    ## to ms2 data.
+
+    ## Select those MS2 entries the parents of which coarsely match
+    ## compound lists masses.
     res = ms2[coarse,on=.(prec_mz>iso_coarse_min,prec_mz<iso_coarse_max),.(prec_mz=x.prec_mz,precid,prec_idx,scan,idx,ce,rt,intensity),nomatch=NULL]
     setkey(res,precid,prec_idx)
+
+    ## Now, make sure those coarsely matched MS2 actually have a
+    ## parent that finely matches something in the chromatogram (and
+    ## this is by ensuring that a `precid' with the correct scan (idx)
+    ## shows up in the chromatogram.
     cgram_ms1[res,on=.(precid,idx==prec_idx),
               .(precid,ce,scan=i.scan,
                 idx=i.idx,rt=i.rt,
@@ -709,3 +720,21 @@ relate_ms2_to_precid <- function(coarse,ms2,cgram_ms1) {
     
 }
 
+extract_spectra <- function(ms,cgram_ms2) {
+    ## This will extract full MS2 spectra based on ms2 chromatogram entries.
+    indices = cgram_ms2[,.SD,.SDcol=c("precid","scan","idx")]
+
+    res = empty_spectra_table()
+    selind = indices[,unique(.SD),.SDcol=c("scan","idx")]
+    sel = ms[selind$idx]
+
+    masses = mz(sel)
+    intensities = intensity(sel)
+    res = selind
+    setkey(res,scan)
+    res = res[,data.table(mz=masses[[scan]],
+                          intensity=intensities[[scan]]),
+              keyby=c("scan")]
+    res[indices,on=.(scan),precid:=i.precid]
+    
+}
