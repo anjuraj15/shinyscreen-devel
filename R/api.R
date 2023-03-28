@@ -312,26 +312,10 @@ mk_tol_funcs <- function(m) {
     
 }
 
-
-extr_data2 <-function(m) {
-    message("Stage: extract")
-    if (is.null(m$conf$serial) || !m$conf$serial) {
-        extr_data_future(m)
-    } else {
-        message("(extract): Serial extraction.")
-        extr_data_serial(m)
-    }
-}
-
 ##' @export
 extr_data <-function(m) {
 
     fine = create_fine_table(m)
-    ## fine_with_rt = fine[!is.na(rt_min)]
-    ## fine_wo_rt = fine[is.na(rt_min)]
-
-    ## fine_mz_rt = as.matrix(fine[,.(iso_fine_min,iso_fine_max)])
-    ## fine_rt_rt = as.matrix(fine[,.(rt_min,rt_max)])
 
     dpath = m$run$paths$data
 
@@ -357,15 +341,8 @@ extr_data <-function(m) {
     ## Extract MS2 chromatograms.
 
     ## Create the "coarse" table. Parent masses are known with
-    ## "coarse". We will prefilter our ms2 results based on that...x
+    ## "coarse". We will prefilter our ms2 results based on that...
     coarse = create_coarse_table(m)
-    ## Filter ms2 based on coarse. TODO
-    ## coarse_ms2 = coarse[,filter_coarse(lms[[file]],.SD,lfdata[[file]]),
-    ##                     by="file"]
-
-
-    ## Join ms1 chromatogram data to ms2, connecting by the parent scan. TODO
-    ## cgram_ms2 = coarse_ms2[,filter_parent_scans(lms[[file]],.SD,lfdata[[file]])]
 
     
     cgram_ms2 = data.table(precid=integer(0),
@@ -374,7 +351,9 @@ extr_data <-function(m) {
                            idx=integer(0),
                            rt=numeric(0),
                            intensity=numeric(0))
-    
+
+
+    ## Extract MS2 spectra.
     spectra = empty_spectra_table()
                          
     for (fn in names(lfdata)) {
@@ -392,171 +371,6 @@ extr_data <-function(m) {
 
     m
 
-}
-
-extr_data_future <- function(m) {
-    ## Reduce the comp table to only unique masses (this is because
-    ## different sets can have same masses).
-    
-    m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=BASE_KEY]
-    m$out$tab$data[,set:=NULL] #This column is meaningless now.
-    file <- m$out$tab$data[,unique(file)]
-    fpaths <- file.path(m$run$paths$data,file)
-    allCEs <- do.call(c,args=lapply(fpaths,function(fn) {
-        z <- MSnbase::readMSData(files=fn,msLevel = c(1,2),mode="onDisk")
-
-        
-        unique(MSnbase::collisionEnergy(z),fromLast=T)
-        
-    }))
-    allCEs <- unique(allCEs)
-    allCEs <- allCEs[!is.na(allCEs)]
-    cols <-paste('CE',allCEs,sep = '')
-    vals <- rep(NA,length(cols))
-    m$out$tab$data[,(cols) := .(rep(NA,.N))]
-    file <- m$out$tab$data[,unique(file)]
-    ftags <- m$out$tab$data[,.(tag=unique(tag)),by=file]
-    fpaths <- file.path(m$run$paths$data,ftags[,file])
-    futuref <- m$future
-    tmp <- lapply(1:nrow(ftags),function(ii) {
-        fn <- fpaths[[ii]]
-        the_tag <- ftags[ii,tag]
-        message("(extract): Commencing extraction for tag: ", the_tag, "; file: ",fn)
-        tab <- as.data.frame(data.table::copy(m$out$tab$data[tag==the_tag,.(file,tag,adduct,mz,rt,ID)]))
-        ## err_ms1_eic <- m$extr$tol$eic
-        ## err_coarse_fun <- m$extr$tol$coarse
-        ## err_fine_fun <- m$extr$tol$fine
-        ## err_rt <- m$extr$tol$rt
-
-        err_coarse <- m$conf$tolerance[["ms1 coarse"]]
-
-
-        err_fine <- m$conf$tolerance[["ms1 fine"]]
-
-        
-        err_ms1_eic <- m$conf$tolerance$eic 
-        
-        
-        err_rt <- m$conf$tolerance$rt
-
-        missing_precursor_info <- m$conf$extract$missing_precursor_info
-        x <- futuref(extract(fn=fn,
-                             tag=the_tag,
-                             tab=tab,
-                             err_ms1_eic=err_ms1_eic,
-                             err_coarse = err_coarse,
-                             err_fine= err_fine,
-                             err_rt= err_rt,
-                             missing_precursors = missing_precursor_info),
-                     lazy = F)
-
-        x
-
-    })
-
-    msk <- sapply(tmp,future::resolved)
-    curr_done <- which(msk)
-    
-    for (x in curr_done) {
-        message("Done extraction for ", future::value(tmp[[x]])$ms1$tag[[1]])
-    }
-    while (!all(msk)) {
-        msk <- sapply(tmp,future::resolved)
-        newly_done <- which(msk)
-        for (x in setdiff(newly_done,curr_done)) {
-            message("Done extraction for ", future::value(tmp[[x]])$ms1$tag[[1]])
-        }
-        Sys.sleep(0.5)
-        curr_done <- newly_done
-    }
-    
-    ztmp <- lapply(tmp,future::value)
-    m$extr$ms1 <- data.table::rbindlist(lapply(ztmp,function(x) x$ms1))
-    m$extr$ms2 <- data.table::rbindlist(lapply(ztmp,function(x) x$ms2))
-    data.table::setkeyv(m$extr$ms1,BASE_KEY)
-    data.table::setkeyv(m$extr$ms2,c(BASE_KEY,"CE"))
-
-    fn_ex <- get_fn_extr(m)
-    timetag <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    saveRDS(object = m, file = file.path(m$run$paths$project,FN_EXTR_STATE))
-    m
-    
-}
-
-
-extr_data_serial <- function(m) {
-    ## Reduce the comp table to only unique masses (this is because
-    ## different sets can have same masses).
-    
-    m$out$tab$data <- m$out$tab$comp[,head(.SD,1),by=BASE_KEY]
-    m$out$tab$data[,set:=NULL] #This column is meaningless now.
-    file <- m$out$tab$data[,unique(file)]
-    fpaths <- file.path(m$run$paths$data,file)
-    allCEs <- do.call(c,args=lapply(fpaths,function(fn) {
-        z <- MSnbase::readMSData(files=fn,msLevel = c(1,2),mode="onDisk")
-
-        
-        unique(MSnbase::collisionEnergy(z),fromLast=T)
-        
-    }))
-    allCEs <- unique(allCEs)
-    allCEs <- allCEs[!is.na(allCEs)]
-    cols <-paste('CE',allCEs,sep = '')
-    vals <- rep(NA,length(cols))
-    m$out$tab$data[,(cols) := .(rep(NA,.N))]
-    file <- file.path(m$run$paths$data,m$out$tab$data[,unique(file)])
-    ftags <- m$out$tab$data[,.(tag=unique(tag)),by=file]
-    ftags[,path:=file.path(..m$run$paths$data,file)]
-    futuref <- m$future
-    tmp <- lapply(1:nrow(ftags),function(ii) {
-        fn <- ftags[ii,path]
-        the_tag <- ftags[ii,tag]
-        message("(extract): Commencing extraction for tag: ", the_tag, "; file: ",fn)
-        tab <- as.data.frame(data.table::copy(m$out$tab$data[tag==the_tag,.(file,tag,adduct,mz,rt,ID)]))
-        ## err_ms1_eic <- m$extr$tol$eic
-        ## err_coarse_fun <- m$extr$tol$coarse
-        ## err_fine_fun <- m$extr$tol$fine
-        ## err_rt <- m$extr$tol$rt
-
-        err_coarse <- m$conf$tolerance[["ms1 coarse"]]
-
-
-        err_fine <- m$conf$tolerance[["ms1 fine"]]
-
-        
-        err_ms1_eic <- m$conf$tolerance$eic 
-        
-        
-        err_rt <- m$conf$tolerance$rt
-
-        missing_precursor_info <- m$conf$extract$missing_precursor_info
-       
-        x <- extract(fn=fn,
-                     tag=the_tag,
-                     tab=tab,
-                     err_ms1_eic=err_ms1_eic,
-                     err_coarse = err_coarse,
-                     err_fine= err_fine,
-                     err_rt= err_rt,
-                     missing_precursors = missing_precursor_info)
-
-        
-        message("Done extraction for ", x$ms1$tag[[1]])
-        x
-
-    })
-
-    ztmp <- tmp
-    m$extr$ms1 <- data.table::rbindlist(lapply(ztmp,function(x) x$ms1))
-    m$extr$ms2 <- data.table::rbindlist(lapply(ztmp,function(x) x$ms2))
-    data.table::setkeyv(m$extr$ms1,BASE_KEY)
-    data.table::setkeyv(m$extr$ms2,c(BASE_KEY,"CE"))
-
-    fn_ex <- get_fn_extr(m)
-    timetag <- format(Sys.time(), "%Y%m%d_%H%M%S")
-    saveRDS(object = m, file = file.path(m$run$paths$project,FN_EXTR_STATE))
-    m
-    
 }
 
 ##' @export
