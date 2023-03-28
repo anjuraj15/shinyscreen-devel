@@ -697,3 +697,15 @@ get_fdata <- function(ms) {
 
 
 }
+
+
+relate_ms2_to_precid <- function(coarse,ms2,cgram_ms1) {
+    res = ms2[coarse,on=.(prec_mz>iso_coarse_min,prec_mz<iso_coarse_max),.(prec_mz=x.prec_mz,precid,prec_idx,scan,idx,ce,rt,intensity),nomatch=NULL]
+    setkey(res,precid,prec_idx)
+    cgram_ms1[res,on=.(precid,idx==prec_idx),
+              .(precid,ce,scan=i.scan,
+                idx=i.idx,rt=i.rt,
+                intensity=i.intensity),nomatch=NULL]
+    
+}
+

@@ -359,7 +359,6 @@ extr_data <-function(m) {
     ## Create the "coarse" table. Parent masses are known with
     ## "coarse". We will prefilter our ms2 results based on that...x
     coarse = create_coarse_table(m)
-
     ## Filter ms2 based on coarse. TODO
     ## coarse_ms2 = coarse[,filter_coarse(lms[[file]],.SD,lfdata[[file]]),
     ##                     by="file"]
@@ -369,71 +368,30 @@ extr_data <-function(m) {
     ## cgram_ms2 = coarse_ms2[,filter_parent_scans(lms[[file]],.SD,lfdata[[file]])]
 
     
-    ## cgram_ms2 = data.table(precid=integer(0),
-    ##                        an=integer(0),
-    ##                        ce=numeric(0),
-    ##                        rt=numeric(0),
-    ##                        intensity=numeric(0))
+    cgram_ms2 = data.table(precid=integer(0),
+                           ce=numeric(0),
+                           scan=character(0),
+                           idx=integer(0),
+                           rt=numeric(0),
+                           intensity=numeric(0))
     for (fn in names(lfdata)) {
-        browser()
-        x = lfdata[[fn]]$ms2[cgram_ms1,
-                             .(an,
-                               ce,
-                               precid=i.precid,
-                               rt,
-                               intensity),
-                             on=c(prec_idx="idx"),
-                             nomatch=NULL,
-                             allow.cartesian=T]
-        1+1
+        ## x = lfdata[[fn]]$ms2[cgram_ms1,
+        ##                      .(an,
+        ##                        ce,
+        ##                        precid=i.precid,
+        ##                        rt,
+        ##                        intensity),
+        ##                      on=c(prec_idx="idx"),
+        ##                      nomatch=NULL,
+        ##                      allow.cartesian=T]
+        rtab = relate_ms2_to_precid(coarse=coarse,ms2=lfdata[[fn]]$ms2,cgram_ms1=cgram_ms1)
+        cgram_ms2 = rbind(cgram_ms2,rtab)
     }
-    1+1
-    
-
-
-
-
-
-
-
-
-    ## cg2 = new_ms2_cgm_table()
-    
-    for (fn in fns) {
-        ## Read data.
-        ms = lms[[fn]]
-
-        ## ## Get input entries for a particular file.
-        ## ftab = fine[.(fn),on="file"]
-
-        ## Get feature data.
-        fdata = lfdata[[fn]]
-
-        ## Get tables with mz fine ranges and retention times (if
-        ## any), used to filter the MS1 chromatogram.
-        cginputs = get_inputs_4_cgram(ftab)          
-
-        ## Extract MS1 chromatograms.
-        cg1 = extr_ms1_cgm(ms=ms,
-                           isotab=cginputs$rtno,
-                           qrt=F,
-                           cg1)
-        
-        cg1 = extr_ms1_cgm(ms=ms,
-                           isotab=cginputs$rtyes,
-                           qrt=T,
-                           cg1)
-
-
-        ## ## Annotate fdata with precids.
-        ## fdata$ms1[fncg1,precid:=i.precid,on="scan"]
-        
-        ## Extract MS2 chromatograms.
-        
-        
-    }
-    
-    m$db$extr$cgm$ms1 = res
+    setkey(cgram_ms1,precid,rt)
+    setkey(cgram_ms2,precid,ce,rt)
+    m$db$extr$cgm$ms1 = cgram_ms1
+    m$db$extr$cgm$ms2 = cgram_ms2
+    browser()
     m
 
 }
