@@ -115,17 +115,70 @@ empty_spectra_table <- function() {
 }
 
 
-## Based on the `comprehensive' and `qa' tabs, greate `summ'.
-gen_summ <- function(comp,qa) {
-    comp_cols <- intersect(SUMM_COLS,colnames(comp))
-    rdcomp <- comp[,..comp_cols]
-    data.table::setkeyv(rdcomp,BASE_KEY)
-    summ <- qa[rdcomp,nomatch=F] #We changed `nomatch' cases from NA
-                                 #to F, because NA does not work well
-                                 #with X == F condition.
-    ## flgs <- c(QA_FLAGS,"ms2_sel")
-    ## summ[is.na(qa_ms1_exists),(flgs):=F]
-    data.table::setkeyv(summ,SUMM_KEY)
-    summ[.(F),c("qlt_ms1","qlt_ms2"):=0.,on="qa_ms1_exists"]
-    summ
+summ_needs_from_cat <- function(cat) {
+    ## Catalogue columns.
+    cat
+}
+
+summ_needs_from_precursors <- function(res,precursors) {
+    ## Mass columns.
+    precursors[res,on=.(catid),.(precid,
+                                 mz,
+                                 set,
+                                 adduct,
+                                 tag,
+                                 ID,
+                                 mz_l=mz_fine_min,
+                                 mz_r=mz_fine_max),by=.EACHI]
+}
+
+summ_needs_from_qa <- function(res,qa) {
+    needs = qa[,.SD,.SDcols=c("precid",
+                              "ce",
+                              "scan",
+                              "ms1_rt",
+                              "ms1_int",
+                              "ms2_rt",
+                              "ms2_int",
+                              "ms1_mean",
+                              "ms2_sel",
+                              "qa_pass",
+                              "qa_ms1_exists",
+                              "qa_ms2_exists",
+                              "qa_ms1_good_int",
+                              "qa_ms1_above_noise",
+                              "qa_ms2_near",
+                              "qa_ms2_good_int",
+                              "qlt_ms1",
+                              "qlt_ms2")]
+
+    res = needs[res,on=.(precid),allow.cartesian=T]
+    ## TODO: additional processing?
+    res
+}
+
+summ_needs_from_comp <- function(res,comp) {
+    needs = comp[,.(set,ID,Name,SMILES)]
+    setkey(needs,set,ID)
+    res[needs,on=.(set,ID),`:=`(Name=i.Name,
+                                SMILES=i.SMILES)]
+}
+
+## This function creates `summ' table. 
+gen_summ <- function(db,qa,comp) {
+
+    ## Start with the basic things.
+    res = summ_needs_from_cat(db$cat)
+
+    ## Add masses and precids.
+    res = summ_needs_from_precursors(res,db$precursors)
+
+    ## Add qa columns.
+    res = summ_needs_from_qa(res,qa)
+
+    setkeyv(res,SUMM_KEY)
+
+    ## Add comp columns.
+    summ_needs_from_comp(res,comp)
+    
 }

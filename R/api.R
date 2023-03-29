@@ -386,8 +386,7 @@ prescreen <- function(m) {
     m$qa = NULL
     m$out$tab$summ = NULL
     m$qa = analyse_extracted_data(m$db,m$conf$prescreen)
-    browser()
-    m$out$tab$summ = gen_summ(m$out$tab$comp,m$qa)
+    m$out$tab$summ = gen_summ(m$db,m$qa,m$out$tab$comp)
     message("(prescreen): End.")
     m
 }

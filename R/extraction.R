@@ -272,17 +272,19 @@ analyse_extracted_data <- function(db,prescreen_param) {
     tab_noms2[,c("qa_ms2_exists","qa_ms2_good_int","qa_ms2_near"):=.(F,F,F)]
 
     ## Bind MS1-only and MS1/MS2 entries together.
-    res <- rbind(tab_ms2,tab_noms2,fill=T,use.names=T)
-    ## TODO: FIXME: Every single entry which was extracted has at
-    ## least MS1? Not true, we should treat all-NA results as
-    ## qa_ms1_exists == F. We curretly don't do it.
-    res[,qa_ms1_exists:=T]
+    res = rbind(tab_ms2,tab_noms2,fill=T,use.names=T)
+
+    ## If ms1_int has been calculated as a Na(N) value, this means
+    ## that no MS1 has been found for that precid.
+    res[,qa_ms1_exists:=F]
+    res[!is.na(ms1_int),qa_ms1_exists:=T]
     data.table::setkey(res,precid)
+
     
-    qflg <- QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
+    qflg = QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
     res[,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
     res[.(T),del_rt:=abs(ms2_rt - ms1_rt),on="qa_pass",by='scan']
-    resby <- BASE_KEY_MS2[! (BASE_KEY_MS2 %in% 'scan')]
+    resby = BASE_KEY_MS2[! (BASE_KEY_MS2 %in% 'scan')]
     res[.(T),qa_tmp_ms1_max:= ms1_int==max(ms1_int),on="qa_pass",by=resby]
     res[,ms2_sel:=F]
     res[.(T,T),ms2_sel:= del_rt == del_rt[which.min(del_rt)],on=c("qa_pass","qa_tmp_ms1_max"),by=resby]
@@ -292,6 +294,13 @@ analyse_extracted_data <- function(db,prescreen_param) {
     res[,qlt_ms2:=apply(.SD,1,function(rw) sum(c(5L,3L,2L)*rw)),.SDcol=c("qa_ms2_exists",
                                                                  "qa_ms2_near",
                                                                  "qa_ms2_good_int")]
+    res[is.na(qlt_ms1),qlt_ms1:=0L]
+    res[is.na(qlt_ms2),qlt_ms2:=0L]
+
+    ## Set all other flags to false when qa_ms1_exists == F by decree.
+    flgs = c(QA_FLAGS,"ms2_sel")
+    res[qa_ms1_exists == F,(flgs):=F]
+
     res
 }
 
