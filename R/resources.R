@@ -206,7 +206,7 @@ REPORT_TITLE = "Plots of EICs and MS2 Spectra"
 ## Select the most fundamental group of entries. Within this group,
 ## each ID is unique.
 BASE_KEY = "precid"#c("adduct","tag","ID")
-BASE_KEY_MS2 = c("precid","ce","scan")#c(BASE_KEY,"CE","an")
+BASE_KEY_MS2 = c("precid","ce","scan")#c(BASE_KEY,"CE","scan")
 
 FIG_DEF_CONF =list(grouping=list(group="adduct",
                                   plot="ID",

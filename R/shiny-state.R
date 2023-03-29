@@ -557,13 +557,13 @@ get_cindex_kval <- function(cindex,row,key) {
 get_summ_subset <- function(summ,ptab,paritem,kvals) {
     select <- ptab[item==(paritem)]
     tab <- get_data_from_key(summ,kvals)[select,nomatch=NULL,on=key(ptab)]
-    if ("an.1" %in% names(tab)) tab[,an.1:=NULL] #TODO: This is
+    if ("scan.1" %in% names(tab)) tab[,scan.1:=NULL] #TODO: This is
                                                  #probably a lousy
                                                  #hack.
     tab
 }
 
-get_ltab <- function(summ_subs,cols=c("an","ms2_rt")) {
+get_ltab <- function(summ_subs,cols=c("scan","ms2_rt")) {
     tab <- summ_subs
     if (NROW(tab)==1L && is.na(tab$an)) return(data.table::data.table(item=character()))
     tab[is.na(ms2_sel),ms2_sel:=F] #TODO FIXME: Check why NAs exist at all?
@@ -593,8 +593,8 @@ update_on_commit_chg <- function(summ,input,ptab,ltab) {
     if ('an' %in% names(kvals) && n_ms2_sel) {
         rkvals <- kvals[!(names(kvals) %in% 'an')]
         rktab <- tabkey(summ,kvals=rkvals)
-        tabsel <- summ[rktab,.(an,ms2_sel)]
-        ansel <- tabsel[ms2_sel == T,an]
+        tabsel <- summ[rktab,.(scan,ms2_sel)]
+        ansel <- tabsel[ms2_sel == T,scan]
         print('ansel')
         print(ansel)
         if (length(ansel)!=0) {
@@ -610,7 +610,7 @@ update_on_commit_chg <- function(summ,input,ptab,ltab) {
 
     the_row <- tabkey(summ,kvals=kvals)
     summ[the_row,(tgts):=..srcs]
-    summ[,an.1:=NULL] #FIXME: an.1 pops up somewhere.
+    summ[,scan.1:=NULL] #FIXME: an.1 pops up somewhere.
     qflg <- QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
     summ[the_row,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
     summ

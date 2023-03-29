@@ -89,7 +89,7 @@ metfrag_run <- function(param,path,subpaths,db_file,stag_tab,ms2,runtime,java_bi
 
 mf_narrow_summ <- function(summ,kv,ms2_rt_i=NA_integer_,ms2_rt_f=NA_integer_) {
     skey = data.table::key(summ)
-    cols = c("adduct","tag","ID","CE","an","mz","qa_pass","ms2_rt")
+    cols = c("adduct","tag","ID","CE","scan","mz","qa_pass","ms2_rt")
     nsumm = get_rows_from_summ(summ,kv,cols)
     nsumm = nsumm[qa_pass==T] # Those that make sense.
     nsumm_key = union(SUMM_KEY,"ms2_rt")
@@ -109,13 +109,13 @@ mf_narrow_summ <- function(summ,kv,ms2_rt_i=NA_integer_,ms2_rt_f=NA_integer_) {
 get_metfrag_targets <- function(stag_tab,ms2) {
     ## Take the columns we need from summ.
     x = summ[ms2_sel==T,.SD,.SDcols=c(key(summ),"mz")]
-    mrg_keys = c(intersect(key(ms2),key(summ)),"an")
+    mrg_keys = c(intersect(key(ms2),key(summ)),"scan")
     x=ms2[x,.(CE=CE,ion_mz=i.mz,mz,intensity),on=mrg_keys,by=.EACHI]
     ## Get column order so that `an' follows `CE'.
-    resnms = setdiff(mrg_keys,"an")
-    nms = union(union(resnms,"CE"),c("an","ion_mz","mz","intensity"))
+    resnms = setdiff(mrg_keys,"scan")
+    nms = union(union(resnms,"CE"),c("scan","ion_mz","mz","intensity"))
     data.table::setcolorder(x,neworder = nms)
-    setkeyv(x,unique(c(resnms,"CE","an")))
+    setkeyv(x,unique(c(resnms,"CE","scan")))
     x
     
 }

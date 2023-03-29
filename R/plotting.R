@@ -298,7 +298,7 @@ get_data_4_eic_ms1 <- function(extr_ms1,summ_rows,kvals,labs) {
 get_data_4_eic_ms2 <- function(summ,kvals,labs) {
     tab <-get_data_from_key(tab=summ,key=kvals)
     nms <- names(kvals)
-    byby <- unique(c(nms,labs,"an"))
+    byby <- unique(c(nms,labs,"scan"))
     pdata <- tab[,.(intensity=ms2_int,rt=ms2_rt),by=byby]
     if (NROW(pdata)==0L) return(NULL)
     xlxx <- as.character(labs)
@@ -336,14 +336,14 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     ## TODO: FIXME: Somehow calculating representationve ms1_rt for
     ## plots is wrong. Horrible and wrong. Will remove those labels
     ## until we fix.
-    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula","qa_ms1_exists","an","ms2_sel")
+    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula","qa_ms1_exists","scan","ms2_sel")
     rows_key <- union(data.table::key(summ_rows),labs)
     summ_rows$sel_ms1_rt=NA_real_
     summ_rows[ms2_sel==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]
     summ_rows[is.na(sel_ms1_rt) & ms2_sel==F & qa_ms1_exists==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]
     summ_rows[,ms1_rt:=sel_ms1_rt]
     summ_rows[,sel_ms1_rt:=NULL]
-    summ_rows[,c("an","qa_ms1_exists","ms2_sel"):=NULL]
+    summ_rows[,c("scan","qa_ms1_exists","ms2_sel"):=NULL]
     summ_rows <- summ_rows[,unique(.SD)]
     
     ## Get the table with ms1 data.
@@ -416,7 +416,7 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1,
          ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
          ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+cust_geom_linerange()+
          scale_y(axis=axis,labels=sci10)+rt_lim+guide_fun()
-    ans <- pdata[,unique(an)]
+    ans <- pdata[,unique(scan)]
 
     ## Add theme.
     colrdata <- narrow_colrdata(colrdata,kvals)
@@ -435,11 +435,11 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, col
     subxdata <- get_data_from_key(extr_ms2,key=common_vals)
     if (NROW(mdata)==0L) return(NULL)
     if (NROW(subxdata) == 0L) return(NULL)
-    ans <- data.table(an=mdata[,unique(an)],key="an")
+    ans <- data.table(scan=mdata[,unique(scan)],key="scan")
     ms2ctg <- c(intersect(c(names(kvals),labs),names(extr_ms2)),"CE")
     xlxx <- intersect(as.character(labs),names(extr_ms2))
-    common_labels <- unique(c("an",common_key,intersect(names(extr_ms2),labs)))
-    pdata <- subxdata[ans,on="an"][,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=common_labels]
+    common_labels <- unique(c("scan",common_key,intersect(names(extr_ms2),labs)))
+    pdata <- subxdata[ans,on="scan"][,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=common_labels]
     pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
 
     if (NROW(pdata)==0L) return(NULL)

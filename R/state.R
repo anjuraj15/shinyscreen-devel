@@ -409,7 +409,7 @@ pack_ms2_w_summ <- function(summ,ms2) {
 
     ## Take the columns we need from summ.
     x = summ[ms2_sel==T,.SD,.SDcols=c(key(summ),"mz","SMILES","Formula","Name")]
-    mrg_keys = c(intersect(key(ms2),key(summ)),"an")
+    mrg_keys = c(intersect(key(ms2),key(summ)),"scan")
     ms2[x,.(mz=i.mz,ms2_spectrum=encode_ms2_to_line(.SD[,c("mz","intensity")])),on=mrg_keys,by=.EACHI]
 }
 

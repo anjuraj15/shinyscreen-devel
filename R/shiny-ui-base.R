@@ -564,7 +564,7 @@ mk_shinyscreen_server <- function(projects,init) {
         
         res = if (NROW(sel_dt)>0) {
                    
-                   tab[sel_dt,..coln,on=c("adduct","tag","ID","an")]
+                   tab[sel_dt,..coln,on=c("adduct","tag","ID","scan")]
                } else triv
         data.table::setnames(res,"intensity","ms2_int")
         res
@@ -741,8 +741,8 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_get_cindex_parents <- reactive({
             rvs$m
             isolate({
-                ms1 = rvs$m$extr$ms1
-                ms2 = rvs$m$extr$ms2
+                ms1 = rvs$m$db$extr$cgm$ms1
+                ms2 = rvs$m$db$extr$cgm$ms2
                 summ = req(rvs$m$out$tab$summ)
             })
 
@@ -813,7 +813,7 @@ mk_shinyscreen_server <- function(projects,init) {
         
         rf_plot_eic_ms1 <- reactive({
             isolate({
-                ms1 = rvs$m$extr$ms1
+                ms1 = rvs$m$db$extr$cgm$ms1
                 summ = rvs$m$out$tab$summ
 
             })
@@ -878,7 +878,7 @@ mk_shinyscreen_server <- function(projects,init) {
         rf_plot_spec_ms2 <- reactive({
             isolate({
                 summ = rvs$m$out$tab$summ
-                ms2 = rvs$m$extr$ms2
+                ms2 = rvs$m$db$extr$cgm$ms2
             })
             req(NROW(summ)>0L)
             req(NROW(ms2)>0L)
@@ -987,7 +987,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 rvs$status$ms2_int_thresh_stat = rvs$m$conf$prescreen[["ms2_int_thresh"]]
                 rvs$status$s2n_stat = rvs$m$conf$prescreen[["s2n"]]
                 rvs$status$ret_time_shift_tol_stat = rvs$m$conf$prescreen[["ret_time_shift_tol"]]
-                if (NROW(m$extr$ms1)>0L) rvs$status$is_extracted_stat = "Yes."
+                if (NROW(m$db$extr$cgm$ms1)>0L) rvs$status$is_extracted_stat = "Yes."
                 if (NROW(m$out$tab$summ)>0L) rvs$status$is_qa_stat = "Yes."
 
             } else {
@@ -1164,7 +1164,7 @@ mk_shinyscreen_server <- function(projects,init) {
         
 
         observeEvent(input$presc_b,{
-            if (NROW(rvs$m$extr$ms1)>0L) {
+            if (NROW(rvs$m$db$extr$cgm$ms1)>0L) {
                 ## Update just prescreening conf.
                 rvs$m = app_update_conf(input=input,
                                         gui=rvs$gui,
@@ -1296,8 +1296,8 @@ mk_shinyscreen_server <- function(projects,init) {
         
         observeEvent(input$make_report_b,{
             isolate({
-                ms1 = rvs$m$extr$ms1
-                ms2 = rvs$m$extr$ms2
+                ms1 = rvs$m$db$extr$cgm$ms1
+                ms2 = rvs$m$db$extr$cgm$ms2
                 summ = rvs$m$out$tab$summ
 
             })
@@ -1363,7 +1363,7 @@ mk_shinyscreen_server <- function(projects,init) {
             fn = file.path(projdir,input$ms2_spectra_tab_name)
             shinymsg(paste0("Saving MS2 spectra table to: ",basename(fn)))
             tab2file(pack_ms2_w_summ(rvs$m$out$tab$summ,
-                                    rvs$m$extr$ms2),
+                                    rvs$m$db$extr$cgm$ms2),
                      fn)
             shinymsg("Done saving MS2 spectra table.")
         })
@@ -1625,7 +1625,7 @@ mk_shinyscreen_server <- function(projects,init) {
                                        path = rvs$m$run$metfrag$path,
                                        subpaths = rvs$m$run$metfrag$subpaths,
                                        db_file = rvs$m$run$metfrag$db_file,
-                                       stag_tab = stagtab, ms2 = rvs$m$extr$ms2,
+                                       stag_tab = stagtab, ms2 = rvs$m$db$extr$cgm$ms2,
                                        runtime=rvs$m$run$metfrag$runtime,
                                        java_bin=rvs$m$run$metfrag$java_bin,
                                        nproc = rvs$m$conf$metfrag$nproc)
@@ -1754,7 +1754,7 @@ mk_shinyscreen_server <- function(projects,init) {
             selMS2 = req(input$sel_spec)
             if (NROW(ms2tabsel)!=0L) {
                 lval = lapply(ms2tabsel[item==(selMS2)],function(x) x)
-                ms2 = rvs$m$extr$ms2
+                ms2 = rvs$m$db$extr$cgm$ms2
                 kval = rf_get_cindex_kval()
                 allval = c(kval,lval)
                 ## There can be some duplicates.
@@ -1764,7 +1764,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 #more than the names existing in extr$ms2. Also,
                 #BASE_KEY_MS2 does not contain `an', so we need to readd
                 #it.
-                key = unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"an"))
+                key = unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"scan"))
                 kval2 = allval[key]
                 spec = get_data_from_key(ms2,kval2)[,.(mz,intensity)]
                 ## as.character(lapply(1L:NROW(spec),function(nr) paste0(spec[nr,mz]," ",spec[nr,intensity])))

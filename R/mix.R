@@ -191,7 +191,7 @@ gen_empty_summ <- function() {
 ##     ms2_cols <- intersect(colnames(qa_ms2),SUMM_COLS)
 ##     ms2_cols <- setdiff(ms2_cols,colnames(summ))
 ##     summ <- qa_ms2[summ,c(..comp_cols,..ms1_cols,..ms2_cols),on=BASE_KEY]
-##     data.table::setkeyv(summ,c(BASE_KEY_MS2,"an"))
+##     data.table::setkeyv(summ,c(BASE_KEY_MS2,"scan"))
 ##     summ[,qa_ms1_exists:=the_ifelse(!is.na(qa_ms1_good_int),T,F)]
 ##     summ[,qa_ms2_exists:=the_ifelse(!is.na(CE),T,F)]
 ##     summ[,qa_pass:=apply(.SD,1,all),.SDcols=QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]]
@@ -642,7 +642,7 @@ assess_ms2 <- function(m) {
     qa_ms2 <- ms2[qa_ms1[qa_ms1_above_noise==T],.(CE=unique(CE),
                                                   pc_rt=i.ms1_rt,
                                                   pc_int=i.ms1_int,
-                                                  an=unique(an)),on=BASE_KEY,by=.EACHI,nomatch=NULL]
+                                                  scan=unique(scan)),on=BASE_KEY,by=.EACHI,nomatch=NULL]
 
     rt_win2 <- presconf$ret_time_shift_tol
     qa_ms2 <- ms2[qa_ms2,.(pc_rt=pc_rt,
@@ -650,12 +650,12 @@ assess_ms2 <- function(m) {
                            ms2_int=max(intensity),
                            ms2_rt=unique(rt),
                            qa_ms2_near=head(rt,1) < pc_rt + rt_win2 & head(rt,1) > pc_rt - rt_win2),
-                  by=.EACHI,on=c(BASE_KEY_MS2,"an")]
+                  by=.EACHI,on=c(BASE_KEY_MS2,"scan")]
 
     qa_ms2$qa_ms2_good_int <-F
     qa_ms2[qa_ms2_near==T,
            qa_ms2_good_int := ms2_int > presconf$ms2_int_thresh & ms2_int < pc_int,
-           by=c(BASE_KEY_MS2,"an")]
+           by=c(BASE_KEY_MS2,"scan")]
 
 
     ## qa_ms2$qa_pass <- F
@@ -702,7 +702,7 @@ analyse_extracted_data_old <- function(extr,prescreen_param) {
 
     ## We drop mz info.
     tab_ms2 <- ms2_clc_ns[,.(ms2_rt=first(rt),ms2_int=max(intensity),ms2_thr=first(ms2_thr)),by=c(BASE_KEY_MS2,'an')]
-    tab_ms2[,qa_ms2_good_int:=ms2_int>ms2_thr,by="an"]
+    tab_ms2[,qa_ms2_good_int:=ms2_int>ms2_thr,by="scan"]
     data.table::setkeyv(tab_ms2,BASE_KEY_MS2)
     tab_ms2[,`:=`(rt_left = ms2_rt - rt_shift,rt_right = ms2_rt + rt_shift)]
 
@@ -737,7 +737,7 @@ analyse_extracted_data_old <- function(extr,prescreen_param) {
     ## MS2 result.
     tmp = tab_ms1[tab_ms2,{
         xx = find_ms1_max(rt,intensity,i.rt_left,i.rt_right)
-        .(an=i.an,
+        .(scan=i.scan,
           ms1_rt = xx[1,],
           ms1_int = xx[2,])
     },by=.EACHI, nomatch=NULL]
