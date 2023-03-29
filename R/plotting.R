@@ -325,8 +325,7 @@ narrow_summ <- function(summ,kvals,labs,...) {
 
 ### PLOTTING: TOP-LEVEL PLOT CREATION
 
-make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1,colrdata=NULL) {
-
+make_eic_ms1_plot <- function(db,extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1,colrdata=NULL) {
     ## If nothing selected, just return NULL.
     if (is.null(kvals)) return(NULL)
 
@@ -336,7 +335,7 @@ make_eic_ms1_plot <- function(extr_ms1,summ,kvals,labs,axis="linear",rt_range=NU
     ## TODO: FIXME: Somehow calculating representationve ms1_rt for
     ## plots is wrong. Horrible and wrong. Will remove those labels
     ## until we fix.
-    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","Formula","qa_ms1_exists","scan","ms2_sel")
+    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","qa_ms1_exists","scan","ms2_sel")
     rows_key <- union(data.table::key(summ_rows),labs)
     summ_rows$sel_ms1_rt=NA_real_
     summ_rows[ms2_sel==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]
@@ -388,7 +387,7 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1,
     if (is.null(kvals)) return(NULL)
 
     ## Get metadata.
-    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES","Formula")
+    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES")
 
     ## Get plotting data for the compound.
     pdata <- get_data_4_eic_ms2(summ,
@@ -436,7 +435,7 @@ make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, col
     if (NROW(mdata)==0L) return(NULL)
     if (NROW(subxdata) == 0L) return(NULL)
     ans <- data.table(scan=mdata[,unique(scan)],key="scan")
-    ms2ctg <- c(intersect(c(names(kvals),labs),names(extr_ms2)),"CE")
+    ms2ctg <- c(intersect(c(names(kvals),labs),names(extr_ms2)),"ce")
     xlxx <- intersect(as.character(labs),names(extr_ms2))
     common_labels <- unique(c("scan",common_key,intersect(names(extr_ms2),labs)))
     pdata <- subxdata[ans,on="scan"][,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=common_labels]

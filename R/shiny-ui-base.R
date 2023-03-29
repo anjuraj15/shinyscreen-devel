@@ -815,18 +815,22 @@ mk_shinyscreen_server <- function(projects,init) {
             isolate({
                 ms1 = rvs$m$db$extr$cgm$ms1
                 summ = rvs$m$out$tab$summ
+                db = rvs$m$db
 
             })
             req(NROW(summ)>0L)
             req(NROW(ms1)>0L)
 
 
-            p = make_eic_ms1_plot(ms1,summ,kvals=rf_get_cindex_kval(),
-                                   labs=rf_get_cindex_labs(),
-                                   asp=PLOT_EIC_ASPECT,
-                                   rt_range=rf_get_rtrange(),
-                                   i_range=rf_get_irange(),
-                                   colrdata = rf_colrdata())
+            p = make_eic_ms1_plot(db=db,
+                                  extr_ms1=ms1,
+                                  summ,
+                                  kvals=rf_get_cindex_kval(),
+                                  labs=rf_get_cindex_labs(),
+                                  asp=PLOT_EIC_ASPECT,
+                                  rt_range=rf_get_rtrange(),
+                                  i_range=rf_get_irange(),
+                                  colrdata = rf_colrdata())
 
             p = if (!is.null(p)) p else empty_plot("Nothing to plot")
 
@@ -1148,7 +1152,7 @@ mk_shinyscreen_server <- function(projects,init) {
                     rv_extr_flag(F)
                     rvs$m = run(m=rvs$m,
                                 envopts=init$envopts,
-                                phases=c("setup","comptab","extract"))
+                                phases=c("setup","comptab","db","extract"))
                     rvs$status$is_extracted_stat = "Yes."
                     rvs$status$is_qa_stat = "No."
                     fn_c_state = file.path(rvs$m$run$paths$project,
@@ -1299,6 +1303,7 @@ mk_shinyscreen_server <- function(projects,init) {
                 ms1 = rvs$m$db$extr$cgm$ms1
                 ms2 = rvs$m$db$extr$cgm$ms2
                 summ = rvs$m$out$tab$summ
+                db = rvs$m$db
 
             })
             req(NROW(summ)>0L)
@@ -1320,12 +1325,15 @@ mk_shinyscreen_server <- function(projects,init) {
                 names(kvals) = key
                 message('Compound index row: ',ri)
 
-                p1 = make_eic_ms1_plot(ms1,summ,kvals=kvals,
-                                        labs=labs,
-                                        asp=PLOT_EIC_ASPECT,
-                                        rt_range=rt_range,
-                                        i_range=i_range,
-                                        colrdata = colrdata) + theme_print()
+                p1 = make_eic_ms1_plot(db=db,
+                                       ms1,
+                                       summ,
+                                       kvals=kvals,
+                                       labs=labs,
+                                       asp=PLOT_EIC_ASPECT,
+                                       rt_range=rt_range,
+                                       i_range=i_range,
+                                       colrdata = colrdata) + theme_print()
 
                 p2 = make_eic_ms2_plot(summ,kvals=kvals,
                                         labs=labs,
