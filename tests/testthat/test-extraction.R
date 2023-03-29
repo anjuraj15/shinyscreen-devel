@@ -13,5 +13,15 @@ test_that("Test find_ms1_max behaviour.",{
     expect_equal(x[2,1],0.3)
     expect_equal(x[2,2],0.4)
     x = find_ms1_max(rt,intensity,1.,1.7)
-    expect_true(is.na(x[[2]]))
+    ## expect_true(is.na(x[[2]]))
+    expect_equal(length(x),0L)
+
+    ## dbg = readRDS("~/scratch/dbg.rds")
+    ## rt = dbg$rt
+    ## intensity= dbg$intensity
+    ## rt_1 = dbg$rt_1
+    ## rt_2 = dbg$rt_2
+    ## x = find_ms1_max(rt,intensity,rt_1,rt_2)
+    ## expect_true(1==1)
+
 })

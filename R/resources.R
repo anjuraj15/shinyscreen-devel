@@ -205,8 +205,8 @@ REPORT_TITLE = "Plots of EICs and MS2 Spectra"
 
 ## Select the most fundamental group of entries. Within this group,
 ## each ID is unique.
-BASE_KEY = c("adduct","tag","ID")
-BASE_KEY_MS2 = c(BASE_KEY,"CE","an")
+BASE_KEY = "precid"#c("adduct","tag","ID")
+BASE_KEY_MS2 = c("precid","ce","scan")#c(BASE_KEY,"CE","an")
 
 FIG_DEF_CONF =list(grouping=list(group="adduct",
                                   plot="ID",
@@ -217,7 +217,7 @@ FIG_DEF_CONF =list(grouping=list(group="adduct",
 SUMM_COLS=c("set",BASE_KEY_MS2,"mz","ms1_rt", "ms1_int", "ms2_rt", "ms2_int",
             "ms1_mean","ms2_sel",QA_FLAGS,"Name", "SMILES", "Formula", "known","Comments","file")
 
-SUMM_KEY = c("set","ID","adduct","tag","an")
+SUMM_KEY = c("set","ID","adduct","tag","scan")
 
 PLOT_FEATURES = c("adduct",
                    "tag",
@@ -225,34 +225,34 @@ PLOT_FEATURES = c("adduct",
 
 ## Empty summary table.
 EMPTY_SUMM = data.table::data.table(set=character(0),
-                                     adduct=character(0),
-                                     tag=character(0),
-                                     ID=character(0),
-                                     CE=character(0),
-                                     an=integer(0),
-                                     mz=numeric(0),
-                                     ms1_rt=numeric(0),
-                                     ms1_int=numeric(0),
-                                     ms2_rt=numeric(0),
-                                     ms2_int=numeric(0),
-                                     ms1_mean=numeric(0),
-                                     ms2_sel=logical(0),
-                                     qa_pass=logical(0),
-                                     qa_ms1_exists=logical(0),
-                                     qa_ms2_exists=logical(0),
-                                     qa_ms1_good_int=logical(0),
-                                     qa_ms1_above_noise=logical(0),
-                                     qa_ms2_near=logical(0),
-                                     qa_ms2_good_int=logical(0),
-                                     Name=character(0),
-                                     SMILES=character(0),
-                                     Formula=character(0),
-                                     known=character(0),
-                                     Comments=character(0),
-                                     file=character(0))
+                                    adduct=character(0),
+                                    tag=character(0),
+                                    ID=character(0),
+                                    CE=character(0),
+                                    scan=character(0),
+                                    mz=numeric(0),
+                                    ms1_rt=numeric(0),
+                                    ms1_int=numeric(0),
+                                    ms2_rt=numeric(0),
+                                    ms2_int=numeric(0),
+                                    ms1_mean=numeric(0),
+                                    ms2_sel=logical(0),
+                                    qa_pass=logical(0),
+                                    qa_ms1_exists=logical(0),
+                                    qa_ms2_exists=logical(0),
+                                    qa_ms1_good_int=logical(0),
+                                    qa_ms1_above_noise=logical(0),
+                                    qa_ms2_near=logical(0),
+                                    qa_ms2_good_int=logical(0),
+                                    Name=character(0),
+                                    SMILES=character(0),
+                                    Formula=character(0),
+                                    known=character(0),
+                                    Comments=character(0),
+                                    file=character(0))
 
 ## Default sorting keys of spectra in the summary table
-DEF_KEY_SUMM = c(BASE_KEY_MS2,"an")
+DEF_KEY_SUMM = c(BASE_KEY_MS2,"scan")
 
 
 SUBSET_VALS = c(IGNORE="ignore",

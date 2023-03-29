@@ -75,7 +75,8 @@ extr_cgrams_ms1 <- function(ms,tab,fdata) {
                   new_restab(tnort,MSnbase::chromatogram(ms,mz = mzrng))
               } else data.table()
 
-    rbind(resnort,resrt,fill=T)
+    res = rbind(resnort,resrt,fill=T)
+    res[,rt:=rt/60]
 
 }
 
@@ -214,16 +215,18 @@ analyse_extracted_data <- function(db,prescreen_param) {
     tab_ms2[,`:=`(rt_left = ms2_rt - rt_shift,rt_right = ms2_rt + rt_shift)]
     
     ## Get mean ms1 value.
-    tab_ms1 <- copy(ms1)
-    tab_ms1_mean <- tab_ms1[,.(ms1_mean=mean(intensity,na.rm=T)),keyby="precid"]
+    tab_ms1 = copy(ms1)
 
+    ## To (artificially) differentiate beween ms1 and ms2 (because,
+    ## they get stapled together later on, set scan to NA_character_.
+    tab_ms1[,scan:=NA_character_]
     
-
-    browser()
+    tab_ms1_mean = tab_ms1[,.(ms1_mean=mean(intensity,na.rm=T)),keyby="precid"]
+    
 
     ## Perform MS1 maxima calculation in the neighbourhood of each
     ## MS2 result.
-    
+
     tmp = tab_ms1[tab_ms2,
     {
         xx = find_ms1_max(rt,intensity,i.rt_left,i.rt_right)
@@ -234,12 +237,13 @@ analyse_extracted_data <- function(db,prescreen_param) {
     by=.EACHI,
     nomatch=NULL]
     ## Calculate QA values.
-    tab_ms2[tmp,c("ms1_rt","ms1_int"):=.(i.ms1_rt,i.ms1_int),on=c(BASE_KEY,'an')]
+    tab_ms2[tmp,on=.(precid,scan),c("ms1_rt","ms1_int"):=.(i.ms1_rt,i.ms1_int)]
     tab_ms2[,c("rt_left","rt_right"):=c(NULL,NULL)]
     tab_ms2[tab_ms1_mean,ms1_mean:=i.ms1_mean]
     tab_ms2[,`:=`(qa_ms1_good_int=fifelse(ms1_int>ms1_int_thresh,T,F),
                qa_ms1_above_noise=F,
                qa_ms2_near=F)]
+
 
     ## TODO: I wonder if so stupidly auto-calculated ms1 noise should
     ## be taken into account at all? My recollection from earlier
@@ -248,18 +252,19 @@ analyse_extracted_data <- function(db,prescreen_param) {
     tab_ms2[qa_ms1_good_int==T & qa_ms1_above_noise==T & qa_ms2_good_int==T,qa_ms2_near:=T]
     tab_ms2$qa_ms2_exists=T
 
+    ## Reduce tab_ms1 to only to MS1 with no children.
+    precs_ms1 = tab_ms1[,unique(precid)]
+    precs_ms2 = tab_ms2[,unique(precid)]
+    precs_noms =  data.table(precid=precs_ms1[!(precs_ms1 %in% precs_ms2)])
+    tab_noms2 = tab_ms1[precs_noms,
+                        on=.(precid),
+                        .SD,nomatch=NULL]
 
-    ## Find MS1 with no corresponding MS2.
-    ms1key <- tab_ms1[,unique(.SD),.SDcol=BASE_KEY]
-    ms2key <- tab_ms2[,unique(.SD),.SDcol=BASE_KEY]
-    ms2key$mch=T
-    tabmatches <- ms2key[ms1key]
-    ms1woms2 <- tabmatches[is.na(mch)][,mch:=NULL]
 
-    ## calculate the most intense peak, its location and the mean for
-    ## childless MS1.
-    tab_noms2 <- tab_ms1[ms1woms2,.(ms1_mean=mean(intensity),ms1_rt=rt[which.max(intensity)],ms1_int=max(intensity)),by=.EACHI,nomatch=NULL]
-
+    tab_noms2 = tab_noms2[,.(ms1_mean=mean(intensity,na.rm=T),
+                             ms1_rt=rt[which.max(intensity)],
+                             ms1_int=max(intensity, na.rm=T)),
+                          keyby="precid"]
     ## QA for the above (lazy qa ... take only the max peak into account).
     tab_noms2[,c("qa_ms1_good_int","qa_ms1_above_noise"):=.(ms1_int>ms1_int_thresh,ms1_int>ms1_mean/3.)]
 
@@ -268,15 +273,16 @@ analyse_extracted_data <- function(db,prescreen_param) {
 
     ## Bind MS1-only and MS1/MS2 entries together.
     res <- rbind(tab_ms2,tab_noms2,fill=T,use.names=T)
-
-    ## Every single entry which was extracted has at least MS1.
+    ## TODO: FIXME: Every single entry which was extracted has at
+    ## least MS1? Not true, we should treat all-NA results as
+    ## qa_ms1_exists == F. We curretly don't do it.
     res[,qa_ms1_exists:=T]
-    data.table::setkeyv(res,BASE_KEY)
+    data.table::setkey(res,precid)
     
     qflg <- QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
     res[,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
-    res[.(T),del_rt:=abs(ms2_rt - ms1_rt),on="qa_pass",by='an']
-    resby <- BASE_KEY_MS2[! (BASE_KEY_MS2 %in% 'an')]
+    res[.(T),del_rt:=abs(ms2_rt - ms1_rt),on="qa_pass",by='scan']
+    resby <- BASE_KEY_MS2[! (BASE_KEY_MS2 %in% 'scan')]
     res[.(T),qa_tmp_ms1_max:= ms1_int==max(ms1_int),on="qa_pass",by=resby]
     res[,ms2_sel:=F]
     res[.(T,T),ms2_sel:= del_rt == del_rt[which.min(del_rt)],on=c("qa_pass","qa_tmp_ms1_max"),by=resby]
