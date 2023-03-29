@@ -797,20 +797,6 @@ analyse_extracted_data_old <- function(extr,prescreen_param) {
     res
 }
 
-## Based on the `comprehensive' and `qa' tabs, greate `summ'.
-gen_summ <- function(comp,qa) {
-    comp_cols <- intersect(SUMM_COLS,colnames(comp))
-    rdcomp <- comp[,..comp_cols]
-    data.table::setkeyv(rdcomp,BASE_KEY)
-    summ <- qa[rdcomp,nomatch=F] #We changed `nomatch' cases from NA
-                                 #to F, because NA does not work well
-                                 #with X == F condition.
-    ## flgs <- c(QA_FLAGS,"ms2_sel")
-    ## summ[is.na(qa_ms1_exists),(flgs):=F]
-    data.table::setkeyv(summ,SUMM_KEY)
-    summ[.(F),c("qlt_ms1","qlt_ms2"):=0.,on="qa_ms1_exists"]
-    summ
-}
 
 
 
