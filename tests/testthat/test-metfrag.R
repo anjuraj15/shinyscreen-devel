@@ -68,7 +68,7 @@ ok_return_val("metfrag_run",{
                                path = m$run$metfrag$path,
                                subpaths = m$run$metfrag$subpaths,
                                db_file = m$run$metfrag$db_file,
-                               stag_tab = stagtab, ms2 = m$extr$ms2,
+                               stag_tab = stagtab, ms2 = m$db$extr$cgm$ms2,
                                runtime=m$run$metfrag$runtime,
                                java_bin=m$run$metfrag$java_bin,
                                nproc = 2)

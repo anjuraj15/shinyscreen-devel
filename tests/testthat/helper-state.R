@@ -28,7 +28,7 @@ make_dummy_mf_project <- function()  {
     kkk = STATE_DATA$out$tab$summ[,.(ii=.GRP),by=key(STATE_DATA$out$tab$summ)][,ii:=NULL][1:4]
     
     m$out$tab$summ = STATE_DATA$out$tab$summ[kkk,on=key(STATE_DATA$out$tab$summ),nomatch=NULL]
-    m$extr = STATE_DATA$extr
+    m$db$extr = STATE_DATA$db$extr
     m
     
 }

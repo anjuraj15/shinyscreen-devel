@@ -464,8 +464,8 @@ create_plots <- function(m) {
 
     ## Select the data nedeed for plotting.
     flt_summ <- m$out$tab$flt_summ
-    ms2 <- m$extr$ms2
-    ms1 <- m$extr$ms1
+    ms2 <- m$db$extr$cgm$ms2
+    ms1 <- m$db$extr$cgm$ms1
     rt_min <- rt_in_min(m$conf$figures$rt_min)
     rt_max <- rt_in_min(m$conf$figures$rt_max)
     keytab <- flt_summ[,unique(.SD),.SDcol=c("adduct","ID")]
@@ -606,8 +606,8 @@ report <- function(m) {
     dir.create(REP_TOPDIR,recursive = T,showWarnings = F)
     header <- knitr::knit_expand(fn_header)
     flt_summ <- m$out$tab$reptab
-    ms2 <- m$extr$ms2
-    ms1 <- m$extr$ms1
+    ms2 <- m$db$extr$cgm$ms2
+    ms1 <- m$db$extr$cgm$ms1
     rt_min <- rt_in_min(m$conf$figures$rt_min)
     rt_max <- rt_in_min(m$conf$figures$rt_max)
     keytab <- flt_summ[,unique(.SD),.SDcol=c("adduct","ID")]
@@ -781,7 +781,7 @@ metfrag <- function(m) {
                        path = m$run$metfrag$path,
                        subpaths = m$run$metfrag$subpaths,
                        db_file = m$run$metfrag$db_file,
-                       stag_tab = stagtab, ms2 = m$extr$ms2,
+                       stag_tab = stagtab, ms2 = m$db$extr$cgm$ms2,
                        runtime=m$run$metfrag$runtime,
                        java_bin=m$run$metfrag$java_bin,
                        nproc = m$conf$metfrag$nproc)

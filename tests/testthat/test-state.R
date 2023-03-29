@@ -12,7 +12,7 @@ test_that("Test empty project creation.",{
 
 test_that("pack_ms2_w_summ",{
     summ = STATE_DATA$out$tab$summ
-    ms2 = STATE_DATA$extr$ms2
+    ms2 = STATE_DATA$db$extr$cgm$ms2
     res = pack_ms2_w_summ(summ,ms2)
     expect_snapshot(res[1])
     expect_snapshot(res[2])
