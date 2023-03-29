@@ -12,5 +12,6 @@ test_that("Extraction returns what is needed.",{
     cat = m$db$cat
 
     m = run(envopts=eo,m=m,phase="extract")
+    m = run(envopts=eo,m=m,phase="prescreen")
     expect_true(1==1)
 })

@@ -383,11 +383,10 @@ conf_trans <- function(conf) {
 prescreen <- function(m) {
     ## Top-level auto prescreening function.
     message("(prescreen): Start.")
-    ## confpres <- conf_trans_pres(m$conf$prescreen)
-    m$qa <- NULL
-    m$out$tab$summ <- NULL
-    m$qa <- analyse_extracted_data(m$extr,m$conf$prescreen)
-    m$out$tab$summ <- gen_summ(m$out$tab$comp,m$qa)
+    m$qa = NULL
+    m$out$tab$summ = NULL
+    m$qa = analyse_extracted_data(m$db,m$conf$prescreen)
+    m$out$tab$summ = gen_summ(m$out$tab$comp,m$qa)
     message("(prescreen): End.")
     m
 }
