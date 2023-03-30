@@ -60,7 +60,8 @@ make_db_precursors <- function(m) {
     } else {
         stop('make_db_precursors: Unknown mass unit (coarse).')
     }
-
+    ## TODO: FIXME: Should precids be unique, or not?
+    browser()
     masses$precid = -1L
     start = 1L
     while (start <= NROW(masses)) {

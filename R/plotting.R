@@ -266,14 +266,14 @@ narrow_colrdata <- function(colrdata,kvals) {
 ## subset of the `summ' table based on `kvals'. We need it for rt-s in
 ## the labels. Argument `labs' is a vector of names that will be used
 ## to construct the legend labels.
-get_data_4_eic_ms1 <- function(extr_ms1,summ_rows,kvals,labs) {
+get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
 
     ## Which of the selected keys are in the extr_ms1? This can be
     ## made more obvious to the user, but note necessary atm.
     keys <- names(kvals)
     actual_key <- intersect(keys,names(extr_ms1))
     actual_kvals <- kvals[actual_key]
-
+    browser()
     ## Subset extr_ms1 by the actual key.
     tab <-get_data_from_key(tab=extr_ms1,key=actual_kvals)
 
@@ -344,9 +344,9 @@ make_eic_ms1_plot <- function(db,extr_ms1,summ,kvals,labs,axis="linear",rt_range
     summ_rows[,sel_ms1_rt:=NULL]
     summ_rows[,c("scan","qa_ms1_exists","ms2_sel"):=NULL]
     summ_rows <- summ_rows[,unique(.SD)]
-    
+
     ## Get the table with ms1 data.
-    pdata <- get_data_4_eic_ms1(extr_ms1, summ_rows, kvals, labs)
+    pdata <- get_data_4_eic_ms1(db=db,extr_ms1, summ_rows, kvals, labs)
 
 
     ## Deal with retention time range.
