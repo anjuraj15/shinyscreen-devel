@@ -18,12 +18,29 @@ make_db_catalogue <- function(m) {
 }
 
 
+
+merge_precid_4_isobars <- function(orig_precids,masses,up_masses) {
+    start = head(orig_precids,1L)
+    n = length(orig_precids)
+    precid = orig_precids
+    i = 1L
+    while (i < n) {
+        theprecid = orig_precids[[i]]
+        themz = masses[[i]]
+        mzup = up_masses[[i]]
+        w = which(masses[(i+1L):n]<mzup)
+        precid[(i+1L):n][w] = theprecid
+        i = i + length(w) + 1L
+    }
+    precid
+}
+
 make_db_precursors <- function(m) {
     ## Generate masses and label isobars.
 
     cat = m$db$cat
-    masses = m$out$tab$comp[cat,.(catid=catid,mz=mz,rt=rt),on=key(cat)]
-    setkey(masses,mz)
+    masses = m$out$tab$comp[cat,.(tag=tag,catid=catid,mz=mz,rt=rt),on=key(cat)]
+    setkey(masses,tag,mz)
 
     ## Retention time.
     tmp = get_val_unit(m$conf$tolerance[['rt']])
@@ -61,33 +78,12 @@ make_db_precursors <- function(m) {
         stop('make_db_precursors: Unknown mass unit (coarse).')
     }
     ## TODO: FIXME: Should precids be unique, or not?
-    browser()
-    masses$precid = -1L
-    start = 1L
-    while (start <= NROW(masses)) {
-        sel = masses[start:.N]
-        themz = sel[1L,mz]
-        id = sel[1L,catid]
-        upmz = sel[1L,mz_fine_max]
-        x = sel[mz<(upmz)]
-        stop = start + NROW(x) - 1L
-        masses[(start):(stop),`:=`(precid=..id,degfine=(1L+stop-start))]
-        start = stop + 1L
-    }
 
-    masses$isocoarse = -1L
-    start = 1L
-    while (start <= NROW(masses)) {
-        sel = masses[start:.N]
-        themz = sel[1L,mz]
-        id = sel[1L,catid]
-        upmz = sel[1L,mz_coarse_max]
-        x = sel[mz<(upmz)]
-        stop = start + NROW(x) - 1L
-        masses[(start):(stop),`:=`(isocoarse=..id,degcoarse=(1L+stop-start))]
-        start = stop + 1L
-    }
+    ## Assign "fine" isobars to same isocoarse number.
+    masses[,precid:=merge_precid_4_isobars(catid,mz,mz_fine_max),by="tag"]
 
+    ## Assign "coarse" isobars to same isocoarse number.
+    masses[,isocoarse:=merge_precid_4_isobars(catid,mz,mz_coarse_max),by="tag"]
     
 
     masses[,`:=`(iso_coarse_min=min(mz_coarse_min),
