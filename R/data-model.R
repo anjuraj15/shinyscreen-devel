@@ -95,7 +95,9 @@ make_db_precursors <- function(m) {
                  by=precid]
     setindex(masses,isocoarse,precid)
     ## Add files.
-    filetab = m$input$tab$mzml[m$db$cat,.(catid=i.catid,file=file),on=c("set","tag"),nomatch=NULL]
+    filetab = m$input$tab$mzml[m$db$cat,
+                               .(catid=i.catid,file=file),
+                               on=c("set","tag"),nomatch=NULL]
     masses[filetab,file:=i.file,on="catid"]
     m$db$precursors = masses
     m

@@ -194,11 +194,23 @@ mk_logic_exp <- function(rest,sofar=NULL) {
 }
 
 
-get_data_from_key <- function(tab,key) {
-    skey <- mk_logic_exp(key)
-    tab <- eval(bquote(tab[.(skey)]))
-    setkeyv(tab,names(key))
-    tab
+get_data_from_key <- function(db,tab,kvals,outcols) {
+
+    ## Ensure only names that exist in cat are used in selection. Or,
+    ## should we not do this?
+    valid_names = intersect(names(kvals),colnames(db$cat))
+
+    ## Turn list into a data.table.
+    dt = as.data.table(kvals[valid_names])
+
+    ## Get catids.
+    cattab = db$cat[dt,on=valid_names]
+
+    ## Get precids.
+    mztab = db$precursors[cattab,on="catid"]
+    outnames = c(valid_names,outcols)
+    tab[mztab,on="precid"][,..outnames]
+    
 }
 
 
@@ -270,12 +282,15 @@ get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
 
     ## Which of the selected keys are in the extr_ms1? This can be
     ## made more obvious to the user, but note necessary atm.
-    keys <- names(kvals)
-    actual_key <- intersect(keys,names(extr_ms1))
-    actual_kvals <- kvals[actual_key]
+    keys = names(kvals)
+    actual_key = intersect(keys,names(extr_ms1))
+    actual_kvals = kvals[actual_key]
     browser()
     ## Subset extr_ms1 by the actual key.
-    tab <-get_data_from_key(tab=extr_ms1,key=actual_kvals)
+    tab = get_data_from_key(db=db,
+                            tab=extr_ms1,
+                            kvals=kvals,
+                            outcols = c("mz","rt","intensity"))
 
     ## Group the plot data per label group (ie tags, or adducts, or
     ## both).
@@ -295,8 +310,8 @@ get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
 }
 
 ## Prepare MS2 eic data: rt and intensity + key made of splitby.
-get_data_4_eic_ms2 <- function(summ,kvals,labs) {
-    tab <-get_data_from_key(tab=summ,key=kvals)
+get_data_4_eic_ms2 <- function(db,summ,kvals,labs) {
+    tab = get_data_from_key(db=db,tab=summ,kvals=kvals,outcols=names(kvals))
     nms <- names(kvals)
     byby <- unique(c(nms,labs,"scan"))
     pdata <- tab[,.(intensity=ms2_int,rt=ms2_rt),by=byby]
@@ -308,18 +323,27 @@ get_data_4_eic_ms2 <- function(summ,kvals,labs) {
 }
 
 
-get_rows_from_summ <- function(summ,kvals,...) {
-    summ_rows_cols <- union(names(kvals),c(...))
-    get_data_from_key(summ,key=kvals)[,unique(.SD),.SDcol=summ_rows_cols]
-}
+## get_rows_from_summ <- function(db,summ,kvals,...) {
+##     summ_rows_cols <- union(names(kvals),c(...))
+##     get_data_from_key(db=db,tab=summ,kvals=kvals)[,unique(.SD),.SDcol=summ_rows_cols]
+## }
 
-narrow_summ <- function(summ,kvals,labs,...) {
-        keys <- names(kvals)
-        ## keys <- keys[!is.na(keys)]
-        needed <- setdiff(labs,keys)
-        x <- as.list(c(needed,...))
-        x <- c(list(summ,kvals),x)
-        do.call(get_rows_from_summ,x)
+narrow_summ <- function(db,summ,kvals,labs,...) {
+        keys = names(kvals)
+        nms = union(names(kvals),
+                    labs)
+        nms = union(nms,c(...))
+        nsumm = get_data_from_key(db=db,
+                                  tab=summ,
+                                  kvals=kvals,
+                                  outcols=nms)
+        ## ## keys <- keys[!is.na(keys)]
+        ## needed <- setdiff(labs,keys)
+        ## x <- as.list(c(needed,...))
+       
+        ## x <- c(list(db=db,tab=summ,kvals=kvals),x)
+        ## do.call(get_rows_from_summ,x)
+        nsumm
 }
 
 
@@ -329,13 +353,14 @@ make_eic_ms1_plot <- function(db,extr_ms1,summ,kvals,labs,axis="linear",rt_range
     ## If nothing selected, just return NULL.
     if (is.null(kvals)) return(NULL)
 
-    key <- names(kvals)
+    key = names(kvals)
     ## Get metadata.
 
     ## TODO: FIXME: Somehow calculating representationve ms1_rt for
     ## plots is wrong. Horrible and wrong. Will remove those labels
     ## until we fix.
-    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","qa_ms1_exists","scan","ms2_sel")
+    summ_rows = narrow_summ(db=db,summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","qa_ms1_exists","scan","ms2_sel")
+    browser()
     rows_key <- union(data.table::key(summ_rows),labs)
     summ_rows$sel_ms1_rt=NA_real_
     summ_rows[ms2_sel==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]
@@ -387,7 +412,7 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1,
     if (is.null(kvals)) return(NULL)
 
     ## Get metadata.
-    summ_rows <- narrow_summ(summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES")
+    summ_rows <- narrow_summ(db=db,summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES")
 
     ## Get plotting data for the compound.
     pdata <- get_data_4_eic_ms2(summ,
@@ -423,15 +448,19 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1,
 }
 
 
-make_spec_ms2_plot <- function(extr_ms2,summ,kvals,labs,axis="linear",asp=1, colrdata=NULL) {
+make_spec_ms2_plot <- function(db,extr_ms2,summ,kvals,labs,axis="linear",asp=1, colrdata=NULL) {
 
     
     ## Only the chosen ones.
-    mdata  <- get_data_from_key(summ,key=kvals)[ms2_sel==T]
+    mdata  = get_data_from_key(db=db,
+                               tab=summ,
+                               kvals=kvals,
+                               outcols=union(names(kvals),
+                                             colnames(summ)))[ms2_sel==T]
     common_key <- intersect(names(extr_ms2),names(kvals))
     common_vals <- kvals[common_key]
     if (length(common_key) == 0L) return(NULL)
-    subxdata <- get_data_from_key(extr_ms2,key=common_vals)
+    subxdata <- get_data_from_key(db=db,tab=extr_ms2,kvals=common_vals)
     if (NROW(mdata)==0L) return(NULL)
     if (NROW(subxdata) == 0L) return(NULL)
     ans <- data.table(scan=mdata[,unique(scan)],key="scan")
