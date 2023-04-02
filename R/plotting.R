@@ -21,8 +21,8 @@ aes <- ggplot2::aes
 
 plot_fname <- function(kvals) {
     if (!is.null(kvals)) {
-        kparts <- mapply(paste0,names(kvals),kvals,USE.NAMES=F)
-        stump <- paste(kparts,collapse="_")
+        kparts = mapply(paste0,names(kvals),kvals,USE.NAMES=F)
+        stump = paste(kparts,collapse="_")
         paste0("plot_",stump,".pdf")
     } else 'default.pdf'
 }
@@ -33,23 +33,23 @@ is_fname_rds <- function(fn) {
 }
 
 sci10 <- function(x) {
-    prefmt <- formatC(x,format="e",digits=2)
-    bits <- strsplit(prefmt,split="e")
-    bits1 <-sapply(bits,function(x) {
+    prefmt = formatC(x,format="e",digits=2)
+    bits = strsplit(prefmt,split="e")
+    bits1 =sapply(bits,function(x) {
         if (length(x) > 1) {
-            res <- x[[1]]
+            res = x[[1]]
             sub(" ","~",res)
         } else {
             x
         }
     })
-    bits2 <-sapply(bits,function(x) if (length(x)>1) paste0(" %*% 10^","'",sub("[+]"," ",x[[2]]),"'") else "")
-    txt <- mapply(function(b1,b2) if (nchar(b2)!=0) {paste0("'",b1,"'",b2)} else NA,
+    bits2 =sapply(bits,function(x) if (length(x)>1) paste0(" %*% 10^","'",sub("[+]"," ",x[[2]]),"'") else "")
+    txt = mapply(function(b1,b2) if (nchar(b2)!=0) {paste0("'",b1,"'",b2)} else NA,
                   bits1,
                   bits2,
                   SIMPLIFY = F)
-    names(txt) <- NULL
-    txt <- gsub(pattern = "^'0\\.00'.*$","  0",x=txt)
+    names(txt) = NULL
+    txt = gsub(pattern = "^'0\\.00'.*$","  0",x=txt)
     parse(text=txt)
     
     
@@ -58,15 +58,15 @@ sci10 <- function(x) {
 
 scale_legend <- function(colrdata,pdata) {
     if (is.null(colrdata) || is.null(pdata)) NULL
-    labs <- data.table::key(colrdata)
+    labs = data.table::key(colrdata)
 
-    sdcols <- c(labs,"label")
+    sdcols = c(labs,"label")
 
-    tab_lab <- pdata[,unique(.SD),.SDcols=sdcols][colrdata,.(colour=i.colour),on=labs,nomatch=NULL]
+    tab_lab = pdata[,unique(.SD),.SDcols=sdcols][colrdata,.(colour=i.colour),on=labs,nomatch=NULL]
 
-    x <- tab_lab$colour
+    x = tab_lab$colour
 
-    names(x) <- tab_lab$label
+    names(x) = tab_lab$label
     ggplot2::scale_colour_manual(values=x)
 }
 
@@ -79,15 +79,15 @@ pal_maker <- function(n,palname = NULL) {
     ## the first colours to the original palette, then go over to the
     ## generated ones. Returns a vector of colours.
 
-    krzywinski <- c("#68023F","#008169","#EF0096","#00DCB5",
+    krzywinski = c("#68023F","#008169","#EF0096","#00DCB5",
                     "#FFCFE2","#003C86","#9400E6","#009FFA",
                     "#FF71FD","#7CFFFA","#6A0213","#008607")
-    info <- as.data.table(RColorBrewer::brewer.pal.info,keep.rownames = T)
-    maxcol <- if (!is.null(palname)) info[rn == palname]$maxcolors else length(krzywinski)
-    startpal <- if (!is.null(palname)) RColorBrewer::brewer.pal(maxcol,palname) else krzywinski
-    pal <- if (n>length(startpal)) {
-               intrppal <-(colorRampPalette(startpal))(n)
-               newcol <- setdiff(intrppal,startpal)
+    info = as.data.table(RColorBrewer::brewer.pal.info,keep.rownames = T)
+    maxcol = if (!is.null(palname)) info[rn == palname]$maxcolors else length(krzywinski)
+    startpal = if (!is.null(palname)) RColorBrewer::brewer.pal(maxcol,palname) else krzywinski
+    pal = if (n>length(startpal)) {
+               intrppal =(colorRampPalette(startpal))(n)
+               newcol = setdiff(intrppal,startpal)
                unique(c(startpal,intrppal))
            } else startpal
 
@@ -106,16 +106,16 @@ make_struct_plot <- function(smiles, kekulise=TRUE, width=300, height=300,
     ## structure -> grob
     smiles2img <- function() {
         if (is.na(smiles) || nchar(smiles)==0) return(NULL) #Handle empty SMILES.
-        dep <- rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
+        dep = rcdk::get.depictor(width = width, height = height, zoom = zoom, style = style, annotate = annotate,
                                   abbr = abbr, suppressh = suppressh, showTitle = showTitle, smaLimit = smaLimit,
                                   sma = NULL)
         
-        mol <- RMassBank::getMolecule(smiles)
-        z<-rcdk::view.image.2d(mol, depictor=dep)
+        mol = RMassBank::getMolecule(smiles)
+        z=rcdk::view.image.2d(mol, depictor=dep)
         grid::rasterGrob(z)
     }
 
-    grob <- smiles2img()
+    grob = smiles2img()
 
     if (!is.null(grob)) {
         qplot(1:5, 2*(1:5), geom="blank") +
@@ -156,13 +156,13 @@ theme_print <- function(...) ggplot2::theme_light()+ggplot2::theme(axis.title=gg
                                                         ...)+guide_fun()
                                
 
-theme_empty <- ggplot2::theme_bw()
-theme_empty$line <- ggplot2::element_blank()
-theme_empty$rect <- ggplot2::element_blank()
-theme_empty$strip.text <- ggplot2::element_blank()
-theme_empty$axis.text <- ggplot2::element_blank()
-theme_empty$plot.title <- ggplot2::element_blank()
-theme_empty$axis.title <- ggplot2::element_blank()
+theme_empty = ggplot2::theme_bw()
+theme_empty$line = ggplot2::element_blank()
+theme_empty$rect = ggplot2::element_blank()
+theme_empty$strip.text = ggplot2::element_blank()
+theme_empty$axis.text = ggplot2::element_blank()
+theme_empty$plot.title = ggplot2::element_blank()
+theme_empty$axis.title = ggplot2::element_blank()
 
 
 cust_geom_line <- function(key_glyph="rect",...) ggplot2::geom_line(...,key_glyph=key_glyph)
@@ -187,8 +187,8 @@ mk_logic_exp <- function(rest,sofar=NULL) {
     } else {
         nm = names(rest)[[1]]
         val = rest[[1]]
-        ex <- bquote(.(as.symbol(nm)) %in% .(val))
-        zz <- if (is.null(sofar)) ex else bquote(.(ex) & .(sofar))
+        ex = bquote(.(as.symbol(nm)) %in% .(val))
+        zz = if (is.null(sofar)) ex else bquote(.(ex) & .(sofar))
         mk_logic_exp(tail(rest,-1L), zz)
     }
 }
@@ -232,9 +232,9 @@ define_colrdata <- function(comptab,labs) {
     ## Determine colours based on `labs'. 
     one_keyset <- function(dt) {
         labtab = dt[,unique(.SD),.SDcol=labs]
-        n <- NROW(labtab)
-        cols <- if (n<13L) {
-                    pal <- RColorBrewer::brewer.pal(n=n,name="Paired") 
+        n = NROW(labtab)
+        cols = if (n<13L) {
+                    pal = RColorBrewer::brewer.pal(n=n,name="Paired") 
                     if (n>3L) pal else if (n>0L) pal[1:n] else character()
                 } else {
                     scales::viridis_pal()(n)
@@ -244,14 +244,14 @@ define_colrdata <- function(comptab,labs) {
     }
 
     ## Calculate lengths of all the COLRDATA_KEY subgroups.
-    dt <- comptab[,unique(.SD),.SDcols=labs,by=COLRDATA_KEY]
+    dt = comptab[,unique(.SD),.SDcols=labs,by=COLRDATA_KEY]
 
     ## Arrange colours to map to specific labels by sorting.
-    allcols <- union(COLRDATA_KEY,labs)
+    allcols = union(COLRDATA_KEY,labs)
     data.table::setkeyv(dt,allcols)
 
     ## Assign colours to labels subgroups.
-    res <- dt[,one_keyset(.SD),by=COLRDATA_KEY]
+    res = dt[,one_keyset(.SD),by=COLRDATA_KEY]
 
     ## Sort everything again, 
     data.table::setkeyv(res,allcols)
@@ -263,10 +263,10 @@ define_colrdata <- function(comptab,labs) {
 ## compound set.).
 narrow_colrdata <- function(colrdata,kvals) {
     if (is.null(colrdata)) return(NULL)
-    vals <- as.list(kvals[COLRDATA_KEY])
+    vals = as.list(kvals[COLRDATA_KEY])
 
-    res <- colrdata[,(COLRDATA_KEY):=NULL]
-    labs <- names(res)[names(res)!="colour"]
+    res = colrdata[,(COLRDATA_KEY):=NULL]
+    labs = names(res)[names(res)!="colour"]
     data.table::setkeyv(res,labs)
     res
 }
@@ -294,9 +294,9 @@ get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
 
     ## Group the plot data per label group (ie tags, or adducts, or
     ## both).
-    xlxx <- intersect(labs,names(extr_ms1))
-    xlxx <- as.character(xlxx)
-    pdata <- tab[,.(rt,intensity),by=xlxx]
+    xlxx = intersect(labs,names(extr_ms1))
+    xlxx = as.character(xlxx)
+    pdata = tab[,.(rt,intensity),by=xlxx]
 
 
     ## TODO: FIXME: This fails because summ_rows sux wrt calcing of ms1_rt for labels. #Now, add the RTs in.
@@ -304,7 +304,7 @@ get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
 
     ## Create labels.
     ## xlxx <- unique(c(xlxx,"ms1_rt"))
-    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=xlxx],splice=T))
+    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=xlxx],splice=T))
     setkeyv(pdata,cols=unique(as.character(xlxx),"rt"))
     pdata
 }
@@ -312,12 +312,12 @@ get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
 ## Prepare MS2 eic data: rt and intensity + key made of splitby.
 get_data_4_eic_ms2 <- function(db,summ,kvals,labs) {
     tab = get_data_from_key(db=db,tab=summ,kvals=kvals,outcols=names(kvals))
-    nms <- names(kvals)
-    byby <- unique(c(nms,labs,"scan"))
-    pdata <- tab[,.(intensity=ms2_int,rt=ms2_rt),by=byby]
+    nms = names(kvals)
+    byby = unique(c(nms,labs,"scan"))
+    pdata = tab[,.(intensity=ms2_int,rt=ms2_rt),by=byby]
     if (NROW(pdata)==0L) return(NULL)
-    xlxx <- as.character(labs)
-    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=.(xlxx)],splice=T))
+    xlxx = as.character(labs)
+    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=.(xlxx)],splice=T))
     setkeyv(pdata,cols=c(labs,"rt"))
     pdata
 }
@@ -361,47 +361,47 @@ make_eic_ms1_plot <- function(db,extr_ms1,summ,kvals,labs,axis="linear",rt_range
     ## until we fix.
     summ_rows = narrow_summ(db=db,summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","qa_ms1_exists","scan","ms2_sel")
     browser()
-    rows_key <- union(data.table::key(summ_rows),labs)
+    rows_key = union(data.table::key(summ_rows),labs)
     summ_rows$sel_ms1_rt=NA_real_
     summ_rows[ms2_sel==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]
     summ_rows[is.na(sel_ms1_rt) & ms2_sel==F & qa_ms1_exists==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]
     summ_rows[,ms1_rt:=sel_ms1_rt]
     summ_rows[,sel_ms1_rt:=NULL]
     summ_rows[,c("scan","qa_ms1_exists","ms2_sel"):=NULL]
-    summ_rows <- summ_rows[,unique(.SD)]
+    summ_rows = summ_rows[,unique(.SD)]
 
     ## Get the table with ms1 data.
-    pdata <- get_data_4_eic_ms1(db=db,extr_ms1, summ_rows, kvals, labs)
+    pdata = get_data_4_eic_ms1(db=db,extr_ms1, summ_rows, kvals, labs)
 
 
     ## Deal with retention time range.
-    coord <- if (is.null(rt_range) && is.null(i_range)) {
+    coord = if (is.null(rt_range) && is.null(i_range)) {
                  NULL
              } else {
                  ggplot2::coord_cartesian(xlim=rt_range,
                                           ylim=i_range)
              }
-    xrng <- range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
-    dx <- abs(xrng[[2]]-xrng[[1]])
-    yrng <- range(pdata$intensity)
-    dy <- abs(yrng[[2]]-yrng[[1]])
+    xrng = range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
+    dx = abs(xrng[[2]]-xrng[[1]])
+    yrng = range(pdata$intensity)
+    dy = abs(yrng[[2]]-yrng[[1]])
 
     ## Calculate aspect ratio.
-    aspr <- if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
+    aspr = if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
 
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
                      collapse='; ') ## paste0("Set: ", set, " ID: ",id)
     title_txt = paste0("MS1 EIC for ion m/z = ",paste0(signif(unique(summ_rows$mz),digits=7L),collapse=", "))
-    nm <- paste(unique(summ_rows$Name),collapse="; ")
+    nm = paste(unique(summ_rows$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
-    p <- ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+
+    p = ggplot2::ggplot(pdata,aes(x=rt,y=intensity,colour=label))+
         ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+
         ggplot2::xlab("retention time")+
         cust_geom_line()+
         scale_y(axis=axis,labels=sci10)+
         coord
 
-    colrdata <- narrow_colrdata(colrdata,kvals)
+    colrdata = narrow_colrdata(colrdata,kvals)
     p + scale_legend(colrdata,pdata) + theme_eic()
 }
 
@@ -412,38 +412,38 @@ make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1,
     if (is.null(kvals)) return(NULL)
 
     ## Get metadata.
-    summ_rows <- narrow_summ(db=db,summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES")
+    summ_rows = narrow_summ(db=db,summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES")
 
     ## Get plotting data for the compound.
-    pdata <- get_data_4_eic_ms2(summ,
+    pdata = get_data_4_eic_ms2(summ,
                                 kvals=kvals,
                                 labs=labs)
 
     if (NROW(pdata)==0L) return(NULL)
 
     ## Deal with retention time range.
-    rt_lim <- if (is.null(rt_range)) NULL else ggplot2::coord_cartesian(xlim=rt_range)#ggplot2::xlim(rt_range)
-    xrng <- range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
-    dx <- abs(xrng[[2]]-xrng[[1]])
-    yrng <- range(pdata$intensity)
-    dy <- abs(yrng[[2]]-yrng[[1]])
+    rt_lim = if (is.null(rt_range)) NULL else ggplot2::coord_cartesian(xlim=rt_range)#ggplot2::xlim(rt_range)
+    xrng = range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
+    dx = abs(xrng[[2]]-xrng[[1]])
+    yrng = range(pdata$intensity)
+    dy = abs(yrng[[2]]-yrng[[1]])
 
     ## Fix aspect ratio.
-    aspr <- if (is.null(dx) || is.na(dx) || dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
+    aspr = if (is.null(dx) || is.na(dx) || dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
     ## Derive various labels.
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
                      collapse='; ')
     title_txt = paste0("MS2 EIC for ion m/z = ",paste0(signif(unique(summ_rows$mz),digits=7L),collapse=", "))
     subt_txt = if (!length(summ_rows$Name)==0L && !is.na(summ_rows$Name[[1]]) && nchar(summ_rows$Name[[1]])>0L) summ_rows$Name[[1]] else NULL
     ## Base plot.
-    p <- ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label)) +
+    p = ggplot2::ggplot(pdata,aes(x=rt,ymin=0,ymax=intensity,colour=label)) +
          ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
          ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+cust_geom_linerange()+
          scale_y(axis=axis,labels=sci10)+rt_lim+guide_fun()
-    ans <- pdata[,unique(scan)]
+    ans = pdata[,unique(scan)]
 
     ## Add theme.
-    colrdata <- narrow_colrdata(colrdata,kvals)
+    colrdata = narrow_colrdata(colrdata,kvals)
     p + scale_legend(colrdata,pdata) + theme_eic()
 }
 
@@ -457,38 +457,38 @@ make_spec_ms2_plot <- function(db,extr_ms2,summ,kvals,labs,axis="linear",asp=1, 
                                kvals=kvals,
                                outcols=union(names(kvals),
                                              colnames(summ)))[ms2_sel==T]
-    common_key <- intersect(names(extr_ms2),names(kvals))
-    common_vals <- kvals[common_key]
+    common_key = intersect(names(extr_ms2),names(kvals))
+    common_vals = kvals[common_key]
     if (length(common_key) == 0L) return(NULL)
-    subxdata <- get_data_from_key(db=db,tab=extr_ms2,kvals=common_vals)
+    subxdata = get_data_from_key(db=db,tab=extr_ms2,kvals=common_vals)
     if (NROW(mdata)==0L) return(NULL)
     if (NROW(subxdata) == 0L) return(NULL)
-    ans <- data.table(scan=mdata[,unique(scan)],key="scan")
-    ms2ctg <- c(intersect(c(names(kvals),labs),names(extr_ms2)),"ce")
-    xlxx <- intersect(as.character(labs),names(extr_ms2))
-    common_labels <- unique(c("scan",common_key,intersect(names(extr_ms2),labs)))
-    pdata <- subxdata[ans,on="scan"][,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=common_labels]
-    pdata <- eval(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
+    ans = data.table(scan=mdata[,unique(scan)],key="scan")
+    ms2ctg = c(intersect(c(names(kvals),labs),names(extr_ms2)),"ce")
+    xlxx = intersect(as.character(labs),names(extr_ms2))
+    common_labels = unique(c("scan",common_key,intersect(names(extr_ms2),labs)))
+    pdata = subxdata[ans,on="scan"][,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=common_labels]
+    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
 
     if (NROW(pdata)==0L) return(NULL)
     # Aspect ratio.
-    xrng <- range(pdata$mz)
-    dx <- abs(xrng[[2]]-xrng[[1]])
-    yrng <- range(pdata$intensity)
-    dy <- abs(yrng[[2]]-yrng[[1]])
-    aspr <- if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
+    xrng = range(pdata$mz)
+    dx = abs(xrng[[2]]-xrng[[1]])
+    yrng = range(pdata$intensity)
+    dy = abs(yrng[[2]]-yrng[[1]])
+    aspr = if (dx < .Machine$double.eps) 1 else asp*as.numeric(dx)/as.numeric(dy)
 
     ## Get labels.
     tag_txt = paste0(sapply(names(kvals),function (nx) paste0(nx,": ", kvals[[nx]])),
                      collapse='; ')
     title_txt = paste0("MS2 spectra for ion m/z = ",paste0(signif(unique(mdata$mz),digits=7L),collapse=", "))
-    nm <- paste(unique(mdata$Name),collapse="; ")
+    nm = paste(unique(mdata$Name),collapse="; ")
     subt_txt = if (!length(nm)==0L && !is.na(nm) && nchar(nm)>0L) nm else NULL
 
-    p <- ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+cust_geom_linerange()+scale_y(axis=axis,labels=sci10)+guide_fun()
+    p = ggplot2::ggplot(pdata,aes(x=mz,ymin=0,ymax=intensity,colour=label))+ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt)+ggplot2::xlab("m/z")+cust_geom_linerange()+scale_y(axis=axis,labels=sci10)+guide_fun()
 
     ## Add theme.
-    colrdata <- narrow_colrdata(colrdata,kvals)
+    colrdata = narrow_colrdata(colrdata,kvals)
     p + scale_legend(colrdata,pdata) + theme_eic()
  
 }
