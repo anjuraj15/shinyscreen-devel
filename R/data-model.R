@@ -105,23 +105,27 @@ make_db_precursors <- function(m) {
 
 
 empty_cgram_ms1 <- function(n=0L) {
-    data.table(file=character(n),
-               cgmidx=integer(n),
-               precid=integer(n),
-               scan=integer(n),
-               rt=numeric(n),
-               intensity=numeric(n))
+    r = data.table(file=character(n),
+                   cgmidx=integer(n),
+                   precid=integer(n),
+                   scan=integer(n),
+                   rt=numeric(n),
+                   intensity=numeric(n))
+    setkey(r,precid,rt)
+    r
 }
 
 empty_cgram_ms2 <- function(n=0L) {
-    data.table(precid=integer(n),
-               ce=numeric(n),
-               scan=integer(n),
-               idx=integer(n),
-               rt=numeric(n),
-               intensity=numeric(n))
+    r = data.table(precid=integer(n),
+                   ce=numeric(n),
+                   scan=integer(n),
+                   idx=integer(n),
+                   rt=numeric(n),
+                   intensity=numeric(n))
+    setkey(r,precid,ce,idx)
+    r
                
-    }
+}
 
 
 empty_spectra_table <- function() {
