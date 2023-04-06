@@ -13,6 +13,5 @@ test_that("Extraction returns what is needed.",{
 
     m = run(envopts=eo,m=m,phase="extract")
     m = run(envopts=eo,m=m,phase="prescreen")
-    browser()
     expect_true(1==1)
 })

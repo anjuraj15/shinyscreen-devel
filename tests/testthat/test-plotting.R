@@ -1,3 +1,10 @@
+test_that("get_data_from_key",{
+
+    s = synthetise_pseudo_state_db(PLOTTING_STATE_DB)
+    expect_identical(1L,1L)
+})
+
+
 ## test_that("make_eic_ms1_plot",{
 
 ##     ms1 <- PLOTTING_DATA$ms1

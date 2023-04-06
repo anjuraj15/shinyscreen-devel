@@ -118,7 +118,7 @@ empty_cgram_ms1 <- function(n=0L) {
 empty_cgram_ms2 <- function(n=0L) {
     r = data.table(precid=integer(n),
                    ce=numeric(n),
-                   scan=integer(n),
+                   scan=character(n),
                    idx=integer(n),
                    rt=numeric(n),
                    intensity=numeric(n))
@@ -128,11 +128,11 @@ empty_cgram_ms2 <- function(n=0L) {
 }
 
 
-empty_spectra_table <- function() {
-    r = data.table(precid=integer(0),
-                   scan=character(0),
-                   mz=numeric(0),
-                   intensity=numeric(0))
+empty_spectra_table <- function(n=0L) {
+    r = data.table(precid=integer(n),
+                   scan=character(n),
+                   mz=numeric(n),
+                   intensity=numeric(n))
     setkey(r,precid,scan)
     r
 }
