@@ -1,6 +1,9 @@
 test_that("get_data_from_key",{
-
-    s = synthetise_pseudo_state_db(PLOTTING_STATE_DB)
+    m = PLOTTING_STATE
+    m$db = synthetise_pseudo_state_db(m$db)
+    m$conf = fix_testing_state_conf(m$conf)
+    m = prescreen(m)
+    browser()
     expect_identical(1L,1L)
 })
 

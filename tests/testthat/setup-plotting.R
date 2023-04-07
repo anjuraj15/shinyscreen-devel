@@ -1,7 +1,7 @@
 
 
 
-PLOTTING_STATE_DB = readRDS(system.file(package="shinyscreen","testdata","plotting-state-db.rds"))
+PLOTTING_STATE = readRDS(system.file(package="shinyscreen","testdata","plotting-state.rds"))
 
 
 synthetise_cgm_ms1 <- function(n,fac,shift) {
@@ -109,15 +109,19 @@ synthetise_pseudo_state_db <- function(db) {
     extr$cgm$ms2 = extr$cgm$ms2[!is.na(intensity)]
     db$extr = extr
     db$extr$spectra = synthetise_spectra(n_mz,db$precursors,db$extr$cgm$ms2)
-
+    setkey(db$extr$cgm$ms1,precid,rt)
+    setkey(db$extr$cgm$ms2,precid,ce,rt)
+    setkey(db$extr$spectra,precid,scan)
     set.seed(NULL)
-
-    browser()
-    1+1
     db
     
 }
 
+
+fix_testing_state_conf <- function(conf) {
+    conf$prescreen$ret_time_shift_tol="5.0 min"
+    conf
+}
 ## synthetise_eic_ms1 <- function(precursors) {
 ##     ## N = 
 ##     dt = empty_cgram_ms1(
