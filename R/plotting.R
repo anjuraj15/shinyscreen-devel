@@ -208,7 +208,7 @@ get_data_from_key <- function(db,tab,kvals,outcols) {
 
     ## Get precids.
     mztab = db$precursors[cattab,on="catid"]
-    outnames = c(valid_names,outcols)
+    outnames = union(valid_names,outcols)
     tab[mztab,on="precid"][,..outnames]
     
 }
@@ -332,17 +332,11 @@ narrow_summ <- function(db,summ,kvals,labs,...) {
         keys = names(kvals)
         nms = union(names(kvals),
                     labs)
-        nms = union(nms,c(...))
+        nms = union(union("precid",nms),c(...))
         nsumm = get_data_from_key(db=db,
                                   tab=summ,
                                   kvals=kvals,
                                   outcols=nms)
-        ## ## keys <- keys[!is.na(keys)]
-        ## needed <- setdiff(labs,keys)
-        ## x <- as.list(c(needed,...))
-       
-        ## x <- c(list(db=db,tab=summ,kvals=kvals),x)
-        ## do.call(get_rows_from_summ,x)
         nsumm
 }
 
