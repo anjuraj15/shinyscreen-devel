@@ -1,10 +1,18 @@
-test_that("get_data_from_key",{
-    m = PLOTTING_STATE
-    m$db = synthetise_pseudo_state_db(m$db)
-    m$conf = fix_testing_state_conf(m$conf)
-    m = prescreen(m)
-    browser()
-    expect_identical(1L,1L)
+test_that("narrow_summ",{
+    m = PLOTTING_TEST_STATE
+    ## kvals =  list(set="AAs",ID="5") # 5 is interesting (isobars with 19)
+    kvals = list(set="AAs",ID="4")
+    labs = c("adduct","tag")
+    ns = narrow_summ(db=m$db,m$out$tab$summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","qa_ms1_exists","scan","ms2_sel")
+    expect_snapshot(ns)
+})
+
+test_that("make_eic_ms1_plot",{
+    m = PLOTTING_TEST_STATE
+    kvals = list(set="AAs",ID="4")
+    labs = c("adduct","tag")
+    plt = make_eic_ms1_plot(db=m$db,m$db$extr$cgm$ms1,m$out$tab$summ,kvals,labs)
+    expect_equal(1,1)
 })
 
 

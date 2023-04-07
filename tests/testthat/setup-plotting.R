@@ -1,7 +1,7 @@
 
 
 
-PLOTTING_STATE = readRDS(system.file(package="shinyscreen","testdata","plotting-state.rds"))
+pre_test_state = readRDS(system.file(package="shinyscreen","testdata","plotting-state.rds"))
 
 
 synthetise_cgm_ms1 <- function(n,fac,shift) {
@@ -127,3 +127,8 @@ fix_testing_state_conf <- function(conf) {
 ##     dt = empty_cgram_ms1(
 ## }
 
+pre_test_state$db = synthetise_pseudo_state_db(pre_test_state$db)
+pre_test_state$conf = fix_testing_state_conf(pre_test_state$conf)
+pre_test_state = prescreen(pre_test_state)
+PLOTTING_TEST_STATE = pre_test_state
+rm(pre_test_state)
