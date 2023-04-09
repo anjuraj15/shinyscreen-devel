@@ -149,3 +149,23 @@ uniqy_slugs <- function(slugs) {
     dt = data.table::data.table(slug=slugs)
     dt[,slug:=fifelse(rep(.N==1L,.N),slug,paste0(slug,"_",seq(1L,.N))),by="slug"]$slug
 }
+
+gen_val_unc <- function(x,dx) {
+    ## Doesn't work well for <=0.
+    p = floor(log10(x))
+    dp = floor(log10(dx))
+    ## Zero?
+    message("p ",p)
+    w = which(is.infinite(p))
+    p[w] = 0
+
+    ## Normalise x and dx.
+    main = x/10**p
+    unc = round(dx/10**dp,0)
+    place = p - dp
+    main = mapply(function (m,d) formatC(m,digits=d,format='f',flag="#"),main,place,USE.NAMES=F)
+    w = which(main=='10.')
+    main[w]='1'
+    p[w]=p[w]+1
+    paste0(main,"(",unc,") x 10^",p)
+}

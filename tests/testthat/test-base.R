@@ -15,3 +15,14 @@ test_that("uniqy_slugs",{
     out = uniqy_slugs(inp)
     expect_snapshot(out)
 })
+
+test_that("gen_val_unc",{
+    vals = c(1234567,991458,256.236546546,0.2,0.002,0)
+    dvals = c(6733,123000,1.e-4,0.5,0.0001,0.001)
+    x = gen_val_unc(vals,dvals)
+    message("\n")
+    message("====")
+    message(paste0(x,collapse=";;"))
+    print("----")
+    expect_true(1==1)
+})
