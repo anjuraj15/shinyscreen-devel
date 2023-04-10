@@ -285,27 +285,25 @@ get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
     keys = names(kvals)
     actual_key = intersect(keys,names(extr_ms1))
     actual_kvals = kvals[actual_key]
-    browser()
+
     ## Subset extr_ms1 by the actual key.
     tab = get_data_from_key(db=db,
                             tab=extr_ms1,
                             kvals=kvals,
-                            outcols = c("mz","rt","intensity"))
-
-    ## Group the plot data per label group (ie tags, or adducts, or
-    ## both).
-    xlxx = intersect(labs,names(extr_ms1))
-    xlxx = as.character(xlxx)
-    pdata = tab[,.(rt,intensity),by=xlxx]
+                            outcols = c("catid","mz","rt","intensity"))
 
 
-    ## TODO: FIXME: This fails because summ_rows sux wrt calcing of ms1_rt for labels. #Now, add the RTs in.
-    ## pdata[summ_rows,ms1_rt:=signif(i.ms1_rt,5),on=xlxx]
 
-    ## Create labels.
-    ## xlxx <- unique(c(xlxx,"ms1_rt"))
-    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=xlxx],splice=T))
-    setkeyv(pdata,cols=unique(as.character(xlxx),"rt"))
+    meta = db$cat[tab[,.(catid=unique(catid))],on=.(catid),.SD,by=.EACHI,.SDcols=labs]
+
+    ## Attach catid information.
+    tab = meta[tab,on=.(catid),nomatch=NULL]
+    pdata = tab[,.(rt,intensity),by=labs]
+
+    text_labels = labs
+    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(text_labels,as.symbol))),by=text_labels],splice=T))
+    setkeyv(pdata,cols=unique(as.character(text_labels)))
+
     pdata
 }
 
@@ -354,7 +352,6 @@ make_eic_ms1_plot <- function(db,extr_ms1,summ,kvals,labs,axis="linear",rt_range
     ## plots is wrong. Horrible and wrong. Will remove those labels
     ## until we fix.
     summ_rows = narrow_summ(db=db,summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","qa_ms1_exists","scan","ms2_sel")
-    browser()
     rows_key = union(data.table::key(summ_rows),labs)
     summ_rows$sel_ms1_rt=NA_real_
     summ_rows[ms2_sel==T,sel_ms1_rt:=ms1_rt[which.max(ms1_int)],by=rows_key]

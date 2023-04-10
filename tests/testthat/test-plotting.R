@@ -11,8 +11,10 @@ test_that("make_eic_ms1_plot",{
     m = PLOTTING_TEST_STATE
     kvals = list(set="AAs",ID="4")
     labs = c("adduct","tag")
-    plt = make_eic_ms1_plot(db=m$db,m$db$extr$cgm$ms1,m$out$tab$summ,kvals,labs)
-    expect_equal(1,1)
+    cd = define_colrdata(m$out$tab$comp,labs)
+    plt = make_eic_ms1_plot(db=m$db,m$db$extr$cgm$ms1,m$out$tab$summ,kvals,labs,colrdata=cd)
+    plt$data = NULL
+    expect_snapshot(plt)
 })
 
 
