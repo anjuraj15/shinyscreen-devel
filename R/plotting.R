@@ -309,22 +309,26 @@ get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
 
 ## Prepare MS2 eic data: rt and intensity + key made of splitby.
 get_data_4_eic_ms2 <- function(db,summ,kvals,labs) {
-    tab = get_data_from_key(db=db,tab=summ,kvals=kvals,outcols=names(kvals))
-    nms = names(kvals)
-    byby = unique(c(nms,labs,"scan"))
-    pdata = tab[,.(intensity=ms2_int,rt=ms2_rt),by=byby]
+    browser()
+    tab = get_data_from_key(db=db,tab=db$extr$cgm$ms2,kvals=kvals,outcols=c("catid","ce","mz","rt","intensity"))
+
+    meta = db$cat[tab[,.(catid=unique(catid))],on=.(catid),.SD,by=.EACHI,.SDcols=labs]
+
+    ## Attach catid information.
+    tab = meta[tab,on=.(catid),nomatch=NULL]
+    pdata = tab[,.(rt,intensity),by=labs]
+    
     if (NROW(pdata)==0L) return(NULL)
-    xlxx = as.character(labs)
-    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(xlxx,as.symbol))),by=.(xlxx)],splice=T))
-    setkeyv(pdata,cols=c(labs,"rt"))
+
+
+    text_labels = labs
+    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(text_labels,as.symbol))),by=text_labels],splice=T))
+    setkeyv(pdata,cols=unique(as.character(text_labels)))
+
     pdata
 }
 
 
-## get_rows_from_summ <- function(db,summ,kvals,...) {
-##     summ_rows_cols <- union(names(kvals),c(...))
-##     get_data_from_key(db=db,tab=summ,kvals=kvals)[,unique(.SD),.SDcol=summ_rows_cols]
-## }
 
 narrow_summ <- function(db,summ,kvals,labs,...) {
         keys = names(kvals)
@@ -397,21 +401,22 @@ make_eic_ms1_plot <- function(db,extr_ms1,summ,kvals,labs,axis="linear",rt_range
 }
 
 
-make_eic_ms2_plot <- function(summ,kvals,labs,axis="linear",rt_range=NULL,asp=1, colrdata=NULL) {
+make_eic_ms2_plot <- function(db,summ,kvals,labs,axis="linear",rt_range=NULL,asp=1, colrdata=NULL) {
 
     ## If nothing selected, just return NULL.
     if (is.null(kvals)) return(NULL)
-
     ## Get metadata.
     summ_rows = narrow_summ(db=db,summ,kvals,labs,"mz","ms2_rt","ms2_int","Name","SMILES")
 
+
     ## Get plotting data for the compound.
-    pdata = get_data_4_eic_ms2(summ,
-                                kvals=kvals,
-                                labs=labs)
+    pdata = get_data_4_eic_ms2(db=db,
+                               summ,
+                               kvals=kvals,
+                               labs=labs)
 
     if (NROW(pdata)==0L) return(NULL)
-
+    browser()
     ## Deal with retention time range.
     rt_lim = if (is.null(rt_range)) NULL else ggplot2::coord_cartesian(xlim=rt_range)#ggplot2::xlim(rt_range)
     xrng = range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
