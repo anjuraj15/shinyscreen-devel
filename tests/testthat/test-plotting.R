@@ -12,7 +12,7 @@ test_that("make_eic_ms1_plot",{
     kvals = list(set="AAs",ID="4")
     labs = c("adduct","tag")
     cd = define_colrdata(m$out$tab$comp,labs)
-    plt = make_eic_ms1_plot(db=m$db,m$db$extr$cgm$ms1,m$out$tab$summ,kvals,labs,colrdata=cd)
+    plt = make_eic_ms1_plot(db=m$db,m$out$tab$summ,kvals,labs,colrdata=cd)
     expect_snapshot(plt$labels)
 })
 

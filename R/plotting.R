@@ -278,17 +278,18 @@ narrow_colrdata <- function(colrdata,kvals) {
 ## subset of the `summ' table based on `kvals'. We need it for rt-s in
 ## the labels. Argument `labs' is a vector of names that will be used
 ## to construct the legend labels.
-get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
+get_data_4_eic_ms1 <- function(db,summ_rows,kvals,labs) {
 
-    ## Which of the selected keys are in the extr_ms1? This can be
+
+    ## Which of the selected keys are in the db$extr$cgm$ms1? This can be
     ## made more obvious to the user, but note necessary atm.
     keys = names(kvals)
-    actual_key = intersect(keys,names(extr_ms1))
+    actual_key = intersect(keys,names(db$extr$cgm$ms1))
     actual_kvals = kvals[actual_key]
 
-    ## Subset extr_ms1 by the actual key.
+    ## Subset db$extr$cgm$ms1 by the actual key.
     tab = get_data_from_key(db=db,
-                            tab=extr_ms1,
+                            tab=db$extr$cgm$ms1,
                             kvals=kvals,
                             outcols = c("catid","mz","rt","intensity"))
 
@@ -344,16 +345,17 @@ narrow_summ <- function(db,summ,kvals,labs,...) {
 
 ### PLOTTING: TOP-LEVEL PLOT CREATION
 
-make_eic_ms1_plot <- function(db,extr_ms1,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1,colrdata=NULL) {
+make_eic_ms1_plot <- function(db,summ,kvals,labs,axis="linear",rt_range=NULL,i_range=NULL, asp=1,colrdata=NULL) {
     ## If nothing selected, just return NULL.
     if (is.null(kvals)) return(NULL)
 
     key = names(kvals)
     ## Get metadata.
 
+
     ## TODO: FIXME: Somehow calculating representationve ms1_rt for
     ## plots is wrong. Horrible and wrong. Will remove those labels
-    ## until we fix.
+    ## until we fix. 20230412: Still problematic?
     summ_rows = narrow_summ(db=db,summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","qa_ms1_exists","scan","ms2_sel")
     rows_key = union(data.table::key(summ_rows),labs)
     summ_rows$sel_ms1_rt=NA_real_
@@ -365,7 +367,7 @@ make_eic_ms1_plot <- function(db,extr_ms1,summ,kvals,labs,axis="linear",rt_range
     summ_rows = summ_rows[,unique(.SD)]
 
     ## Get the table with ms1 data.
-    pdata = get_data_4_eic_ms1(db=db,extr_ms1, summ_rows, kvals, labs)
+    pdata = get_data_4_eic_ms1(db=db, summ_rows, kvals, labs)
 
 
     ## Deal with retention time range.
