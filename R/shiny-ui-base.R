@@ -823,7 +823,6 @@ mk_shinyscreen_server <- function(projects,init) {
 
 
             p = make_eic_ms1_plot(db=db,
-                                  extr_ms1=ms1,
                                   summ,
                                   kvals=rf_get_cindex_kval(),
                                   labs=rf_get_cindex_labs(),
@@ -855,12 +854,13 @@ mk_shinyscreen_server <- function(projects,init) {
 
             gg = rf_plot_eic_ms1()
             rt_rng = range(gg$data$rt)
-            p = make_eic_ms2_plot(summ,
-                                   kvals=rf_get_cindex_kval(),
-                                   labs=rf_get_cindex_labs(),
-                                   rt_range = rf_get_ms2_eic_rtrange(),
-                                   asp=PLOT_EIC_ASPECT,
-                                   colrdata=rf_colrdata())
+            p = make_eic_ms2_plot(rvs$m$db,
+                                  summ,
+                                  kvals=rf_get_cindex_kval(),
+                                  labs=rf_get_cindex_labs(),
+                                  rt_range = rf_get_ms2_eic_rtrange(),
+                                  asp=PLOT_EIC_ASPECT,
+                                  colrdata=rf_colrdata())
 
             
             p = if (!is.null(p)) p else empty_plot("Nothing to plot")
@@ -886,11 +886,11 @@ mk_shinyscreen_server <- function(projects,init) {
             })
             req(NROW(summ)>0L)
             req(NROW(ms2)>0L)
-            p = make_spec_ms2_plot(ms2,
-                                    summ,
-                                    kvals=req(rf_get_cindex_kval()),
-                                    labs=req(rf_get_cindex_labs()),
-                                    colrdata=rf_colrdata())
+            p = make_spec_ms2_plot(db = rvs$m$db,
+                                   summ,
+                                   kvals=req(rf_get_cindex_kval()),
+                                   labs=req(rf_get_cindex_labs()),
+                                   colrdata=rf_colrdata())
 
             p = if (!is.null(p)) p else empty_plot("Nothing to plot")
             p
@@ -1326,7 +1326,6 @@ mk_shinyscreen_server <- function(projects,init) {
                 message('Compound index row: ',ri)
 
                 p1 = make_eic_ms1_plot(db=db,
-                                       ms1,
                                        summ,
                                        kvals=kvals,
                                        labs=labs,
@@ -1335,11 +1334,12 @@ mk_shinyscreen_server <- function(projects,init) {
                                        i_range=i_range,
                                        colrdata = colrdata) + theme_print()
 
-                p2 = make_eic_ms2_plot(summ,kvals=kvals,
-                                        labs=labs,
-                                        asp=PLOT_EIC_ASPECT,
-                                        rt_range=rt_range,
-                                        colrdata = colrdata) + theme_print()
+                p2 = make_eic_ms2_plot(db=db,
+                                       summ,kvals=kvals,
+                                       labs=labs,
+                                       asp=PLOT_EIC_ASPECT,
+                                       rt_range=rt_range,
+                                       colrdata = colrdata) + theme_print()
 
                 
 
@@ -1347,11 +1347,11 @@ mk_shinyscreen_server <- function(projects,init) {
                 smi = rvs$m$out$tab$comp[ID==(id),SMILES][[1]]
                 p_struc = make_struct_plot(smi)
 
-                p_spec = make_spec_ms2_plot(ms2,
-                                             summ,
-                                             kvals=kvals,
-                                             labs=labs,
-                                             colrdata=colrdata)+theme_print()
+                p_spec = make_spec_ms2_plot(db=db,
+                                            summ,
+                                            kvals=kvals,
+                                            labs=labs,
+                                            colrdata=colrdata)+theme_print()
 
                 cmb = combine_plots(p1,p2,p_spec,p_struc)
                 print(cmb)
