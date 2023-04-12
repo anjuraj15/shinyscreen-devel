@@ -309,7 +309,6 @@ get_data_4_eic_ms1 <- function(db,extr_ms1,summ_rows,kvals,labs) {
 
 ## Prepare MS2 eic data: rt and intensity + key made of splitby.
 get_data_4_eic_ms2 <- function(db,summ,kvals,labs) {
-    browser()
     tab = get_data_from_key(db=db,tab=db$extr$cgm$ms2,kvals=kvals,outcols=c("catid","ce","mz","rt","intensity"))
 
     meta = db$cat[tab[,.(catid=unique(catid))],on=.(catid),.SD,by=.EACHI,.SDcols=labs]
@@ -416,7 +415,7 @@ make_eic_ms2_plot <- function(db,summ,kvals,labs,axis="linear",rt_range=NULL,asp
                                labs=labs)
 
     if (NROW(pdata)==0L) return(NULL)
-    browser()
+
     ## Deal with retention time range.
     rt_lim = if (is.null(rt_range)) NULL else ggplot2::coord_cartesian(xlim=rt_range)#ggplot2::xlim(rt_range)
     xrng = range(pdata$rt) #if (!is.null(rt_range)) rt_range else range(pdata$rt)
@@ -436,7 +435,7 @@ make_eic_ms2_plot <- function(db,summ,kvals,labs,axis="linear",rt_range=NULL,asp
          ggplot2::labs(caption=tag_txt,title=title_txt,subtitle=subt_txt) +
          ggplot2::xlab("retention time")+ggplot2::ylab("intensity")+cust_geom_linerange()+
          scale_y(axis=axis,labels=sci10)+rt_lim+guide_fun()
-    ans = pdata[,unique(scan)]
+
 
     ## Add theme.
     colrdata = narrow_colrdata(colrdata,kvals)
@@ -444,7 +443,7 @@ make_eic_ms2_plot <- function(db,summ,kvals,labs,axis="linear",rt_range=NULL,asp
 }
 
 
-make_spec_ms2_plot <- function(db,extr_ms2,summ,kvals,labs,axis="linear",asp=1, colrdata=NULL) {
+make_spec_ms2_plot <- function(db,summ,kvals,labs,axis="linear",asp=1, colrdata=NULL) {
 
     
     ## Only the chosen ones.
@@ -453,18 +452,32 @@ make_spec_ms2_plot <- function(db,extr_ms2,summ,kvals,labs,axis="linear",asp=1, 
                                kvals=kvals,
                                outcols=union(names(kvals),
                                              colnames(summ)))[ms2_sel==T]
-    common_key = intersect(names(extr_ms2),names(kvals))
-    common_vals = kvals[common_key]
-    if (length(common_key) == 0L) return(NULL)
-    subxdata = get_data_from_key(db=db,tab=extr_ms2,kvals=common_vals)
+
+    spectra = db$extr$spectra[db$extr$cgm$ms2[,unique(.SD),
+                                              .SDcols=c("ce","scan","rt")],
+                                              on=.(scan),c("ce","rt"):=.(i.ce,i.rt)]
+    subxdata = get_data_from_key(db=db,
+                                 tab=spectra,
+                                 kvals=kvals,
+                                 outcols=c("catid","ce","mz","scan","rt","intensity"))
     if (NROW(mdata)==0L) return(NULL)
     if (NROW(subxdata) == 0L) return(NULL)
     ans = data.table(scan=mdata[,unique(scan)],key="scan")
-    ms2ctg = c(intersect(c(names(kvals),labs),names(extr_ms2)),"ce")
-    xlxx = intersect(as.character(labs),names(extr_ms2))
-    common_labels = unique(c("scan",common_key,intersect(names(extr_ms2),labs)))
-    pdata = subxdata[ans,on="scan"][,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=common_labels]
-    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(c(xlxx,"rt"),as.symbol))),by=.(xlxx)],splice=T))
+
+    meta = db$cat[subxdata[,.(catid=unique(catid))],
+                  on=.(catid),
+                  .SD,
+                  by=.EACHI,
+                  .SDcols=labs]
+
+    
+    subxdata = meta[subxdata,on=.(catid),nomatch=NULL]
+
+
+    
+    labs = c(labs,"ce")
+    pdata = subxdata[,.(mz=mz,intensity=intensity,rt=signif(unique(rt),5)),by=labs]
+    pdata = eval(bquote(pdata[,label:=make_line_label(..(lapply(c(labs,"rt"),as.symbol))),by=.(labs)],splice=T))
 
     if (NROW(pdata)==0L) return(NULL)
     # Aspect ratio.

@@ -24,3 +24,84 @@
       8: C[C@@H](O)[C@H](N)C(O)=O          TRUE F1.S000478    TRUE
       9: C[C@@H](O)[C@H](N)C(O)=O          TRUE F1.S000479   FALSE
 
+# make_eic_ms1_plot
+
+    Code
+      plt$labels
+    Output
+      $x
+      [1] "retention time"
+      
+      $title
+      [1] "MS1 EIC for ion m/z = 120.0655"
+      
+      $subtitle
+      [1] "Threonine"
+      
+      $caption
+      [1] "set: AAs; ID: 4"
+      
+      $y
+      [1] "intensity"
+      
+      $colour
+      [1] "label"
+      
+
+# make_eic_ms2_plot
+
+    Code
+      plt$labels
+    Output
+      $y
+      [1] "intensity"
+      
+      $x
+      [1] "retention time"
+      
+      $title
+      [1] "MS2 EIC for ion m/z = 120.0655"
+      
+      $subtitle
+      [1] "Threonine"
+      
+      $caption
+      [1] "set: AAs; ID: 4"
+      
+      $ymin
+      [1] "ymin"
+      
+      $ymax
+      [1] "intensity"
+      
+      $colour
+      [1] "label"
+      
+
+# make_spec_ms2_plot
+
+    Code
+      plt$labels
+    Output
+      $x
+      [1] "m/z"
+      
+      $title
+      [1] "MS2 spectra for ion m/z = 120.0655"
+      
+      $subtitle
+      [1] "Threonine"
+      
+      $caption
+      [1] "set: AAs; ID: 4"
+      
+      $ymin
+      [1] "ymin"
+      
+      $ymax
+      [1] "intensity"
+      
+      $colour
+      [1] "label"
+      
+

@@ -13,54 +13,26 @@ test_that("make_eic_ms1_plot",{
     labs = c("adduct","tag")
     cd = define_colrdata(m$out$tab$comp,labs)
     plt = make_eic_ms1_plot(db=m$db,m$db$extr$cgm$ms1,m$out$tab$summ,kvals,labs,colrdata=cd)
-    plt$data = NULL
-    expect_snapshot(plt)
+    expect_snapshot(plt$labels)
 })
 
+test_that("make_eic_ms2_plot",{
+    m = PLOTTING_TEST_STATE
+    kvals = list(set="AAs",ID="4")
+    labs = c("adduct","tag")
+    cd = define_colrdata(m$out$tab$comp,labs)
+    plt = make_eic_ms2_plot(db=m$db,m$out$tab$summ,kvals,labs,colrdata=cd)
+    expect_snapshot(plt$labels)
+})
 
-## test_that("make_eic_ms1_plot",{
-
-##     ms1 <- PLOTTING_DATA$ms1
-##     summ <- PLOTTING_DATA$summ
-##     labs <- PLOTTING_DATA$labs
-
-##     ## Test the corner case when no cindex entry is selected.
-##     kval <- NULL
-##     res <- make_eic_ms1_plot(extr_ms1=ms1,
-##                              summ=summ,
-##                              kval=kval,
-##                              labs=labs)
-##     expect_identical(res,NULL)
-
-##     ## Test getting the right plot.
-##     kval <- list(set="NTs",ID=109L)
-##     res <- make_eic_ms1_plot(extr_ms1=ms1,
-##                              summ=summ,
-##                              kval=kval,
-##                              labs=labs)
-##     expect_equal(NROW(res$data),4046L)
-## })
-
-## test_that("make_eic_ms2_plot",{
-
-
-##     summ <- PLOTTING_DATA$summ
-##     labs <- PLOTTING_DATA$labs
-
-##     ## Test the corner case when no cindex entry is selected.
-##     kval <- NULL
-##     res <- make_eic_ms2_plot(summ=summ,
-##                              kval=kval,
-##                              labs=labs)
-##     expect_identical(res,NULL)
-
-##     ## Test getting the right plot.
-##     kval <- list(set="NTs",ID=109L)
-##     res <- make_eic_ms2_plot(summ=summ,
-##                              kval=kval,
-##                              labs=labs)
-##     expect_equal(NROW(res$data),77L)
-## })
+test_that("make_spec_ms2_plot",{
+    m = PLOTTING_TEST_STATE
+    kvals = list(set="AAs",ID="4")
+    labs = c("adduct","tag")
+    cd = define_colrdata(m$out$tab$comp,labs)
+    plt = make_spec_ms2_plot(db=m$db,m$out$tab$summ,kvals,labs,colrdata=cd)
+    expect_snapshot(plt$labels)
+})
 
 test_that("plot_fname",{
     kval <- list(set="NTs",ID=109L)
