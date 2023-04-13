@@ -114,10 +114,11 @@ relate_ms2_to_precid <- function(coarse,ms2,cgram_ms1) {
     ## parent that finely matches something in the chromatogram (and
     ## this is by ensuring that a `precid' with the correct scan (idx)
     ## shows up in the chromatogram.
-    cgram_ms1[res,on=.(precid,idx==prec_idx),
-              .(precid,ce,scan=i.scan,
-                idx=i.idx,rt=i.rt,
-                intensity=i.intensity),nomatch=NULL]
+    x = cgram_ms1[!is.na(intensity)]
+    x[res,on=.(precid,idx==prec_idx),
+      .(precid,ce,scan=i.scan,
+        idx=i.idx,rt=i.rt,
+        intensity=i.intensity),nomatch=NULL]
     
 }
 

@@ -355,9 +355,12 @@ extr_data <-function(m) {
 
     ## Extract MS2 spectra.
     spectra = empty_spectra_table()
-                         
+
     for (fn in names(lfdata)) {
-        rtab = relate_ms2_to_precid(coarse=coarse,ms2=lfdata[[fn]]$ms2,cgram_ms1=cgram_ms1)
+        rtab = relate_ms2_to_precid(coarse=coarse[.(fn),on=.(file)],
+                                    ms2=lfdata[[fn]]$ms2,
+                                    cgram_ms1=cgram_ms1[.(fn),
+                                                        on=.(file)])
         sptab = extract_spectra(lms[[fn]],rtab)
         cgram_ms2 = rbind(cgram_ms2,rtab)
         spectra = rbind(spectra,sptab)
@@ -368,7 +371,6 @@ extr_data <-function(m) {
     m$db$extr$cgm$ms1 = cgram_ms1
     m$db$extr$cgm$ms2 = cgram_ms2
     m$db$extr$spectra = spectra
-
     m
 
 }

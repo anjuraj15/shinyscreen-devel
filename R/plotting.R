@@ -445,9 +445,11 @@ make_eic_ms2_plot <- function(db,summ,kvals,labs,axis="linear",rt_range=NULL,asp
 }
 
 
+
+
+
 make_spec_ms2_plot <- function(db,summ,kvals,labs,axis="linear",asp=1, colrdata=NULL) {
 
-    
     ## Only the chosen ones.
     mdata  = get_data_from_key(db=db,
                                tab=summ,
