@@ -457,25 +457,18 @@ make_spec_ms2_plot <- function(db,summ,kvals,labs,axis="linear",asp=1, colrdata=
                                outcols=union(names(kvals),
                                              colnames(summ)))[ms2_sel==T]
 
-    spectra = db$extr$spectra[db$extr$cgm$ms2[,unique(.SD),
-                                              .SDcols=c("ce","scan","rt")],
-                                              on=.(scan),c("ce","rt"):=.(i.ce,i.rt)]
-    subxdata = get_data_from_key(db=db,
-                                 tab=spectra,
-                                 kvals=kvals,
-                                 outcols=c("catid","ce","mz","scan","rt","intensity"))
+    spectra = db$extr$spectra[mdata,on=.(precid,scan),.(catid,ce,mz,scan,rt=i.ms2_rt,intensity)]
     if (NROW(mdata)==0L) return(NULL)
-    if (NROW(subxdata) == 0L) return(NULL)
-    ans = data.table(scan=mdata[,unique(scan)],key="scan")
+    if (NROW(spectra) == 0L) return(NULL)
 
-    meta = db$cat[subxdata[,.(catid=unique(catid))],
+    meta = db$cat[spectra[,.(catid=unique(catid))],
                   on=.(catid),
                   .SD,
                   by=.EACHI,
                   .SDcols=labs]
 
     
-    subxdata = meta[subxdata,on=.(catid),nomatch=NULL]
+    subxdata = meta[spectra,on=.(catid),nomatch=NULL]
 
 
     
@@ -485,7 +478,7 @@ make_spec_ms2_plot <- function(db,summ,kvals,labs,axis="linear",asp=1, colrdata=
 
     if (NROW(pdata)==0L) return(NULL)
     # Aspect ratio.
-    xrng = range(pdata$mz)
+    xrng = range(pdata$mz,na.rm=T)
     dx = abs(xrng[[2]]-xrng[[1]])
     yrng = range(pdata$intensity)
     dy = abs(yrng[[2]]-yrng[[1]])
