@@ -13,5 +13,7 @@ test_that("Extraction returns what is needed.",{
 
     m = run(envopts=eo,m=m,phase="extract")
     m = run(envopts=eo,m=m,phase="prescreen")
+    saveRDS(m,file.path(projd,"test.rds"))
+    browser()
     expect_true(1==1)
 })
