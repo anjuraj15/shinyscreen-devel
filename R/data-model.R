@@ -77,7 +77,6 @@ make_db_precursors <- function(m) {
     } else {
         stop('make_db_precursors: Unknown mass unit (coarse).')
     }
-    ## TODO: FIXME: Should precids be unique, or not?
 
     ## Assign "fine" isobars to same isocoarse number.
     masses[,precid:=merge_precid_4_isobars(catid,mz,mz_fine_max),by="tag"]

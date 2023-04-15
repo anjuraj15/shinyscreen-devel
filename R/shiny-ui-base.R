@@ -700,8 +700,6 @@ mk_shinyscreen_server <- function(projects,init) {
         ## REACTIVE FUNCTIONS: COMPOUND INDEX
         rf_get_cindex <- reactive({
 
-            ## TODO: FIXME: Uncomment after rearranging everything.
-            ## input$cmt_changes_b
             rvs$status$is_qa_stat
             s1 = input$sort1
             s2 = input$sort2
@@ -1583,7 +1581,7 @@ mk_shinyscreen_server <- function(projects,init) {
         })
 
         output$comp_table = DT::renderDataTable({
-            ## TODO FIXME
+            ## TODO 
             ## cmpds = rf_get_cmpd_tab()
             ## validate(need(NROW(cmpds)>0,"No compound list loaded yet."))
             ## DT::datatable(cmpds,

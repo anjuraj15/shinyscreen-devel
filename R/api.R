@@ -195,8 +195,6 @@ mk_comp_tab <- function(m) {
     smiforadd <- smiles[smiforadd,.(ID,SMILES,Formula,adduct),on=c("SMILES")]
     data.table::setkey(smiforadd,"adduct","ID")
 
-    ## FIXME: Why is Formula a list when there are no SMILES, instead
-    ## of an empty string?
     smiforadd[,Formula:=as.character(Formula)]
     
     ## Update the intermediate table with masses.

@@ -353,10 +353,6 @@ make_eic_ms1_plot <- function(db,summ,kvals,labs,axis="linear",rt_range=NULL,i_r
     key = names(kvals)
     ## Get metadata.
 
-
-    ## TODO: FIXME: Somehow calculating representationve ms1_rt for
-    ## plots is wrong. Horrible and wrong. Will remove those labels
-    ## until we fix. 20230412: Still problematic?
     summ_rows = narrow_summ(db=db,summ,kvals,labs,"mz","ms1_rt","ms1_int","Name","SMILES","qa_ms1_exists","scan","ms2_sel")
     rows_key = union(data.table::key(summ_rows),labs)
     summ_rows$sel_ms1_rt=NA_real_

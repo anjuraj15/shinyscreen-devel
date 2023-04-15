@@ -570,7 +570,7 @@ get_summ_subset <- function(db,summ,ptab,paritem,kvals) {
 get_ltab <- function(summ_subs,cols=c("scan","ms2_rt")) {
     tab = summ_subs
     if (NROW(tab)==1L && is.na(tab$an)) return(data.table::data.table(item=character()))
-    tab[is.na(ms2_sel),ms2_sel:=F] #TODO FIXME: Check why NAs exist at all?
+    tab[is.na(ms2_sel),ms2_sel:=F]
     tab[,passval:=fifelse(qa_pass==T,"OK","BAD")]
     tab[ms2_sel==T,passval:="SELECTED"]
     res = tab[,item:=do.call(paste,c(.SD,list(sep=";"))),.SDcols=c(cols,"passval")]
@@ -614,7 +614,7 @@ update_on_commit_chg <- function(summ,input,ptab,ltab) {
 
     the_row = tabkey(summ,kvals=kvals)
     summ[the_row,(tgts):=..srcs]
-    summ[,scan.1:=NULL] #FIXME: an.1 pops up somewhere.
+    summ[,scan.1:=NULL]
     qflg = QA_FLAGS[!(QA_FLAGS %in% "qa_pass")]
     summ[the_row,qa_pass:=apply(.SD,1,all),.SDcols=qflg]
     summ

@@ -194,7 +194,7 @@ overload of the system's resources.
 ```{r, echo=F}
 ## This is treated differently than other MF inputs, because the value
 ## is not known prior to starting a R session. There should be a
-## mechanism for this. TODO FIXME.
+## mechanism for this. TODO
 
 numericInput(inputId="mf_proc",
              label="Number of MetFrag processes",
