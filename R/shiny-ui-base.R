@@ -1372,7 +1372,7 @@ mk_shinyscreen_server <- function(projects,init) {
             fn = file.path(projdir,input$ms2_spectra_tab_name)
             shinymsg(paste0("Saving MS2 spectra table to: ",basename(fn)))
             tab2file(pack_ms2_w_summ(rvs$m$out$tab$summ,
-                                    rvs$m$db$extr$cgm$ms2),
+                                    rvs$m$db$extr$spectra),
                      fn)
             shinymsg("Done saving MS2 spectra table.")
         })
@@ -1634,7 +1634,8 @@ mk_shinyscreen_server <- function(projects,init) {
                                        path = rvs$m$run$metfrag$path,
                                        subpaths = rvs$m$run$metfrag$subpaths,
                                        db_file = rvs$m$run$metfrag$db_file,
-                                       stag_tab = stagtab, ms2 = rvs$m$db$extr$cgm$ms2,
+                                       stag_tab = stagtab,
+                                       ms2 = rvs$m$db$extr$spectra, #rvs$m$db$extr$cgm$ms2,
                                        runtime=rvs$m$run$metfrag$runtime,
                                        java_bin=rvs$m$run$metfrag$java_bin,
                                        nproc = rvs$m$conf$metfrag$nproc)

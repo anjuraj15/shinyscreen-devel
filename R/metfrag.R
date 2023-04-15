@@ -36,7 +36,7 @@ metfrag_get_stag_tab <- function(summ) {
     ## Argument summ can be a subset of actual `summ' table.
     x = gen_1d_keytab(summ)
     data.table::setnames(x,old="key1d",new="stag")
-    res = x[summ,`:=`(CE=i.CE,ion_mz=mz)]
+    res = x[summ,`:=`(ce=i.ce,ion_mz=mz)]
     res
 }
 
@@ -54,18 +54,21 @@ get_mf_res_ext <- function(fn) {
 
 metfrag_run <- function(param,path,subpaths,db_file,stag_tab,ms2,runtime,java_bin,nproc = 1L) {
     keys = intersect(colnames(stag_tab),colnames(ms2))
+    rms2 = ms2[stag_tab,on=keys,nomatch=NULL]
     message("Generating MetFrag configs.")
-    file_tab = ms2[stag_tab,{
+
+
+    file_tab = rms2[,{
         r = write_metfrag_config(param = ..param,
                                  path = ..path,
                                  subpaths = ..subpaths,
                                  db_file = ..db_file,
-                                 stag = stag,
-                                 adduct = adduct,
-                                 ion_mz = ion_mz,
+                                 stag = first(stag),
+                                 adduct = first(adduct),
+                                 ion_mz = first(ion_mz),
                                  spec = data.table(mz=mz,intensity=intensity))
-        c(r,stag = stag)
-    },by=.EACHI,on=keys]
+        c(r,stag = first(stag))
+    },keyby=keys]
     message("Done generating MetFrag configs.")
 
     withr::with_dir(path,{
@@ -89,21 +92,18 @@ metfrag_run <- function(param,path,subpaths,db_file,stag_tab,ms2,runtime,java_bi
 
 mf_narrow_summ <- function(summ,kv,ms2_rt_i=NA_integer_,ms2_rt_f=NA_integer_) {
     skey = data.table::key(summ)
-    cols = c("adduct","tag","ID","CE","scan","mz","qa_pass","ms2_rt")
-    nsumm = get_rows_from_summ(summ,kv,cols)
+    cols = union(names(skey),c("adduct","tag","ID","ce","precid","scan","mz","qa_pass","ms2_rt"))
+    dtkv = as.data.table(kv)
+    nsumm = summ[dtkv,on=names(kv),.SD,.SDcols=cols]
     nsumm = nsumm[qa_pass==T] # Those that make sense.
-    nsumm_key = union(SUMM_KEY,"ms2_rt")
+    nsumm_key = intersect(union(SUMM_KEY,"ms2_rt"),colnames(nsumm))
     data.table::setkeyv(nsumm,nsumm_key)
     
-    if (!is.na(ms2_rt_i)) {
-        nsumm = nsumm[ms2_rt>(ms2_rt_i)]
-    }
+    ms2_rt_i = if (!is.na(ms2_rt_i)) ms2_rt_i else 0.
+    ms2_rt_f = if (!is.na(ms2_rt_f)) ms2_rt_f else Inf
 
-    if (!is.na(ms2_rt_f)) {
-        nsumm = nsumm[ms2_rt<(ms2_rt_f)]
-    }
+    nsumm[ms2_rt > (ms2_rt_i) & ms2_rt < (ms2_rt_f)]
 
-    nsumm
 }
 
 get_metfrag_targets <- function(stag_tab,ms2) {
@@ -220,7 +220,7 @@ summarise_metfrag_results <- function(param,path,subpaths,cand_parameters,db_sco
     }
 
     .adapt_col_types <- function(x) {
-        x[,(names(db_scores)):=lapply(.SD, as.numeric),.SDcol=names(db_scores)]
+        if (length(db_scores)>0) x[,(names(db_scores)):=lapply(.SD, as.numeric),.SDcol=names(db_scores)] else x
     }
 
     .calc_basic_scores <- function(x) {

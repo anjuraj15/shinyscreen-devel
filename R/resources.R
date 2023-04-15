@@ -217,7 +217,7 @@ FIG_DEF_CONF =list(grouping=list(group="adduct",
 SUMM_COLS=c("set",BASE_KEY_MS2,"mz","ms1_rt", "ms1_int", "ms2_rt", "ms2_int",
             "ms1_mean","ms2_sel",QA_FLAGS,"Name", "SMILES", "Formula", "known","Comments","file")
 
-SUMM_KEY = c("set","ID","adduct","tag","scan")
+SUMM_KEY = c("set","ID","adduct","tag","precid","catid","scan")
 
 PLOT_FEATURES = c("adduct",
                    "tag",
