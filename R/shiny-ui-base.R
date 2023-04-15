@@ -760,7 +760,8 @@ mk_shinyscreen_server <- function(projects,init) {
             kvals = req(rf_get_cindex_kval())
             ptab = rf_get_cindex_parents()
             if (isTruthy(parent)) {
-                get_summ_subset(summ=summ,
+                get_summ_subset(db=rvs$m$db,
+                                summ=summ,
                                 ptab=ptab,
                                 paritem=parent,
                                 kvals=kvals)
@@ -1774,8 +1775,9 @@ mk_shinyscreen_server <- function(projects,init) {
                 #it.
                 key = unique(c(names(allval)[names(allval) %in% BASE_KEY_MS2],"scan"))
                 kval2 = allval[key]
-                spec = get_data_from_key(ms2,kval2)[,.(mz,intensity)]
-                ## as.character(lapply(1L:NROW(spec),function(nr) paste0(spec[nr,mz]," ",spec[nr,intensity])))
+                ## Only precid and scan can be used for selection in spectra.
+                kval2 = as.data.table(kval2[c("precid","scan")])
+                spec = rvs$m$db$extr$spectra[kval2,.(mz,intensity),on=.(precid,scan)]
                 print(as.data.frame(spec),row.names=F)
                 
             } else {

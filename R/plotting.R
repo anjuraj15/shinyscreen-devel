@@ -194,7 +194,7 @@ mk_logic_exp <- function(rest,sofar=NULL) {
 }
 
 
-get_data_from_key <- function(db,tab,kvals,outcols) {
+get_data_from_key <- function(db,tab,kvals,outcols=NULL) {
 
     ## Ensure only names that exist in cat are used in selection. Or,
     ## should we not do this?
@@ -209,7 +209,8 @@ get_data_from_key <- function(db,tab,kvals,outcols) {
     ## Get precids.
     mztab = db$precursors[cattab,on="catid"]
     outnames = union(valid_names,outcols)
-    tab[mztab,on="precid"][,..outnames]
+    res = tab[mztab,on="precid"]
+    if (!is.null(outcols)) res[,..outnames] else res
     
 }
 

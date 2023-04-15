@@ -495,11 +495,11 @@ gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
     xsumm <- summ[,..allc]
     setnames(xsumm,old="ms1_rt",new="rt",skip_absent=T)
     res <- xsumm[,.SD[max(qlt_ms1)==qlt_ms1][max(qlt_ms2)==qlt_ms2],by=by.]
-    res <- res[,c("mz","rt","Name","qlt_ms1","qlt_ms2"):=.(first(mz),
-                                                         first(mean(rt)),
-                                                         first(Name),
-                                                         first(qlt_ms1),
-                                                         first(qlt_ms2)),
+    res <- res[,c("mz","rt","Name","qlt_ms1","qlt_ms2"):=.(mean(mz,na.rm=T),
+                                                           mean(rt,na.rm=T),
+                                                           first(Name),
+                                                           max(qlt_ms1,na.rm=T),
+                                                           max(qlt_ms2,na.rm=T)),
                by=by.]
     res <- res[,unique(.SD),by=by.]
    
@@ -518,7 +518,11 @@ gen_cindex <- function(summ,sorder,cols = CINDEX_COLS,by. = CINDEX_BY) {
         ord[ind] <- -1L
     }
     if (length(sorder)>0) setorderv(res,cols=sorder,order=ord)
-    setnames(res,old="rt",new="rt(ms1)")
+
+    ## Remove confusing columns.
+    res[,c("rt","mz"):=NULL]
+    res[,c("qlt_ms1","qlt_ms2"):=.(signif(100*qlt_ms1/10.,3),signif(100*qlt_ms2/10.,3))]
+    setnames(res,c("qlt_ms1","qlt_ms2"),c("best score (ms1)","best score (ms2)"))
     res
 }
 
@@ -554,9 +558,9 @@ get_cindex_kval <- function(cindex,row,key) {
     res
 }
 
-get_summ_subset <- function(summ,ptab,paritem,kvals) {
+get_summ_subset <- function(db,summ,ptab,paritem,kvals) {
     select <- ptab[item==(paritem)]
-    tab <- get_data_from_key(summ,kvals)[select,nomatch=NULL,on=key(ptab)]
+    tab <- get_data_from_key(db=db,tab=summ,kvals=kvals)[select,nomatch=NULL,on=key(ptab)]
     if ("scan.1" %in% names(tab)) tab[,scan.1:=NULL] #TODO: This is
                                                  #probably a lousy
                                                  #hack.
