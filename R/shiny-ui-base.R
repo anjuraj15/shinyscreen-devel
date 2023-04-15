@@ -1635,7 +1635,7 @@ mk_shinyscreen_server <- function(projects,init) {
                                        subpaths = rvs$m$run$metfrag$subpaths,
                                        db_file = rvs$m$run$metfrag$db_file,
                                        stag_tab = stagtab,
-                                       ms2 = rvs$m$db$extr$spectra, #rvs$m$db$extr$cgm$ms2,
+                                       ms2 = rvs$m$db$extr$spectra,
                                        runtime=rvs$m$run$metfrag$runtime,
                                        java_bin=rvs$m$run$metfrag$java_bin,
                                        nproc = rvs$m$conf$metfrag$nproc)
