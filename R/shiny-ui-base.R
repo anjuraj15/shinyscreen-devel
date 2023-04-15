@@ -1621,8 +1621,6 @@ mk_shinyscreen_server <- function(projects,init) {
                                         m=rvs$m)
                 
                 kv = rf_get_cindex_kval()
-                ## Some cols that might be needed to be specified
-                ## explicitely. FIXME TODO: Make this more robust.
                 nsumm = mf_narrow_summ(rvs$m$out$tab$summ,kv,
                                        ms2_rt_i=input$mf_entry_rt_min,
                                        ms2_rt_f=input$mf_entry_rt_max)

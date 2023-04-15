@@ -403,7 +403,7 @@ input2conf_metfrag <- function(input,conf) {
                           MetFragPreProcessingCandidateFilter = paste(input$mf_pre_processing_candidate_filter,collapse=","),
                           MetFragPostProcessingCandidateFilter = paste(input$mf_post_processing_candidate_filter,collapse=","))
 
-    ## TODO: FIXME: We need to move away from unit weights from some
+    ## TODO: FIXME: We need to move away from unit weights at some
     ## point. This needs some extra widgets (Sigh!). 
     insc = sapply(input$mf_scores_intrinsic,function(x) 1.0)
     names(insc) = input$mf_scores_intrinsic
