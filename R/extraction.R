@@ -149,7 +149,7 @@ extract_spectra <- function(ms,cgram_ms2) {
 ## RT vectors rt_1 and rt_2.
 find_ms1_max <- function(rt,intensity,rt_1,rt_2)
 {
-    mapply(function (rt_1,rt_2) {
+    x = mapply(function (rt_1,rt_2) {
         rt_ival <- c(rt_1,rt_2)
         intv <- findInterval(rt,rt_ival)
         lintv = length(intv)
@@ -166,6 +166,7 @@ find_ms1_max <- function(rt,intensity,rt_1,rt_2)
         if (length(pmax)==0L) pmax = pos[[1]]
         c(rt[pmax],intensity[pmax])
     }, rt_1, rt_2, USE.NAMES=F)
+    x
     
 }
 

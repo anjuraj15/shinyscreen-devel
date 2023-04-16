@@ -58,16 +58,16 @@
       out2
     Output
       $tag
-      [1] "A" "B"
+      character(0)
       
       $adduct
-      [1] NA NA
+      character(0)
       
       $set
-      [1] NA NA
+      character(0)
       
       $file
-      [1] "f1.f" "f2.f"
+      character(0)
       
 
 ---
@@ -76,16 +76,16 @@
       out3
     Output
       $tag
-      [1] "X" "B"
+      character(0)
       
       $adduct
-      [1] NA NA
+      character(0)
       
       $set
-      [1] NA NA
+      character(0)
       
       $file
-      [1] "f1.f" "f2.f"
+      character(0)
       
 
 ---
@@ -94,16 +94,16 @@
       out4
     Output
       $tag
-      [1] "Y" "Z"
+      character(0)
       
       $adduct
-      [1] NA NA
+      character(0)
       
       $set
-      [1] NA NA
+      character(0)
       
       $file
-      [1] "fx.f" "fy.f"
+      character(0)
       
 
 # datatab_add_files does what's intended

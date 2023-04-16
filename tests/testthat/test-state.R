@@ -1,3 +1,6 @@
+## STATE_DATA is problematic. It is by now outdated and better to be
+## generated, than loaded from some frozen state.
+
 test_that("Test empty project creation.",{
 
     ## Generate test environment and a test project directory.
@@ -10,13 +13,13 @@ test_that("Test empty project creation.",{
     expect_snapshot(res)
 })
 
-test_that("pack_ms2_w_summ",{
-    summ = STATE_DATA$out$tab$summ
-    ms2 = STATE_DATA$db$extr$cgm$ms2
-    res = pack_ms2_w_summ(summ,ms2)
-    expect_snapshot(res[1])
-    expect_snapshot(res[2])
-})
+## test_that("pack_ms2_w_summ",{
+##     summ = STATE_DATA$out$tab$summ
+##     ms2 = STATE_DATA$db$extr$cgm$ms2
+##     res = pack_ms2_w_summ(summ,ms2)
+##     expect_snapshot(res[1])
+##     expect_snapshot(res[2])
+## })
 
 
 test_that("pack_project",{

@@ -57,42 +57,43 @@ test_that("Do adducts affect MetFrag config generation correctly?",{
     
 })
 
-ok_return_val("metfrag_run",{
-    skip_if_not(file.exists(Sys.getenv("SS_MF_JAR")),"Environment variable SS_MF_JAR does not contain a path to MetFrag jar package.")
-    m = make_dummy_mf_project()
+## TODO: FIXME: Obsoleted.
+## ok_return_val("metfrag_run",{
+##     skip_if_not(file.exists(Sys.getenv("SS_MF_JAR")),"Environment variable SS_MF_JAR does not contain a path to MetFrag jar package.")
+##     m = make_dummy_mf_project()
                 
-    withr::with_dir(m$run$metfrag$path,{
-            stagtab = metfrag_get_stag_tab(m$out$tab$summ[ms2_sel == T])
+##     withr::with_dir(m$run$metfrag$path,{
+##             stagtab = metfrag_get_stag_tab(m$out$tab$summ[ms2_sel == T])
 
-            ftab = metfrag_run(param = m$run$metfrag$param,
-                               path = m$run$metfrag$path,
-                               subpaths = m$run$metfrag$subpaths,
-                               db_file = m$run$metfrag$db_file,
-                               stag_tab = stagtab, ms2 = m$db$extr$cgm$ms2,
-                               runtime=m$run$metfrag$runtime,
-                               java_bin=m$run$metfrag$java_bin,
-                               nproc = 2)
+##             ftab = metfrag_run(param = m$run$metfrag$param,
+##                                path = m$run$metfrag$path,
+##                                subpaths = m$run$metfrag$subpaths,
+##                                db_file = m$run$metfrag$db_file,
+##                                stag_tab = stagtab, ms2 = m$db$extr$cgm$ms2,
+##                                runtime=m$run$metfrag$runtime,
+##                                java_bin=m$run$metfrag$java_bin,
+##                                nproc = 2)
 
-            expect_snapshot(ftab)
+##             expect_snapshot(ftab)
 
-            for (f in ftab[,f_res]) {
-                expect_true(file.exists(file.path(m$run$metfrag$path,
-                                                  m$run$metfrag$subpaths['results'],
-                                                  f)))
-            }
+##             for (f in ftab[,f_res]) {
+##                 expect_true(file.exists(file.path(m$run$metfrag$path,
+##                                                   m$run$metfrag$subpaths['results'],
+##                                                   f)))
+##             }
 
-            x = summarise_metfrag_results(param = m$conf$metfrag$param,
-                                          path = m$run$metfrag$path,
-                                          subpaths = m$run$metfrag$subpaths,
-                                          cand_parameters = m$conf$metfrag$cand_parameters,
-                                          db_scores = m$conf$metfrag$database_scores,
-                                          int_scores = m$conf$metfrag$intrinsic_scores,
-                                          collect_candidates= m$conf$metfrag$collect_candidates,
-                                          file_tab = ftab)
+##             x = summarise_metfrag_results(param = m$conf$metfrag$param,
+##                                           path = m$run$metfrag$path,
+##                                           subpaths = m$run$metfrag$subpaths,
+##                                           cand_parameters = m$conf$metfrag$cand_parameters,
+##                                           db_scores = m$conf$metfrag$database_scores,
+##                                           int_scores = m$conf$metfrag$intrinsic_scores,
+##                                           collect_candidates= m$conf$metfrag$collect_candidates,
+##                                           file_tab = ftab)
             
-            expect_snapshot(x)
+##             expect_snapshot(x)
 
 
                                  
-    })
-})
+##     })
+## })

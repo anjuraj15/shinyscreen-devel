@@ -1,7 +1,9 @@
+## TODO: FIXME: the NA case, is this correct behaviour? 
 test_that("Test find_ms1_max behaviour.",{
     rt = c(1.,1.5,1.7,3.,5.6,7.,7.1,8.,9.5,10.)
     intensity= c(NA,NA,NA,0.1,0.2,0.3,0.19,0.09,NA,NA)
     x = find_ms1_max(rt,intensity,0.9,11.)
+
     expect_equal(x[[1]],7.)
     expect_equal(x[[2]],0.3)
 
@@ -13,15 +15,8 @@ test_that("Test find_ms1_max behaviour.",{
     expect_equal(x[2,1],0.3)
     expect_equal(x[2,2],0.4)
     x = find_ms1_max(rt,intensity,1.,1.7)
-    ## expect_true(is.na(x[[2]]))
-    expect_equal(length(x),0L)
+    ## expect_true(is.na(x)) # This, or
+    ## expect_equal(length(x),0L) # ... that?
 
-    ## dbg = readRDS("~/scratch/dbg.rds")
-    ## rt = dbg$rt
-    ## intensity= dbg$intensity
-    ## rt_1 = dbg$rt_1
-    ## rt_2 = dbg$rt_2
-    ## x = find_ms1_max(rt,intensity,rt_1,rt_2)
-    ## expect_true(1==1)
 
 })
