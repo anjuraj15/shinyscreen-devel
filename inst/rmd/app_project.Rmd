@@ -103,10 +103,10 @@ textOutput("curr_data_dir")
 
 #### Select compound lists
 
-<details><summary>About compound lists</summary>
-A compound list is composed of entries describing compounds. This
-description is used to search for its spectrum in the data file. The
-list is a table in the ***CSV*** format and contains these columns,
+<details><summary>About compound lists</summary> A compound list is
+composed of entries describing compounds. This description is used to
+search for its spectrum in the data file. The list is a table in the
+***CSV*** format and contains some of these columns,
 
 * ***ID*** : required column, must be filled; this is a user-defined
   ID, uniquely associated with a compound
@@ -115,29 +115,29 @@ list is a table in the ***CSV*** format and contains these columns,
   names of the compounds
   
 * ***SMILES*** : a _SMILES_ string, describing the structure of the
-  compound; this entry can be left empty only if one of either
-  ***Formula***, or ***mz*** entries are not
+  compound
   
-* ***Formula*** : a chemical formula of a compound; this field can be
-  empty only if one of either ***SMILES***, or ***mz*** entries are
-  not
-  
-* ***mz*** : mass of the ionised compound; this field can be left
-  empty only if one of either ***SMILES***, or ***Formula*** is not
-  
-* ***CAS*** : the CAS number of the compound; it can be left empty
+* ***mz*** : mass of the ionised compound
 
 * ***RT*** : retention time of the MS1 peak in minutes, if known; can
   be left empty.
   
-Only ***ID*** and one of ***SMILES***, ***Formula*** or ***mz*** must
-be filled. When structure, or a formula of a compound is known, it is
-also possible to look for various adducts in the sample. Of course,
-scanning for completely unknown compounds is also supported by the
-***mz*** column. In this case, ***mz*** is the mass of the ion.
+* ***set*** : used to subset a compound list. For example, if the list
+  contains 100000 compounds and we only want to extract ten, those ten
+  rows should contain the same string in the ***set*** column. If the
+  ***set** column is left out, all compounds are grouped into a single
+  set.
+  
+Only ***ID*** and one of ***SMILES*** or ***mz*** must be
+present. When structure is known, it is also possible to look for
+various adducts in the sample. Of course, scanning for completely
+unknown compounds is also supported by the ***mz*** column. In this
+case, ***mz*** is the mass of the ion.
 
 It is strongly recommended to quote SMILES, names and formulas in the
 CSV file used with Shinyscreen.
+
+If the ***Name*** column exists, it will be shown in the plots.
 
 Select one, or more compound lists by clicking `Select` button.
 </details>
