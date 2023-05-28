@@ -175,10 +175,11 @@ mv PubChemLite_exposomics_20230127.csv /usr/local/metfrag_db/PubChemLite_exposom
 
 ** Terminology
 
-- Project directory :: This is directory containing Shinyscreen inputs
-  (except the ~mzML~ files), intermediate and output files. The inputs
-  are /compound/ and /set/ lists (information on the list inputs is
-  available from Shinyscreen GUI application itself).
+- Project directory :: This is directory containing the compound list,
+  intermediate and output files. At the beginning, it contains only
+  the compound list.
+- Compound list :: A CSV which lists the masses that should be
+  extracted and various metadata.
 - Data directory :: A data directory contains ~mzML~ files.
 - Projects directory :: A directory containing the Shinyscreen
   ~project~ directories.
